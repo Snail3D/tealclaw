@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TealClaw</title>
+  <title>TealClaw — BYOK Voice AI Dashboard</title>
+  <meta name="description" content="TealClaw is a zero-server BYOK voice dashboard PWA. 95+ config fields, custom personas, typing animations, style templates, voice I/O, image gen, deep research. All keys stay in your browser. Full agent skill guide at tealclaw.ai/llms.txt">
+  <meta property="og:title" content="TealClaw — BYOK Voice AI Dashboard">
+  <meta property="og:description" content="Zero-server voice dashboard PWA with 95+ config fields. Custom personas, typing animations, 12 style templates, voice I/O, image gen, deep research. Your keys never leave your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tealclaw.ai">
+  <meta name="robots" content="index, follow">
+  <link rel="help" href="/llms.txt" type="text/plain" title="AI agent skill guide">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -429,6 +436,40 @@
   </style>
 </head>
 <body>
+
+  <!-- Static content for agents, crawlers, and noscript browsers -->
+  <noscript>
+    <div style="max-width:700px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif;color:#e2e8f0;background:#0a0f1a">
+      <h1>TealClaw</h1>
+      <p><strong>BYOK voice AI dashboard.</strong> Zero server. Total privacy. 95+ configurable fields.</p>
+      <p>TealClaw is a Progressive Web App that runs entirely in your browser. Your API keys never leave your device. All API calls go directly from your browser to the AI provider.</p>
+      <h2>Features</h2>
+      <ul>
+        <li>Multi-turn chat with streaming and typing animations</li>
+        <li>Voice input (Groq Whisper) and output (ElevenLabs TTS)</li>
+        <li>Image generation (/imagine) and vision (camera, drag-drop, paste)</li>
+        <li>Deep research reports (/research) with segmented results</li>
+        <li>12 built-in style templates (/template)</li>
+        <li>Custom bot persona — name, icon, greeting, system prompt</li>
+        <li>Full visual customization — colors, fonts, backgrounds, animations</li>
+        <li>Config profiles, QR code sharing, Telegram forwarding</li>
+        <li>Multi-model routing, LaTeX rendering, GIF reactions</li>
+        <li>PIN code security, accessibility features, PWA installable</li>
+      </ul>
+      <h2>For AI Agents</h2>
+      <p>The complete agent skill guide is at <a href="/llms.txt">tealclaw.ai/llms.txt</a>. Any AI agent can read that file to learn how to configure TealClaw via JSON. A single JSON config block in a chat response auto-applies all settings in real time.</p>
+      <p>Config delivery methods: inline JSON (auto-applied), config file (drag-drop), or URL hash (<code>tealclaw.ai/#config=BASE64</code>).</p>
+      <h2>Links</h2>
+      <ul>
+        <li><a href="/llms.txt">Agent Skill Guide (llms.txt)</a></li>
+        <li><a href="/docs/config-reference.txt">Config Reference (95+ fields)</a></li>
+        <li><a href="/docs/recipes.txt">Config Recipes</a></li>
+        <li><a href="/docs/commands.txt">Chat Commands</a></li>
+        <li><a href="/docs/free-setup.txt">Free Setup Guide</a></li>
+      </ul>
+      <p>This app requires JavaScript. Please enable JavaScript to use TealClaw.</p>
+    </div>
+  </noscript>
 
   <div class="pin-overlay hidden" id="pinOverlay">
     <h2 id="pinTitle">Enter PIN</h2>
