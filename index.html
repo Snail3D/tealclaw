@@ -44,10 +44,6 @@
     .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:0 16px;height:48px;background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
     .logo{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;color:var(--teal);user-select:none}
     .logo svg{width:18px;height:18px}
-    .topbar-nav{display:flex;gap:1px;margin-left:16px}
-    .tab-btn{padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-3);background:none;border:none;border-radius:var(--r-sm);cursor:pointer;transition:all var(--t)}
-    .tab-btn:hover{color:var(--text-2);background:var(--teal-dim)}
-    .tab-btn.active{color:var(--teal);background:var(--teal-dim)}
     .topbar-r{margin-left:auto;display:flex;align-items:center;gap:8px}
     .pill{display:flex;align-items:center;gap:4px;padding:2px 8px;font-size:10px;font-weight:500;border-radius:100px}
     .pill.ok{background:rgba(34,197,94,0.12);color:var(--ok)} .pill.off{background:rgba(239,68,68,0.12);color:var(--err)}
@@ -58,7 +54,6 @@
 
     /* ── Layout ────────────────────────────────────────── */
     .main{flex:1;display:flex;flex-direction:column;max-width:760px;width:100%;margin:0 auto;overflow:hidden}
-    .tab-page{display:none;flex:1;flex-direction:column;overflow:hidden} .tab-page.active{display:flex}
 
     /* ── Chat Layout ───────────────────────────────────── */
     .chat-scroll{flex:1;overflow-y:auto;padding:16px}
@@ -200,20 +195,40 @@
     .privacy-bar a{color:var(--text-3);text-decoration:none;transition:color var(--t)}
     .privacy-bar a:hover{color:#ffdd00}
 
-    /* ── Settings Dropdown ────────────────────────────── */
-    .settings-drop{position:absolute;top:44px;right:8px;width:280px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:200;padding:8px;display:none}
-    .settings-drop.open{display:block}
-    .settings-drop-item{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12px;color:var(--text);background:none;border:none;border-radius:var(--r-md);cursor:pointer;width:100%;text-align:left;font-family:var(--font);transition:all var(--t)}
-    .settings-drop-item:hover{background:var(--bg-hover)}
-    .settings-drop-item svg{width:14px;height:14px;color:var(--text-3);flex-shrink:0}
-    .settings-drop-item.danger{color:var(--err)}
-    .settings-drop-item.danger svg{color:var(--err)}
-    .settings-sep{height:1px;background:var(--border);margin:4px 0}
-    .settings-key-row{display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:11px}
-    .settings-key-label{flex:1;color:var(--text-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .settings-key-val{font-family:var(--mono);font-size:10px;color:var(--text-3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .settings-key-status{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-    .settings-key-status.on{background:var(--ok)} .settings-key-status.off{background:var(--text-3)}
+    /* ── Bottom Sheet ─────────────────────────────────── */
+    .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;opacity:0;pointer-events:none;transition:opacity 0.3s}
+    .sheet-backdrop.open{opacity:1;pointer-events:auto}
+    .sheet{position:fixed;left:0;right:0;bottom:0;z-index:301;background:var(--bg-1);border-top:1px solid var(--border);border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:85vh;display:flex;flex-direction:column}
+    .sheet.open{transform:translateY(0)}
+    .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border-2);margin:10px auto 0;flex-shrink:0}
+    .sheet-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 8px;flex-shrink:0}
+    .sheet-title{font-size:15px;font-weight:600}
+    .sheet-close{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg-hover);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;line-height:1}
+    .sheet-body{flex:1;overflow-y:auto;padding:0 20px 24px;-webkit-overflow-scrolling:touch}
+    .sheet-section{margin-top:16px}
+    .sheet-section-title{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+    .sheet-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:8px;cursor:pointer;transition:all var(--t)}
+    .sheet-row:hover{border-color:var(--border-2)}
+    .sheet-row-icon{width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sheet-row-icon svg{width:16px;height:16px}
+    .sheet-row-icon.ok{background:rgba(34,197,94,0.12);color:var(--ok)}
+    .sheet-row-icon.off{background:var(--bg-hover);color:var(--text-3)}
+    .sheet-row-info{flex:1;min-width:0}
+    .sheet-row-label{font-size:13px;font-weight:500}
+    .sheet-row-desc{font-size:10px;color:var(--text-3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sheet-row-action{font-size:11px;color:var(--teal);font-weight:500;white-space:nowrap}
+    .sheet-input-group{margin-bottom:12px}
+    .sheet-input-label{font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px}
+    .sheet-input{width:100%;padding:10px 12px;font-size:12px;font-family:var(--mono);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none;transition:border var(--t)}
+    .sheet-input:focus{border-color:var(--teal)}
+    .sheet-input::placeholder{color:var(--text-3)}
+    .sheet-btn{width:100%;padding:12px;font-size:13px;font-weight:600;font-family:var(--font);border:none;border-radius:var(--r-md);cursor:pointer;transition:all var(--t)}
+    .sheet-btn-teal{background:var(--teal);color:#fff} .sheet-btn-teal:hover{background:var(--teal-hover)}
+    .sheet-btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border)} .sheet-btn-ghost:hover{background:var(--bg-hover)}
+    .sheet-btn-danger{background:rgba(239,68,68,0.1);color:var(--err)} .sheet-btn-danger:hover{background:var(--err);color:#fff}
+    .sheet-link{color:var(--teal);text-decoration:none;font-size:11px}
+    .sheet-link:hover{text-decoration:underline}
+    .sheet-divider{height:1px;background:var(--border);margin:16px 0}
 
     /* ── Camera ───────────────────────────────────────── */
     .cam-overlay{position:fixed;inset:0;background:var(--bg-root);z-index:1000;display:flex;flex-direction:column}
@@ -267,42 +282,17 @@
     <p class="overlay-hint" style="margin-top:12px;font-size:13px">Tap anywhere to enable voice</p>
   </div>
   <div class="toast" id="toast"></div>
-  <div class="settings-drop" id="settingsDrop">
-    <div id="settingsKeyList"></div>
-    <div class="settings-sep"></div>
-    <button class="settings-drop-item" id="settingsWizard">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-      Key Setup Wizard
-    </button>
-    <button class="settings-drop-item" id="settingsClear">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-      Clear Chat History
-    </button>
-    <div class="settings-sep"></div>
-    <button class="settings-drop-item danger" id="settingsWipeKeys">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-      Clear All Keys
-    </button>
-  </div>
 
   <header class="topbar">
     <div class="logo">
       <img src="/icon-192.png" alt="TealClaw" style="width:22px;height:22px;object-fit:contain">
       TealClaw
     </div>
-    <nav class="topbar-nav">
-      <button class="tab-btn active" data-tab="chat">Chat</button>
-      <button class="tab-btn" data-tab="agent">Agent</button>
-      <button class="tab-btn" data-tab="guide">Guide</button>
-    </nav>
     <div class="topbar-r">
-      <div class="pill off" id="pill"><span class="pill-dot"></span><span id="pillLabel">No Keys</span></div>
+      <div class="pill off" id="pill"><span class="pill-dot"></span><span id="pillLabel">Setup</span></div>
       <button class="icon-btn" id="settingsBtn" title="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
-      <a href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener" class="bmc-link" title="Buy Me a Coffee">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-      </a>
       <button class="icon-btn" id="themeBtn" title="Toggle theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
@@ -310,182 +300,45 @@
   </header>
 
   <div class="main">
-    <!-- ═══ Chat ═══ -->
-    <div class="tab-page active" id="page-chat">
-      <div class="chat-scroll" id="chatScroll">
-        <div class="chat-empty" id="chatEmpty"></div>
-      </div>
-
-      <div class="input-bar">
-        <div class="agent-selector" id="agentSelectorBar" style="display:none">
-          <span class="agent-selector-label">Agent:</span>
-          <select id="agentChatSelect"></select>
-        </div>
-        <div class="file-stack" id="fileStack"></div>
-        <div class="input-row">
-          <button class="circle-btn attach-btn" id="attachBtn" title="Attach file">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-          </button>
-          <button class="circle-btn attach-btn" id="cameraBtn" title="Take photo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          </button>
-          <textarea class="input-text" id="textIn" placeholder="Type a message or paste an API key..." rows="1"></textarea>
-          <!-- Mic shows by default, Send shows when typing -->
-          <button class="circle-btn mic-circle" id="micBtn" title="Hold to speak">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          </button>
-          <button class="circle-btn send-btn hidden" id="sendBtn" title="Send">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </div>
-        <div class="input-hint" id="inputHint"></div>
-      </div>
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-empty" id="chatEmpty"></div>
     </div>
 
-    <!-- ═══ Agent ═══ -->
-    <div class="tab-page" id="page-agent">
-      <div class="page-scroll">
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
-              Agents via Tailscale
-            </div>
-            <span class="pill off" id="agentPill"><span class="pill-dot"></span><span id="agentPillLabel">Off</span></span>
-          </div>
-
-          <div class="key-desc" style="margin-bottom:10px">Add multiple OpenClaw gateways. Switch between them in the chat.</div>
-
-          <div id="agentList"></div>
-
-          <div style="border:1px dashed var(--border-2);border-radius:var(--r-md);padding:12px;margin-top:8px">
-            <div class="key-row">
-              <div class="key-label">Add Agent</div>
-              <input type="text" id="newAgentName" class="key-input" placeholder="Name (e.g. Home, Work, Pi)" style="font-family:var(--font);margin-bottom:5px">
-              <input type="text" id="newAgentUrl" class="key-input" placeholder="http://machine.tail12345.ts.net:18789" style="font-family:var(--font);margin-bottom:5px">
-              <div class="key-input-row">
-                <input type="password" id="newAgentToken" class="key-input" placeholder="Gateway token">
-                <button class="btn btn-teal btn-sm" id="addAgentBtn">Add</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="agent-info" style="margin-top:12px">
-            <div class="agent-stat"><div class="agent-stat-label">Status</div><div class="agent-stat-val" id="gwStatus">--</div></div>
-            <div class="agent-stat"><div class="agent-stat-label">Model</div><div class="agent-stat-val" id="gwModel">--</div></div>
-            <div class="agent-stat"><div class="agent-stat-label">Latency</div><div class="agent-stat-val" id="gwLatency">--</div></div>
-          </div>
-
-          <div class="mode-toggle" id="modeToggle">
-            <button class="mode-btn active" data-mode="direct">Direct (Fast)</button>
-            <button class="mode-btn" data-mode="agent">Agent (Context)</button>
-          </div>
-          <div class="mode-desc" id="modeDesc">Uses your AI key directly -- fast, no conversation memory on agent</div>
-        </div>
+    <div class="input-bar">
+      <div class="agent-selector" id="agentSelectorBar" style="display:none">
+        <span class="agent-selector-label">Agent:</span>
+        <select id="agentChatSelect"></select>
       </div>
-    </div>
-
-    <!-- ═══ Guide (for agents + users) ═══ -->
-    <div class="tab-page" id="page-guide">
-      <div class="page-scroll">
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-              Guide
-            </div>
-            <div style="font-size:10px;color:var(--text-3)">For agents + humans</div>
-          </div>
-          <div class="md-content" id="guideContent" style="font-size:12px;line-height:1.7;color:var(--text-2)">
-            <h1>TealClaw</h1>
-            <p>BYOK voice dashboard. Zero server. Total privacy.</p>
-
-            <h2>Quick Setup</h2>
-            <p>Paste any API key directly in the <strong>chat</strong>. TealClaw auto-detects the key type by its prefix and saves it. Type <code>/setup</code> for the guided wizard.</p>
-            <table><tr><th>Prefix</th><th>Detected As</th></tr>
-            <tr><td><code>gsk_</code></td><td>Groq (Whisper + AI)</td></tr>
-            <tr><td><code>sk-or-v1-</code></td><td>OpenRouter AI</td></tr>
-            <tr><td><code>sk-ant-</code></td><td>Anthropic AI</td></tr>
-            <tr><td><code>sk_</code> + hex</td><td>ElevenLabs TTS</td></tr>
-            <tr><td><code>digits:alpha</code></td><td>Telegram Bot Token</td></tr>
-            <tr><td><code>http://...:port</code></td><td>Gateway URL</td></tr>
-            <tr><td>32+ hex chars</td><td>Gateway Token</td></tr>
-            <tr><td><code>https://.../images</code></td><td>Image Gen Endpoint</td></tr></table>
-
-            <h2>For AI Agents</h2>
-            <p>You can configure TealClaw instantly using a <strong>config URL</strong>. The <code>#config=</code> hash fragment <strong>never leaves the browser</strong> (URL fragments are not sent in HTTP requests).</p>
-            <h3>Option 1: Config URL</h3>
-            <p>Build a JSON object with the keys, base64-encode it, and construct:</p>
-            <pre data-lang="url"><code>https://tealclaw.com/#config=BASE64_ENCODED_JSON</code></pre>
-            <p>Keys auto-populate into localStorage, the hash is stripped.</p>
-            <h3>Option 2: Browser Console</h3>
-            <pre data-lang="js"><code>localStorage.setItem('tc-keys', JSON.stringify({
-  aiProvider: 'openrouter',
-  aiKey: 'sk-or-v1-...',
-  whisperKey: 'gsk_...',
-  ttsKey: 'sk_...',
-  ttsVoice: '4YYIPFl9wE5c4L2eu2Gb',
-  mode: 'agent'
-}));
-localStorage.setItem('tc-agents', JSON.stringify([
-  {id:'home', name:'Home', url:'http://machine.ts.net:18789', token:'tok', active:true}
-]));
-location.reload();</code></pre>
-
-            <h2>Architecture</h2>
-            <pre data-lang=""><code>Browser -> AI Provider (OpenRouter/Groq/Anthropic) -> Browser
-Browser -> Groq Whisper (transcription) -> Browser
-Browser -> ElevenLabs (TTS) -> Browser
-Browser -> OpenClaw Gateway (via Tailscale) -> Browser
-Browser -> Telegram Bot API -> Telegram Chat</code></pre>
-            <p>No backend. No database. No tracking. Static files on Cloudflare Pages. Open DevTools &gt; Network to verify.</p>
-
-            <h2>Image Generation</h2>
-            <p>Type <code>/imagine your prompt here</code> in the chat to generate images. Paste an image gen endpoint URL in the chat to configure it.</p>
-            <h3>Supported APIs</h3>
-            <p>Any OpenAI-compatible image generation API works:</p>
-            <table><tr><th>Provider</th><th>Endpoint URL</th><th>Where to Get Key</th></tr>
-            <tr><td>OpenAI DALL-E</td><td><code>https://api.openai.com/v1/images/generations</code></td><td><a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></td></tr>
-            <tr><td>Together AI</td><td><code>https://api.together.xyz/v1/images/generations</code></td><td><a href="https://api.together.xyz/settings/api-keys" target="_blank">api.together.xyz</a></td></tr>
-            <tr><td>FAL.ai</td><td><code>https://fal.run/fal-ai/flux/dev</code></td><td><a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard</a></td></tr>
-            <tr><td>Fireworks</td><td><code>https://api.fireworks.ai/inference/v1/images/generations</code></td><td><a href="https://fireworks.ai/account/api-keys" target="_blank">fireworks.ai</a></td></tr></table>
-            <p>Paste the endpoint URL in the chat to configure it. The API key falls back to your AI key if not set separately.</p>
-            <h3>Usage</h3>
-            <pre data-lang="chat"><code>/imagine a teal cat with glowing eyes in cyberpunk style
-/imagine watercolor painting of a sunset over mountains
-/imagine minimalist logo design, flat vector art</code></pre>
-
-            <h2>Features</h2>
-            <ul>
-              <li><strong>Chat</strong> -- multi-turn with persistent history</li>
-              <li><strong>Voice In</strong> -- hold mic button, Groq Whisper transcription</li>
-              <li><strong>Voice Out</strong> -- ElevenLabs TTS, auto-plays on desktop; tap "Enable Audio" on mobile</li>
-              <li><strong>Image Gen</strong> -- type <code>/imagine</code> to generate images via any compatible API</li>
-              <li><strong>Camera</strong> -- capture photos, flip camera, flashlight</li>
-              <li><strong>Vision</strong> -- drag-and-drop, paste, attach images</li>
-              <li><strong>Multi-Agent</strong> -- add multiple gateways, switch in chat</li>
-              <li><strong>Telegram</strong> -- forward conversations to your bot</li>
-              <li><strong>Dark/Light</strong> -- theme toggle, responsive design</li>
-              <li><strong>PWA</strong> -- installable, works offline</li>
-            </ul>
-
-            <h2>Security Verification</h2>
-            <ol>
-              <li>Open DevTools &gt; Network tab</li>
-              <li>Send a test message</li>
-              <li>Confirm all requests go to AI provider, Groq, ElevenLabs, or your Tailscale gateway</li>
-              <li>Confirm <strong>zero</strong> requests go to tealclaw.com after page load</li>
-            </ol>
-
-            <hr>
-            <p><a href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener">Buy Me a Coffee</a> -- TealClaw is free and open. Tips help keep development going.</p>
-          </div>
-        </div>
+      <div class="file-stack" id="fileStack"></div>
+      <div class="input-row">
+        <button class="circle-btn attach-btn" id="attachBtn" title="Attach file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <button class="circle-btn attach-btn" id="cameraBtn" title="Take photo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <textarea class="input-text" id="textIn" placeholder="Message..." rows="1"></textarea>
+        <button class="circle-btn mic-circle" id="micBtn" title="Hold to speak">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <button class="circle-btn send-btn hidden" id="sendBtn" title="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
       </div>
+      <div class="input-hint" id="inputHint"></div>
     </div>
   </div>
 
-  <div class="privacy-bar">Your keys never leave your browser. All traffic goes directly to the AI provider. &middot; <a href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener">Buy Me a Coffee</a></div>
+  <!-- ═══ Settings Bottom Sheet ═══ -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="settingsSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Settings</div>
+      <button class="sheet-close" id="sheetClose">&times;</button>
+    </div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
 
   <!-- Camera overlay -->
   <div class="cam-overlay hidden" id="camOverlay">
@@ -600,7 +453,6 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
     function detectKey(val){
       val=val.trim();
       if(val.startsWith('sk-or-v1-'))return{field:'aiKey',provider:'openrouter',label:'OpenRouter AI Key'};
-      if(val.startsWith('sk-ant-'))return{field:'aiKey',provider:'anthropic',label:'Anthropic AI Key'};
       if(val.startsWith('gsk_'))return{field:'whisperKey',provider:'groq',label:'Groq Key (chat + vision + voice)'};
       if(/^sk_[a-f0-9]{40,}$/i.test(val))return{field:'ttsKey',label:'ElevenLabs TTS Key'};
       if(/^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(val))return{field:'tgToken',label:'Telegram Bot Token'};
@@ -613,12 +465,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
     }
 
     function loadUI(){
-      const k=getK();
-      const mode=k.mode||'direct';
-      document.querySelectorAll('.mode-btn').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode)});
-      updateModeDesc(mode);
       updateStatus();
-      renderAgentList();
       renderAgentSelector();
       chatHistory=getChat();
       renderChat();
@@ -629,11 +476,6 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       const pill=$('pill');
       if(k.aiKey||k.whisperKey){pill.className='pill ok';$('pillLabel').textContent=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)?'Groq':'Ready'}
       else{pill.className='pill off';$('pillLabel').textContent='Setup'}
-      const agents=getAgents();
-      const active=agents.find(a=>a.active);
-      if(active){$('agentPill').className='pill ok';$('agentPillLabel').textContent=active.name}
-      else if(agents.length>0){$('agentPill').className='pill off';$('agentPillLabel').textContent='No active'}
-      else{$('agentPill').className='pill off';$('agentPillLabel').textContent='None'}
     }
 
     // ── Theme ──────────────────────────────────────────
@@ -643,92 +485,179 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       document.documentElement.setAttribute('data-theme',n);localStorage.setItem('tc-theme',n);
     });
 
-    // ── Settings Dropdown ────────────────────────────
-    const settingsDrop=$('settingsDrop');
-    $('settingsBtn').addEventListener('click',(e)=>{
-      e.stopPropagation();
-      settingsDrop.classList.toggle('open');
-      if(settingsDrop.classList.contains('open'))renderSettingsKeys();
-    });
-    document.addEventListener('click',()=>settingsDrop.classList.remove('open'));
-    settingsDrop.addEventListener('click',e=>e.stopPropagation());
+    // ── Bottom Sheet ───────────────────────────────────
+    const sheetBackdrop=$('sheetBackdrop'), settingsSheet=$('settingsSheet');
 
-    function renderSettingsKeys(){
+    function openSheet(){settingsSheet.classList.add('open');sheetBackdrop.classList.add('open');renderSheetContent()}
+    function closeSheet(){settingsSheet.classList.remove('open');sheetBackdrop.classList.remove('open')}
+
+    $('settingsBtn').addEventListener('click',openSheet);
+    $('sheetClose').addEventListener('click',closeSheet);
+    sheetBackdrop.addEventListener('click',closeSheet);
+
+    function renderSheetContent(){
       const k=getK();
       const keys=[
-        {label:'AI Key',field:'aiKey',val:k.aiKey,prov:k.aiProvider},
-        {label:'Groq / Whisper',field:'whisperKey',val:k.whisperKey},
-        {label:'ElevenLabs TTS',field:'ttsKey',val:k.ttsKey},
-        {label:'Telegram Bot',field:'tgToken',val:k.tgToken},
-        {label:'Telegram Chat ID',field:'tgChatId',val:k.tgChatId},
-        {label:'Image Gen URL',field:'imageGenUrl',val:k.imageGenUrl}
+        {label:'OpenRouter Key',desc:'Gemini Flash for chat + vision',field:'aiKey',val:k.aiKey,link:'https://openrouter.ai/keys',linkText:'Get key',prefix:'sk-or-v1-'},
+        {label:'Groq Key',desc:'Whisper voice transcription',field:'whisperKey',val:k.whisperKey,link:'https://console.groq.com/keys',linkText:'Get key',prefix:'gsk_'},
+        {label:'ElevenLabs Key',desc:'Voice output (TTS)',field:'ttsKey',val:k.ttsKey,link:'https://elevenlabs.io/app/settings/api-keys',linkText:'Get key',prefix:'sk_'},
+        {label:'Telegram Bot Token',desc:k.tgToken&&k.tgEnabled?'Active':'Forward messages to Telegram',field:'tgToken',val:k.tgToken,link:'https://t.me/BotFather',linkText:'Create bot'},
+        {label:'Telegram Chat ID',desc:'Your user or group ID',field:'tgChatId',val:k.tgChatId,link:'https://t.me/userinfobot',linkText:'Get ID'}
       ];
-      $('settingsKeyList').innerHTML=keys.map(({label,field,val,prov})=>{
-        const masked=val?val.slice(0,6)+'...'+val.slice(-3):'--';
+
+      let html=`<div class="sheet-section"><div class="sheet-section-title">API Keys</div>`;
+      keys.forEach(({label,desc,field,val,link,linkText,prefix})=>{
         const on=!!val;
-        const provLabel=prov?` (${prov})`:'';
-        return `<div class="settings-key-row">
-          <span class="settings-key-status ${on?'on':'off'}"></span>
-          <span class="settings-key-label">${label}${provLabel}</span>
-          <span class="settings-key-val">${masked}</span>
+        const masked=val?val.slice(0,6)+'...'+val.slice(-3):'Not set';
+        html+=`<div class="sheet-row" data-field="${field}">
+          <div class="sheet-row-icon ${on?'ok':'off'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+          <div class="sheet-row-info"><div class="sheet-row-label">${label}</div><div class="sheet-row-desc">${on?masked:desc}</div></div>
+          <div class="sheet-row-action">${on?'Change':'Set up'}</div>
         </div>`;
-      }).join('');
+      });
+      html+=`</div>`;
+
+      // Agent section
+      const agents=getAgents();
+      html+=`<div class="sheet-section"><div class="sheet-section-title">OpenClaw Agent</div>`;
+      html+=`<div class="sheet-row" id="sheetAgentRow">
+        <div class="sheet-row-icon ${agents.length?'ok':'off'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg></div>
+        <div class="sheet-row-info"><div class="sheet-row-label">Gateway</div><div class="sheet-row-desc">${agents.length?agents.find(a=>a.active)?.name||agents[0]?.name:'Not configured'}</div></div>
+        <div class="sheet-row-action">${agents.length?'Manage':'Add'}</div>
+      </div></div>`;
+
+      // Mode toggle
+      const mode=k.mode||'direct';
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Chat Mode</div>
+        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+          <button class="mode-btn ${mode==='direct'?'active':''}" data-mode="direct" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${mode==='direct'?'var(--teal)':'transparent'};border:none;color:${mode==='direct'?'#fff':'var(--text-3)'};cursor:pointer">Direct (Gemini)</button>
+          <button class="mode-btn ${mode==='agent'?'active':''}" data-mode="agent" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${mode==='agent'?'var(--teal)':'transparent'};border:none;color:${mode==='agent'?'#fff':'var(--text-3)'};cursor:pointer">Agent (OpenClaw)</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${mode==='direct'?'Gemini Flash via OpenRouter -- fast, no agent memory':'Routes through your OpenClaw gateway -- shared context across all channels'}</div>
+      </div>`;
+
+      // Actions
+      html+=`<div class="sheet-section">
+        <button class="sheet-btn sheet-btn-ghost" id="sheetClearChat" style="margin-bottom:8px">Clear Chat History</button>
+        <button class="sheet-btn sheet-btn-danger" id="sheetWipeKeys">Clear All Keys &amp; Reset</button>
+      </div>`;
+
+      // Footer
+      html+=`<div style="text-align:center;padding:16px 0 8px;font-size:10px;color:var(--text-3)">
+        Your keys never leave this browser. <a href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:none">Buy Me a Coffee</a>
+      </div>`;
+
+      $('sheetBody').innerHTML=html;
+
+      // Wire up key rows -> open key editor
+      $('sheetBody').querySelectorAll('.sheet-row[data-field]').forEach(row=>{
+        row.addEventListener('click',()=>{
+          const field=row.dataset.field;
+          const info=keys.find(k=>k.field===field);
+          openKeyEditor(field,info);
+        });
+      });
+
+      // Wire up mode toggle
+      $('sheetBody').querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.mode=b.dataset.mode;setK(k2);
+        renderSheetContent();renderAgentSelector();
+      }));
+
+      // Wire up agent row
+      $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
+
+      // Wire up actions
+      $('sheetBody').querySelector('#sheetClearChat')?.addEventListener('click',()=>{
+        chatHistory=[];setChat([]);renderChat();closeSheet();showToast('Chat cleared','ok');
+      });
+      $('sheetBody').querySelector('#sheetWipeKeys')?.addEventListener('click',()=>{
+        if(!confirm('Clear all keys and reset?'))return;
+        localStorage.removeItem('tc-keys');localStorage.removeItem('tc-agents');
+        updateStatus();chatHistory=[];setChat([]);renderChat();closeSheet();
+        setTimeout(()=>runOnboarding(),300);showToast('Reset complete','ok');
+      });
     }
 
-    $('settingsWizard').addEventListener('click',()=>{
-      settingsDrop.classList.remove('open');
-      // Switch to chat tab
-      document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
-      document.querySelector('[data-tab="chat"]').classList.add('active');
-      $('page-chat').classList.add('active');
-      // Show wizard
+    function openKeyEditor(field,info){
       const k=getK();
-      let html=`<h3>Key Setup</h3><p>Paste any key in the chat to update it. Current config:</p><ul>`;
-      html+=k.aiKey?`<li>AI: <strong>${k.aiProvider||'openrouter'}</strong> (${k.aiKey.slice(0,8)}...) -- paste a new key to replace</li>`
-        :`<li>AI: <strong>not set</strong> -- paste <code>gsk_</code>, <code>sk-or-v1-</code>, or <code>sk-ant-</code></li>`;
-      html+=k.whisperKey?`<li>Groq/Whisper: set (${k.whisperKey.slice(0,6)}...) -- paste a new <code>gsk_</code> key to replace</li>`
-        :(k.aiProvider==='groq'?'<li>Groq/Whisper: using AI key</li>':'<li>Groq/Whisper: <strong>not set</strong> -- paste <code>gsk_</code> for voice input</li>');
-      html+=k.ttsKey?`<li>ElevenLabs: set -- paste a new <code>sk_</code> key to replace</li>`
-        :`<li>ElevenLabs: <strong>not set</strong> -- paste <code>sk_</code> for voice output (<a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">get key</a>)</li>`;
-      html+=k.tgToken?`<li>Telegram: ${k.tgEnabled?'active':'configured'}</li>`
-        :`<li>Telegram: not set -- type <code>/telegram</code></li>`;
-      html+=`</ul>`;
-      sysBubble(html);
-    });
+      const current=k[field]||'';
+      let html=`<div style="padding-top:8px">
+        <div class="sheet-input-group">
+          <div class="sheet-input-label">${info.label}</div>
+          <input type="text" class="sheet-input" id="sheetKeyInput" value="${esc(current)}" placeholder="${info.prefix||''}..." autocomplete="off" spellcheck="false">
+          <div style="margin-top:6px"><a href="${info.link}" target="_blank" rel="noopener" class="sheet-link">${info.linkText} &rarr;</a></div>
+        </div>
+        <button class="sheet-btn sheet-btn-teal" id="sheetKeySave" style="margin-bottom:8px">Save</button>
+        ${current?'<button class="sheet-btn sheet-btn-ghost" id="sheetKeyRemove">Remove Key</button>':''}
+        <button class="sheet-btn sheet-btn-ghost" id="sheetKeyBack" style="margin-top:8px">Back</button>
+      </div>`;
 
-    $('settingsClear').addEventListener('click',()=>{
-      settingsDrop.classList.remove('open');
-      chatHistory=[];setChat([]);renderChat();
-      showToast('Chat cleared','ok');
-    });
+      $('sheetBody').innerHTML=html;
+      const inp=$('sheetBody').querySelector('#sheetKeyInput');
+      inp.focus();inp.select();
 
-    $('settingsWipeKeys').addEventListener('click',()=>{
-      settingsDrop.classList.remove('open');
-      if(!confirm('Clear all API keys? You\'ll need to set them up again.'))return;
-      localStorage.removeItem('tc-keys');
-      updateStatus();
-      chatHistory=[];setChat([]);renderChat();
-      setTimeout(()=>runOnboarding(),300);
-      showToast('All keys cleared','ok');
-    });
+      $('sheetBody').querySelector('#sheetKeySave').addEventListener('click',()=>{
+        const val=inp.value.trim();
+        if(!val){showToast('Enter a value','err');return}
+        const k2=getK();k2[field]=val;
+        // Auto-set provider for AI key
+        if(field==='aiKey'){k2.aiProvider='openrouter'}
+        if(field==='tgChatId'&&k2.tgToken){k2.tgEnabled=true}
+        setK(k2);updateStatus();renderSheetContent();showToast(info.label+' saved','ok');
+      });
+      $('sheetBody').querySelector('#sheetKeyRemove')?.addEventListener('click',()=>{
+        const k2=getK();delete k2[field];setK(k2);updateStatus();renderSheetContent();showToast(info.label+' removed','ok');
+      });
+      $('sheetBody').querySelector('#sheetKeyBack').addEventListener('click',renderSheetContent);
+    }
 
-    // ── Tabs ───────────────────────────────────────────
-    document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
-      document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
-      b.classList.add('active');$(`page-${b.dataset.tab}`).classList.add('active');
-    }));
+    function openAgentEditor(){
+      const agents=getAgents();
+      let html=`<div style="padding-top:8px">`;
+      if(agents.length){
+        html+=`<div class="sheet-section-title">Your Agents</div>`;
+        agents.forEach(a=>{
+          html+=`<div class="sheet-row" style="cursor:default">
+            <div class="sheet-row-icon ${a.active?'ok':'off'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div>
+            <div class="sheet-row-info"><div class="sheet-row-label">${esc(a.name)}</div><div class="sheet-row-desc" style="font-family:var(--mono)">${esc(a.url)}</div></div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-teal btn-sm agent-act" data-id="${a.id}">${a.active?'Active':'Use'}</button>
+              <button class="btn btn-danger btn-sm agent-rm" data-id="${a.id}">&times;</button>
+            </div>
+          </div>`;
+        });
+      }
+      html+=`<div class="sheet-divider"></div><div class="sheet-section-title">Add Agent</div>
+        <div class="sheet-input-group"><div class="sheet-input-label">Name</div><input type="text" class="sheet-input" id="sheetAgentName" placeholder="Home, Work, Pi..."></div>
+        <div class="sheet-input-group"><div class="sheet-input-label">Gateway URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" placeholder="http://machine.tail12345.ts.net:18789"></div>
+        <div class="sheet-input-group"><div class="sheet-input-label">Token</div><input type="text" class="sheet-input" id="sheetAgentToken" placeholder="Gateway token"></div>
+        <button class="sheet-btn sheet-btn-teal" id="sheetAgentAdd" style="margin-bottom:8px">Add Agent</button>
+        <button class="sheet-btn sheet-btn-ghost" id="sheetAgentBack">Back</button>
+      </div>`;
 
-    // ── Mode Toggle ────────────────────────────────────
-    const modeDescs={direct:'Uses your AI key directly -- fast, no conversation memory on agent',agent:'Routes through your OpenClaw gateway via Tailscale -- shares agent context'};
-    function updateModeDesc(m){$('modeDesc').textContent=modeDescs[m]||''}
-    document.querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',()=>{
-      document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
-      b.classList.add('active');updateModeDesc(b.dataset.mode);
-      const k=getK();k.mode=b.dataset.mode;setK(k);
-      renderAgentSelector();
-    }));
+      $('sheetBody').innerHTML=html;
+
+      // Wire up activate/remove
+      $('sheetBody').querySelectorAll('.agent-act').forEach(b=>b.addEventListener('click',()=>{
+        const ag=getAgents();ag.forEach(a=>a.active=(a.id===b.dataset.id));setAgents(ag);openAgentEditor();renderAgentSelector();updateStatus();
+      }));
+      $('sheetBody').querySelectorAll('.agent-rm').forEach(b=>b.addEventListener('click',()=>{
+        setAgents(getAgents().filter(a=>a.id!==b.dataset.id));openAgentEditor();renderAgentSelector();updateStatus();
+      }));
+
+      $('sheetBody').querySelector('#sheetAgentAdd').addEventListener('click',()=>{
+        const name=$('sheetBody').querySelector('#sheetAgentName').value.trim()||'Agent';
+        const url=$('sheetBody').querySelector('#sheetAgentUrl').value.trim();
+        const token=$('sheetBody').querySelector('#sheetAgentToken').value.trim();
+        if(!url||!token){showToast('Enter URL and token','err');return}
+        const ag=getAgents();const id=Date.now().toString(36);
+        ag.push({id,name,url,token,active:ag.length===0});setAgents(ag);
+        openAgentEditor();renderAgentSelector();updateStatus();showToast(name+' added','ok');
+      });
+
+      $('sheetBody').querySelector('#sheetAgentBack').addEventListener('click',renderSheetContent);
+    }
 
     // ── Audio (Web Audio API for reliable mobile playback) ──
     let audioCtx=null;
@@ -833,30 +762,28 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
         return callAgent(userText,imageBase64);
       }
 
-      // Try primary AI key, fall back to Groq whisperKey for chat
+      // Primary: OpenRouter (Gemini Flash). Fallback: Groq (free).
       const aiKey=k.aiKey||k.whisperKey;
-      const aiProvider=k.aiKey?k.aiProvider:(k.whisperKey?'groq':null);
       if(!aiKey)return '__NO_KEY__';
 
-      const sys=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
-
-      // Groq: use Maverick for vision, 70b for chat
-      const groqChatModel='llama-3.3-70b-versatile';
+      const isGroqFallback=!k.aiKey&&!!k.whisperKey;
       const groqVisionModel='meta-llama/llama-4-maverick-17b-128e-instruct';
+      const groqChatModel='llama-3.3-70b-versatile';
 
-      const providers={
-        openrouter:{url:'https://openrouter.ai/api/v1/chat/completions',model:k.aiModel||'google/gemini-2.5-flash-preview'},
-        groq:{url:'https://api.groq.com/openai/v1/chat/completions',model:imageBase64?groqVisionModel:(k.aiModel||groqChatModel)},
-        anthropic:{url:'https://api.anthropic.com/v1/messages',model:k.aiModel||'claude-sonnet-4-5-20250929'}
-      };
-      const p=providers[aiProvider]||providers.groq;
+      const url=isGroqFallback
+        ?'https://api.groq.com/openai/v1/chat/completions'
+        :'https://openrouter.ai/api/v1/chat/completions';
+      const model=isGroqFallback
+        ?(imageBase64?groqVisionModel:groqChatModel)
+        :(k.aiModel||'google/gemini-2.5-flash-preview');
+
+      const sys=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
 
       // Build messages with conversation history
       const histMsgs=chatHistory.slice(-20).filter(m=>m.role==='user'||m.role==='ai').map(m=>({
         role:m.role==='user'?'user':'assistant',content:m.text
       }));
 
-      // Current message
       let userContent;
       if(imageBase64){
         userContent=[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}];
@@ -864,23 +791,11 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
         userContent=userText;
       }
 
-      if(aiProvider==='anthropic'){
-        const msgs=[...histMsgs,{role:'user',content:userContent}];
-        const res=await fetch(p.url,{
-          method:'POST',
-          headers:{'x-api-key':aiKey,'content-type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-          body:JSON.stringify({model:p.model,max_tokens:400,system:sys,messages:msgs})
-        });
-        const d=await res.json();
-        if(d.error) throw new Error(d.error.message||'Anthropic error');
-        return d.content?.[0]?.text||'';
-      }
-
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
-      const res=await fetch(p.url,{
+      const res=await fetch(url,{
         method:'POST',
         headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},
-        body:JSON.stringify({model:p.model,messages:msgs,max_tokens:400})
+        body:JSON.stringify({model,messages:msgs,max_tokens:400})
       });
       const d=await res.json();
       if(d.error) throw new Error(d.error.message||'API error');
@@ -957,22 +872,15 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       sysBubble(`<h2>Welcome to TealClaw</h2>
 <p>Your private voice dashboard. Everything runs in your browser -- your keys never leave this device.</p>
 <hr>
-<h3>Step 1: Get a Free Groq Key</h3>
-<p>Groq gives you a <strong>completely free</strong> AI chatbot with voice input -- all from one key.</p>
-<ol>
-<li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a></li>
-<li>Sign up (free) and create an API key</li>
-<li>Copy the key (starts with <code>gsk_</code>)</li>
-<li><strong>Paste it right here in the chat</strong></li>
-</ol>
-<p>That one key gives you:</p>
+<h3>Get Started</h3>
+<p>Paste an API key in the chat to connect:</p>
 <ul>
-<li><strong>AI Chat</strong> -- Llama 3.3 70B (fast, smart)</li>
-<li><strong>Vision</strong> -- Maverick model (describe images)</li>
-<li><strong>Voice Input</strong> -- Whisper transcription (hold mic to speak)</li>
+<li><strong><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a></strong> -- <code>gsk_...</code> -- <strong>Free!</strong> Chat + vision + voice input, all from one key</li>
+<li><strong><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a></strong> -- <code>sk-or-v1-...</code> -- Gemini Flash (recommended for best quality)</li>
 </ul>
+<p>Just <strong>paste your key right here</strong> and I'll set everything up.</p>
 <hr>
-<p style="font-size:11px;color:var(--text-3)">Already have an OpenRouter or Anthropic key? Paste that instead -- I'll auto-detect it.</p>`);
+<p style="font-size:11px;color:var(--text-3)">Use the gear icon (top right) to manage keys anytime. Type <code>/help</code> for commands.</p>`);
     }
 
     // Handle key pasted in chat -- returns true if it was a key (intercepted)
@@ -1029,7 +937,7 @@ ${getOptionalSteps()}`;
         gwUrl:()=>`<h3>Gateway URL Saved</h3>
 <p>Now paste the gateway <strong>token</strong> (the 32+ hex character string).</p>`,
         gwToken:()=>`<h3>Gateway Configured</h3>
-<p>Switch to Agent mode on the Agent tab to route through your gateway.</p>
+<p>Open Settings (gear icon) and switch to <strong>Agent</strong> mode to route through your gateway.</p>
 ${getOptionalSteps()}`,
         imageGenUrl:()=>`<h3>Image Gen Endpoint Saved</h3>
 <p>Type <code>/imagine your prompt</code> in chat to generate images.</p>
@@ -1050,14 +958,14 @@ ${getOptionalSteps()}`
 
     function getNextSetupStep(){
       const k=getK();
-      const provider=k.aiProvider==='openrouter'?'OpenRouter':k.aiProvider==='groq'?'Groq':'Anthropic';
+      const provider=k.aiProvider==='openrouter'?'OpenRouter':'Groq';
       let html=`<h3>Connected!</h3>
 <p>You're using <strong>${provider}</strong>. `;
 
-      if(k.aiProvider==='groq'){
+      if(k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)){
         html+=`One key covers chat, vision, and voice input. You're all set!</p>`;
       } else {
-        html+=`You can start chatting now.</p>`;
+        html+=`Gemini Flash is ready. Start chatting!</p>`;
       }
 
       html+=`<hr><p><strong>Optional upgrades</strong> (paste a key anytime, or skip):</p><ul>`;
@@ -1070,8 +978,8 @@ ${getOptionalSteps()}`
         html+=`<li><strong>Voice Input</strong> -- <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq key</a> (<code>gsk_...</code>) to speak instead of type</li>`;
       }
 
-      if(k.aiProvider==='groq'&&!getK().aiKey2){
-        html+=`<li><strong>Premium AI</strong> -- <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter key</a> (<code>sk-or-v1-...</code>) for Gemini, Claude, GPT</li>`;
+      if(!k.aiKey&&k.whisperKey){
+        html+=`<li><strong>Gemini Flash</strong> -- <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter key</a> (<code>sk-or-v1-...</code>) for the best chat experience</li>`;
       }
 
       html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to forward conversations</li>`;
@@ -1083,7 +991,7 @@ ${getOptionalSteps()}`
     function getOptionalSteps(){
       const k=getK();
       const missing=[];
-      if(!k.aiKey)missing.push('AI key (<code>sk-or-v1-</code>, <code>gsk_</code>, or <code>sk-ant-</code>)');
+      if(!k.aiKey&&!k.whisperKey)missing.push('AI key (<code>sk-or-v1-</code> or <code>gsk_</code>)');
       if(!k.whisperKey&&k.aiProvider!=='groq')missing.push('Groq key for voice input (<code>gsk_</code>)');
       if(!k.ttsKey)missing.push('ElevenLabs key for voice output (<code>sk_</code>)');
       if(!missing.length)return '<p>All set! Type <code>/help</code> to see available commands.</p>';
@@ -1105,9 +1013,8 @@ ${getOptionalSteps()}`
         if(aiText==='__NO_KEY__'){
           sysBubble(`<p>I need an AI key to respond. Paste one of these in the chat:</p>
 <ul>
-<li><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> -- <code>sk-or-v1-...</code> (recommended)</li>
+<li><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> -- <code>sk-or-v1-...</code> (Gemini Flash, recommended)</li>
 <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free + fast)</li>
-<li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic</a> -- <code>sk-ant-...</code></li>
 </ul>`);
           return;
         }
@@ -1175,11 +1082,10 @@ ${getOptionalSteps()}`
         if(cmd==='/setup'){
           sysBubble(`<h3>Setup Wizard</h3>
 <p>Paste any of these keys in the chat to configure:</p>
-<p><strong>AI Key</strong> (required -- pick one):</p>
+<p><strong>AI Chat</strong> (pick one):</p>
 <ul>
-<li><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> -- <code>sk-or-v1-...</code> (recommended, Gemini Flash default)</li>
-<li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free, fast, also enables voice input)</li>
-<li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic</a> -- <code>sk-ant-...</code></li>
+<li><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> -- <code>sk-or-v1-...</code> (Gemini Flash, recommended)</li>
+<li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free, also enables voice input)</li>
 </ul>
 <p><strong>Voice Input</strong> (optional): <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq key</a> -- <code>gsk_...</code></p>
 <p><strong>Voice Output</strong> (optional): <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs key</a> -- <code>sk_...</code></p>
@@ -1216,7 +1122,7 @@ ${getOptionalSteps()}`
         if(cmd==='/keys'){
           const k=getK();
           const lines=[];
-          lines.push(k.aiKey?`AI: <strong>${k.aiProvider||'openrouter'}</strong> (${k.aiKey.slice(0,8)}...)`:'AI: <strong>not set</strong>');
+          lines.push(k.aiKey?`AI: <strong>OpenRouter</strong> (${k.aiKey.slice(0,8)}...)`:'AI: <strong>not set</strong>'+(k.whisperKey?' (using Groq fallback)':''));
           lines.push(`Model: <code>${k.aiModel||'google/gemini-2.5-flash-preview'}</code>`);
           lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>'+(k.aiProvider==='groq'?' (using AI key)':''));
           lines.push(k.ttsKey?'Voice Out: <strong>ElevenLabs</strong> (set)':'Voice Out: <strong>not set</strong> (text-only)');
@@ -1239,7 +1145,7 @@ ${getOptionalSteps()}`
           if(!k.ttsKey){sysBubble('<p>Set an ElevenLabs key first. Get one at <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">elevenlabs.io</a> and paste the <code>sk_</code> key here.</p>');return}
           sysBubble(`<h3>Voice Settings</h3>
 <p>Current voice: <code>${k.ttsVoice||'ThT5KcBeYPX7keBQBPPD'}</code> (Rachel default)</p>
-<p>To change voice, go to the <strong>Agent</strong> tab, or visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a> to find voice IDs.</p>`);
+<p>To change, visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a>, copy a voice ID, and paste it in the chat.</p>`);
           return;
         }
         if(text.startsWith('/imagine ')){
@@ -1295,10 +1201,10 @@ ${getOptionalSteps()}`
     });
 
     // Drag and drop on the whole chat area
-    const chatPage=$('page-chat');
-    ['dragenter','dragover'].forEach(ev=>chatPage.addEventListener(ev,e=>{e.preventDefault();chatPage.style.outline='2px dashed var(--teal)'}));
-    ['dragleave','drop'].forEach(ev=>chatPage.addEventListener(ev,e=>{e.preventDefault();chatPage.style.outline='none'}));
-    chatPage.addEventListener('drop',e=>{
+    const chatArea=$('chatScroll');
+    ['dragenter','dragover'].forEach(ev=>chatArea.addEventListener(ev,e=>{e.preventDefault();chatArea.style.outline='2px dashed var(--teal)'}));
+    ['dragleave','drop'].forEach(ev=>chatArea.addEventListener(ev,e=>{e.preventDefault();chatArea.style.outline='none'}));
+    chatArea.addEventListener('drop',e=>{
       const files=e.dataTransfer?.files;
       if(files){for(const f of files)handleFile(f)}
     });
@@ -1437,76 +1343,13 @@ ${getOptionalSteps()}`
       }
     }
 
-    // ── Multi-Agent Management ─────────────────────────
-    function renderAgentList(){
-      const agents=getAgents(),el=$('agentList');
-      if(agents.length===0){el.innerHTML='<div style="font-size:11px;color:var(--text-3);text-align:center;padding:8px">No agents yet</div>';return}
-      el.innerHTML=agents.map(a=>`
-        <div class="agent-item ${a.active?'active':''}" data-id="${a.id}">
-          <div class="agent-item-info">
-            <div class="agent-item-name">${esc(a.name)}</div>
-            <div class="agent-item-url">${esc(a.url)}</div>
-          </div>
-          <div class="agent-item-actions">
-            <button class="btn btn-teal btn-sm agent-test-btn" data-id="${a.id}">Test</button>
-            <button class="btn btn-ghost btn-sm agent-activate-btn" data-id="${a.id}">${a.active?'Active':'Use'}</button>
-            <button class="btn btn-danger btn-sm agent-del-btn" data-id="${a.id}">&times;</button>
-          </div>
-        </div>`).join('');
-
-      el.querySelectorAll('.agent-test-btn').forEach(b=>b.addEventListener('click',()=>testAgent(b.dataset.id)));
-      el.querySelectorAll('.agent-activate-btn').forEach(b=>b.addEventListener('click',()=>{
-        const agents=getAgents();
-        agents.forEach(a=>a.active=(a.id===b.dataset.id));
-        setAgents(agents);renderAgentList();renderAgentSelector();updateStatus();
-      }));
-      el.querySelectorAll('.agent-del-btn').forEach(b=>b.addEventListener('click',()=>{
-        setAgents(getAgents().filter(a=>a.id!==b.dataset.id));
-        renderAgentList();renderAgentSelector();updateStatus();
-      }));
-    }
-
+    // ── Agent Selector (chat input bar) ─────────────────
     function renderAgentSelector(){
       const agents=getAgents(),sel=$('agentChatSelect'),bar=$('agentSelectorBar');
       const k=getK();
       if(agents.length<2||(k.mode||'direct')==='direct'){bar.style.display='none';return}
       bar.style.display='flex';
       sel.innerHTML=agents.map(a=>`<option value="${a.id}" ${a.active?'selected':''}>${esc(a.name)}</option>`).join('');
-    }
-
-    $('addAgentBtn').addEventListener('click',()=>{
-      const name=$('newAgentName').value.trim()||'Agent';
-      const url=$('newAgentUrl').value.trim();
-      const token=$('newAgentToken').value.trim();
-      if(!url||!token){showToast('Enter URL and token','err');return}
-      const agents=getAgents();
-      const id=Date.now().toString(36);
-      if(agents.length===0)agents.push({id,name,url,token,active:true});
-      else agents.push({id,name,url,token,active:false});
-      setAgents(agents);
-      $('newAgentName').value='';$('newAgentUrl').value='';$('newAgentToken').value='';
-      renderAgentList();renderAgentSelector();updateStatus();
-      showToast(name+' added','ok');
-    });
-
-    async function testAgent(id){
-      const agents=getAgents();
-      const a=agents.find(x=>x.id===id);
-      if(!a)return;
-      $('gwStatus').textContent='Testing '+a.name+'...';
-      const start=Date.now();
-      try{
-        const res=await fetch(`${a.url}/v1/chat/completions`,{
-          method:'POST',headers:{'Authorization':`Bearer ${a.token}`,'Content-Type':'application/json'},
-          body:JSON.stringify({messages:[{role:'user',content:'ping'}],max_tokens:20})
-        });
-        const d=await res.json();
-        $('gwStatus').textContent=a.name+': Connected';$('gwModel').textContent=d.model||'--';$('gwLatency').textContent=`${Date.now()-start}ms`;
-        showToast(a.name+' connected','ok');
-      }catch(e){
-        $('gwStatus').textContent=a.name+': Failed';$('gwLatency').textContent='--';
-        showToast('Failed: '+e.message,'err');
-      }
     }
 
     // ── Camera ──────────────────────────────────────────
