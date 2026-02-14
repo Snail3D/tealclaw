@@ -655,6 +655,7 @@
     // ── Storage ────────────────────────────────────────
     function getK(){try{return JSON.parse(localStorage.getItem('tc-keys')||'{}')}catch{return{}}}
     function setK(k){localStorage.setItem('tc-keys',JSON.stringify(k))}
+    function fmtTime(d){d=d||new Date();return d.toLocaleTimeString([],getK().use24HourTime?{hour:'2-digit',minute:'2-digit',hour12:false}:{})}
     function getChat(){try{return JSON.parse(localStorage.getItem('tc-chat')||'[]')}catch{return[]}}
     function setChat(c){localStorage.setItem('tc-chat',JSON.stringify(c.slice(-100)))}
     function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
@@ -868,7 +869,8 @@
         {key:'latexEnabled',label:'LaTeX/Math',desc:'Render $math$ and $$equations$$ with KaTeX'},
         {key:'hapticFeedback',label:'Haptic Feedback',desc:'Vibrate on interactions (mobile)',def:true},
         {key:'soundEnabled',label:'Sound Effects',desc:'Play sounds on send and receive'},
-        {key:'autoScroll',label:'Auto-Scroll',desc:'Scroll to bottom on new messages',def:true}
+        {key:'autoScroll',label:'Auto-Scroll',desc:'Scroll to bottom on new messages',def:true},
+        {key:'use24HourTime',label:'24-Hour Time',desc:'Show timestamps in 24-hour format (14:30 instead of 2:30 PM)'}
       ];
       expToggles.forEach(({key,label,desc,def})=>{
         const on=def?k[key]!==false:!!k[key];
@@ -1290,7 +1292,7 @@
     }
 
     function addBubble(role,text,extra={}){
-      const entry={role,text,time:new Date().toLocaleTimeString(),...extra};
+      const entry={role,text,time:fmtTime(),...extra};
       chatHistory.push(entry);
       setChat(chatHistory);
       renderChat();
@@ -1454,7 +1456,7 @@
       const scroll=$('chatScroll');
       const bubble=document.createElement('div');
       bubble.className='chat-bubble ai';
-      bubble.innerHTML=`<div class="md-content">${html}</div><div class="chat-meta">${new Date().toLocaleTimeString()}</div>`;
+      bubble.innerHTML=`<div class="md-content">${html}</div><div class="chat-meta">${fmtTime()}</div>`;
       scroll.appendChild(bubble);
       scroll.scrollTop=scroll.scrollHeight;
       return bubble;
@@ -2856,7 +2858,8 @@ Rules:
       // Security
       pinCode:'pinCode',pinRequired:'pinRequired',
       // Animations
-      typingAnimation:'typingAnimation',typingSpeed:'typingSpeed',bubbleAnimation:'bubbleAnimation'
+      typingAnimation:'typingAnimation',typingSpeed:'typingSpeed',bubbleAnimation:'bubbleAnimation',
+      use24HourTime:'use24HourTime'
     };
 
     function importConfig(cfg){
