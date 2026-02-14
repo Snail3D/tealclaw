@@ -214,6 +214,12 @@
     .voice-select:focus{border-color:var(--teal)}
     .voice-preview{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:10px;color:var(--teal);background:var(--teal-dim);border:none;border-radius:var(--r-sm);cursor:pointer;font-family:var(--font)}
 
+    /* ── Generated Image in Chat ─────────────────────── */
+    .chat-bubble .gen-img{max-width:100%;max-height:400px;border-radius:var(--r-md);margin-top:6px;display:block;border:1px solid var(--border)}
+    .chat-bubble .gen-spinner{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--teal);padding:8px 0}
+    .chat-bubble .gen-spinner::before{content:'';width:14px;height:14px;border:2px solid var(--teal-dim);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
     /* ── Agent Selector (Chat) ────────────────────────── */
     .agent-selector{display:flex;align-items:center;gap:6px;padding:4px 0;margin-bottom:4px}
     .agent-selector select{flex:1;padding:5px 8px;font-size:11px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);outline:none}
@@ -393,6 +399,56 @@
           </div>
         </div>
 
+        <!-- Image Generation -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Image Generation
+            </div>
+            <div style="font-size:10px;color:var(--text-3)">Type /imagine to generate</div>
+          </div>
+          <div class="key-desc" style="margin-bottom:8px">Connect any OpenAI-compatible image API (DALL-E, Stable Diffusion, Together, FAL, etc). Type <code>/imagine your prompt</code> in chat to generate images.</div>
+
+          <div class="key-row">
+            <div class="key-label">Endpoint URL</div>
+            <div class="key-desc">OpenAI-compatible: POST with {prompt, model, size} -> {data: [{url}]}</div>
+            <input type="text" id="imageGenUrl" class="key-input" placeholder="https://api.openai.com/v1/images/generations" style="font-family:var(--font)">
+          </div>
+
+          <div class="key-row">
+            <div class="key-label">API Key</div>
+            <div class="key-desc">Bearer token for the image API. Leave blank if using your AI key.</div>
+            <div class="key-input-row">
+              <input type="password" id="imageGenKey" class="key-input" placeholder="sk-...">
+              <button class="btn btn-ghost btn-sm" onclick="toggleVis('imageGenKey')">Show</button>
+            </div>
+          </div>
+
+          <div class="key-row">
+            <div class="key-label">Model</div>
+            <input type="text" id="imageGenModel" class="key-input" placeholder="dall-e-3 (optional)" style="font-family:var(--font)">
+          </div>
+
+          <div class="key-row">
+            <div class="key-label">Size</div>
+            <div class="key-input-row">
+              <select id="imageGenSize" class="key-input" style="max-width:160px;font-family:var(--font)">
+                <option value="1024x1024">1024x1024</option>
+                <option value="512x512">512x512</option>
+                <option value="1024x1792">1024x1792 (tall)</option>
+                <option value="1792x1024">1792x1024 (wide)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button class="btn btn-teal btn-sm" id="saveImageGenBtn">Save</button>
+            <button class="btn btn-ghost btn-sm" id="testImageGenBtn">Test Generate</button>
+          </div>
+          <div class="key-status off" id="imageGenStatus">Not configured</div>
+        </div>
+
         <div class="card">
           <div class="card-head">
             <div class="card-title">
@@ -517,7 +573,8 @@
             <tr><td><code>sk_</code> + hex</td><td>ElevenLabs TTS</td></tr>
             <tr><td><code>digits:alpha</code></td><td>Telegram Bot Token</td></tr>
             <tr><td><code>http://...:port</code></td><td>Gateway URL</td></tr>
-            <tr><td>32+ hex chars</td><td>Gateway Token</td></tr></table>
+            <tr><td>32+ hex chars</td><td>Gateway Token</td></tr>
+            <tr><td><code>https://.../images</code></td><td>Image Gen Endpoint</td></tr></table>
 
             <h2>For AI Agents</h2>
             <p>You can configure TealClaw instantly using a <strong>config URL</strong>. The <code>#config=</code> hash fragment <strong>never leaves the browser</strong> (URL fragments are not sent in HTTP requests).</p>
@@ -547,11 +604,27 @@ Browser -> OpenClaw Gateway (via Tailscale) -> Browser
 Browser -> Telegram Bot API -> Telegram Chat</code></pre>
             <p>No backend. No database. No tracking. Static files on Cloudflare Pages. Open DevTools &gt; Network to verify.</p>
 
+            <h2>Image Generation</h2>
+            <p>Type <code>/imagine your prompt here</code> in the chat to generate images. Configure your image generation endpoint on the Keys tab.</p>
+            <h3>Supported APIs</h3>
+            <p>Any OpenAI-compatible image generation API works:</p>
+            <table><tr><th>Provider</th><th>Endpoint URL</th><th>Where to Get Key</th></tr>
+            <tr><td>OpenAI DALL-E</td><td><code>https://api.openai.com/v1/images/generations</code></td><td><a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></td></tr>
+            <tr><td>Together AI</td><td><code>https://api.together.xyz/v1/images/generations</code></td><td><a href="https://api.together.xyz/settings/api-keys" target="_blank">api.together.xyz</a></td></tr>
+            <tr><td>FAL.ai</td><td><code>https://fal.run/fal-ai/flux/dev</code></td><td><a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard</a></td></tr>
+            <tr><td>Fireworks</td><td><code>https://api.fireworks.ai/inference/v1/images/generations</code></td><td><a href="https://fireworks.ai/account/api-keys" target="_blank">fireworks.ai</a></td></tr></table>
+            <p>Set the endpoint URL and API key on the <strong>Keys</strong> tab under <strong>Image Generation</strong>. The API key field is optional if you want to reuse your AI key.</p>
+            <h3>Usage</h3>
+            <pre data-lang="chat"><code>/imagine a teal cat with glowing eyes in cyberpunk style
+/imagine watercolor painting of a sunset over mountains
+/imagine minimalist logo design, flat vector art</code></pre>
+
             <h2>Features</h2>
             <ul>
               <li><strong>Chat</strong> -- multi-turn with persistent history</li>
               <li><strong>Voice In</strong> -- hold mic button, Groq Whisper transcription</li>
-              <li><strong>Voice Out</strong> -- ElevenLabs TTS, auto-plays responses</li>
+              <li><strong>Voice Out</strong> -- ElevenLabs TTS, auto-plays on desktop; tap "Enable Audio" on mobile</li>
+              <li><strong>Image Gen</strong> -- type <code>/imagine</code> to generate images via any compatible API</li>
               <li><strong>Camera</strong> -- capture photos, flip camera, flashlight</li>
               <li><strong>Vision</strong> -- drag-and-drop, paste, attach images</li>
               <li><strong>Multi-Agent</strong> -- add multiple gateways, switch in chat</li>
@@ -698,6 +771,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       if(/^-?\d{6,}$/.test(val))return{field:'tgChatId',label:'Telegram Chat ID'};
       if(/^https?:\/\/.+:\d{4,5}$/.test(val))return{field:'gwUrl',label:'Gateway URL'};
       if(/^[a-f0-9]{32,}$/.test(val))return{field:'gwToken',label:'Gateway Token'};
+      if(/^https?:\/\/.*\/(images|generate|img)/i.test(val))return{field:'imageGenUrl',label:'Image Gen Endpoint'};
       if(val.startsWith('sk-'))return{field:'aiKey',provider:'openrouter',label:'AI Key (OpenRouter?)'};
       return null;
     }
@@ -758,6 +832,10 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       $('tgToken').value=k.tgToken||'';
       $('tgChatId').value=k.tgChatId||'';
       $('tgEnabled').checked=!!k.tgEnabled;
+      $('imageGenUrl').value=k.imageGenUrl||'';
+      $('imageGenKey').value=k.imageGenKey||'';
+      $('imageGenModel').value=k.imageGenModel||'';
+      $('imageGenSize').value=k.imageGenSize||'1024x1024';
       const mode=k.mode||'direct';
       document.querySelectorAll('.mode-btn').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode)});
       updateModeDesc(mode);
@@ -791,6 +869,9 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       const hasTg=k.tgToken&&k.tgChatId;
       $('tgStatus').textContent=hasTg?(k.tgEnabled?'Active':'Configured (off)'):'Not configured';
       $('tgStatus').className='key-status '+(hasTg&&k.tgEnabled?'ok':'off');
+      const hasImgGen=!!k.imageGenUrl;
+      $('imageGenStatus').textContent=hasImgGen?'Configured (/imagine ready)':'Not configured';
+      $('imageGenStatus').className='key-status '+(hasImgGen?'ok':'off');
       const pill=$('pill');
       if(k.aiKey||k.whisperKey){pill.className='pill ok';$('pillLabel').textContent='Ready'}
       else{pill.className='pill off';$('pillLabel').textContent='No Keys'}
@@ -1049,13 +1130,15 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
         // Forward AI response to Telegram
         sendTelegram(`AI: ${aiText}`);
 
-        const ttsData=await speak(aiText);
+        // Only call ElevenLabs TTS if audio is enabled (saves API credits)
         let audioUrl=null;
-        if(ttsData){
-          const blob=new Blob([ttsData],{type:'audio/mpeg'});
-          audioUrl=URL.createObjectURL(blob);
-          // Use Web Audio API for reliable mobile autoplay
-          if(audioEnabled)playAudioBuffer(ttsData);
+        if(audioEnabled){
+          const ttsData=await speak(aiText);
+          if(ttsData){
+            const blob=new Blob([ttsData],{type:'audio/mpeg'});
+            audioUrl=URL.createObjectURL(blob);
+            playAudioBuffer(ttsData);
+          }
         }
         addBubble('ai',aiText,audioUrl?{audioUrl}:{});
       }catch(e){
@@ -1083,6 +1166,13 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       $('textIn').value='';$('textIn').style.height='auto';
       clearAllFiles();
       updateActionBtn();
+      // /imagine command → image generation pipeline
+      if(text.startsWith('/imagine ')){
+        const prompt=text.slice(9).trim();
+        if(prompt)imagePipeline(prompt);
+        else showToast('Usage: /imagine your prompt here','err');
+        return;
+      }
       // For multiple images, send first as vision + mention count
       const imageNote=images.length>1?` [${images.length} images attached]`:'';
       pipeline(text+imageNote,firstImage);
@@ -1222,6 +1312,88 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
         else{showToast(d.description||'Telegram error','err')}
       }catch(e){showToast('Failed: '+e.message,'err')}
     });
+
+    // ── Image Generation ──────────────────────────────
+    $('saveImageGenBtn').addEventListener('click',()=>{
+      const k=getK();
+      k.imageGenUrl=$('imageGenUrl').value.trim();
+      k.imageGenKey=$('imageGenKey').value.trim();
+      k.imageGenModel=$('imageGenModel').value.trim();
+      k.imageGenSize=$('imageGenSize').value;
+      setK(k);updateStatus();showToast('Image gen saved','ok');
+    });
+
+    $('testImageGenBtn').addEventListener('click',async()=>{
+      const k=getK();
+      if(!k.imageGenUrl){showToast('Set image gen endpoint first','err');return}
+      $('testImageGenBtn').textContent='Generating...';
+      try{
+        const url=await generateImage('A teal cat claw logo on a dark background');
+        if(url){showToast('Image generated!','ok')}
+        else{showToast('No image returned','err')}
+      }catch(e){showToast('Failed: '+e.message,'err')}
+      $('testImageGenBtn').textContent='Test Generate';
+    });
+
+    async function generateImage(prompt){
+      const k=getK();
+      if(!k.imageGenUrl)return null;
+      const apiKey=k.imageGenKey||k.aiKey;
+      if(!apiKey){showToast('No API key for image gen','err');return null}
+      const body={prompt,n:1,size:k.imageGenSize||'1024x1024'};
+      if(k.imageGenModel)body.model=k.imageGenModel;
+      const res=await fetch(k.imageGenUrl,{
+        method:'POST',
+        headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+      });
+      if(!res.ok){
+        const err=await res.json().catch(()=>({}));
+        throw new Error(err.error?.message||`Image API: ${res.status}`);
+      }
+      const d=await res.json();
+      // OpenAI format: {data: [{url: "..."}, ...]} or {data: [{b64_json: "..."}]}
+      if(d.data?.[0]?.url)return d.data[0].url;
+      if(d.data?.[0]?.b64_json)return 'data:image/png;base64,'+d.data[0].b64_json;
+      // FAL/other formats: {images: [{url}]} or {output: {url}} or direct {url}
+      if(d.images?.[0]?.url)return d.images[0].url;
+      if(d.output?.url)return d.output.url;
+      if(d.url)return d.url;
+      return null;
+    }
+
+    // ── /imagine command in pipeline ────────────────────
+    async function imagePipeline(prompt){
+      addBubble('user','/imagine '+prompt);
+      sendTelegram('You: /imagine '+prompt);
+
+      // Show generating state
+      const genBubble=addBubble('ai','');
+      const idx=chatHistory.length-1;
+      const scroll=$('chatScroll');
+      const bubbles=scroll.querySelectorAll('.chat-bubble');
+      const lastBubble=bubbles[bubbles.length-1];
+      if(lastBubble)lastBubble.innerHTML='<div class="gen-spinner">Generating image...</div>';
+
+      try{
+        const imgUrl=await generateImage(prompt);
+        if(!imgUrl){
+          chatHistory[idx].text='Image generation returned no result.';
+          renderChat();return;
+        }
+        chatHistory[idx].text=`Generated: "${prompt}"`;
+        chatHistory[idx].image=imgUrl;
+        setChat(chatHistory);
+        renderChat();
+        sendTelegram(`AI: [Generated image for "${prompt}"]`);
+        showToast('Image generated','ok');
+      }catch(e){
+        chatHistory[idx].text=`Image error: ${e.message}`;
+        setChat(chatHistory);
+        renderChat();
+        showToast(e.message,'err');
+      }
+    }
 
     // ── Multi-Agent Management ─────────────────────────
     function renderAgentList(){
@@ -1402,7 +1574,8 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
           aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
           whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',
           sysPrompt:'sysPrompt',mode:'mode',
-          tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled'
+          tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
+          imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize'
         };
         const k=getK();
         let count=0;
