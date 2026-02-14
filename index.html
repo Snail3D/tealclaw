@@ -810,8 +810,44 @@
       }
     });
 
+    // ── Auto-Config (URL hash import) ─────────────────
+    // URL hash fragment (#config=BASE64) never leaves the browser.
+    // Agent constructs: tealclaw.com/#config=BASE64_JSON
+    // Keys auto-populate, hash is stripped, nothing hits the server.
+    function importFromHash(){
+      const h=location.hash;
+      if(!h.startsWith('#config='))return false;
+      try{
+        const json=atob(h.slice(8));
+        const cfg=JSON.parse(json);
+        const keyMap={
+          aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
+          whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',
+          sysPrompt:'sysPrompt',gwUrl:'gwUrl',gwToken:'gwToken',
+          mode:'mode',tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled'
+        };
+        const k=getK();
+        let count=0;
+        for(const[from,to]of Object.entries(keyMap)){
+          if(cfg[from]!==undefined){k[to]=cfg[from];count++}
+        }
+        setK(k);
+        // Strip hash from URL (never persisted, never sent)
+        history.replaceState(null,'',location.pathname);
+        showToast(`Imported ${count} settings`,'ok');
+        return true;
+      }catch(e){console.warn('Config import failed:',e);return false}
+    }
+
+    // Export config as copyable hash URL (for agent to generate)
+    function exportConfigUrl(){
+      const k=getK();
+      const json=JSON.stringify(k);
+      return location.origin+'/#config='+btoa(json);
+    }
+
     // ── Init ───────────────────────────────────────────
-    loadUI();
+    if(importFromHash()){loadUI()}else{loadUI()}
     if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
   </script>
 </body>
