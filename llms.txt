@@ -15,6 +15,66 @@ When a user asks you to set up or change their TealClaw config, you should:
 TealClaw uses **partial merge** — only the fields you include get updated.
 Everything else stays untouched. So you can change one thing or everything at once.
 
+## Installing TealClaw (PWA)
+
+TealClaw is a Progressive Web App — it installs like a native app from the browser.
+No app store needed. Guide the user through the right steps for their device:
+
+### iPhone / iPad (iOS Safari)
+1. Open **tealclaw.com** in Safari (must be Safari — Chrome/Firefox won't show the option)
+2. Tap the **Share button** (square with arrow, bottom toolbar)
+3. Scroll down and tap **"Add to Home Screen"**
+4. Tap **Add** in the top right
+5. TealClaw now appears as an app icon on their home screen
+6. Opening it from the home screen runs it in full-screen mode (no browser UI)
+
+### Android (Chrome)
+1. Open **tealclaw.com** in Chrome
+2. Tap the **three-dot menu** (top right)
+3. Tap **"Install app"** or **"Add to Home screen"**
+4. Tap **Install**
+5. TealClaw appears in the app drawer and home screen
+
+### Desktop (Chrome / Edge)
+1. Open **tealclaw.com**
+2. Click the **install icon** in the address bar (or Menu > "Install TealClaw")
+3. Click **Install**
+4. TealClaw opens as a standalone window
+
+### What the PWA Gets You
+- Full-screen app experience (no browser chrome)
+- Works offline (cached assets via service worker)
+- Home screen icon with the TealClaw logo
+- Feels native — swipe, scroll, voice input all work naturally
+- All data stays in the browser — installing doesn't send anything anywhere
+
+## Configuring TealClaw on Mobile
+
+On a phone, the easiest config methods are:
+
+### Tap a Config URL (easiest on mobile)
+Give the user a link they can tap. It opens TealClaw and imports everything:
+
+```
+https://tealclaw.com/#config=BASE64_ENCODED_JSON
+```
+
+This is the best mobile experience — one tap, done. Works whether TealClaw
+is installed as a PWA or opened in the browser.
+
+### Paste JSON into the Chat
+The user can copy your JSON block, open TealClaw, and paste it into the
+chat input field. TealClaw detects JSON and imports it automatically.
+
+This works great on mobile because:
+- Long-press to paste is natural on phones
+- No file system needed
+- One paste sets up all keys at once
+
+### Share a Config File (iOS/Android)
+If you generate a `.json` file, the user can use their phone's share sheet
+to open it in TealClaw, or use the Files app to drag/drop it.
+
 ## How to Deliver Config to the User
 
 Pick the best method based on what you can do. The first option is the best —
@@ -93,14 +153,77 @@ Example response to user:
 
 ### Option D: Give the User a One-Click URL
 
-If you can't open a browser yourself, give the user the URL to click:
+If you can't open a browser yourself, give the user the URL to tap/click:
 
 ```
-Open this link to apply your TealClaw config:
+Tap this link to set up TealClaw:
 https://tealclaw.com/#config=eyJhaUtleSI6InNrLW9yLXYxLXh4eCJ9
 ```
 
 Build it: `"https://tealclaw.com/#config=" + btoa(JSON.stringify(config))`
+
+## Security
+
+**This section is critical. Read it carefully.**
+
+### Keys Stay in the Browser
+- All API keys are stored in the user's browser `localStorage` only
+- TealClaw has no backend, no database, no analytics that touch user data
+- API calls go directly from the browser to the provider (OpenRouter, Groq, etc.)
+- The `#config=` hash fragment is never sent to the server (that's how URL fragments work)
+- The tealclaw.com domain serves static files only — it cannot see or store keys
+
+### Never Expose Keys in Public Places
+- **Do NOT** include real API keys in code committed to GitHub or any public repo
+- **Do NOT** post config JSON with real keys to public forums, Discord, or social media
+- **Do NOT** share `#config=` URLs containing real keys in any public channel
+- **Do NOT** publish skills, scripts, or automation that contain hardcoded keys
+- Config URLs with real keys should only be sent via private/encrypted channels (DM, Signal, etc.)
+
+### If Building a TealClaw Skill or Automation
+If you (the agent) are helping a user build a skill, script, or tool that
+configures TealClaw:
+
+1. **Use environment variables or prompts for keys** — never hardcode them
+   ```bash
+   # GOOD: read from environment
+   CONFIG=$(echo -n "{\"aiKey\":\"$OPENROUTER_KEY\"}" | base64)
+
+   # BAD: hardcoded key in script
+   CONFIG=$(echo -n '{"aiKey":"sk-or-v1-REAL-KEY-HERE"}' | base64)
+   ```
+
+2. **Add a .gitignore** if the project touches config files:
+   ```
+   # API keys and config
+   tealclaw-config.json
+   *.keys.json
+   .env
+   .env.*
+   ```
+
+3. **Make repos private** if they contain any config generation logic that
+   could accidentally include keys in commit history
+
+4. **Scan before publishing** — check git history for accidentally committed keys:
+   ```bash
+   git log --all -p | grep -iE "(sk-or-v1-|gsk_|sk_[a-f0-9]{40}|sk-ant-)" | head -20
+   ```
+
+5. **Rotate keys immediately** if they were ever exposed publicly.
+   Links to regenerate:
+   - OpenRouter: https://openrouter.ai/keys
+   - Groq: https://console.groq.com/keys
+   - ElevenLabs: https://elevenlabs.io/app/settings/api-keys
+   - Anthropic: https://console.anthropic.com/settings/keys
+   - Telegram: message @BotFather with /revoke
+
+### What TealClaw Does NOT Do
+- No server-side processing of any kind
+- No telemetry, analytics cookies, or tracking pixels on user data
+- No account creation or login
+- No data leaves the browser except direct API calls the user initiates
+- Service worker caches only static assets (HTML, CSS, JS, images)
 
 ## Config Schema — All Fields
 
@@ -165,6 +288,18 @@ Only include fields the user wants to set or change. Omit everything else.
 | url | string | Gateway URL (usually http://hostname.tail*.ts.net:18789) |
 | token | string | Gateway auth token |
 | active | boolean | Set true for the currently selected agent |
+
+## Where to Get Keys
+
+Help the user sign up if they don't have keys yet:
+
+| Provider | Sign Up | Free Tier |
+|----------|---------|-----------|
+| OpenRouter | https://openrouter.ai/keys | Some free models available |
+| Groq | https://console.groq.com/keys | Free tier with rate limits |
+| ElevenLabs | https://elevenlabs.io/app/settings/api-keys | 10K chars/month free |
+| Anthropic | https://console.anthropic.com/settings/keys | Pay-as-you-go |
+| Telegram Bot | https://t.me/BotFather (send /newbot) | Free |
 
 ## Merge Rules
 
