@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TealClaw Stats</title>
+  <meta name="theme-color" content="#0d9488">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --t: 0.2s;
+      --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
+      --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --mono: 'SF Mono', 'Fira Code', Menlo, monospace;
+      --teal: #0d9488; --teal-dim: rgba(13,148,136,0.12); --teal-hover: #0f766e;
+    }
+    [data-theme="dark"] {
+      --bg-root: #0a0f1a; --bg-1: #0e1320; --bg-card: #121928;
+      --bg-hover: #1a2236; --bg-input: #0e1320;
+      --border: #1e2a3e; --border-2: #2e3f5a;
+      --text: #e2e8f0; --text-2: #94a3b8; --text-3: #475569;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --chart-fill: rgba(13,148,136,0.15);
+      --chart-line: #0d9488;
+      --chart-grid: rgba(30,42,62,0.6);
+    }
+    [data-theme="light"] {
+      --bg-root: #f1f5f9; --bg-1: #fff; --bg-card: #fff;
+      --bg-hover: #f8fafc; --bg-input: #f1f5f9;
+      --border: #e2e8f0; --border-2: #cbd5e1;
+      --text: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06);
+      --chart-fill: rgba(13,148,136,0.08);
+      --chart-line: #0d9488;
+      --chart-grid: rgba(226,232,240,0.8);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg-root);color:var(--text);font-family:var(--font);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:12px;padding:0 16px;height:54px;background:var(--bg-1);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:var(--teal);user-select:none;text-decoration:none}
+    .logo svg{width:21px;height:21px}
+    .topbar-r{margin-left:auto;display:flex;align-items:center;gap:10px}
+    .back-link{font-size:14px;color:var(--text-2);text-decoration:none;transition:color var(--t)}
+    .back-link:hover{color:var(--teal)}
+
+    .container{max-width:760px;margin:0 auto;padding:20px 16px}
+
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;min-width:0}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;text-align:center;min-width:0;overflow:hidden}
+    .card-value{font-size:28px;font-weight:700;color:var(--teal);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+    .card-label{font-size:11px;color:var(--text-3);margin-top:4px;text-transform:uppercase;letter-spacing:0.04em}
+
+    .chart-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);padding:20px;margin-bottom:16px}
+    .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .chart-title{font-size:13px;font-weight:600;color:var(--text-2)}
+    .range-btns{display:flex;gap:4px}
+    .range-btn{padding:4px 10px;font-size:11px;font-weight:500;font-family:var(--font);background:transparent;color:var(--text-3);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:all var(--t)}
+    .range-btn:hover{border-color:var(--border-2);color:var(--text-2)}
+    .range-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+    .chart-wrap{position:relative;height:300px}
+
+    .loading{text-align:center;padding:60px 20px;color:var(--text-3);font-size:13px}
+    .error-msg{text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px}
+    .error-msg code{font-family:var(--mono);font-size:11px;color:var(--teal);background:var(--teal-dim);padding:2px 6px;border-radius:3px}
+
+    .footer{text-align:center;padding:16px 0;font-size:10px;color:var(--text-3)}
+    .footer a{color:var(--teal);text-decoration:none}
+
+    @media(max-width:480px){
+      .cards{grid-template-columns:1fr}
+      .chart-wrap{height:220px}
+      .chart-header{flex-direction:column;gap:10px;align-items:flex-start}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/" class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      TealClaw
+    </a>
+    <div class="topbar-r">
+      <a href="/" class="back-link">&larr; Back to chat</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="cards">
+      <div class="card"><div class="card-value" id="totalViews">--</div><div class="card-label">Total Views</div></div>
+      <div class="card"><div class="card-value" id="todayViews">--</div><div class="card-label">Today</div></div>
+      <div class="card"><div class="card-value" id="thirtyViews">--</div><div class="card-label">30 Day</div></div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title">Daily Page Views</div>
+        <div class="range-btns">
+          <button class="range-btn" data-days="30">30d</button>
+          <button class="range-btn active" data-days="90">90d</button>
+          <button class="range-btn" data-days="365">1y</button>
+          <button class="range-btn" data-days="0">All</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+
+    <div id="status" class="loading">Loading analytics...</div>
+
+    <div class="footer">
+      <a href="/">TealClaw</a> &mdash; your keys never leave your browser.
+    </div>
+  </div>
+
+  <script>
+    // Theme: read from localStorage (shared with main app)
+    const theme = localStorage.getItem('tc-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+
+    let chart = null;
+    let allData = null;
+
+    const $ = id => document.getElementById(id);
+
+    function fmt(n) {
+      if (n == null) return '--';
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return n.toLocaleString();
+    }
+
+    function getStyle(prop) {
+      return getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+    }
+
+    function renderChart(daily, days) {
+      let filtered = daily;
+      if (days > 0) {
+        filtered = daily.slice(-days);
+      }
+
+      const labels = filtered.map(d => {
+        const date = new Date(d.date + 'T00:00:00');
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      const values = filtered.map(d => d.pageViews);
+
+      const ctx = $('chart').getContext('2d');
+
+      if (chart) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = values;
+        chart.update('none');
+        return;
+      }
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Page Views',
+            data: values,
+            borderColor: getStyle('--chart-line'),
+            backgroundColor: getStyle('--chart-fill'),
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: filtered.length > 60 ? 0 : 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: getStyle('--chart-line'),
+            pointBorderColor: getStyle('--chart-line'),
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: getStyle('--bg-card'),
+              titleColor: getStyle('--text'),
+              bodyColor: getStyle('--teal'),
+              borderColor: getStyle('--border'),
+              borderWidth: 1,
+              padding: 10,
+              titleFont: { family: getStyle('--font'), size: 12 },
+              bodyFont: { family: getStyle('--mono'), size: 13, weight: '600' },
+              callbacks: {
+                label: ctx => ctx.parsed.y.toLocaleString() + ' views'
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: getStyle('--chart-grid'), drawBorder: false },
+              ticks: { color: getStyle('--text-3'), font: { size: 10 }, maxTicksLimit: 8 }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: getStyle('--chart-grid'), drawBorder: false },
+              ticks: { color: getStyle('--text-3'), font: { size: 10 }, callback: v => fmt(v) }
+            }
+          }
+        }
+      });
+    }
+
+    async function load() {
+      try {
+        const res = await fetch('/api/stats?days=730');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        allData = data;
+
+        // Update cards
+        $('totalViews').textContent = fmt(data.allTime?.pageViews ?? 0);
+        $('todayViews').textContent = fmt(data.today?.pageViews ?? 0);
+        $('thirtyViews').textContent = fmt(data.last30d?.pageViews ?? 0);
+
+        // Render chart with default range (90d)
+        if (data.daily && data.daily.length) {
+          renderChart(data.daily, 90);
+          $('status').style.display = 'none';
+        } else {
+          $('status').innerHTML = '<div class="error-msg">No daily data available yet. Check back after a day of traffic.</div>';
+        }
+      } catch (err) {
+        console.error('Stats load error:', err);
+        $('status').innerHTML = `<div class="error-msg">
+          Could not load analytics.<br>
+          <span style="margin-top:8px;display:inline-block">Ensure <code>CF_STATS_TOKEN</code> and <code>CF_ZONE_ID</code> are set in Cloudflare Pages environment variables.</span>
+        </div>`;
+      }
+    }
+
+    // Range buttons
+    document.querySelectorAll('.range-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const days = parseInt(btn.dataset.days);
+        if (allData?.daily) renderChart(allData.daily, days);
+      });
+    });
+
+    load();
+  </script>
+</body>
+</html>
