@@ -437,39 +437,40 @@
 </head>
 <body>
 
-  <!-- Static content for agents, crawlers, and noscript browsers -->
-  <noscript>
-    <div style="max-width:700px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif;color:#e2e8f0;background:#0a0f1a">
-      <h1>TealClaw</h1>
-      <p><strong>BYOK voice AI dashboard.</strong> Zero server. Total privacy. 95+ configurable fields.</p>
-      <p>TealClaw is a Progressive Web App that runs entirely in your browser. Your API keys never leave your device. All API calls go directly from your browser to the AI provider.</p>
-      <h2>Features</h2>
-      <ul>
-        <li>Multi-turn chat with streaming and typing animations</li>
-        <li>Voice input (Groq Whisper) and output (ElevenLabs TTS)</li>
-        <li>Image generation (/imagine) and vision (camera, drag-drop, paste)</li>
-        <li>Deep research reports (/research) with segmented results</li>
-        <li>12 built-in style templates (/template)</li>
-        <li>Custom bot persona — name, icon, greeting, system prompt</li>
-        <li>Full visual customization — colors, fonts, backgrounds, animations</li>
-        <li>Config profiles, QR code sharing, Telegram forwarding</li>
-        <li>Multi-model routing, LaTeX rendering, GIF reactions</li>
-        <li>PIN code security, accessibility features, PWA installable</li>
-      </ul>
-      <h2>For AI Agents</h2>
-      <p>The complete agent skill guide is at <a href="/llms.txt">tealclaw.ai/llms.txt</a>. Any AI agent can read that file to learn how to configure TealClaw via JSON. A single JSON config block in a chat response auto-applies all settings in real time.</p>
-      <p>Config delivery methods: inline JSON (auto-applied), config file (drag-drop), or URL hash (<code>tealclaw.ai/#config=BASE64</code>).</p>
-      <h2>Links</h2>
-      <ul>
-        <li><a href="/llms.txt">Agent Skill Guide (llms.txt)</a></li>
-        <li><a href="/docs/config-reference.txt">Config Reference (95+ fields)</a></li>
-        <li><a href="/docs/recipes.txt">Config Recipes</a></li>
-        <li><a href="/docs/commands.txt">Chat Commands</a></li>
-        <li><a href="/docs/free-setup.txt">Free Setup Guide</a></li>
-      </ul>
-      <p>This app requires JavaScript. Please enable JavaScript to use TealClaw.</p>
-    </div>
-  </noscript>
+  <!-- Static content visible to agents/crawlers/scrapers. JS hides it on load. -->
+  <div id="staticContent" style="max-width:700px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif;color:#e2e8f0;background:#0a0f1a">
+    <h1>TealClaw</h1>
+    <p><strong>BYOK voice AI dashboard.</strong> Zero server. Total privacy. 95+ configurable fields.</p>
+    <p>TealClaw is a Progressive Web App that runs entirely in your browser. Your API keys never leave your device. All API calls go directly from your browser to the AI provider.</p>
+    <h2>Features</h2>
+    <ul>
+      <li>Multi-turn chat with streaming and typing animations</li>
+      <li>Voice input (Groq Whisper) and output (ElevenLabs TTS)</li>
+      <li>Image generation (/imagine) and vision (camera, drag-drop, paste)</li>
+      <li>Deep research reports (/research) with segmented results</li>
+      <li>12 built-in style templates (/template)</li>
+      <li>Custom bot persona -- name, icon, greeting, system prompt</li>
+      <li>Full visual customization -- colors, fonts, backgrounds, animations</li>
+      <li>Config profiles, QR code sharing, Telegram forwarding</li>
+      <li>Multi-model routing, LaTeX rendering, GIF reactions</li>
+      <li>PIN code security, accessibility features, PWA installable</li>
+    </ul>
+    <h2>For AI Agents</h2>
+    <p>The complete agent skill guide is at <a href="https://tealclaw.ai/llms.txt">tealclaw.ai/llms.txt</a>. Any AI agent can read that file to learn how to configure TealClaw via JSON. A single JSON config block in a chat response auto-applies all settings in real time.</p>
+    <p>Config delivery methods: inline JSON (auto-applied), config file (drag-drop), or URL hash (<code>tealclaw.ai/#config=BASE64</code>).</p>
+    <p>Source code and skill files are on GitHub at <a href="https://github.com/Snail3D/tealclaw">github.com/Snail3D/tealclaw</a>. The <a href="https://github.com/Snail3D/tealclaw/blob/main/SKILL.md">SKILL.md</a> file contains the full agent skill definition with config schema, delivery methods, recipes, and troubleshooting.</p>
+    <h2>Links</h2>
+    <ul>
+      <li><a href="https://tealclaw.ai/llms.txt">Agent Skill Guide (llms.txt)</a></li>
+      <li><a href="https://github.com/Snail3D/tealclaw">GitHub Repository</a></li>
+      <li><a href="https://github.com/Snail3D/tealclaw/blob/main/SKILL.md">SKILL.md (agent skill definition)</a></li>
+      <li><a href="https://tealclaw.ai/docs/config-reference.txt">Config Reference (95+ fields)</a></li>
+      <li><a href="https://tealclaw.ai/docs/recipes.txt">Config Recipes</a></li>
+      <li><a href="https://tealclaw.ai/docs/commands.txt">Chat Commands</a></li>
+      <li><a href="https://tealclaw.ai/docs/free-setup.txt">Free Setup Guide</a></li>
+    </ul>
+  </div>
+  <script>document.getElementById('staticContent').style.display='none'</script>
 
   <div class="pin-overlay hidden" id="pinOverlay">
     <h2 id="pinTitle">Enter PIN</h2>
