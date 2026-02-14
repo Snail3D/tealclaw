@@ -58,10 +58,10 @@
     /* ── Chat Layout ───────────────────────────────────── */
     .chat-scroll{flex:1;overflow-y:auto;padding:16px}
     .chat-empty{text-align:center;padding:40px 16px;color:var(--text-3);font-size:12px}
-    .chat-bubble{max-width:85%;margin-bottom:10px;padding:10px 14px;border-radius:var(--r-lg);font-size:13px;line-height:1.6;word-break:break-word;animation:bubble-in 0.25s ease-out}
+    .chat-bubble{max-width:85%;margin-bottom:10px;padding:var(--bubble-pad,10px 14px);border-radius:var(--bubble-radius,var(--r-lg));font-size:var(--chat-font,13px);line-height:1.6;word-break:break-word;animation:bubble-in 0.25s ease-out}
     @keyframes bubble-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-    .chat-bubble.user{background:var(--user-bg);margin-left:auto;border-bottom-right-radius:4px}
-    .chat-bubble.ai{background:var(--ai-bg);margin-right:auto;border-bottom-left-radius:4px;border:1px solid var(--border)}
+    .chat-bubble.user{background:var(--user-bg);margin-left:auto;border-bottom-right-radius:4px;color:var(--user-text,var(--text))}
+    .chat-bubble.ai{background:var(--ai-bg);margin-right:auto;border-bottom-left-radius:4px;border:1px solid var(--border);color:var(--ai-text,var(--text))}
     .chat-bubble .chat-meta{font-size:10px;color:var(--text-3);margin-top:6px;font-family:var(--mono)}
     .chat-bubble .chat-img{max-width:100%;max-height:200px;border-radius:var(--r-sm);margin-bottom:6px;display:block}
     .chat-bubble .tts-play{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px auto 2px;padding:10px 24px;font-size:13px;font-weight:600;color:#fff;background:var(--teal);border:2px solid transparent;border-radius:100px;cursor:pointer;font-family:var(--font);transition:all 0.25s;min-height:44px}
@@ -89,24 +89,24 @@
     .chat-setup-hint{font-size:10px;color:var(--text-3);margin-top:4px}
 
     /* ── Markdown in bubbles ──────────────────────────── */
-    .chat-bubble .md-content{font-size:13px;line-height:1.6}
+    .chat-bubble .md-content{font-size:var(--chat-font,13px);line-height:1.6}
     .chat-bubble .md-content p{margin:0 0 8px 0} .chat-bubble .md-content p:last-child{margin-bottom:0}
-    .chat-bubble .md-content h1,.chat-bubble .md-content h2,.chat-bubble .md-content h3{margin:10px 0 6px 0;font-weight:600;color:var(--teal);line-height:1.3}
-    .chat-bubble .md-content h1{font-size:15px;background:linear-gradient(135deg,var(--teal),#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .chat-bubble .md-content h2{font-size:14px;color:var(--teal)}
-    .chat-bubble .md-content h3{font-size:13px;color:var(--teal);opacity:0.85}
-    .chat-bubble .md-content strong{font-weight:600;color:var(--teal)}
+    .chat-bubble .md-content h1,.chat-bubble .md-content h2,.chat-bubble .md-content h3{margin:10px 0 6px 0;font-weight:600;color:var(--md-heading,var(--teal));line-height:1.3}
+    .chat-bubble .md-content h1{font-size:15px;background:linear-gradient(135deg,var(--md-heading,var(--teal)),#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .chat-bubble .md-content h2{font-size:14px;color:var(--md-heading,var(--teal))}
+    .chat-bubble .md-content h3{font-size:13px;color:var(--md-heading,var(--teal));opacity:0.85}
+    .chat-bubble .md-content strong{font-weight:600;color:var(--md-bold,var(--teal))}
     .chat-bubble .md-content em{font-style:italic;color:var(--text-2)}
-    .chat-bubble .md-content code{font-family:var(--mono);font-size:11px;padding:1px 5px;background:rgba(13,148,136,0.08);color:var(--teal);border:1px solid rgba(13,148,136,0.15);border-radius:3px}
+    .chat-bubble .md-content code{font-family:var(--mono);font-size:11px;padding:1px 5px;background:var(--md-code-bg,rgba(13,148,136,0.08));color:var(--md-code,var(--teal));border:1px solid rgba(13,148,136,0.15);border-radius:3px}
     .chat-bubble .md-content pre{margin:8px 0;padding:10px 12px;background:var(--bg-root);border:1px solid var(--border);border-radius:var(--r-md);overflow-x:auto;position:relative}
     .chat-bubble .md-content pre code{display:block;padding:0;background:none;border:none;color:var(--text);font-size:11px;line-height:1.5}
     .chat-bubble .md-content pre::before{content:attr(data-lang);position:absolute;top:4px;right:8px;font-size:9px;color:var(--text-3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.03em}
-    .chat-bubble .md-content blockquote{margin:6px 0;padding:6px 12px;border-left:3px solid var(--teal);background:var(--teal-dim);border-radius:0 var(--r-sm) var(--r-sm) 0;color:var(--text-2);font-style:italic;font-size:12px}
+    .chat-bubble .md-content blockquote{margin:6px 0;padding:6px 12px;border-left:3px solid var(--md-bq-border,var(--teal));background:var(--md-bq-bg,var(--teal-dim));border-radius:0 var(--r-sm) var(--r-sm) 0;color:var(--text-2);font-style:italic;font-size:12px}
     .chat-bubble .md-content ul,.chat-bubble .md-content ol{margin:6px 0;padding-left:20px}
     .chat-bubble .md-content li{margin-bottom:3px}
     .chat-bubble .md-content li::marker{color:var(--teal)}
-    .chat-bubble .md-content a{color:var(--teal);text-decoration:none;border-bottom:1px solid rgba(13,148,136,0.3);transition:all var(--t)}
-    .chat-bubble .md-content a:hover{border-color:var(--teal)}
+    .chat-bubble .md-content a{color:var(--md-link,var(--teal));text-decoration:none;border-bottom:1px solid rgba(13,148,136,0.3);transition:all var(--t)}
+    .chat-bubble .md-content a:hover{border-color:var(--md-link,var(--teal))}
     .chat-bubble .md-content hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     .chat-bubble .md-content table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}
     .chat-bubble .md-content th,.chat-bubble .md-content td{padding:4px 8px;border:1px solid var(--border);text-align:left}
@@ -115,13 +115,13 @@
     /* ── Input Bar (15% bigger) ───────────────────────── */
     .input-bar{flex-shrink:0;border-top:1px solid var(--border);background:var(--bg-1);padding:12px 18px}
     .input-row{display:flex;gap:8px;align-items:flex-end}
-    .input-text{flex:1;padding:12px 14px;font-size:15px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-lg);outline:none;resize:none;min-height:46px;max-height:140px;transition:border var(--t)}
+    .input-text{flex:1;padding:12px 14px;font-size:var(--input-font,15px);font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-lg);outline:none;resize:none;min-height:46px;max-height:140px;transition:border var(--t)}
     .input-text:focus{border-color:var(--teal)}
     .input-text::placeholder{color:var(--text-3)}
     .input-actions{display:flex;gap:4px}
 
-    .circle-btn{width:44px;height:44px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--t);flex-shrink:0}
-    .circle-btn svg{width:20px;height:20px}
+    .circle-btn{width:var(--btn-size,44px);height:var(--btn-size,44px);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--t);flex-shrink:0}
+    .circle-btn svg{width:calc(var(--btn-size,44px) * 0.45);height:calc(var(--btn-size,44px) * 0.45)}
     .send-btn{background:var(--teal);color:#fff} .send-btn:hover{background:var(--teal-hover)}
     .send-btn.hidden{display:none}
     .mic-circle{background:var(--teal);color:#fff;border:none} .mic-circle:hover{background:var(--teal-hover)}
@@ -196,6 +196,122 @@
     .bmc-card a:hover{background:#e6c700}
     .bmc-card a svg{width:14px;height:14px}
     .bmc-card p{font-size:10px;color:var(--text-3);margin-top:6px}
+
+    /* ── Accessibility ────────────────────────────────── */
+    body.reduce-motion,body.reduce-motion *{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}
+    body.high-contrast{--text:#fff;--text-2:#d1d5db;--text-3:#9ca3af;--border:#4b5563;--border-2:#6b7280;--bg-card:#111827}
+    body.high-contrast[data-theme="light"]{--text:#000;--text-2:#1f2937;--text-3:#374151;--border:#9ca3af;--border-2:#6b7280;--bg-card:#fff}
+    body.high-contrast .chat-bubble.ai{border-width:2px}
+    body.high-contrast .mode-btn.active,body.high-contrast .btn-teal{font-weight:700}
+    body.dyslexia-font{--font:'OpenDyslexic',Comic Sans MS,cursive,sans-serif}
+    body.compact-mode .chat-bubble{margin-bottom:4px;padding:6px 10px}
+    body.compact-mode .chat-scroll{padding:8px}
+    body.compact-mode .input-bar{padding:6px 10px}
+    body.compact-mode .sheet-row{padding:8px 10px;margin-bottom:4px}
+    body.focus-visible *:focus-visible{outline:3px solid var(--teal)!important;outline-offset:2px!important}
+
+    /* ── GIF Overlay ──────────────────────────────────── */
+    .gif-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:1;transition:opacity 0.5s;cursor:pointer}
+    .gif-overlay.hidden{opacity:0;pointer-events:none}
+    .gif-overlay img{max-width:85vw;max-height:70vh;border-radius:var(--r-lg);box-shadow:0 8px 40px rgba(0,0,0,0.5);object-fit:contain}
+    .gif-overlay .gif-text{max-width:80vw;font-size:14px;color:rgba(255,255,255,0.85);text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5}
+    .gif-overlay .gif-attr{position:absolute;bottom:12px;right:16px;font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.03em}
+
+    /* ── Config Apply Button (in-chat) ─────────────── */
+    .config-apply-card{margin-top:10px;padding:10px 14px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.25);border-radius:var(--r-md);display:flex;align-items:center;gap:10px}
+    .config-apply-card .config-preview{flex:1;font-size:10px;color:var(--text-2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .config-apply-btn{padding:8px 16px;font-size:12px;font-weight:600;font-family:var(--font);background:var(--teal);color:#fff;border:none;border-radius:var(--r-md);cursor:pointer;white-space:nowrap;transition:all var(--t)}
+    .config-apply-btn:hover{background:var(--teal-hover)}
+    .config-apply-btn.applied{background:var(--ok);pointer-events:none}
+
+    /* ── PIN Lock Screen ─────────────────────────────── */
+    .pin-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg-root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:1;transition:opacity 0.3s}
+    .pin-overlay.hidden{opacity:0;pointer-events:none;display:none}
+    .pin-overlay h2{font-size:18px;font-weight:700;color:var(--teal)}
+    .pin-overlay p{font-size:12px;color:var(--text-2);max-width:280px;text-align:center}
+    .pin-dots{display:flex;gap:12px}
+    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border-2);transition:all 0.15s}
+    .pin-dot.filled{background:var(--teal);border-color:var(--teal)}
+    .pin-dot.wrong{background:var(--err);border-color:var(--err);animation:shake 0.3s}
+    .pin-pad{display:grid;grid-template-columns:repeat(3,64px);gap:10px;margin-top:12px}
+    .pin-key{width:64px;height:64px;border-radius:50%;border:1.5px solid var(--border-2);background:var(--bg-card);color:var(--text);font-size:22px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center}
+    .pin-key:hover,.pin-key:active{background:var(--teal-dim);border-color:var(--teal)}
+    .pin-key.wide{grid-column:span 1;font-size:13px;font-weight:500}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+    /* ── Quick Reply Chips ────────────────────────────── */
+    .quick-replies{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;justify-content:center}
+    .quick-reply{padding:6px 14px;font-size:11px;font-weight:500;font-family:var(--font);color:var(--teal);background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);border-radius:100px;cursor:pointer;transition:all var(--t);white-space:nowrap}
+    .quick-reply:hover{background:var(--teal);color:#fff}
+    .quick-reply:active{transform:scale(0.95)}
+
+    /* ── Chat Avatars ────────────────────────────────── */
+    .chat-bubble-wrap{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+    .chat-bubble-wrap.user{flex-direction:row-reverse}
+    .chat-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+    .chat-bubble-wrap .chat-bubble{margin-bottom:0}
+
+    /* ── Widget/Embed Mode ───────────────────────────── */
+    body.embed-mode .topbar{display:none!important}
+    body.embed-mode .privacy-bar{display:none!important}
+    body.embed-mode .main{max-width:100%}
+    body.embed-mode{border-radius:12px;overflow:hidden}
+
+    /* ── LaTeX ────────────────────────────────────────── */
+    .chat-bubble .katex{font-size:0.95em}
+    .chat-bubble .katex-display{margin:8px 0;overflow-x:auto}
+
+    /* ── Profile Indicator ───────────────────────────── */
+    .profile-badge{font-size:9px;padding:1px 6px;border-radius:100px;background:var(--teal-dim);color:var(--teal);font-weight:500;margin-left:6px}
+
+    /* ── QR Code ──────────────────────────────────────── */
+    .qr-container{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+    .qr-container canvas{border-radius:var(--r-md);border:4px solid #fff}
+
+    /* ── Research Results (ORNOT-style) ────────────────── */
+    .research-result{margin:4px 0}
+    .research-verdict{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:100px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px}
+    .research-verdict.green{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+    .research-verdict.yellow{background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
+    .research-verdict.orange{background:rgba(249,115,22,0.15);color:#f97316;border:1px solid rgba(249,115,22,0.3)}
+    .research-verdict.red{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+    .research-verdict.gray{background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3)}
+    .research-verdict.blue{background:rgba(59,130,246,0.12);color:#3b82f6;border:1px solid rgba(59,130,246,0.3)}
+    .research-section{margin:8px 0;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--r-md);border-left:3px solid var(--teal);animation:researchSlide 0.4s ease-out both}
+    .research-section:nth-child(2){animation-delay:0.05s}
+    .research-section:nth-child(3){animation-delay:0.1s}
+    .research-section:nth-child(4){animation-delay:0.15s}
+    .research-section:nth-child(5){animation-delay:0.2s}
+    .research-section:nth-child(6){animation-delay:0.25s}
+    .research-section:nth-child(7){animation-delay:0.3s}
+    .research-section:nth-child(8){animation-delay:0.35s}
+    .research-section.warn{border-left-color:var(--warn)}
+    .research-section.danger{border-left-color:var(--err)}
+    .research-section.ok{border-left-color:var(--ok)}
+    .research-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--teal);margin-bottom:4px}
+    .research-section.warn .research-section-title{color:var(--warn)}
+    .research-section.danger .research-section-title{color:var(--err)}
+    .research-section.ok .research-section-title{color:var(--ok)}
+    .research-section p,.research-section li{font-size:12px;line-height:1.5;color:var(--text-2)}
+    .research-section ul{padding-left:16px;margin:4px 0}
+    .research-section li{margin-bottom:2px}
+    .research-section li::marker{color:var(--teal)}
+    .research-processing{display:flex;flex-direction:column;gap:6px;padding:4px 0}
+    .research-step{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-3);transition:color 0.3s}
+    .research-step.done{color:var(--ok)}
+    .research-step .step-icon{width:14px;height:14px;flex-shrink:0}
+    .research-step .spinner{width:14px;height:14px;border:2px solid var(--teal-dim);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite}
+    .research-sources{margin-top:6px;font-size:10px;color:var(--text-3)}
+    .research-sources a{color:var(--teal);text-decoration:none}
+    .research-sources a:hover{text-decoration:underline}
+    @keyframes researchSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── Background Image ─────────────────────────────── */
+    body.has-bg-image{background-size:cover;background-position:center;background-attachment:fixed}
+    body.has-bg-image .topbar{background:rgba(var(--bg-1-rgb,14,19,32),0.85);backdrop-filter:blur(8px)}
+    body.has-bg-image .input-bar{background:rgba(var(--bg-1-rgb,14,19,32),0.85);backdrop-filter:blur(8px)}
+    body.has-bg-image .chat-bubble.user{background:rgba(var(--user-bg-rgb,22,32,51),0.9)}
+    body.has-bg-image .chat-bubble.ai{background:rgba(var(--ai-bg-rgb,13,26,26),0.9);backdrop-filter:blur(4px)}
 
     /* ── Privacy ───────────────────────────────────────── */
     .privacy-bar{text-align:center;padding:8px;font-size:10px;color:var(--text-3);border-top:1px solid var(--border);flex-shrink:0}
@@ -284,9 +400,21 @@
 </head>
 <body>
 
+  <div class="pin-overlay hidden" id="pinOverlay">
+    <h2 id="pinTitle">Enter PIN</h2>
+    <p>This TealClaw is protected. Enter your PIN to continue.</p>
+    <div class="pin-dots" id="pinDots"></div>
+    <div class="pin-pad" id="pinPad"></div>
+  </div>
+
   <div class="overlay" id="overlay" style="cursor:pointer">
     <button class="overlay-btn" id="enableBtn" style="padding:20px 48px;font-size:16px;border-radius:var(--r-lg)">Enable Audio</button>
     <p class="overlay-hint" style="margin-top:12px;font-size:13px">Tap anywhere to enable voice</p>
+  </div>
+  <div class="gif-overlay hidden" id="gifOverlay">
+    <img id="gifImg" src="" alt="">
+    <div class="gif-text" id="gifText"></div>
+    <div class="gif-attr">Powered by Tenor</div>
   </div>
   <div class="toast" id="toast"></div>
 
@@ -332,6 +460,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
+      <div class="quick-replies" id="quickReplies" style="display:none"></div>
       <div class="input-hint" id="inputHint"></div>
     </div>
   </div>
@@ -372,7 +501,7 @@
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
     let audioEnabled=false, chatHistory=[], pendingFile=null, stream=null, recorder=null, chunks=[], recording=false;
 
-    function showToast(m,t=''){toast.textContent=m;toast.className='toast show '+t;setTimeout(()=>toast.className='toast',3000)}
+    function showToast(m,t=''){toast.textContent=m;toast.className='toast show '+t;if(t==='ok')haptic('success');if(t==='err')haptic('error');setTimeout(()=>toast.className='toast',3000)}
     function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
     // ── Markdown Renderer ───────────────────────────────
@@ -555,6 +684,130 @@
         </div>`;
       }
 
+      // GIF Reactions toggle
+      const gifOn=k.gifEnabled!==false;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">GIF Reactions</div>
+        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+          <button class="mode-btn gif-mode-btn ${gifOn?'active':''}" data-gif="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gifOn?'var(--teal)':'transparent'};border:none;color:${gifOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+          <button class="mode-btn gif-mode-btn ${!gifOn?'active':''}" data-gif="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gifOn?'var(--teal)':'transparent'};border:none;color:${!gifOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show a relevant GIF overlay for 10 seconds on each AI response.</div>
+      </div>`;
+
+      // PIN Code Security
+      const pinOn=!!k.pinRequired;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">PIN Code Lock</div>
+        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+          <button class="mode-btn pin-mode-btn ${pinOn?'active':''}" data-pin="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${pinOn?'var(--teal)':'transparent'};border:none;color:${pinOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+          <button class="mode-btn pin-mode-btn ${!pinOn?'active':''}" data-pin="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!pinOn?'var(--teal)':'transparent'};border:none;color:${!pinOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+        </div>
+        <div style="margin-top:8px">
+          <input type="password" class="sheet-input" id="sheetPinCode" value="${esc(k.pinCode||'')}" placeholder="Enter 4-6 digit PIN" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="font-family:var(--mono);font-size:12px;letter-spacing:4px;text-align:center">
+        </div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Require PIN to send messages. Protects your TealClaw on shared/unlocked devices.</div>
+      </div>`;
+
+      // Appearance section
+      const presetColors=[
+        {label:'Teal',val:'#0d9488'},{label:'Blue',val:'#3b82f6'},{label:'Purple',val:'#8b5cf6'},
+        {label:'Pink',val:'#ec4899'},{label:'Red',val:'#ef4444'},{label:'Orange',val:'#f97316'},
+        {label:'Green',val:'#22c55e'},{label:'Yellow',val:'#eab308'}
+      ];
+      const curAccent=k.accentColor||'#0d9488';
+      const curSize=k.fontSize||'medium';
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Appearance</div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Accent Color</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${presetColors.map(c=>`<button class="accent-swatch" data-color="${c.val}" title="${c.label}" style="width:28px;height:28px;border-radius:50%;border:2px solid ${curAccent===c.val?'#fff':'transparent'};background:${c.val};cursor:pointer;transition:all 0.2s"></button>`).join('')}
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Font Size</div>
+          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+            ${['small','medium','large'].map(s=>`<button class="mode-btn font-size-btn ${curSize===s?'active':''}" data-size="${s}" style="flex:1;padding:8px;font-size:${s==='small'?'10px':s==='medium'?'12px':'14px'};font-weight:500;font-family:var(--font);background:${curSize===s?'var(--teal)':'transparent'};border:none;color:${curSize===s?'#fff':'var(--text-3)'};cursor:pointer">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Bot Name</div>
+          <div style="display:flex;gap:5px">
+            <input type="text" class="sheet-input" id="sheetBotName" value="${esc(k.botName||'')}" placeholder="TealClaw" style="font-family:var(--font)">
+            <button class="btn btn-teal" id="sheetBotNameSave">Set</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Background Image</div>
+          <div style="display:flex;gap:5px">
+            <input type="text" class="sheet-input" id="sheetBgImage" value="${esc(k.bgImage||'')}" placeholder="https://example.com/image.jpg" style="font-family:var(--font);font-size:10px">
+            <button class="btn btn-teal" id="sheetBgImageSave">Set</button>
+            ${k.bgImage?'<button class="btn btn-danger btn-sm" id="sheetBgImageClear">Clear</button>':''}
+          </div>
+        </div>
+      </div>`;
+
+      // Accessibility
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Accessibility</div>`;
+      const a11yToggles=[
+        {key:'reduceMotion',label:'Reduce Motion',desc:'Disable animations and transitions'},
+        {key:'highContrast',label:'High Contrast',desc:'Boost text and border contrast'},
+        {key:'dyslexiaFont',label:'Dyslexia-Friendly Font',desc:'Use OpenDyslexic font for better readability'},
+        {key:'focusHighlight',label:'Focus Indicators',desc:'Show visible outlines on focused elements'},
+        {key:'compactMode',label:'Compact Mode',desc:'Reduce spacing for more content on screen'}
+      ];
+      a11yToggles.forEach(({key,label,desc})=>{
+        const on=!!k[key];
+        html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1"><div style="font-size:12px;font-weight:500">${label}</div><div style="font-size:10px;color:var(--text-3)">${desc}</div></div>
+          <button class="a11y-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}">${on?'On':'Off'}</button>
+        </div>`;
+      });
+      html+=`</div>`;
+
+      // Experimental
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Experimental</div>`;
+      const expToggles=[
+        {key:'streamEnabled',label:'Streaming',desc:'Show AI responses as they generate (token by token)'},
+        {key:'latexEnabled',label:'LaTeX/Math',desc:'Render $math$ and $$equations$$ with KaTeX'},
+        {key:'hapticFeedback',label:'Haptic Feedback',desc:'Vibrate on interactions (mobile)',def:true},
+        {key:'soundEnabled',label:'Sound Effects',desc:'Play sounds on send and receive'},
+        {key:'autoScroll',label:'Auto-Scroll',desc:'Scroll to bottom on new messages',def:true}
+      ];
+      expToggles.forEach(({key,label,desc,def})=>{
+        const on=def?k[key]!==false:!!k[key];
+        html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1"><div style="font-size:12px;font-weight:500">${label}</div><div style="font-size:10px;color:var(--text-3)">${desc}</div></div>
+          <button class="exp-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}" data-def="${!!def}">${on?'On':'Off'}</button>
+        </div>`;
+      });
+      // Max tokens slider
+      const curTokens=k.maxTokens||400;
+      html+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:12px;font-weight:500">Response Length</div><div style="font-size:10px;color:var(--text-3)">Max tokens per AI response</div></div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--teal)" id="tokenVal">${curTokens}</div>
+        </div>
+        <input type="range" id="sheetMaxTokens" min="50" max="2000" step="50" value="${curTokens}" style="width:100%;margin-top:6px;accent-color:var(--teal)">
+      </div>`;
+      // Temperature slider
+      const curTemp=k.temperature!==undefined?k.temperature:0.7;
+      html+=`<div style="padding:8px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:12px;font-weight:500">Creativity</div><div style="font-size:10px;color:var(--text-3)">Temperature (0=focused, 2=creative)</div></div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--teal)" id="tempVal">${curTemp}</div>
+        </div>
+        <input type="range" id="sheetTemperature" min="0" max="2" step="0.1" value="${curTemp}" style="width:100%;margin-top:6px;accent-color:var(--teal)">
+      </div>`;
+      // Context window slider
+      const curCtx=k.contextMessages||20;
+      html+=`<div style="padding:8px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:12px;font-weight:500">Context Window</div><div style="font-size:10px;color:var(--text-3)">Messages sent for conversation context</div></div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--teal)" id="ctxVal">${curCtx}</div>
+        </div>
+        <input type="range" id="sheetContextMsgs" min="2" max="50" step="2" value="${curCtx}" style="width:100%;margin-top:6px;accent-color:var(--teal)">
+      </div>`;
+      html+=`</div>`;
+
       // Stats link
       html+=`<div class="sheet-section"><div class="sheet-section-title">Analytics</div>`;
       html+=`<div class="sheet-row" id="sheetStatsRow">
@@ -586,7 +839,7 @@
       });
 
       // Wire up mode toggle
-      $('sheetBody').querySelectorAll('.mode-btn:not(.tts-mode-btn)').forEach(b=>b.addEventListener('click',()=>{
+      $('sheetBody').querySelectorAll('.mode-btn[data-mode]').forEach(b=>b.addEventListener('click',()=>{
         const k2=getK();k2.mode=b.dataset.mode;setK(k2);
         renderSheetContent();renderAgentSelector();
       }));
@@ -596,6 +849,103 @@
         const k2=getK();k2.ttsAutoPlay=b.dataset.tts==='true';setK(k2);
         renderSheetContent();renderChat();
       }));
+
+      // Wire up PIN code
+      $('sheetBody').querySelectorAll('.pin-mode-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();
+        const on=b.dataset.pin==='true';
+        if(on&&!k2.pinCode){showToast('Set a PIN first','err');return}
+        k2.pinRequired=on;setK(k2);
+        renderSheetContent();
+        showToast(on?'PIN lock enabled':'PIN lock disabled','ok');
+      }));
+      $('sheetBody').querySelector('#sheetPinCode')?.addEventListener('change',(e)=>{
+        const val=e.target.value.replace(/\D/g,'');
+        if(val&&(val.length<4||val.length>6)){showToast('PIN must be 4-6 digits','err');return}
+        const k2=getK();
+        if(val){k2.pinCode=val}else{delete k2.pinCode;k2.pinRequired=false}
+        setK(k2);renderSheetContent();
+        showToast(val?'PIN set':'PIN removed','ok');
+      });
+
+      // Wire up GIF toggle
+      $('sheetBody').querySelectorAll('.gif-mode-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.gifEnabled=b.dataset.gif==='true';setK(k2);
+        renderSheetContent();
+      }));
+
+      // Wire up accent color swatches
+      $('sheetBody').querySelectorAll('.accent-swatch').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.accentColor=b.dataset.color;setK(k2);
+        applyVisualConfig();renderSheetContent();
+      }));
+
+      // Wire up font size buttons
+      $('sheetBody').querySelectorAll('.font-size-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.fontSize=b.dataset.size;setK(k2);
+        applyVisualConfig();renderSheetContent();renderChat();
+      }));
+
+      // Wire up bot name
+      $('sheetBody').querySelector('#sheetBotNameSave')?.addEventListener('click',()=>{
+        const val=$('sheetBody').querySelector('#sheetBotName').value.trim();
+        const k2=getK();
+        if(val){k2.botName=val}else{delete k2.botName}
+        setK(k2);applyVisualConfig();showToast(val?'Bot name set':'Bot name reset','ok');
+      });
+
+      // Wire up background image
+      $('sheetBody').querySelector('#sheetBgImageSave')?.addEventListener('click',()=>{
+        const val=$('sheetBody').querySelector('#sheetBgImage').value.trim();
+        const k2=getK();
+        if(val){k2.bgImage=val}else{delete k2.bgImage}
+        setK(k2);applyVisualConfig();renderSheetContent();showToast(val?'Background set':'Background cleared','ok');
+      });
+      $('sheetBody').querySelector('#sheetBgImageClear')?.addEventListener('click',()=>{
+        const k2=getK();delete k2.bgImage;setK(k2);applyVisualConfig();renderSheetContent();showToast('Background cleared','ok');
+      });
+
+      // Wire up accessibility toggles
+      $('sheetBody').querySelectorAll('.a11y-toggle').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();const on=b.dataset.on==='true';
+        k2[b.dataset.key]=!on;setK(k2);
+        applyVisualConfig();renderSheetContent();
+      }));
+
+      // Wire up experimental toggles
+      $('sheetBody').querySelectorAll('.exp-toggle').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();const on=b.dataset.on==='true';
+        if(b.dataset.def==='true'){k2[b.dataset.key]=on?false:true}
+        else{k2[b.dataset.key]=!on}
+        setK(k2);applyVisualConfig();renderSheetContent();
+      }));
+
+      // Wire up max tokens slider
+      $('sheetBody').querySelector('#sheetMaxTokens')?.addEventListener('input',e=>{
+        $('sheetBody').querySelector('#tokenVal').textContent=e.target.value;
+      });
+      $('sheetBody').querySelector('#sheetMaxTokens')?.addEventListener('change',e=>{
+        const k2=getK();k2.maxTokens=+e.target.value;setK(k2);
+        showToast(`Max tokens: ${e.target.value}`,'ok');
+      });
+
+      // Wire up temperature slider
+      $('sheetBody').querySelector('#sheetTemperature')?.addEventListener('input',e=>{
+        $('sheetBody').querySelector('#tempVal').textContent=e.target.value;
+      });
+      $('sheetBody').querySelector('#sheetTemperature')?.addEventListener('change',e=>{
+        const k2=getK();k2.temperature=+e.target.value;setK(k2);
+        showToast(`Temperature: ${e.target.value}`,'ok');
+      });
+
+      // Wire up context window slider
+      $('sheetBody').querySelector('#sheetContextMsgs')?.addEventListener('input',e=>{
+        $('sheetBody').querySelector('#ctxVal').textContent=e.target.value;
+      });
+      $('sheetBody').querySelector('#sheetContextMsgs')?.addEventListener('change',e=>{
+        const k2=getK();k2.contextMessages=+e.target.value;setK(k2);
+        showToast(`Context: ${e.target.value} messages`,'ok');
+      });
 
       // Wire up agent row
       $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
@@ -610,6 +960,21 @@
       $('sheetBody').querySelector('#sheetWipeKeys')?.addEventListener('click',()=>{
         if(!confirm('Clear all keys and reset?'))return;
         localStorage.removeItem('tc-keys');localStorage.removeItem('tc-agents');
+        // Reset visual customizations
+        const root=document.documentElement;
+        ['--teal','--teal-dim','--teal-hover','--chat-font','--font','--bg-root','--text','--user-bg','--ai-bg','--input-font','--btn-size','--r-sm','--r-md','--r-lg','--border','--md-heading','--md-bold','--md-link','--md-code-bg','--md-code','--md-bq-border','--md-bq-bg','--user-text','--ai-text','--bubble-radius','--bubble-pad'].forEach(p=>root.style.removeProperty(p));
+        document.body.style.backgroundImage='';document.body.classList.remove('has-bg-image');
+        // Reset dynamic UI changes
+        const topbar2=document.querySelector('.topbar');if(topbar2)topbar2.style.cssText='';
+        document.querySelectorAll('#attachBtn,#cameraBtn,.send-btn,.mic-circle,.input-bar,.main').forEach(el=>el.style.cssText='');
+        const ti=document.querySelector('#textIn');if(ti)ti.placeholder='Message...';
+        document.querySelector('#tc-custom-css')?.remove();
+        document.querySelector('#dyslexia-font-link')?.remove();
+        document.body.classList.remove('reduce-motion','high-contrast','dyslexia-font','compact-mode','focus-visible');
+        document.body.style.lineHeight='';document.body.style.letterSpacing='';document.body.style.wordSpacing='';
+        document.title='TealClaw';
+        const logo=document.querySelector('.logo');if(logo){const img=logo.querySelector('img');if(img)img.src='/icon-192.png';const tn=[...logo.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(tn)tn.textContent='\n      TealClaw\n    '}
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#0d9488');
         updateStatus();chatHistory=[];setChat([]);renderChat();closeSheet();
         setTimeout(()=>runOnboarding(),300);showToast('Reset complete','ok');
       });
@@ -756,9 +1121,19 @@
       const hasTts=!!ck.ttsKey;
       s.innerHTML=chatHistory.map((m,i)=>{
         let content='';
-        if(m.image) content+=`<img class="chat-img" src="${m.image}">`;
+        if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
         if(m.role==='ai'){
-          content+=`<div class="md-content">${renderMd(m.text)}</div>`;
+          if(m.raw)content+=m.text;
+          else{
+            let rendered=renderMd(m.text);if(getK().latexEnabled)rendered=renderLatex(rendered);
+            content+=`<div class="md-content">${rendered}</div>`;
+            // Detect config blocks and add "Applied" badge
+            const cfgMatch=m.text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+            if(cfgMatch){try{const cfg=JSON.parse(cfgMatch[1]);const recognized=Object.keys(CONFIG_KEYS);if(recognized.some(ck=>cfg[ck]!==undefined)){
+              const keys=recognized.filter(ck=>cfg[ck]!==undefined);
+              content+=`<div class="config-apply-card"><div class="config-preview">${keys.length} settings detected: ${keys.slice(0,4).join(', ')}${keys.length>4?'...':''}</div><button class="config-apply-btn applied">Applied &#10003;</button></div>`;
+            }}catch{}}
+          }
         } else {
           content+=esc(m.text);
         }
@@ -770,9 +1145,13 @@
             content+=`<button class="tts-play on-demand" data-idx="${i}"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Play</button>`;
           }
         }
+        const avatarUrl=m.role==='user'?ck.userAvatar:ck.aiAvatar;
+        if(avatarUrl){
+          return `<div class="chat-bubble-wrap ${m.role}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${content}<div class="chat-meta">${m.time||''}</div></div></div>`;
+        }
         return `<div class="chat-bubble ${m.role}">${content}<div class="chat-meta">${m.time||''}</div></div>`;
       }).join('');
-      s.scrollTop=s.scrollHeight;
+      if(getK().autoScroll!==false)s.scrollTop=s.scrollHeight;
 
       // Wire up Play/Replay buttons
       s.querySelectorAll('.tts-play').forEach(b=>b.addEventListener('click',async()=>{
@@ -809,8 +1188,10 @@
     }
 
     function addTyping(){
-      const s=$('chatScroll');
-      const el=document.createElement('div');el.className='chat-typing';el.id='typing';el.textContent='Thinking...';
+      const s=$('chatScroll');const k=getK();
+      const emoji=k.loadingEmoji?k.loadingEmoji+' ':'';
+      const txt=emoji+(k.loadingText||'Thinking...');
+      const el=document.createElement('div');el.className='chat-typing';el.id='typing';el.textContent=txt;
       s.appendChild(el);s.scrollTop=s.scrollHeight;
     }
     function removeTyping(){const el=$('typing');if(el)el.remove()}
@@ -835,14 +1216,18 @@
       const url=isGroqFallback
         ?'https://api.groq.com/openai/v1/chat/completions'
         :'https://openrouter.ai/api/v1/chat/completions';
-      const model=isGroqFallback
+      let model=isGroqFallback
         ?(imageBase64?groqVisionModel:groqChatModel)
         :(k.aiModel||'google/gemini-2.5-flash-preview');
+
+      // Multi-model routing (skip when using Groq fallback — routed models may not be valid Groq models)
+      if(userText&&!isGroqFallback){const routed=routeModel(userText,k);if(routed)model=routed}
 
       const sys=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
 
       // Build messages with conversation history
-      const histMsgs=chatHistory.slice(-20).filter(m=>m.role==='user'||m.role==='ai').map(m=>({
+      const ctxLimit=k.contextMessages||20;
+      const histMsgs=chatHistory.slice(-ctxLimit).filter(m=>m.role==='user'||m.role==='ai').map(m=>({
         role:m.role==='user'?'user':'assistant',content:m.text
       }));
 
@@ -854,10 +1239,12 @@
       }
 
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
+      const body={model,messages:msgs,max_tokens:k.maxTokens||400};
+      if(k.temperature!==undefined)body.temperature=Number(k.temperature);
       const res=await fetch(url,{
         method:'POST',
         headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},
-        body:JSON.stringify({model,messages:msgs,max_tokens:400})
+        body:JSON.stringify(body)
       });
       const d=await res.json();
       if(d.error) throw new Error(d.error.message||'API error');
@@ -1060,48 +1447,642 @@ ${getOptionalSteps()}`
       return `<p>You can also add: ${missing.join(', ')}. Just paste anytime.</p>`;
     }
 
+    // ── Haptic Feedback ────────────────────────────────────
+    function haptic(pattern='light'){
+      const k=getK();
+      if(k.hapticFeedback===false)return; // default ON
+      if(!navigator.vibrate)return;
+      switch(pattern){
+        case 'light':navigator.vibrate(8);break;
+        case 'medium':navigator.vibrate(15);break;
+        case 'heavy':navigator.vibrate(30);break;
+        case 'success':navigator.vibrate([10,30,10]);break;
+        case 'error':navigator.vibrate([30,20,30]);break;
+        case 'double':navigator.vibrate([8,40,8]);break;
+        case 'send':navigator.vibrate([5,20,12]);break;
+        case 'receive':navigator.vibrate([8,50,5,30,8]);break;
+        case 'shutter':navigator.vibrate([20,10,5]);break;
+        default:navigator.vibrate(10);
+      }
+    }
+
+    // Add haptic to all button/interactive taps globally
+    document.addEventListener('click',e=>{
+      const el=e.target.closest('button,.sheet-row,.mode-btn,.icon-btn,.accent-swatch,.a11y-toggle,.exp-toggle');
+      if(el)haptic('light');
+    },{passive:true});
+
+    // ── Sound Effects ─────────────────────────────────────
+    function playTone(freq,dur=0.08,vol=0.15){
+      if(!audioCtx||getK().soundEnabled===false)return;
+      try{
+        const ctx=ensureAudioCtx();
+        const osc=ctx.createOscillator();
+        const gain=ctx.createGain();
+        osc.type='sine';osc.frequency.value=freq;
+        gain.gain.value=vol;gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);osc.stop(ctx.currentTime+dur);
+      }catch{}
+    }
+    function playSendSound(){if(getK().soundEnabled)playTone(880,0.06,0.12)}
+    function playReceiveSound(){if(getK().soundEnabled){playTone(660,0.06,0.1);setTimeout(()=>playTone(880,0.08,0.12),70)}}
+
+    // ── GIF Overlay ──────────────────────────────────────
+    let gifTimer=null;
+    const TENOR_KEY='TENOR_API_KEY_HERE'; // Register at console.cloud.google.com → enable Tenor API
+
+    async function searchGif(query){
+      if(!TENOR_KEY||TENOR_KEY.includes('_HERE'))return null;
+      try{
+        const q=encodeURIComponent(query.slice(0,80));
+        const res=await fetch(`https://tenor.googleapis.com/v2/search?q=${q}&key=${TENOR_KEY}&limit=8&media_filter=gif&contentfilter=medium`);
+        if(!res.ok)return null;
+        const d=await res.json();
+        if(!d.results?.length)return null;
+        const pick=d.results[Math.floor(Math.random()*d.results.length)];
+        return pick.media_formats?.gif?.url||pick.media_formats?.mediumgif?.url||null;
+      }catch{return null}
+    }
+
+    function parseGifTag(text){
+      const m=text.match(/\[gif:([^\]]+)\]/i);
+      if(m)return{cleanText:text.replace(m[0],'').trim(),gifQuery:m[1].trim()};
+      // Auto-search: use first ~60 chars of response
+      const snippet=text.replace(/[#*_`\[\]()]/g,'').slice(0,60).trim();
+      return{cleanText:text,gifQuery:snippet};
+    }
+
+    function showGifOverlay(gifUrl,text){
+      const overlay=$('gifOverlay'),img=$('gifImg'),txt=$('gifText');
+      img.src=gifUrl;
+      txt.textContent=text?.slice(0,120)||'';
+      overlay.classList.remove('hidden');
+      if(gifTimer)clearTimeout(gifTimer);
+      gifTimer=setTimeout(hideGifOverlay,10000);
+    }
+
+    function hideGifOverlay(){
+      $('gifOverlay').classList.add('hidden');
+      if(gifTimer){clearTimeout(gifTimer);gifTimer=null}
+    }
+
+    $('gifOverlay').addEventListener('click',hideGifOverlay);
+
+    // ── Research Pipeline (ORNOT-style) ─────────────────
+    const RESEARCH_SYSTEM=`You are a research analyst. The user will ask you to research a topic or analyze an image.
+Return your response as valid JSON with this exact structure:
+{
+  "verdict": {"label":"SHORT VERDICT","color":"green|yellow|orange|red|gray|blue"},
+  "summary": "2-3 sentence overview",
+  "sections": [
+    {"title":"SECTION NAME","content":"Detailed findings. Use **bold** for emphasis.","severity":"neutral|ok|warn|danger","bullets":["point 1","point 2"]},
+    ...
+  ],
+  "sources": ["source description or URL"],
+  "fullContext": "Extended detailed analysis with all findings, data points, nuances, caveats, and deep context. This should be 3-4x longer than what the user sees. Include raw data, statistical details, alternative interpretations, related tangents, methodology notes, and anything an expert would want to know."
+}
+Rules:
+- Always include 4-8 sections with meaningful titles
+- Severity: "ok" for positive findings, "warn" for caution, "danger" for critical issues, "neutral" for informational
+- Verdict colors: green=good, yellow=caution, orange=concerning, red=bad, blue=informational, gray=unknown
+- The "fullContext" field MUST be 3-4x more detailed than the visible sections combined
+- Use **markdown bold** in content for emphasis
+- If analyzing an image, describe what you see in detail
+- Research thoroughly: cover pros, cons, risks, alternatives, history, and recommendations
+- Return ONLY valid JSON, no markdown fences or extra text`;
+
+    function renderResearchHTML(data){
+      let h='<div class="research-result">';
+      if(data.verdict){
+        h+=`<div class="research-verdict ${data.verdict.color||'blue'}">${esc(data.verdict.label||'Research Complete')}</div>`;
+      }
+      if(data.summary){
+        h+=`<p style="font-size:12px;color:var(--text-2);margin:6px 0 10px">${esc(data.summary)}</p>`;
+      }
+      if(data.sections?.length){
+        data.sections.forEach(s=>{
+          const cls=s.severity==='warn'?'warn':s.severity==='danger'?'danger':s.severity==='ok'?'ok':'';
+          h+=`<div class="research-section ${cls}">`;
+          h+=`<div class="research-section-title">${esc(s.title||'Finding')}</div>`;
+          if(s.content)h+=`<p>${renderMd(s.content)}</p>`;
+          if(s.bullets?.length){
+            h+='<ul>';
+            s.bullets.forEach(b=>h+=`<li>${renderMd(b)}</li>`);
+            h+='</ul>';
+          }
+          h+='</div>';
+        });
+      }
+      if(data.sources?.length){
+        h+='<div class="research-sources">Sources: ';
+        h+=data.sources.map(s=>{
+          if(s.startsWith('http'))return `<a href="${esc(s)}" target="_blank" rel="noopener">${esc(s.replace(/^https?:\/\//,'').slice(0,40))}</a>`;
+          return esc(s);
+        }).join(' | ');
+        h+='</div>';
+      }
+      h+='</div>';
+      return h;
+    }
+
+    async function researchPipeline(query,imageBase64){
+      const k=getK();
+      const groqKey=k.whisperKey||(k.aiProvider==='groq'?k.aiKey:'');
+      if(!groqKey){
+        sysBubble(`<p>Research requires a <strong>Groq API key</strong>. Get one free at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a> and paste the <code>gsk_</code> key in the chat.</p>`);
+        return;
+      }
+
+      // Show user message
+      addBubble('user',query?`/research ${query}`:'/research [Image]',imageBase64?{image:imageBase64}:{});
+      playSendSound();
+
+      // Show processing steps
+      const procId='research-'+Date.now();
+      const steps=['Analyzing query','Searching knowledge base','Cross-referencing sources','Compiling report','Generating insights'];
+      let procHtml='<div class="research-processing" id="'+procId+'">';
+      steps.forEach((s,i)=>procHtml+=`<div class="research-step" data-idx="${i}"><span class="spinner step-icon"></span><span>${s}...</span></div>`);
+      procHtml+='</div>';
+      addBubble('ai',procHtml,{raw:true});
+      haptic('medium');
+
+      // Animate processing steps
+      const stepEls=()=>document.querySelectorAll('#'+procId+' .research-step');
+      let stepIdx=0;
+      const stepTimer=setInterval(()=>{
+        const els=stepEls();
+        if(stepIdx<els.length){
+          els[stepIdx].classList.add('done');
+          els[stepIdx].querySelector('.step-icon').outerHTML='<svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+          stepIdx++;
+        } else clearInterval(stepTimer);
+      },800);
+
+      try{
+        // Build messages
+        let userContent;
+        if(imageBase64){
+          userContent=[
+            {type:'text',text:query||'Research this image thoroughly. Identify what it shows and provide a comprehensive analysis.'},
+            {type:'image_url',image_url:{url:imageBase64}}
+          ];
+        } else {
+          userContent=`Research the following topic thoroughly: ${query}`;
+        }
+
+        const model=imageBase64?'meta-llama/llama-4-maverick-17b-128e-instruct':'llama-3.3-70b-versatile';
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model,
+            messages:[
+              {role:'system',content:RESEARCH_SYSTEM},
+              {role:'user',content:userContent}
+            ],
+            max_tokens:4000,
+            temperature:0.3
+          })
+        });
+
+        clearInterval(stepTimer);
+        // Mark all steps done
+        stepEls().forEach(el=>{
+          el.classList.add('done');
+          const sp=el.querySelector('.spinner');
+          if(sp)sp.outerHTML='<svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+        });
+
+        const d=await res.json();
+        if(d.error)throw new Error(d.error.message||'Research API error');
+
+        const raw=d.choices?.[0]?.message?.content||'';
+        let data;
+        try{
+          // Strip markdown fences if present
+          const cleaned=raw.replace(/^```json?\s*/i,'').replace(/\s*```$/,'').trim();
+          data=JSON.parse(cleaned);
+        }catch{
+          // Fallback: show as plain text
+          removeLast();
+          addBubble('ai',`<div class="md-content">${renderMd(raw)}</div>`,{raw:true});
+          playReceiveSound();haptic('receive');
+          sendTelegram(`Research: ${raw}`);
+          return;
+        }
+
+        // Remove processing bubble and show formatted results
+        removeLast();
+        const resultHtml=renderResearchHTML(data);
+        addBubble('ai',resultHtml,{raw:true});
+        playReceiveSound();haptic('success');
+
+        // Forward FULL context to Telegram (3x detail for OpenClaw agent)
+        const fullPayload=`RESEARCH REPORT\n\nQuery: ${query||'[Image analysis]'}\nVerdict: ${data.verdict?.label||'N/A'}\n\n--- SUMMARY ---\n${data.summary||''}\n\n--- SECTIONS ---\n${(data.sections||[]).map(s=>`[${s.title}] ${s.content||''}\n${(s.bullets||[]).map(b=>'  - '+b).join('\n')}`).join('\n\n')}\n\n--- FULL CONTEXT (Agent-only) ---\n${data.fullContext||''}\n\n--- SOURCES ---\n${(data.sources||[]).join('\n')}`;
+        sendTelegram(fullPayload);
+
+        // Also forward to agent if in agent mode
+        const mode=k.mode||'direct';
+        if(mode==='agent'&&getActiveAgent()){
+          try{
+            const agent=getActiveAgent();
+            await fetch(`${agent.url}/v1/chat/completions`,{
+              method:'POST',
+              headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
+              body:JSON.stringify({messages:[{role:'user',content:`[RESEARCH CONTEXT - User researched: "${query||'image'}"]\n\n${fullPayload}\n\nRemember this research context for follow-up questions.`}],max_tokens:100})
+            });
+          }catch{}
+        }
+
+      }catch(e){
+        clearInterval(stepTimer);
+        removeLast();
+        addBubble('ai',`<p style="color:var(--err)">Research failed: ${esc(e.message)}</p>`,{raw:true});
+        showToast('Research failed','err');haptic('error');
+      }
+    }
+
+    // Remove last chat bubble (used by research to swap processing with results)
+    function removeLast(){
+      const bubbles=document.querySelectorAll('.chat-bubble');
+      if(bubbles.length)bubbles[bubbles.length-1].remove();
+      if(chatHistory.length)chatHistory.pop();
+    }
+
+    // ── Utility: Load External Script ─────────────────
+    function loadScript(src){
+      return new Promise((resolve,reject)=>{
+        if(document.querySelector(`script[src="${src}"]`)){resolve();return}
+        const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.appendChild(s);
+      });
+    }
+
+    // ── Quick Replies ────────────────────────────────────
+    function renderQuickReplies(){
+      const k=getK();const el=$('quickReplies');
+      if(!el)return;
+      if(!k.quickReplies||!Array.isArray(k.quickReplies)||!k.quickReplies.length){el.style.display='none';return}
+      el.style.display='flex';
+      el.innerHTML=k.quickReplies.map(q=>`<button class="quick-reply">${esc(typeof q==='string'?q:q.label||q.text||'')}</button>`).join('');
+      el.querySelectorAll('.quick-reply').forEach(b=>b.addEventListener('click',()=>{
+        $('textIn').value=b.textContent;haptic('light');send();
+      }));
+    }
+
+    // ── Export Chat ──────────────────────────────────────
+    function exportChat(){
+      if(!chatHistory.length){sysBubble('<p>No chat to export.</p>');return}
+      const k=getK();const botName=k.botName||'TealClaw';
+      let md=`# ${botName} Chat Export\n_${new Date().toLocaleString()}_\n\n---\n\n`;
+      chatHistory.forEach(m=>{
+        const role=m.role==='user'?'You':botName;
+        md+=`**${role}** (${m.time||''}):\n${m.text}\n\n`;
+      });
+      const blob=new Blob([md],{type:'text/markdown'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;
+      a.download=`${botName.toLowerCase().replace(/\s+/g,'-')}-chat-${new Date().toISOString().slice(0,10)}.md`;
+      document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+      showToast('Chat exported','ok');haptic('success');
+    }
+
+    // ── Profiles ─────────────────────────────────────────
+    function handleProfile(arg){
+      const k=getK();
+      if(!arg||arg==='list'){
+        const profiles=JSON.parse(localStorage.getItem('tc-profiles')||'{}');
+        const names=Object.keys(profiles);
+        if(!names.length){
+          sysBubble(`<h3>Profiles</h3><p>No saved profiles yet.</p>
+<p><strong>Usage:</strong></p>
+<ul><li><code>/profile save MySetup</code> -- save current config as a profile</li>
+<li><code>/profile load MySetup</code> -- load a saved profile</li>
+<li><code>/profile list</code> -- show all saved profiles</li>
+<li><code>/profile delete MySetup</code> -- remove a profile</li></ul>
+<p>Profiles save your entire configuration: keys, colors, persona, and all settings. Great for switching between different bot setups.</p>`);
+        } else {
+          const active=k.activeProfile||'(none)';
+          sysBubble(`<h3>Profiles</h3><p>Active: <strong>${esc(active)}</strong></p>
+<ul>${names.map(n=>`<li><code>${esc(n)}</code>${n===active?' <span style="color:var(--ok)">(active)</span>':''}</li>`).join('')}</ul>
+<p>Use <code>/profile load name</code> to switch.</p>`);
+        }
+        return;
+      }
+      const parts=arg.split(/\s+/);
+      const action=parts[0].toLowerCase();
+      const name=parts.slice(1).join(' ');
+      if(action==='save'&&name){
+        const profiles=JSON.parse(localStorage.getItem('tc-profiles')||'{}');
+        profiles[name]={...k,agents:getAgents()};
+        localStorage.setItem('tc-profiles',JSON.stringify(profiles));
+        const k2=getK();k2.activeProfile=name;setK(k2);
+        sysBubble(`<p>Profile <strong>${esc(name)}</strong> saved with ${Object.keys(k).length} settings.</p>`);
+        showToast('Profile saved','ok');haptic('success');return;
+      }
+      if(action==='load'&&name){
+        const profiles=JSON.parse(localStorage.getItem('tc-profiles')||'{}');
+        if(!profiles[name]){sysBubble(`<p>Profile <strong>${esc(name)}</strong> not found. Type <code>/profile list</code> to see available profiles.</p>`);return}
+        const count=importConfig(profiles[name]);
+        const k2=getK();k2.activeProfile=name;setK(k2);
+        applyVisualConfig();updateStatus();renderAgentSelector();renderChat();
+        sysBubble(`<p>Loaded profile <strong>${esc(name)}</strong> (${count} settings applied).</p>`);
+        showToast('Profile loaded','ok');haptic('success');return;
+      }
+      if(action==='delete'&&name){
+        const profiles=JSON.parse(localStorage.getItem('tc-profiles')||'{}');
+        if(!profiles[name]){sysBubble(`<p>Profile <strong>${esc(name)}</strong> not found.</p>`);return}
+        delete profiles[name];
+        localStorage.setItem('tc-profiles',JSON.stringify(profiles));
+        if(k.activeProfile===name){const k2=getK();delete k2.activeProfile;setK(k2)}
+        sysBubble(`<p>Profile <strong>${esc(name)}</strong> deleted.</p>`);
+        showToast('Profile deleted','ok');return;
+      }
+      sysBubble(`<h3>Profiles</h3><p>Usage:</p><ul><li><code>/profile save name</code></li><li><code>/profile load name</code></li><li><code>/profile list</code></li><li><code>/profile delete name</code></li></ul>`);
+    }
+
+    // ── QR Code Config Sharing ──────────────────────────
+    async function generateQR(){
+      const url=exportConfigUrl();
+      sysBubble('<p style="color:var(--text-3)">Generating QR code...</p>');
+      try{
+        await loadScript('https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js');
+      }catch{
+        removeLast();
+        sysBubble(`<h3>Share Config</h3>
+<p>Copy this link and open it on any device to apply your configuration:</p>
+<p style="word-break:break-all;font-family:var(--mono);font-size:10px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md)">${esc(url)}</p>
+<p style="font-size:10px;color:var(--text-3)">QR library couldn't load. Share the link instead.</p>`);
+        return;
+      }
+      removeLast();
+      const hasKeys=!!(getK().aiKey||getK().whisperKey||getK().ttsKey||getK().tgToken);
+      const bubble=sysBubble(`<div class="qr-container">
+        <h3>Scan to Configure</h3>
+        <div id="qrTarget"></div>
+        <p style="font-size:11px;color:var(--text-2);max-width:280px;text-align:center">Scan this QR code with your phone camera to instantly apply your TealClaw configuration.</p>
+        <p style="font-size:10px;color:var(--text-3);max-width:280px;text-align:center"><strong>Note:</strong> API keys are <em>not</em> included in QR codes for security. You'll need to add keys on the new device separately.</p>
+        ${hasKeys?'<p style="font-size:10px;color:var(--warn);max-width:280px;text-align:center">&#9888; Your visual settings, persona, and preferences will transfer. API keys must be entered manually on the new device.</p>':''}
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-teal" id="qrCopy">Copy Link</button>
+          <button class="btn btn-ghost" id="qrDownload">Download QR</button>
+        </div>
+      </div>`);
+      const tgt=bubble.querySelector('#qrTarget');
+      if(tgt){
+        const accent=getK().accentColor||'#0d9488';
+        new QRCode(tgt,{text:url,width:200,height:200,colorDark:accent,colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+      }
+      bubble.querySelector('#qrCopy')?.addEventListener('click',()=>{
+        navigator.clipboard?.writeText(url);showToast('Config link copied','ok');haptic('success');
+      });
+      bubble.querySelector('#qrDownload')?.addEventListener('click',()=>{
+        const canvas=bubble.querySelector('#qrTarget canvas');
+        if(!canvas)return;
+        const a=document.createElement('a');a.href=canvas.toDataURL('image/png');
+        a.download='tealclaw-config-qr.png';a.click();
+        showToast('QR saved','ok');haptic('success');
+      });
+      showToast('QR code ready','ok');haptic('success');
+    }
+
+    // ── Webhooks ────────────────────────────────────────
+    async function fireWebhook(event,data){
+      const k=getK();if(!k.webhookUrl)return;
+      const events=(k.webhookEvents||'message.send,message.receive').split(',').map(s=>s.trim());
+      if(!events.includes(event))return;
+      try{
+        await fetch(k.webhookUrl,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({event,timestamp:Date.now(),botName:k.botName||'TealClaw',data})
+        });
+      }catch(e){console.warn('Webhook failed:',e)}
+    }
+
+    // ── Multi-Model Routing ─────────────────────────────
+    function routeModel(text,k){
+      if(!k.fastModel&&!k.complexModel)return null;
+      const threshold=+(k.routingThreshold||80);
+      const complexPatterns=/\b(explain|analyze|compare|research|write|create|design|implement|debug|review|summarize|translate|elaborate|detail|comprehensive|thorough)\b/i;
+      const isComplex=text.length>threshold||complexPatterns.test(text);
+      return isComplex?(k.complexModel||null):(k.fastModel||null);
+    }
+
+    // ── Auto-Config Detection (in AI responses) ───────
+    function detectAndApplyConfig(text){
+      // Look for JSON in markdown code blocks or bare JSON objects
+      const patterns=[
+        /```(?:json)?\s*(\{[\s\S]*?\})\s*```/g,  // ```json {...}```
+        /(?:^|\n)(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})(?:\n|$)/g  // bare JSON objects
+      ];
+      const recognized=Object.keys(CONFIG_KEYS);
+      let applied=0;
+      for(const pat of patterns){
+        let match;
+        while((match=pat.exec(text))!==null){
+          try{
+            const cfg=JSON.parse(match[1]);
+            const hasConfig=recognized.some(ck=>cfg[ck]!==undefined)||cfg.agents;
+            if(hasConfig){
+              const count=importConfig(cfg);
+              applied+=count;
+              applyVisualConfig();updateStatus();renderAgentSelector();
+            }
+          }catch{}
+        }
+      }
+      if(applied>0){
+        showToast(`Auto-applied ${applied} settings from AI response`,'ok');
+        haptic('success');
+        renderQuickReplies();
+      }
+      return applied;
+    }
+
+    // ── LaTeX Rendering (KaTeX) ─────────────────────────
+    let katexLoaded=false;
+    async function loadKaTeX(){
+      if(katexLoaded)return;
+      const css=document.createElement('link');css.rel='stylesheet';
+      css.href='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+      document.head.appendChild(css);
+      await loadScript('https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js');
+      katexLoaded=true;
+    }
+    function renderLatex(html){
+      if(!window.katex)return html;
+      // Block math: $$...$$
+      html=html.replace(/\$\$([^$]+)\$\$/g,(m,tex)=>{
+        try{return katex.renderToString(tex.trim(),{displayMode:true,throwOnError:false})}catch{return m}
+      });
+      // Inline math: $...$
+      html=html.replace(/(?<!\$)\$([^$\n]+)\$(?!\$)/g,(m,tex)=>{
+        try{return katex.renderToString(tex.trim(),{displayMode:false,throwOnError:false})}catch{return m}
+      });
+      return html;
+    }
+
+    // ── Streaming AI Call ────────────────────────────────
+    async function callAIStream(userText,imageBase64,onToken){
+      const k=getK();
+      if(k.mode==='agent'&&getActiveAgent())return callAgent(userText,imageBase64);
+      const aiKey=k.aiKey||k.whisperKey;
+      if(!aiKey)return '__NO_KEY__';
+      const isGroqFallback=!k.aiKey&&!!k.whisperKey;
+      const url=isGroqFallback?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
+      let model=isGroqFallback?(imageBase64?'meta-llama/llama-4-maverick-17b-128e-instruct':'llama-3.3-70b-versatile'):(k.aiModel||'google/gemini-2.5-flash-preview');
+      // Multi-model routing (skip when using Groq fallback)
+      if(userText&&!isGroqFallback){const routed=routeModel(userText,k);if(routed)model=routed}
+      const sys=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
+      const ctxLimit=k.contextMessages||20;
+      const histMsgs=chatHistory.slice(-ctxLimit).filter(m=>m.role==='user'||m.role==='ai').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
+      let userContent=imageBase64?[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}]:userText;
+      const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
+      const body={model,messages:msgs,max_tokens:k.maxTokens||400,stream:true};
+      if(k.temperature!==undefined)body.temperature=Number(k.temperature);
+      const res=await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`API error: ${res.status}`)}
+      const reader=res.body.getReader();const decoder=new TextDecoder();
+      let full='',buffer='';
+      while(true){
+        const{done,value}=await reader.read();if(done)break;
+        buffer+=decoder.decode(value,{stream:true});
+        const lines=buffer.split('\n');buffer=lines.pop()||'';
+        for(const line of lines){
+          if(!line.startsWith('data: '))continue;
+          const data=line.slice(6);if(data==='[DONE]')continue;
+          try{const j=JSON.parse(data);const delta=j.choices?.[0]?.delta?.content;if(delta){full+=delta;onToken(full)}}catch{}
+        }
+      }
+      return full;
+    }
+
+    // ── Scheduled Messages ──────────────────────────────
+    function checkScheduledMessages(){
+      const k=getK();
+      if(!k.scheduledMessages||!Array.isArray(k.scheduledMessages))return;
+      const now=new Date();const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      const day=['sun','mon','tue','wed','thu','fri','sat'][now.getDay()];
+      k.scheduledMessages.forEach(msg=>{
+        if(!msg.time||!msg.text)return;
+        if(msg.time!==hhmm)return;
+        if(msg.days&&!msg.days.includes(day))return;
+        const lastKey='tc-sched-'+msg.time;
+        const lastRun=localStorage.getItem(lastKey);
+        const today=now.toDateString();
+        if(lastRun===today)return;
+        localStorage.setItem(lastKey,today);
+        setTimeout(()=>{sysBubble(`<div class="md-content">${renderMd(msg.text)}</div>`);haptic('receive')},500);
+      });
+    }
+
     // ── Pipeline ───────────────────────────────────────
     async function pipeline(text,imageBase64){
       if(!text&&!imageBase64)return;
+      const pk=getK();
+
+      // Input prefix
+      if(pk.inputPrefix&&text&&!text.startsWith('/'))text=pk.inputPrefix+' '+text;
+
       addBubble('user',text||'[Image]',imageBase64?{image:imageBase64}:{});
-      addTyping();
+      playSendSound();
+      fireWebhook('message.send',{text:text||'[Image]',hasImage:!!imageBase64});
 
       // Forward user message to Telegram
       sendTelegram(`You: ${text||'[Image]'}`);
 
-      try{
-        const aiText=await callAI(text,imageBase64);
-        removeTyping();
-        if(aiText==='__NO_KEY__'){
-          sysBubble(`<p>I need an AI key to respond. Paste one of these in the chat:</p>
+      // LaTeX: load KaTeX if enabled
+      if(pk.latexEnabled&&!katexLoaded)loadKaTeX().catch(()=>{});
+
+      const useStream=pk.streamEnabled&&!imageBase64&&pk.mode!=='agent';
+
+      if(useStream){
+        // Streaming mode: show tokens as they arrive
+        const streamIdx=chatHistory.length;
+        addBubble('ai','...');
+        const scroll=$('chatScroll');
+        try{
+          const aiText=await callAIStream(text,imageBase64,(partial)=>{
+            chatHistory[streamIdx].text=partial;
+            const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
+            const last=bubbles[bubbles.length-1];
+            if(last){
+              const md=last.querySelector('.md-content');
+              let rendered=renderMd(partial);
+              if(pk.latexEnabled)rendered=renderLatex(rendered);
+              if(md)md.innerHTML=rendered;
+              else last.innerHTML=`<div class="md-content">${rendered}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
+            }
+            if(pk.autoScroll!==false)scroll.scrollTop=scroll.scrollHeight;
+          });
+          if(aiText==='__NO_KEY__'){
+            chatHistory.pop();
+            sysBubble(`<p>I need an AI key to respond. Paste one of these:</p><ul><li><a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a> -- <code>sk-or-v1-...</code></li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- <code>gsk_...</code> (free)</li></ul>`);
+            return;
+          }
+          // Finalize
+          let displayText=aiText||'(No response)';
+          if(pk.gifEnabled!==false){
+            const{cleanText,gifQuery}=parseGifTag(aiText);displayText=cleanText;
+            searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+          }
+          chatHistory[streamIdx].text=displayText;
+          setChat(chatHistory);renderChat();
+          // Auto-detect and apply TealClaw config in AI response
+          detectAndApplyConfig(displayText);
+          sendTelegram(`AI: ${displayText}`);
+          fireWebhook('message.receive',{text:displayText});
+          // TTS
+          if(audioEnabled&&pk.ttsKey&&pk.ttsAutoPlay!==false){
+            const ttsData=await speak(displayText);
+            if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
+          }
+          playReceiveSound();haptic('receive');renderQuickReplies();
+        }catch(e){
+          chatHistory[streamIdx].text=`Error: ${e.message}`;setChat(chatHistory);renderChat();
+          showToast(e.message,'err');haptic('error');
+        }
+      } else {
+        // Non-streaming mode
+        addTyping();
+        try{
+          const aiText=await callAI(text,imageBase64);
+          removeTyping();
+          if(aiText==='__NO_KEY__'){
+            sysBubble(`<p>I need an AI key to respond. Paste one of these in the chat:</p>
 <ul>
 <li><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> -- <code>sk-or-v1-...</code> (Gemini Flash, recommended)</li>
 <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free + fast)</li>
 </ul>`);
-          return;
-        }
-        if(!aiText){addBubble('ai','(No response)');return}
-
-        // Forward AI response to Telegram
-        sendTelegram(`AI: ${aiText}`);
-
-        // TTS: only call ElevenLabs when autoPlay is on (saves API credits)
-        let audioUrl=null;
-        const ttsK=getK();
-        const autoPlay=ttsK.ttsAutoPlay!==false; // default true for backward compat
-        if(audioEnabled&&ttsK.ttsKey&&autoPlay){
-          const ttsData=await speak(aiText);
-          if(ttsData){
-            const blob=new Blob([ttsData],{type:'audio/mpeg'});
-            audioUrl=URL.createObjectURL(blob);
-            playAudioBuffer(ttsData);
+            return;
           }
+          if(!aiText){addBubble('ai','(No response)');return}
+
+          // GIF overlay
+          let displayText=aiText;
+          if(pk.gifEnabled!==false){
+            const{cleanText,gifQuery}=parseGifTag(aiText);displayText=cleanText;
+            searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+          }
+
+          sendTelegram(`AI: ${displayText}`);
+          fireWebhook('message.receive',{text:displayText});
+
+          // TTS
+          let audioUrl=null;
+          if(audioEnabled&&pk.ttsKey&&pk.ttsAutoPlay!==false){
+            const ttsData=await speak(displayText);
+            if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData)}
+          }
+          addBubble('ai',displayText,audioUrl?{audioUrl}:{});
+          // Auto-detect and apply TealClaw config in AI response
+          detectAndApplyConfig(displayText);
+          playReceiveSound();haptic('receive');renderQuickReplies();
+        }catch(e){
+          removeTyping();
+          addBubble('ai',`Error: ${e.message}`);
+          showToast(e.message,'err');haptic('error');
         }
-        addBubble('ai',aiText,audioUrl?{audioUrl}:{});
-      }catch(e){
-        removeTyping();
-        addBubble('ai',`Error: ${e.message}`);
-        showToast(e.message,'err');
       }
     }
 
@@ -1115,16 +2096,62 @@ ${getOptionalSteps()}`
 
     // ── Send ───────────────────────────────────────────
     function send(){
-      const text=$('textIn').value.trim();
+      let text=$('textIn').value.trim();
       const images=pendingFiles.filter(f=>f.dataUrl).map(f=>f.dataUrl);
       const firstImage=images[0]||null;
       if(!text&&!firstImage)return;
+
+      // PIN code gate
+      if(!checkPinLock())return;
+
+      // Input rules: max length
+      const sk=getK();
+      if(sk.maxInputLength&&text.length>+sk.maxInputLength&&!text.startsWith('/')){
+        showToast(`Max ${sk.maxInputLength} characters (${text.length} entered)`,'err');haptic('error');return;
+      }
+
+      haptic('send');
       $('textIn').value='';$('textIn').style.height='auto';
       clearAllFiles();
       updateActionBtn();
 
       // Check if it's an API key being pasted
       if(text&&!firstImage&&handleChatKey(text))return;
+
+      // JSON config paste detection — magic config import from chat
+      if(text&&!firstImage&&text.startsWith('{')&&text.endsWith('}')){
+        try{
+          const cfg=JSON.parse(text);
+          const recognized=Object.keys(CONFIG_KEYS);
+          const hasConfig=recognized.some(ck=>cfg[ck]!==undefined)||cfg.agents||cfg.gwUrl;
+          if(hasConfig){
+            const count=importConfig(cfg);
+            applyVisualConfig();updateStatus();renderAgentSelector();
+            const parts=[];
+            if(cfg.accentColor)parts.push('accent color');
+            if(cfg.bgImage)parts.push('background image');
+            if(cfg.botName)parts.push('bot name');
+            if(cfg.fontSize)parts.push('font size');
+            if(cfg.sysPrompt)parts.push('system prompt');
+            if(cfg.agents?.length)parts.push(`${cfg.agents.length} agent(s)`);
+            if(cfg.aiKey)parts.push('AI key');
+            if(cfg.whisperKey)parts.push('Groq/Whisper');
+            if(cfg.ttsKey)parts.push('ElevenLabs TTS');
+            if(cfg.tgToken)parts.push('Telegram');
+            if(cfg.gifEnabled!==undefined)parts.push('GIF reactions');
+            sysBubble(`<h3>Config Applied!</h3>
+<p>Imported <strong>${count}</strong> settings:</p>
+<p>${parts.join(', ')||'Configuration updated'}</p>
+<p>Your TealClaw has been customized.</p>`);
+            showToast(`Imported ${count} settings`,'ok');
+            // Custom greeting after visual config
+            if(cfg.botGreeting){
+              setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
+            }
+            return;
+          }
+        }catch{}
+      }
 
       // Chat commands
       if(text.startsWith('/')){
@@ -1133,14 +2160,19 @@ ${getOptionalSteps()}`
           sysBubble(`<h3>Commands</h3>
 <ul>
 <li><code>/setup</code> -- restart the setup wizard</li>
+<li><code>/research query</code> -- deep research report (GROQ-powered)</li>
+<li><code>/imagine prompt</code> -- generate an image</li>
+<li><code>/export</code> -- download chat as markdown file</li>
+<li><code>/profile save|load|list|delete name</code> -- manage config profiles</li>
+<li><code>/qr</code> -- generate QR code to share your config</li>
 <li><code>/telegram</code> -- set up Telegram forwarding</li>
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
-<li><code>/imagine prompt</code> -- generate an image</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear chat history</li>
 <li><code>/voice</code> -- change TTS voice</li>
 </ul>
-<p>You can also paste any API key directly in the chat to add it.</p>`);
+<p>You can also paste any API key or JSON config directly in the chat.</p>
+<p><strong>Tips:</strong> Attach an image with <code>/research</code> for visual analysis. Use <code>/qr</code> to set up another device instantly.</p>`);
           return;
         }
         if(cmd==='/setup'){
@@ -1212,11 +2244,39 @@ ${getOptionalSteps()}`
 <p>To change, visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a>, copy a voice ID, and paste it in the chat.</p>`);
           return;
         }
+        if(text.startsWith('/research')){
+          const rQuery=text.slice(9).trim();
+          const rImage=images[0]||null;
+          if(!rQuery&&!rImage){
+            sysBubble(`<h3>Research</h3>
+<p>Deep research reports powered by Groq AI.</p>
+<p><strong>Usage:</strong></p>
+<ul>
+<li><code>/research your topic here</code> -- text research</li>
+<li>Attach an image + <code>/research</code> -- visual analysis</li>
+<li><code>/research what is quantum computing</code></li>
+</ul>
+<p>Results show a segmented report with verdict, findings, and sources. Full context is forwarded to your OpenClaw agent for follow-up.</p>`);
+            return;
+          }
+          researchPipeline(rQuery,rImage);
+          return;
+        }
         if(text.startsWith('/imagine ')){
           const prompt=text.slice(9).trim();
           if(prompt)imagePipeline(prompt);
           else showToast('Usage: /imagine your prompt here','err');
           return;
+        }
+        if(text.startsWith('/export')){
+          exportChat();return;
+        }
+        if(text.startsWith('/profile')){
+          const arg=text.slice(8).trim();
+          handleProfile(arg);return;
+        }
+        if(text.startsWith('/qr')){
+          generateQR();return;
         }
       }
 
@@ -1285,7 +2345,7 @@ ${getOptionalSteps()}`
             const hasConfig=recognized.some(k=>cfg[k]!==undefined)||cfg.agents||cfg.gwUrl;
             if(hasConfig){
               const count=importConfig(cfg);
-              updateStatus();renderAgentSelector();
+              applyVisualConfig();updateStatus();renderAgentSelector();
               const parts=[];
               if(cfg.agents?.length)parts.push(`${cfg.agents.length} agent(s)`);
               else if(cfg.gwUrl)parts.push('gateway');
@@ -1294,11 +2354,18 @@ ${getOptionalSteps()}`
               if(cfg.ttsKey)parts.push('ElevenLabs TTS');
               if(cfg.ttsVoice)parts.push('voice');
               if(cfg.tgToken)parts.push('Telegram');
+              if(cfg.accentColor)parts.push('accent color');
+              if(cfg.bgImage)parts.push('background image');
+              if(cfg.botName)parts.push('bot name');
+              if(cfg.fontSize)parts.push('font size');
               sysBubble(`<h3>Config Imported!</h3>
 <p>Loaded <strong>${count}</strong> settings from <code>${esc(file.name)}</code>:</p>
 <p>${parts.join(', ')||'Configuration updated'}</p>
 <p>${cfg.mode==='agent'?'Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway.':'You\'re ready to chat!'}</p>`);
               showToast(`Imported ${count} settings`,'ok');
+              if(cfg.botGreeting){
+                setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
+              }
               return;
             }
           }catch{}
@@ -1363,13 +2430,13 @@ ${getOptionalSteps()}`
       }catch{hint.textContent='Mic access denied';return false}
     }
 
-    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');hint.textContent='Release to send';hint.className='input-hint active'});
+    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');hint.textContent='Release to send';hint.className='input-hint active';haptic('medium')});
     micBtn.addEventListener('mouseup',e=>{e.preventDefault();stopRec()});
     micBtn.addEventListener('mouseleave',()=>{if(recording)stopRec()});
-    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');hint.textContent='Release to send';hint.className='input-hint active'});
+    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');hint.textContent='Release to send';hint.className='input-hint active';haptic('medium')});
     micBtn.addEventListener('touchend',e=>{e.preventDefault();stopRec()});
 
-    function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording')}
+    function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording');haptic('light')}
 
     // ── Telegram ─────────────────────────────────────────
     async function sendTelegram(text){
@@ -1459,6 +2526,7 @@ ${getOptionalSteps()}`
     $('cameraBtn').addEventListener('click',openCamera);
 
     async function openCamera(){
+      if(getK().cameraEnabled===false){showToast('Camera disabled','err');haptic('error');return}
       $('camOverlay').classList.remove('hidden');
       try{
         camStream=await navigator.mediaDevices.getUserMedia({
@@ -1469,6 +2537,7 @@ ${getOptionalSteps()}`
     }
 
     $('camShutter').addEventListener('click',()=>{
+      haptic('shutter');
       const video=$('camVideo'),canvas=$('camCanvas');
       canvas.width=video.videoWidth;canvas.height=video.videoHeight;
       canvas.getContext('2d').drawImage(video,0,0);
@@ -1517,7 +2586,46 @@ ${getOptionalSteps()}`
       whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
-      imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize'
+      imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
+      gifEnabled:'gifEnabled',
+      accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
+      bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
+      chatUserColor:'chatUserColor',chatAiColor:'chatAiColor',
+      themeMode:'themeMode',
+      botName:'botName',botIcon:'botIcon',botGreeting:'botGreeting',
+      inputFontSize:'inputFontSize',buttonSize:'buttonSize',borderRadius:'borderRadius',
+      hideTopbar:'hideTopbar',hideAttachBtn:'hideAttachBtn',hideCameraBtn:'hideCameraBtn',
+      sendBtnColor:'sendBtnColor',micBtnColor:'micBtnColor',
+      sendBtnImage:'sendBtnImage',micBtnImage:'micBtnImage',
+      inputPlaceholder:'inputPlaceholder',chatMaxWidth:'chatMaxWidth',
+      topbarBg:'topbarBg',inputBarBg:'inputBarBg',
+      customCSS:'customCSS',borderColor:'borderColor',
+      mdHeadingColor:'mdHeadingColor',mdBoldColor:'mdBoldColor',mdLinkColor:'mdLinkColor',
+      mdCodeBg:'mdCodeBg',mdCodeColor:'mdCodeColor',mdBlockquoteBorder:'mdBlockquoteBorder',
+      mdBlockquoteBg:'mdBlockquoteBg',
+      chatUserTextColor:'chatUserTextColor',chatAiTextColor:'chatAiTextColor',
+      chatBubbleRadius:'chatBubbleRadius',chatBubblePadding:'chatBubblePadding',
+      reduceMotion:'reduceMotion',highContrast:'highContrast',dyslexiaFont:'dyslexiaFont',
+      lineHeight:'lineHeight',letterSpacing:'letterSpacing',wordSpacing:'wordSpacing',
+      focusHighlight:'focusHighlight',compactMode:'compactMode',
+      autoScroll:'autoScroll',hapticFeedback:'hapticFeedback',
+      maxTokens:'maxTokens',temperature:'temperature',
+      soundEnabled:'soundEnabled',hideBmc:'hideBmc',cameraEnabled:'cameraEnabled',
+      // Quick replies, avatars, loading
+      quickReplies:'quickReplies',userAvatar:'userAvatar',aiAvatar:'aiAvatar',
+      loadingText:'loadingText',loadingEmoji:'loadingEmoji',contextMessages:'contextMessages',
+      // Streaming
+      streamEnabled:'streamEnabled',
+      // Input rules, translate, routing
+      maxInputLength:'maxInputLength',inputPrefix:'inputPrefix',translateTo:'translateTo',
+      fastModel:'fastModel',complexModel:'complexModel',routingThreshold:'routingThreshold',
+      // Profiles, widget, QR
+      activeProfile:'activeProfile',
+      // Webhooks, scheduled, export, LaTeX
+      webhookUrl:'webhookUrl',webhookEvents:'webhookEvents',
+      scheduledMessages:'scheduledMessages',latexEnabled:'latexEnabled',
+      // Security
+      pinCode:'pinCode',pinRequired:'pinRequired'
     };
 
     function importConfig(cfg){
@@ -1537,6 +2645,213 @@ ${getOptionalSteps()}`
       return count;
     }
 
+    // ── Visual Config Engine ─────────────────────────────
+    function hexToRgba(hex,a){
+      const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    function hexToRgb(hex){
+      return `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`;
+    }
+    function darkenHex(hex,amt=0.15){
+      let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+      r=Math.max(0,Math.round(r*(1-amt)));g=Math.max(0,Math.round(g*(1-amt)));b=Math.max(0,Math.round(b*(1-amt)));
+      return '#'+[r,g,b].map(c=>c.toString(16).padStart(2,'0')).join('');
+    }
+
+    function applyVisualConfig(){
+      const k=getK(),root=document.documentElement;
+
+      // Accent color — overrides --teal everywhere
+      if(k.accentColor&&/^#[0-9a-f]{6}$/i.test(k.accentColor)){
+        root.style.setProperty('--teal',k.accentColor);
+        root.style.setProperty('--teal-dim',hexToRgba(k.accentColor,0.12));
+        root.style.setProperty('--teal-hover',darkenHex(k.accentColor,0.15));
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content',k.accentColor);
+      }
+
+      // Font size
+      if(k.fontSize){
+        const sizes={small:'11px',medium:'13px',large:'16px',xlarge:'19px'};
+        root.style.setProperty('--chat-font',sizes[k.fontSize]||k.fontSize);
+      }
+
+      // Custom font family
+      if(k.fontFamily)root.style.setProperty('--font',k.fontFamily);
+
+      // Background color
+      if(k.bgColor)root.style.setProperty('--bg-root',k.bgColor);
+
+      // Background image
+      if(k.bgImage){
+        document.body.style.backgroundImage=`url('${k.bgImage.replace(/'/g,"\\'")}')`;
+
+        document.body.classList.add('has-bg-image');
+      } else {
+        document.body.style.backgroundImage='';
+        document.body.classList.remove('has-bg-image');
+      }
+
+      // Text color
+      if(k.textColor)root.style.setProperty('--text',k.textColor);
+
+      // Chat bubble colors
+      if(k.chatUserColor)root.style.setProperty('--user-bg',k.chatUserColor);
+      if(k.chatAiColor)root.style.setProperty('--ai-bg',k.chatAiColor);
+
+      // Theme mode
+      if(k.themeMode){
+        root.setAttribute('data-theme',k.themeMode);
+        localStorage.setItem('tc-theme',k.themeMode);
+      }
+
+      // Bot name
+      if(k.botName){
+        const logo=document.querySelector('.logo');
+        if(logo){
+          const nodes=[...logo.childNodes];
+          const textIdx=nodes.findIndex(n=>n.nodeType===3&&n.textContent.trim());
+          if(textIdx>=0)nodes[textIdx].textContent='\n      '+k.botName+'\n    ';
+          else{const last=logo.lastChild;if(last)last.textContent=k.botName}
+          document.title=k.botName;
+        }
+      }
+
+      // Bot icon
+      if(k.botIcon){
+        const icon=document.querySelector('.logo img');
+        if(icon)icon.src=k.botIcon;
+      }
+
+      // Input font size
+      if(k.inputFontSize)root.style.setProperty('--input-font',k.inputFontSize);
+
+      // Button size (mic/send circles)
+      if(k.buttonSize)root.style.setProperty('--btn-size',k.buttonSize);
+
+      // Border radius
+      if(k.borderRadius){
+        const r=k.borderRadius;
+        root.style.setProperty('--r-sm',r==='sharp'?'2px':r==='round'?'12px':r);
+        root.style.setProperty('--r-md',r==='sharp'?'4px':r==='round'?'16px':r);
+        root.style.setProperty('--r-lg',r==='sharp'?'6px':r==='round'?'24px':r);
+      }
+
+      // Hide topbar
+      const topbar=document.querySelector('.topbar');
+      if(topbar)topbar.style.display=k.hideTopbar?'none':'';
+
+      // Hide attach/camera buttons
+      const attachB=document.querySelector('#attachBtn');
+      const cameraB=document.querySelector('#cameraBtn');
+      if(attachB)attachB.style.display=k.hideAttachBtn?'none':'';
+      if(cameraB)cameraB.style.display=k.hideCameraBtn?'none':'';
+
+      // Custom button colors
+      if(k.sendBtnColor){
+        const sb=document.querySelector('.send-btn');
+        if(sb)sb.style.background=k.sendBtnColor;
+      }
+      if(k.micBtnColor){
+        const mb=document.querySelector('.mic-circle');
+        if(mb)mb.style.background=k.micBtnColor;
+      }
+
+      // Custom button images (replace SVG with img)
+      if(k.sendBtnImage){
+        const sb=document.querySelector('#sendBtn');
+        if(sb&&!sb.querySelector('.custom-btn-img')){
+          sb.innerHTML=`<img class="custom-btn-img" src="${esc(k.sendBtnImage)}" style="width:60%;height:60%;object-fit:contain;border-radius:50%">`;
+        }
+      }
+      if(k.micBtnImage){
+        const mb=document.querySelector('#micBtn');
+        if(mb&&!mb.querySelector('.custom-btn-img')){
+          mb.innerHTML=`<img class="custom-btn-img" src="${esc(k.micBtnImage)}" style="width:60%;height:60%;object-fit:contain;border-radius:50%">`;
+        }
+      }
+
+      // Input placeholder
+      if(k.inputPlaceholder){
+        const inp=document.querySelector('#textIn');
+        if(inp)inp.placeholder=k.inputPlaceholder;
+      }
+
+      // Chat max width
+      if(k.chatMaxWidth){
+        const main=document.querySelector('.main');
+        if(main)main.style.maxWidth=k.chatMaxWidth;
+      }
+
+      // Topbar/input bar background
+      if(k.topbarBg&&topbar)topbar.style.background=k.topbarBg;
+      if(k.inputBarBg){
+        const ib=document.querySelector('.input-bar');
+        if(ib)ib.style.background=k.inputBarBg;
+      }
+
+      // Border color
+      if(k.borderColor)root.style.setProperty('--border',k.borderColor);
+
+      // Markdown colors
+      if(k.mdHeadingColor)root.style.setProperty('--md-heading',k.mdHeadingColor);
+      if(k.mdBoldColor)root.style.setProperty('--md-bold',k.mdBoldColor);
+      if(k.mdLinkColor)root.style.setProperty('--md-link',k.mdLinkColor);
+      if(k.mdCodeBg)root.style.setProperty('--md-code-bg',k.mdCodeBg);
+      if(k.mdCodeColor)root.style.setProperty('--md-code',k.mdCodeColor);
+      if(k.mdBlockquoteBorder)root.style.setProperty('--md-bq-border',k.mdBlockquoteBorder);
+      if(k.mdBlockquoteBg)root.style.setProperty('--md-bq-bg',k.mdBlockquoteBg);
+
+      // Chat bubble text colors
+      if(k.chatUserTextColor)root.style.setProperty('--user-text',k.chatUserTextColor);
+      if(k.chatAiTextColor)root.style.setProperty('--ai-text',k.chatAiTextColor);
+
+      // Bubble shape
+      if(k.chatBubbleRadius)root.style.setProperty('--bubble-radius',k.chatBubbleRadius);
+      if(k.chatBubblePadding)root.style.setProperty('--bubble-pad',k.chatBubblePadding);
+
+      // Hide BMC link
+      document.querySelectorAll('.bmc-link,.bmc-card').forEach(el=>el.style.display=k.hideBmc?'none':'');
+
+      // ── Accessibility ──
+      document.body.classList.toggle('reduce-motion',!!k.reduceMotion);
+      document.body.classList.toggle('high-contrast',!!k.highContrast);
+      document.body.classList.toggle('dyslexia-font',!!k.dyslexiaFont);
+      document.body.classList.toggle('compact-mode',!!k.compactMode);
+      document.body.classList.toggle('focus-visible',!!k.focusHighlight);
+
+      if(k.lineHeight)root.style.setProperty('--line-height',k.lineHeight);
+      if(k.letterSpacing)root.style.setProperty('--letter-spacing',k.letterSpacing);
+      if(k.wordSpacing)root.style.setProperty('--word-spacing',k.wordSpacing);
+
+      // Apply text spacing to body
+      if(k.lineHeight)document.body.style.lineHeight=k.lineHeight;
+      if(k.letterSpacing)document.body.style.letterSpacing=k.letterSpacing;
+      if(k.wordSpacing)document.body.style.wordSpacing=k.wordSpacing;
+
+      // Load OpenDyslexic font if needed
+      if(k.dyslexiaFont&&!document.querySelector('#dyslexia-font-link')){
+        const link=document.createElement('link');
+        link.id='dyslexia-font-link';
+        link.rel='stylesheet';
+        link.href='https://fonts.cdnfonts.com/css/opendyslexic';
+        document.head.appendChild(link);
+      }
+
+      // Custom CSS injection (ultimate power)
+      let customStyle=document.querySelector('#tc-custom-css');
+      if(k.customCSS){
+        if(!customStyle){
+          customStyle=document.createElement('style');
+          customStyle.id='tc-custom-css';
+          document.head.appendChild(customStyle);
+        }
+        customStyle.textContent=k.customCSS;
+      } else if(customStyle){
+        customStyle.remove();
+      }
+    }
+
     // URL hash fragment (#config=BASE64) never leaves the browser.
     function importFromHash(){
       const h=location.hash;
@@ -1544,25 +2859,111 @@ ${getOptionalSteps()}`
       try{
         const cfg=JSON.parse(atob(h.slice(8)));
         const count=importConfig(cfg);
+        applyVisualConfig();
         history.replaceState(null,'',location.pathname);
         showToast(`Imported ${count} settings`,'ok');
+        // Show custom greeting if provided
+        if(cfg.botGreeting){
+          setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
+        }
         return true;
       }catch(e){console.warn('Config import failed:',e);return false}
     }
 
-    // Export config as copyable hash URL (for agent to generate)
-    function exportConfigUrl(){
+    // Export config as copyable hash URL (strips sensitive keys for sharing)
+    function exportConfigUrl(includeSensitive=false){
       const k=getK();
       k.agents=getAgents();
+      if(!includeSensitive){
+        // Strip API keys and tokens — these should never be in shared QR codes
+        const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode'];
+        sensitive.forEach(s=>{delete k[s]});
+        // Strip tokens from agents too
+        if(k.agents)k.agents=k.agents.map(a=>({...a,token:undefined}));
+      }
       const json=JSON.stringify(k);
       return location.origin+'/#config='+btoa(json);
     }
 
+    // ── PIN Code Lock ─────────────────────────────────
+    let pinUnlocked=false;
+    function checkPinLock(){
+      const k=getK();
+      if(!k.pinCode||!k.pinRequired)return true;
+      if(pinUnlocked)return true;
+      showPinScreen();
+      return false;
+    }
+    function showPinScreen(){
+      const overlay=$('pinOverlay');
+      overlay.classList.remove('hidden');
+      const k=getK();
+      const pinLen=(k.pinCode||'').length||4;
+      let entered='';
+      const dotsEl=$('pinDots');
+      const padEl=$('pinPad');
+      function renderDots(){
+        dotsEl.innerHTML=Array.from({length:pinLen},(_,i)=>`<div class="pin-dot${i<entered.length?' filled':''}"></div>`).join('');
+      }
+      function renderPad(){
+        padEl.innerHTML='';
+        [1,2,3,4,5,6,7,8,9].forEach(n=>{
+          const btn=document.createElement('button');btn.className='pin-key';btn.textContent=n;
+          btn.addEventListener('click',()=>enterDigit(String(n)));padEl.appendChild(btn);
+        });
+        const clear=document.createElement('button');clear.className='pin-key wide';clear.textContent='Clear';
+        clear.addEventListener('click',()=>{entered='';renderDots()});padEl.appendChild(clear);
+        const zero=document.createElement('button');zero.className='pin-key';zero.textContent='0';
+        zero.addEventListener('click',()=>enterDigit('0'));padEl.appendChild(zero);
+        const del=document.createElement('button');del.className='pin-key wide';del.innerHTML='&#9003;';
+        del.addEventListener('click',()=>{entered=entered.slice(0,-1);renderDots()});padEl.appendChild(del);
+      }
+      function enterDigit(d){
+        if(entered.length>=pinLen)return;
+        entered+=d;renderDots();
+        if(entered.length===pinLen){
+          if(entered===k.pinCode){
+            pinUnlocked=true;
+            overlay.classList.add('hidden');
+            haptic('success');showToast('Unlocked','ok');
+          } else {
+            haptic('error');
+            dotsEl.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('wrong'));
+            setTimeout(()=>{entered='';renderDots()},400);
+          }
+        }
+      }
+      renderDots();renderPad();
+    }
+
     // ── Init ───────────────────────────────────────────
+    // Widget/embed mode
+    if(new URLSearchParams(location.search).get('embed')==='true')document.body.classList.add('embed-mode');
+
     importFromHash();
+    applyVisualConfig();
     loadUI();
-    // Run onboarding if no keys set and no chat history
-    setTimeout(()=>runOnboarding(),300);
+    // PIN lock on startup
+    checkPinLock();
+    // Run onboarding if no keys set and no chat history — show custom greeting if set
+    setTimeout(()=>{
+      const bk=getK();
+      if(bk.botGreeting&&chatHistory.length===0&&(bk.aiKey||bk.whisperKey)){
+        sysBubble(`<div class="md-content">${renderMd(bk.botGreeting)}</div>`);
+      } else {
+        runOnboarding();
+      }
+    },300);
+    // Quick replies on load
+    renderQuickReplies();
+
+    // Scheduled messages — check every 60s
+    checkScheduledMessages();
+    setInterval(checkScheduledMessages,60000);
+
+    // LaTeX — preload if enabled
+    if(getK().latexEnabled)loadKaTeX().catch(()=>{});
+
     if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
   </script>
 </body>

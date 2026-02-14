@@ -1,0 +1,382 @@
+# TealClaw Recipes — Ready-to-Use Config Templates
+
+> Copy any recipe below and paste it into TealClaw chat, or use the URL hash method.
+> Full skill guide: https://tealclaw.ai/llms.txt
+> Config reference: https://tealclaw.ai/docs/config-reference.txt
+
+## API Setup Recipes
+
+### Full Setup (all keys at once)
+```json
+{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","ttsKey":"sk_KEY","ttsVoice":"ThT5KcBeYPX7keBQBPPD"}
+```
+
+### Free Chatbot (zero cost, one Groq key)
+```json
+{"whisperKey":"gsk_KEY","aiProvider":"groq","ttsAutoPlay":false}
+```
+One Groq key covers chat + vision + voice input + /research. No cost. Sign up at console.groq.com
+
+### OpenRouter + Gemini Flash (recommended)
+```json
+{"aiKey":"sk-or-v1-KEY","aiModel":"google/gemini-2.5-flash-preview"}
+```
+
+### Anthropic Claude
+```json
+{"aiProvider":"anthropic","aiKey":"sk-ant-KEY","aiModel":"claude-sonnet-4-5-20250929"}
+```
+
+### Switch to Groq (free)
+```json
+{"aiProvider":"groq","whisperKey":"gsk_KEY"}
+```
+
+## Bot Persona Recipes
+
+### Kid-Friendly Story Bot
+```json
+{
+  "botName":"StoryBot",
+  "botIcon":"https://example.com/storybot.png",
+  "botGreeting":"# Hey there, adventurer!\nI'm **StoryBot** and I love telling stories. What kind of adventure should we go on today?",
+  "sysPrompt":"You are StoryBot, a friendly storyteller for kids ages 5-10. Tell engaging, age-appropriate stories with vivid descriptions. Keep responses to 2-4 paragraphs. Ask the child what happens next. Never use scary or violent content.",
+  "accentColor":"#f97316",
+  "fontSize":"large",
+  "gifEnabled":true
+}
+```
+
+### White-Label Business Support Bot
+```json
+{
+  "botName":"Acme Support",
+  "botIcon":"https://acme.com/logo.png",
+  "botGreeting":"# Welcome to Acme Support\nHow can I help you today?",
+  "sysPrompt":"You are the Acme Corp support assistant. Help customers with orders, returns, and product questions. Be professional and helpful.",
+  "accentColor":"#2563eb",
+  "bgColor":"#f8fafc",
+  "themeMode":"light",
+  "hideTopbar":true,
+  "inputPlaceholder":"Ask us anything...",
+  "chatMaxWidth":"100%",
+  "gifEnabled":false,
+  "ttsAutoPlay":false
+}
+```
+
+### Language Tutor Bot
+```json
+{
+  "botName":"LinguaBot",
+  "botGreeting":"# Bonjour! Hola! Ciao!\nI'm **LinguaBot**. Which language are you learning today?",
+  "sysPrompt":"You are LinguaBot, a friendly language tutor. Help users practice vocabulary, grammar, and conversation. Correct mistakes gently. Use the target language with English translations in parentheses.",
+  "accentColor":"#8b5cf6",
+  "ttsAutoPlay":true,
+  "maxTokens":600
+}
+```
+
+### Pirate Personality
+```json
+{
+  "sysPrompt":"You are a pirate who speaks in nautical metaphors and pirate slang. Arrr!",
+  "botName":"Captain Claw",
+  "botGreeting":"# Ahoy, matey!\nWelcome aboard the good ship **Captain Claw**! What treasure of knowledge be ye seekin'?",
+  "accentColor":"#dc2626"
+}
+```
+
+### Meditation Guide
+```json
+{
+  "botName":"Calm",
+  "botGreeting":"# Welcome\nTake a deep breath. I'm here to help you find calm.",
+  "sysPrompt":"You are a gentle meditation and mindfulness guide. Speak softly. Use calming language. Lead short breathing exercises and body scans. Keep responses peaceful and unhurried.",
+  "accentColor":"#06b6d4",
+  "bgColor":"#0c1222",
+  "gifEnabled":false,
+  "soundEnabled":false,
+  "ttsAutoPlay":true,
+  "temperature":0.3
+}
+```
+
+## Visual Theme Recipes
+
+### Custom Color Theme (Purple)
+```json
+{"accentColor":"#8b5cf6","chatUserColor":"#1a1040","chatAiColor":"#0f0a2a","bgColor":"#0a0520"}
+```
+
+### Background Image with Frosted Glass
+```json
+{"bgImage":"https://images.unsplash.com/photo-example?w=1920","accentColor":"#f97316"}
+```
+
+### Gradient Topbar
+```json
+{"topbarBg":"linear-gradient(135deg, #0d9488, #3b82f6)"}
+```
+
+### Sleek Sharp Theme
+```json
+{"borderRadius":"sharp","accentColor":"#22c55e","themeMode":"dark"}
+```
+
+### Light Mode Professional
+```json
+{"themeMode":"light","accentColor":"#2563eb","bgColor":"#f8fafc","fontSize":"medium"}
+```
+
+### Neon Cyberpunk
+```json
+{
+  "accentColor":"#00ff88",
+  "bgColor":"#0a0a0a",
+  "chatUserColor":"#001a0a",
+  "chatAiColor":"#0a0a1a",
+  "borderColor":"rgba(0,255,136,0.15)",
+  "mdHeadingColor":"#00ff88",
+  "mdBoldColor":"#00ccff",
+  "mdLinkColor":"#ff00ff"
+}
+```
+
+### Warm Earth Tones
+```json
+{
+  "accentColor":"#d97706",
+  "bgColor":"#1a1208",
+  "chatUserColor":"#1a1510",
+  "chatAiColor":"#12100a",
+  "mdHeadingColor":"#f59e0b",
+  "mdBoldColor":"#d97706"
+}
+```
+
+## Layout Recipes
+
+### Minimal Chat (Hide Everything)
+```json
+{
+  "hideTopbar":true,
+  "hideAttachBtn":true,
+  "hideCameraBtn":true,
+  "inputPlaceholder":"Talk to me...",
+  "chatMaxWidth":"100%",
+  "borderRadius":"round"
+}
+```
+
+### Full-Width Immersive Mode
+```json
+{
+  "hideTopbar":true,
+  "chatMaxWidth":"100%",
+  "bgImage":"https://example.com/nature.jpg",
+  "inputBarBg":"rgba(0,0,0,0.7)",
+  "borderColor":"rgba(255,255,255,0.1)",
+  "fontSize":"large"
+}
+```
+
+### Big Buttons for Kids/Elderly
+```json
+{"buttonSize":"56px","inputFontSize":"18px","fontSize":"large","borderRadius":"round"}
+```
+
+### Custom Button Colors
+```json
+{"sendBtnColor":"#ec4899","micBtnColor":"#8b5cf6"}
+```
+
+### Custom Markdown Styling
+```json
+{
+  "mdHeadingColor":"#f97316",
+  "mdBoldColor":"#ec4899",
+  "mdLinkColor":"#22d3ee",
+  "mdCodeBg":"rgba(236,72,153,0.1)",
+  "mdCodeColor":"#ec4899",
+  "mdBlockquoteBorder":"#f97316",
+  "mdBlockquoteBg":"rgba(249,115,22,0.08)"
+}
+```
+
+### Custom Chat Bubble Shape
+```json
+{"chatBubbleRadius":"24px","chatBubblePadding":"14px 20px"}
+```
+
+## Behavior Recipes
+
+### Save ElevenLabs Credits
+```json
+{"ttsAutoPlay":false}
+```
+
+### Verbose Creative Mode
+```json
+{"temperature":1.5,"maxTokens":2000}
+```
+
+### Enable Streaming
+```json
+{"streamEnabled":true}
+```
+AI responses appear token by token in real-time. Feels much more responsive.
+
+### Enable LaTeX/Math Rendering
+```json
+{"latexEnabled":true}
+```
+Renders $inline$ and $$block$$ math using KaTeX. Great for tutoring and STEM bots.
+
+### Context Window Control
+```json
+{"contextMessages":40}
+```
+Increase context to 40 messages for longer conversations. Reduce to 4 for privacy or cost savings.
+
+### Quick Reply Chips
+```json
+{"quickReplies":["Tell me more","New topic","Summarize","Translate to Spanish"]}
+```
+Buttons below the input that auto-send common prompts.
+
+### Chat Avatars
+```json
+{"userAvatar":"https://example.com/user.png","aiAvatar":"https://example.com/bot.png"}
+```
+
+### Custom Loading Text
+```json
+{"loadingText":"Brewing your answer...","loadingEmoji":"☕"}
+```
+
+### Input Guardrails
+```json
+{"maxInputLength":500,"inputPrefix":"[Support Ticket]"}
+```
+Limit message length and auto-prefix messages.
+
+### Multi-Model Routing
+```json
+{"fastModel":"meta-llama/llama-3.1-8b-instant","complexModel":"google/gemini-2.5-flash-preview","routingThreshold":80}
+```
+Short/simple messages use the fast model. Longer/complex queries use the capable model.
+
+### Webhook Integration
+```json
+{"webhookUrl":"https://your-server.com/api/tealclaw","webhookEvents":"message.send,message.receive"}
+```
+Fires POST requests on message events with full payload data.
+
+### Scheduled Greetings
+```json
+{"scheduledMessages":[
+  {"time":"09:00","text":"# Good morning!\nReady to help today.","days":["mon","tue","wed","thu","fri"]},
+  {"time":"17:00","text":"Wrapping up? I'm here if you need anything."}
+]}
+```
+
+### Calm Reading Mode
+```json
+{
+  "reduceMotion":true,
+  "gifEnabled":false,
+  "soundEnabled":false,
+  "hapticFeedback":false,
+  "temperature":0.3,
+  "maxTokens":800
+}
+```
+
+### Enable Telegram Forwarding
+```json
+{"tgToken":"123456:ABC-DEF...","tgChatId":"-100123456","tgEnabled":true}
+```
+
+### Disable GIF Reactions
+```json
+{"gifEnabled":false}
+```
+
+### Custom CSS (Advanced)
+```json
+{"customCSS":".chat-bubble.ai { border-left: 3px solid var(--teal); }"}
+```
+
+## Combined Recipes (Full Transformation)
+
+### The Full Magic Config
+```json
+{
+  "botName":"MyAssistant",
+  "botIcon":"https://example.com/icon.png",
+  "botGreeting":"Welcome! I'm your personal AI assistant.",
+  "sysPrompt":"You are MyAssistant, a professional and friendly AI.",
+  "accentColor":"#3b82f6",
+  "bgImage":"https://example.com/bg.jpg",
+  "fontSize":"medium",
+  "themeMode":"dark",
+  "aiKey":"sk-or-v1-KEY",
+  "whisperKey":"gsk_KEY",
+  "ttsKey":"sk_KEY",
+  "ttsVoice":"ThT5KcBeYPX7keBQBPPD",
+  "gifEnabled":true,
+  "hapticFeedback":true,
+  "soundEnabled":true,
+  "streamEnabled":true,
+  "quickReplies":["Tell me more","Change topic","Summarize"]
+}
+```
+One JSON, one paste, and the entire app transforms.
+
+### Power User Config
+```json
+{
+  "streamEnabled":true,
+  "latexEnabled":true,
+  "contextMessages":40,
+  "maxTokens":2000,
+  "temperature":0.7,
+  "fastModel":"meta-llama/llama-3.1-8b-instant",
+  "complexModel":"google/gemini-2.5-flash-preview",
+  "routingThreshold":80,
+  "quickReplies":["Explain further","Show code","Compare alternatives","Give me a summary"]
+}
+```
+Multi-model routing, streaming, math, extended context, and quick replies.
+
+## Security Recipes
+
+### PIN Code Lock
+```json
+{"pinCode":"1234","pinRequired":true}
+```
+Requires a 4-6 digit PIN before any message can be sent. Protects against unauthorized use on shared or unlocked devices.
+
+### Privacy Mode (Disable GIF + Sound)
+```json
+{"gifEnabled":false,"soundEnabled":false,"hapticFeedback":false}
+```
+Turns off all external media fetches (Tenor GIFs) and audible/haptic feedback. Good for private or quiet environments.
+
+### Shared Kiosk Mode
+```json
+{
+  "pinCode":"5678",
+  "pinRequired":true,
+  "hideTopbar":true,
+  "hideAttachBtn":true,
+  "hideCameraBtn":true,
+  "gifEnabled":false,
+  "ttsAutoPlay":false,
+  "maxInputLength":500,
+  "chatMaxWidth":"100%",
+  "borderRadius":"round"
+}
+```
+Locks the interface for shared/public use: PIN required, minimal UI, no file uploads, no camera, no GIFs, capped input length. Good for kiosks, demos, or shared tablets.

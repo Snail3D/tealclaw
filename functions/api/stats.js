@@ -5,7 +5,7 @@
  *
  * Environment variables (set in Cloudflare Pages > Settings > Environment variables):
  *   CF_STATS_TOKEN — Cloudflare API token with Analytics:Read permission
- *   CF_ZONE_ID    — Zone ID for tealclaw.com (Dashboard > Overview > right sidebar)
+ *   CF_ZONE_ID    — Zone ID for tealclaw.ai (Dashboard > Overview > right sidebar)
  */
 
 const CACHE_TTL = 300; // 5 minutes

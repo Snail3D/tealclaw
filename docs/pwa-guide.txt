@@ -1,0 +1,112 @@
+# TealClaw PWA Installation Guide
+
+> Install TealClaw as a native app on any device.
+> Main skill guide: https://tealclaw.ai/llms.txt
+
+## What is the PWA?
+
+TealClaw is a Progressive Web App (PWA). This means it can be installed directly from
+the browser — no app store needed. Once installed, it:
+
+- Runs in full-screen mode (no browser UI)
+- Works offline (cached assets via service worker)
+- Has its own app icon on the home screen / app drawer
+- Feels native — swipe, scroll, voice input all work naturally
+- All data stays in the browser — installing doesn't send anything anywhere
+
+## Installation Steps
+
+### iPhone / iPad (Safari Only)
+1. Open **tealclaw.ai** in **Safari** (must be Safari — Chrome/Firefox won't work)
+2. Tap the **Share button** (square with upward arrow, bottom toolbar)
+3. Scroll down and tap **"Add to Home Screen"**
+4. Tap **Add** in the top right
+5. TealClaw appears as an app icon on the home screen
+6. Tap the icon — runs in full-screen mode
+
+### Android (Chrome)
+1. Open **tealclaw.ai** in **Chrome**
+2. Tap the **three-dot menu** (top right)
+3. Tap **"Install app"** or **"Add to Home screen"**
+4. Tap **Install**
+5. TealClaw appears in the app drawer and home screen
+
+### Desktop (Chrome / Edge)
+1. Open **tealclaw.ai** in Chrome or Edge
+2. Click the **install icon** in the address bar (or Menu > "Install TealClaw")
+3. Click **Install**
+4. TealClaw opens as a standalone window
+
+## The Custom App Experience
+
+This is where it gets magical. After configuring TealClaw with a custom persona,
+colors, and branding, the installed PWA genuinely looks and feels like the user's
+own custom app.
+
+### What makes it "their" app:
+- `botName` — changes the header text (no more "TealClaw")
+- `botIcon` — changes the header icon
+- `accentColor` — changes the entire color scheme
+- `bgImage` — adds a full-screen background
+- `hideTopbar` — removes all branding for pure chat
+- `sysPrompt` — gives the AI its personality
+- `botGreeting` — custom welcome message on first launch
+
+### Setup Flow for a Custom Bot
+1. Agent generates a config JSON with persona + visual customization
+2. Give the user a `tealclaw.ai/#config=BASE64` link to tap
+3. Config imports instantly, app transforms
+4. User installs as PWA from that same browser session
+5. They now have a custom-branded chat app on their home screen
+
+### Example: Kid's Story Bot as a Home Screen App
+```json
+{
+  "botName": "StoryBot",
+  "botIcon": "https://example.com/storybot.png",
+  "botGreeting": "# Hey there, adventurer!\nReady for a story?",
+  "sysPrompt": "You are StoryBot for kids ages 5-10.",
+  "accentColor": "#f97316",
+  "fontSize": "large",
+  "gifEnabled": true,
+  "whisperKey": "gsk_KEY"
+}
+```
+
+The parent installs this as a PWA → kid sees "StoryBot" on their home screen →
+taps it → full-screen orange-themed chatbot with voice input. No browser UI visible.
+It's their app.
+
+## Technical Notes
+
+### Service Worker
+TealClaw uses a service worker (`sw.js`) for offline caching. The SW caches:
+- index.html
+- All icons and images
+- The manifest.json
+
+On subsequent visits, the app loads from cache first, then checks for updates.
+
+### Manifest
+The `manifest.json` defines the PWA metadata:
+- Name: TealClaw
+- Short name: TealClaw
+- Start URL: /
+- Display: standalone
+- Theme color: #0d9488
+- Background color: #0a0f1a
+
+### Data Persistence
+All config and chat history lives in browser `localStorage`. This persists across:
+- Browser sessions
+- PWA installs (same browser storage)
+- Device restarts
+
+It does NOT persist across:
+- Browser data clearing
+- Different browsers on the same device
+- Different devices (no sync)
+
+### Export/Import for Backup
+Users can export their config by running `/keys` or by inspecting localStorage.
+Agents can generate a config JSON that the user imports to restore settings.
