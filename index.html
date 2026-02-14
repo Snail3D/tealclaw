@@ -200,12 +200,20 @@
     .privacy-bar a{color:var(--text-3);text-decoration:none;transition:color var(--t)}
     .privacy-bar a:hover{color:#ffdd00}
 
-    /* ── Smart Paste ──────────────────────────────────── */
-    .smart-paste{position:relative}
-    .smart-paste-input{width:100%;padding:10px 12px;font-size:12px;font-family:var(--mono);color:var(--text);background:var(--bg-input);border:2px dashed var(--border-2);border-radius:var(--r-md);outline:none;transition:all var(--t);text-align:center}
-    .smart-paste-input:focus{border-color:var(--teal);background:var(--bg-card)}
-    .smart-paste-input::placeholder{color:var(--text-3);font-family:var(--font)}
-    .smart-paste-result{font-size:10px;color:var(--ok);margin-top:3px;text-align:center;min-height:14px}
+    /* ── Settings Dropdown ────────────────────────────── */
+    .settings-drop{position:absolute;top:44px;right:8px;width:280px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:200;padding:8px;display:none}
+    .settings-drop.open{display:block}
+    .settings-drop-item{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:12px;color:var(--text);background:none;border:none;border-radius:var(--r-md);cursor:pointer;width:100%;text-align:left;font-family:var(--font);transition:all var(--t)}
+    .settings-drop-item:hover{background:var(--bg-hover)}
+    .settings-drop-item svg{width:14px;height:14px;color:var(--text-3);flex-shrink:0}
+    .settings-drop-item.danger{color:var(--err)}
+    .settings-drop-item.danger svg{color:var(--err)}
+    .settings-sep{height:1px;background:var(--border);margin:4px 0}
+    .settings-key-row{display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:11px}
+    .settings-key-label{flex:1;color:var(--text-2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .settings-key-val{font-family:var(--mono);font-size:10px;color:var(--text-3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .settings-key-status{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .settings-key-status.on{background:var(--ok)} .settings-key-status.off{background:var(--text-3)}
 
     /* ── Camera ───────────────────────────────────────── */
     .cam-overlay{position:fixed;inset:0;background:var(--bg-root);z-index:1000;display:flex;flex-direction:column}
@@ -221,10 +229,7 @@
     .cam-torch.on{background:rgba(245,158,11,0.15);color:var(--warn);border-color:var(--warn)}
     .cam-close{background:rgba(239,68,68,0.1);color:var(--err);border:1px solid transparent}
 
-    /* ── Voice Selector ───────────────────────────────── */
-    .voice-select{width:100%;padding:8px 10px;font-size:11px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none;transition:border var(--t)}
-    .voice-select:focus{border-color:var(--teal)}
-    .voice-preview{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:10px;color:var(--teal);background:var(--teal-dim);border:none;border-radius:var(--r-sm);cursor:pointer;font-family:var(--font)}
+    /* (Voice selector removed -- settings via chat) */
 
     /* ── Generated Image in Chat ─────────────────────── */
     .chat-bubble .gen-img{max-width:100%;max-height:400px;border-radius:var(--r-md);margin-top:6px;display:block;border:1px solid var(--border)}
@@ -262,6 +267,23 @@
     <p class="overlay-hint" style="margin-top:12px;font-size:13px">Tap anywhere to enable voice</p>
   </div>
   <div class="toast" id="toast"></div>
+  <div class="settings-drop" id="settingsDrop">
+    <div id="settingsKeyList"></div>
+    <div class="settings-sep"></div>
+    <button class="settings-drop-item" id="settingsWizard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      Key Setup Wizard
+    </button>
+    <button class="settings-drop-item" id="settingsClear">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      Clear Chat History
+    </button>
+    <div class="settings-sep"></div>
+    <button class="settings-drop-item danger" id="settingsWipeKeys">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      Clear All Keys
+    </button>
+  </div>
 
   <header class="topbar">
     <div class="logo">
@@ -270,12 +292,14 @@
     </div>
     <nav class="topbar-nav">
       <button class="tab-btn active" data-tab="chat">Chat</button>
-      <button class="tab-btn" data-tab="keys">Keys</button>
       <button class="tab-btn" data-tab="agent">Agent</button>
       <button class="tab-btn" data-tab="guide">Guide</button>
     </nav>
     <div class="topbar-r">
       <div class="pill off" id="pill"><span class="pill-dot"></span><span id="pillLabel">No Keys</span></div>
+      <button class="icon-btn" id="settingsBtn" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
       <a href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener" class="bmc-link" title="Buy Me a Coffee">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
       </a>
@@ -289,11 +313,7 @@
     <!-- ═══ Chat ═══ -->
     <div class="tab-page active" id="page-chat">
       <div class="chat-scroll" id="chatScroll">
-        <div class="chat-empty" id="chatEmpty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;color:var(--text-3);margin-bottom:8px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div>Just start typing -- we'll help you connect</div>
-          <div style="margin-top:4px;font-size:11px">Send a message and you can add your API key right here in the chat</div>
-        </div>
+        <div class="chat-empty" id="chatEmpty"></div>
       </div>
 
       <div class="input-bar">
@@ -309,7 +329,7 @@
           <button class="circle-btn attach-btn" id="cameraBtn" title="Take photo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
-          <textarea class="input-text" id="textIn" placeholder="Type a message..." rows="1"></textarea>
+          <textarea class="input-text" id="textIn" placeholder="Type a message or paste an API key..." rows="1"></textarea>
           <!-- Mic shows by default, Send shows when typing -->
           <button class="circle-btn mic-circle" id="micBtn" title="Hold to speak">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -319,202 +339,6 @@
           </button>
         </div>
         <div class="input-hint" id="inputHint"></div>
-      </div>
-    </div>
-
-    <!-- ═══ Keys ═══ -->
-    <div class="tab-page" id="page-keys">
-      <div class="page-scroll">
-        <!-- Smart Paste -->
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
-              Quick Setup
-            </div>
-            <div style="font-size:10px;color:var(--text-3)">Auto-detects key type</div>
-          </div>
-          <div class="smart-paste">
-            <input type="text" class="smart-paste-input" id="smartPaste" placeholder="Paste any API key here -- auto-detected and routed">
-            <div class="smart-paste-result" id="smartResult"></div>
-          </div>
-        </div>
-
-        <!-- API Keys -->
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-              API Keys
-            </div>
-            <div style="font-size:10px;color:var(--text-3)">Browser-only storage</div>
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">Groq Key</div>
-            <div class="key-desc">Used for Whisper transcription + Groq AI models</div>
-            <div class="key-input-row">
-              <input type="password" id="whisperKey" class="key-input" placeholder="gsk_...">
-              <button class="btn btn-ghost btn-sm" onclick="toggleVis('whisperKey')">Show</button>
-            </div>
-            <div class="key-status off" id="whisperStatus">Not set</div>
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">AI Provider</div>
-            <div class="key-input-row">
-              <select id="aiProvider" class="key-input" style="max-width:130px;font-family:var(--font)">
-                <option value="openrouter">OpenRouter</option>
-                <option value="groq">Groq</option>
-                <option value="anthropic">Anthropic</option>
-              </select>
-              <input type="password" id="aiKey" class="key-input" placeholder="sk-or-v1-...">
-              <button class="btn btn-ghost btn-sm" onclick="toggleVis('aiKey')">Show</button>
-            </div>
-            <div class="key-status off" id="aiStatus">Not set</div>
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">Model</div>
-            <input type="text" id="aiModel" class="key-input" placeholder="google/gemini-3-flash-preview" style="font-family:var(--font)">
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">ElevenLabs TTS</div>
-            <div class="key-desc">Voice responses. Without this, text-only.</div>
-            <div class="key-input-row">
-              <input type="password" id="ttsKey" class="key-input" placeholder="sk_...">
-              <button class="btn btn-ghost btn-sm" onclick="toggleVis('ttsKey')">Show</button>
-            </div>
-            <div class="key-status off" id="ttsStatus">Not set</div>
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">Voice</div>
-            <div class="key-input-row">
-              <select id="voiceSelect" class="voice-select" style="display:none"></select>
-              <input type="text" id="ttsVoice" class="key-input" placeholder="ThT5KcBeYPX7keBQBPPD (Rachel)" style="font-family:var(--font)">
-              <button class="btn btn-ghost btn-sm" id="loadVoicesBtn" title="Load voices from ElevenLabs">Voices</button>
-              <button class="voice-preview" id="previewVoiceBtn" title="Preview voice">Play</button>
-            </div>
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">System Prompt</div>
-            <textarea class="sys-textarea" id="sysPrompt" placeholder="You are a helpful voice assistant..."></textarea>
-          </div>
-
-          <div style="display:flex;gap:6px;margin-top:12px">
-            <button class="btn btn-teal" id="saveKeysBtn">Save</button>
-            <button class="btn btn-danger btn-sm" id="clearKeysBtn">Clear All Keys</button>
-            <button class="btn btn-ghost btn-sm" id="clearChatBtn">Clear Chat History</button>
-          </div>
-        </div>
-
-        <!-- Image Generation -->
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              Image Generation
-            </div>
-            <div style="font-size:10px;color:var(--text-3)">Type /imagine to generate</div>
-          </div>
-          <div class="key-desc" style="margin-bottom:8px">Connect any OpenAI-compatible image API (DALL-E, Stable Diffusion, Together, FAL, etc). Type <code>/imagine your prompt</code> in chat to generate images.</div>
-
-          <div class="key-row">
-            <div class="key-label">Endpoint URL</div>
-            <div class="key-desc">OpenAI-compatible: POST with {prompt, model, size} -> {data: [{url}]}</div>
-            <input type="text" id="imageGenUrl" class="key-input" placeholder="https://api.openai.com/v1/images/generations" style="font-family:var(--font)">
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">API Key</div>
-            <div class="key-desc">Bearer token for the image API. Leave blank if using your AI key.</div>
-            <div class="key-input-row">
-              <input type="password" id="imageGenKey" class="key-input" placeholder="sk-...">
-              <button class="btn btn-ghost btn-sm" onclick="toggleVis('imageGenKey')">Show</button>
-            </div>
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">Model</div>
-            <input type="text" id="imageGenModel" class="key-input" placeholder="dall-e-3 (optional)" style="font-family:var(--font)">
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">Size</div>
-            <div class="key-input-row">
-              <select id="imageGenSize" class="key-input" style="max-width:160px;font-family:var(--font)">
-                <option value="1024x1024">1024x1024</option>
-                <option value="512x512">512x512</option>
-                <option value="1024x1792">1024x1792 (tall)</option>
-                <option value="1792x1024">1792x1024 (wide)</option>
-              </select>
-            </div>
-          </div>
-
-          <div style="display:flex;gap:6px;margin-top:10px">
-            <button class="btn btn-teal btn-sm" id="saveImageGenBtn">Save</button>
-            <button class="btn btn-ghost btn-sm" id="testImageGenBtn">Test Generate</button>
-          </div>
-          <div class="key-status off" id="imageGenStatus">Not configured</div>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              Telegram
-            </div>
-            <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);cursor:pointer">
-              <input type="checkbox" id="tgEnabled"> Forward to Telegram
-            </label>
-          </div>
-          <div class="key-desc" style="margin-bottom:8px">Send messages to your Telegram bot alongside AI responses. Bot API calls go directly from your browser.</div>
-
-          <div class="key-row">
-            <div class="key-label">Bot Token</div>
-            <div class="key-input-row">
-              <input type="password" id="tgToken" class="key-input" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
-              <button class="btn btn-ghost btn-sm" onclick="toggleVis('tgToken')">Show</button>
-            </div>
-          </div>
-
-          <div class="key-row">
-            <div class="key-label">Chat ID</div>
-            <div class="key-desc">Your personal chat ID or group chat ID</div>
-            <input type="text" id="tgChatId" class="key-input" placeholder="-1001234567890" style="font-family:var(--mono)">
-          </div>
-
-          <div style="display:flex;gap:6px;margin-top:10px">
-            <button class="btn btn-teal btn-sm" id="testTgBtn">Test Send</button>
-            <button class="btn btn-ghost btn-sm" id="saveTgBtn">Save</button>
-          </div>
-          <div class="key-status off" id="tgStatus">Not configured</div>
-        </div>
-
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              Privacy
-            </div>
-          </div>
-          <div style="font-size:11px;color:var(--text-2);line-height:1.6">
-            <p>Keys are stored in your browser's localStorage only. Never sent to tealclaw.com.</p>
-            <p style="margin-top:6px">All calls go directly: your browser &rarr; AI provider. Open DevTools &gt; Network to verify.</p>
-            <p style="margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--text-3)">Browser &rarr; Provider &rarr; Browser (we see nothing)</p>
-          </div>
-        </div>
-
-        <div class="bmc-card">
-          <a href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-            Buy Me a Coffee
-          </a>
-          <p>TealClaw is free and open. Tips help keep development going.</p>
-        </div>
       </div>
     </div>
 
@@ -577,7 +401,7 @@
             <p>BYOK voice dashboard. Zero server. Total privacy.</p>
 
             <h2>Quick Setup</h2>
-            <p>Paste any API key into the <strong>Quick Setup</strong> box on the Keys tab. TealClaw auto-detects the key type by its prefix and routes it to the right field.</p>
+            <p>Paste any API key directly in the <strong>chat</strong>. TealClaw auto-detects the key type by its prefix and saves it. Type <code>/setup</code> for the guided wizard.</p>
             <table><tr><th>Prefix</th><th>Detected As</th></tr>
             <tr><td><code>gsk_</code></td><td>Groq (Whisper + AI)</td></tr>
             <tr><td><code>sk-or-v1-</code></td><td>OpenRouter AI</td></tr>
@@ -617,7 +441,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
             <p>No backend. No database. No tracking. Static files on Cloudflare Pages. Open DevTools &gt; Network to verify.</p>
 
             <h2>Image Generation</h2>
-            <p>Type <code>/imagine your prompt here</code> in the chat to generate images. Configure your image generation endpoint on the Keys tab.</p>
+            <p>Type <code>/imagine your prompt here</code> in the chat to generate images. Paste an image gen endpoint URL in the chat to configure it.</p>
             <h3>Supported APIs</h3>
             <p>Any OpenAI-compatible image generation API works:</p>
             <table><tr><th>Provider</th><th>Endpoint URL</th><th>Where to Get Key</th></tr>
@@ -625,7 +449,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
             <tr><td>Together AI</td><td><code>https://api.together.xyz/v1/images/generations</code></td><td><a href="https://api.together.xyz/settings/api-keys" target="_blank">api.together.xyz</a></td></tr>
             <tr><td>FAL.ai</td><td><code>https://fal.run/fal-ai/flux/dev</code></td><td><a href="https://fal.ai/dashboard/keys" target="_blank">fal.ai/dashboard</a></td></tr>
             <tr><td>Fireworks</td><td><code>https://api.fireworks.ai/inference/v1/images/generations</code></td><td><a href="https://fireworks.ai/account/api-keys" target="_blank">fireworks.ai</a></td></tr></table>
-            <p>Set the endpoint URL and API key on the <strong>Keys</strong> tab under <strong>Image Generation</strong>. The API key field is optional if you want to reuse your AI key.</p>
+            <p>Paste the endpoint URL in the chat to configure it. The API key falls back to your AI key if not set separately.</p>
             <h3>Usage</h3>
             <pre data-lang="chat"><code>/imagine a teal cat with glowing eyes in cyberpunk style
 /imagine watercolor painting of a sunset over mountains
@@ -777,7 +601,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       val=val.trim();
       if(val.startsWith('sk-or-v1-'))return{field:'aiKey',provider:'openrouter',label:'OpenRouter AI Key'};
       if(val.startsWith('sk-ant-'))return{field:'aiKey',provider:'anthropic',label:'Anthropic AI Key'};
-      if(val.startsWith('gsk_'))return{field:'whisperKey',label:'Groq Key'};
+      if(val.startsWith('gsk_'))return{field:'whisperKey',provider:'groq',label:'Groq Key (chat + vision + voice)'};
       if(/^sk_[a-f0-9]{40,}$/i.test(val))return{field:'ttsKey',label:'ElevenLabs TTS Key'};
       if(/^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(val))return{field:'tgToken',label:'Telegram Bot Token'};
       if(/^-?\d{6,}$/.test(val))return{field:'tgChatId',label:'Telegram Chat ID'};
@@ -788,66 +612,8 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       return null;
     }
 
-    $('smartPaste').addEventListener('input',()=>{
-      const val=$('smartPaste').value;
-      const det=detectKey(val);
-      const res=$('smartResult');
-      if(!val){res.textContent='';return}
-      if(det){
-        res.textContent=det.label+' detected';res.style.color='var(--ok)';
-      }else{
-        res.textContent='Unknown key format';res.style.color='var(--text-3)';
-      }
-    });
-
-    $('smartPaste').addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        const val=$('smartPaste').value.trim();
-        const det=detectKey(val);
-        if(!det){showToast('Could not detect key type','err');return}
-        const k=getK();
-        k[det.field]=val;
-        if(det.provider){k.aiProvider=det.provider}
-        setK(k);
-        $('smartPaste').value='';$('smartResult').textContent=det.label+' saved!';
-        loadUI();
-        showToast(det.label+' saved','ok');
-      }
-    });
-
-    // Also auto-detect on paste in any key input
-    document.querySelectorAll('.key-input').forEach(inp=>{
-      inp.addEventListener('paste',e=>{
-        setTimeout(()=>{
-          const val=inp.value.trim();
-          const det=detectKey(val);
-          if(det&&inp.id!==det.field){
-            const k=getK();k[det.field]=val;
-            if(det.provider)k.aiProvider=det.provider;
-            setK(k);inp.value='';loadUI();
-            showToast(det.label+' auto-routed','ok');
-          }
-        },50);
-      });
-    });
-
     function loadUI(){
       const k=getK();
-      $('aiProvider').value=k.aiProvider||'openrouter';
-      $('aiKey').value=k.aiKey||'';
-      $('aiModel').value=k.aiModel||'google/gemini-3-flash-preview';
-      $('whisperKey').value=k.whisperKey||'';
-      $('ttsKey').value=k.ttsKey||'';
-      $('ttsVoice').value=k.ttsVoice||'';
-      $('sysPrompt').value=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise and conversational (1-3 sentences).';
-      $('tgToken').value=k.tgToken||'';
-      $('tgChatId').value=k.tgChatId||'';
-      $('tgEnabled').checked=!!k.tgEnabled;
-      $('imageGenUrl').value=k.imageGenUrl||'';
-      $('imageGenKey').value=k.imageGenKey||'';
-      $('imageGenModel').value=k.imageGenModel||'';
-      $('imageGenSize').value=k.imageGenSize||'1024x1024';
       const mode=k.mode||'direct';
       document.querySelectorAll('.mode-btn').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode)});
       updateModeDesc(mode);
@@ -858,36 +624,11 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       renderChat();
     }
 
-    function saveUI(){
-      const k=getK();
-      k.aiProvider=$('aiProvider').value;k.aiKey=$('aiKey').value;
-      k.aiModel=$('aiModel').value||'google/gemini-3-flash-preview';
-      k.whisperKey=$('whisperKey').value;k.ttsKey=$('ttsKey').value;k.ttsVoice=$('ttsVoice').value;
-      k.sysPrompt=$('sysPrompt').value;
-      k.mode=document.querySelector('.mode-btn.active')?.dataset.mode||'direct';
-      k.tgToken=$('tgToken').value;k.tgChatId=$('tgChatId').value;k.tgEnabled=$('tgEnabled').checked;
-      setK(k);updateStatus();showToast('Saved','ok');
-    }
-
     function updateStatus(){
       const k=getK();
-      $('aiStatus').textContent=k.aiKey?'Configured':'Not set';
-      $('aiStatus').className='key-status '+(k.aiKey?'ok':'off');
-      const hasWhisper=k.whisperKey||(k.aiProvider==='groq'&&k.aiKey);
-      $('whisperStatus').textContent=hasWhisper?(k.whisperKey?'Configured':'Using AI key'):'Not set';
-      $('whisperStatus').className='key-status '+(hasWhisper?'ok':'off');
-      $('ttsStatus').textContent=k.ttsKey?'Configured':'Text-only mode';
-      $('ttsStatus').className='key-status '+(k.ttsKey?'ok':'off');
-      const hasTg=k.tgToken&&k.tgChatId;
-      $('tgStatus').textContent=hasTg?(k.tgEnabled?'Active':'Configured (off)'):'Not configured';
-      $('tgStatus').className='key-status '+(hasTg&&k.tgEnabled?'ok':'off');
-      const hasImgGen=!!k.imageGenUrl;
-      $('imageGenStatus').textContent=hasImgGen?'Configured (/imagine ready)':'Not configured';
-      $('imageGenStatus').className='key-status '+(hasImgGen?'ok':'off');
       const pill=$('pill');
-      if(k.aiKey||k.whisperKey){pill.className='pill ok';$('pillLabel').textContent='Ready'}
-      else{pill.className='pill off';$('pillLabel').textContent='No Keys'}
-      // Agent pill
+      if(k.aiKey||k.whisperKey){pill.className='pill ok';$('pillLabel').textContent=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)?'Groq':'Ready'}
+      else{pill.className='pill off';$('pillLabel').textContent='Setup'}
       const agents=getAgents();
       const active=agents.find(a=>a.active);
       if(active){$('agentPill').className='pill ok';$('agentPillLabel').textContent=active.name}
@@ -895,18 +636,81 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       else{$('agentPill').className='pill off';$('agentPillLabel').textContent='None'}
     }
 
-    $('saveKeysBtn').addEventListener('click',saveUI);
-    $('saveTgBtn').addEventListener('click',saveUI);
-    $('tgEnabled').addEventListener('change',()=>{const k=getK();k.tgEnabled=$('tgEnabled').checked;setK(k);updateStatus()});
-    $('clearKeysBtn').addEventListener('click',()=>{localStorage.removeItem('tc-keys');loadUI();showToast('Keys cleared','ok')});
-    $('clearChatBtn').addEventListener('click',()=>{chatHistory=[];setChat([]);renderChat();showToast('Chat cleared','ok')});
-    window.toggleVis=id=>{const e=$(id);e.type=e.type==='password'?'text':'password'};
-
     // ── Theme ──────────────────────────────────────────
     document.documentElement.setAttribute('data-theme',localStorage.getItem('tc-theme')||'dark');
     $('themeBtn').addEventListener('click',()=>{
       const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
       document.documentElement.setAttribute('data-theme',n);localStorage.setItem('tc-theme',n);
+    });
+
+    // ── Settings Dropdown ────────────────────────────
+    const settingsDrop=$('settingsDrop');
+    $('settingsBtn').addEventListener('click',(e)=>{
+      e.stopPropagation();
+      settingsDrop.classList.toggle('open');
+      if(settingsDrop.classList.contains('open'))renderSettingsKeys();
+    });
+    document.addEventListener('click',()=>settingsDrop.classList.remove('open'));
+    settingsDrop.addEventListener('click',e=>e.stopPropagation());
+
+    function renderSettingsKeys(){
+      const k=getK();
+      const keys=[
+        {label:'AI Key',field:'aiKey',val:k.aiKey,prov:k.aiProvider},
+        {label:'Groq / Whisper',field:'whisperKey',val:k.whisperKey},
+        {label:'ElevenLabs TTS',field:'ttsKey',val:k.ttsKey},
+        {label:'Telegram Bot',field:'tgToken',val:k.tgToken},
+        {label:'Telegram Chat ID',field:'tgChatId',val:k.tgChatId},
+        {label:'Image Gen URL',field:'imageGenUrl',val:k.imageGenUrl}
+      ];
+      $('settingsKeyList').innerHTML=keys.map(({label,field,val,prov})=>{
+        const masked=val?val.slice(0,6)+'...'+val.slice(-3):'--';
+        const on=!!val;
+        const provLabel=prov?` (${prov})`:'';
+        return `<div class="settings-key-row">
+          <span class="settings-key-status ${on?'on':'off'}"></span>
+          <span class="settings-key-label">${label}${provLabel}</span>
+          <span class="settings-key-val">${masked}</span>
+        </div>`;
+      }).join('');
+    }
+
+    $('settingsWizard').addEventListener('click',()=>{
+      settingsDrop.classList.remove('open');
+      // Switch to chat tab
+      document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('active'));
+      document.querySelector('[data-tab="chat"]').classList.add('active');
+      $('page-chat').classList.add('active');
+      // Show wizard
+      const k=getK();
+      let html=`<h3>Key Setup</h3><p>Paste any key in the chat to update it. Current config:</p><ul>`;
+      html+=k.aiKey?`<li>AI: <strong>${k.aiProvider||'openrouter'}</strong> (${k.aiKey.slice(0,8)}...) -- paste a new key to replace</li>`
+        :`<li>AI: <strong>not set</strong> -- paste <code>gsk_</code>, <code>sk-or-v1-</code>, or <code>sk-ant-</code></li>`;
+      html+=k.whisperKey?`<li>Groq/Whisper: set (${k.whisperKey.slice(0,6)}...) -- paste a new <code>gsk_</code> key to replace</li>`
+        :(k.aiProvider==='groq'?'<li>Groq/Whisper: using AI key</li>':'<li>Groq/Whisper: <strong>not set</strong> -- paste <code>gsk_</code> for voice input</li>');
+      html+=k.ttsKey?`<li>ElevenLabs: set -- paste a new <code>sk_</code> key to replace</li>`
+        :`<li>ElevenLabs: <strong>not set</strong> -- paste <code>sk_</code> for voice output (<a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">get key</a>)</li>`;
+      html+=k.tgToken?`<li>Telegram: ${k.tgEnabled?'active':'configured'}</li>`
+        :`<li>Telegram: not set -- type <code>/telegram</code></li>`;
+      html+=`</ul>`;
+      sysBubble(html);
+    });
+
+    $('settingsClear').addEventListener('click',()=>{
+      settingsDrop.classList.remove('open');
+      chatHistory=[];setChat([]);renderChat();
+      showToast('Chat cleared','ok');
+    });
+
+    $('settingsWipeKeys').addEventListener('click',()=>{
+      settingsDrop.classList.remove('open');
+      if(!confirm('Clear all API keys? You\'ll need to set them up again.'))return;
+      localStorage.removeItem('tc-keys');
+      updateStatus();
+      chatHistory=[];setChat([]);renderChat();
+      setTimeout(()=>runOnboarding(),300);
+      showToast('All keys cleared','ok');
     });
 
     // ── Tabs ───────────────────────────────────────────
@@ -982,7 +786,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
     // ── Chat Rendering ─────────────────────────────────
     function renderChat(){
       const s=$('chatScroll');
-      if(chatHistory.length===0){s.innerHTML='<div class="chat-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;color:var(--text-3);margin-bottom:8px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Just start typing -- we\'ll help you connect</div><div style="margin-top:4px;font-size:11px">Send a message and add your API key right here</div></div>';return}
+      if(chatHistory.length===0){/* onboarding will fill this */return}
       s.innerHTML=chatHistory.map((m,i)=>{
         let content='';
         if(m.image) content+=`<img class="chat-img" src="${m.image}">`;
@@ -1029,17 +833,25 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
         return callAgent(userText,imageBase64);
       }
 
-      if(!k.aiKey)return '__NO_KEY__';
+      // Try primary AI key, fall back to Groq whisperKey for chat
+      const aiKey=k.aiKey||k.whisperKey;
+      const aiProvider=k.aiKey?k.aiProvider:(k.whisperKey?'groq':null);
+      if(!aiKey)return '__NO_KEY__';
 
-      const providers={
-        openrouter:{url:'https://openrouter.ai/api/v1/chat/completions',model:k.aiModel||'google/gemini-3-flash-preview'},
-        groq:{url:'https://api.groq.com/openai/v1/chat/completions',model:k.aiModel||'llama-3.3-70b-versatile'},
-        anthropic:{url:'https://api.anthropic.com/v1/messages',model:k.aiModel||'claude-sonnet-4-5-20250929'}
-      };
-      const p=providers[k.aiProvider]||providers.openrouter;
       const sys=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
 
-      // Build messages with conversation history (last 10 turns for context)
+      // Groq: use Maverick for vision, 70b for chat
+      const groqChatModel='llama-3.3-70b-versatile';
+      const groqVisionModel='meta-llama/llama-4-maverick-17b-128e-instruct';
+
+      const providers={
+        openrouter:{url:'https://openrouter.ai/api/v1/chat/completions',model:k.aiModel||'google/gemini-2.5-flash-preview'},
+        groq:{url:'https://api.groq.com/openai/v1/chat/completions',model:imageBase64?groqVisionModel:(k.aiModel||groqChatModel)},
+        anthropic:{url:'https://api.anthropic.com/v1/messages',model:k.aiModel||'claude-sonnet-4-5-20250929'}
+      };
+      const p=providers[aiProvider]||providers.groq;
+
+      // Build messages with conversation history
       const histMsgs=chatHistory.slice(-20).filter(m=>m.role==='user'||m.role==='ai').map(m=>({
         role:m.role==='user'?'user':'assistant',content:m.text
       }));
@@ -1052,11 +864,11 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
         userContent=userText;
       }
 
-      if(k.aiProvider==='anthropic'){
+      if(aiProvider==='anthropic'){
         const msgs=[...histMsgs,{role:'user',content:userContent}];
         const res=await fetch(p.url,{
           method:'POST',
-          headers:{'x-api-key':k.aiKey,'content-type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          headers:{'x-api-key':aiKey,'content-type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
           body:JSON.stringify({model:p.model,max_tokens:400,system:sys,messages:msgs})
         });
         const d=await res.json();
@@ -1067,7 +879,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
       const res=await fetch(p.url,{
         method:'POST',
-        headers:{'Authorization':`Bearer ${k.aiKey}`,'Content-Type':'application/json'},
+        headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},
         body:JSON.stringify({model:p.model,messages:msgs,max_tokens:400})
       });
       const d=await res.json();
@@ -1125,74 +937,157 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       if(!res.ok)return null;return await res.arrayBuffer();
     }
 
-    // ── Inline Key Setup (in chat) ────────────────────
-    function showSetupBubble(){
+    // ── Chat-Based Onboarding ─────────────────────────
+    function sysBubble(html){
       const scroll=$('chatScroll');
       const bubble=document.createElement('div');
       bubble.className='chat-bubble ai';
-      bubble.innerHTML=`
-        <div style="margin-bottom:6px;font-size:13px">Hey! You need an API key to chat. Paste one below to get started instantly.</div>
-        <div class="chat-setup">
-          <div class="chat-setup-label">Paste any API key</div>
-          <div class="chat-setup-row">
-            <input type="text" class="chat-setup-input" id="chatSetupKey" placeholder="sk-or-v1-... or gsk_... or sk-ant-..." autocomplete="off" spellcheck="false">
-          </div>
-          <div class="chat-setup-row">
-            <select class="chat-setup-select" id="chatSetupProvider">
-              <option value="auto">Auto-detect</option>
-              <option value="openrouter">OpenRouter</option>
-              <option value="groq">Groq</option>
-              <option value="anthropic">Anthropic</option>
-            </select>
-            <button class="chat-setup-btn" id="chatSetupSave">Connect</button>
-          </div>
-          <div class="chat-setup-hint">
-            Get a free key: <a href="https://console.groq.com" target="_blank" rel="noopener" style="color:var(--teal)">Groq</a> &middot;
-            <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" style="color:var(--teal)">OpenRouter</a> &middot;
-            <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--teal)">Anthropic</a>
-          </div>
-        </div>`;
+      bubble.innerHTML=`<div class="md-content">${html}</div><div class="chat-meta">${new Date().toLocaleTimeString()}</div>`;
       scroll.appendChild(bubble);
       scroll.scrollTop=scroll.scrollHeight;
+      return bubble;
+    }
 
-      const keyInput=bubble.querySelector('#chatSetupKey');
-      const providerSel=bubble.querySelector('#chatSetupProvider');
-      const saveBtn=bubble.querySelector('#chatSetupSave');
+    function runOnboarding(){
+      const k=getK();
+      if(k.aiKey||k.whisperKey)return;
+      const hasAny=chatHistory.length>0;
+      if(hasAny)return;
 
-      // Auto-detect on paste/input
-      keyInput.addEventListener('input',()=>{
-        const det=detectKey(keyInput.value.trim());
-        if(det?.provider){
-          providerSel.value=det.provider;
-        }
-      });
+      sysBubble(`<h2>Welcome to TealClaw</h2>
+<p>Your private voice dashboard. Everything runs in your browser -- your keys never leave this device.</p>
+<hr>
+<h3>Step 1: Get a Free Groq Key</h3>
+<p>Groq gives you a <strong>completely free</strong> AI chatbot with voice input -- all from one key.</p>
+<ol>
+<li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a></li>
+<li>Sign up (free) and create an API key</li>
+<li>Copy the key (starts with <code>gsk_</code>)</li>
+<li><strong>Paste it right here in the chat</strong></li>
+</ol>
+<p>That one key gives you:</p>
+<ul>
+<li><strong>AI Chat</strong> -- Llama 3.3 70B (fast, smart)</li>
+<li><strong>Vision</strong> -- Maverick model (describe images)</li>
+<li><strong>Voice Input</strong> -- Whisper transcription (hold mic to speak)</li>
+</ul>
+<hr>
+<p style="font-size:11px;color:var(--text-3)">Already have an OpenRouter or Anthropic key? Paste that instead -- I'll auto-detect it.</p>`);
+    }
 
-      saveBtn.addEventListener('click',()=>{
-        const val=keyInput.value.trim();
-        if(!val){showToast('Paste an API key','err');return}
-        const det=detectKey(val);
-        const k=getK();
+    // Handle key pasted in chat -- returns true if it was a key (intercepted)
+    function handleChatKey(text){
+      const val=text.trim();
+      const det=detectKey(val);
+      if(!det)return false;
 
-        if(det){
-          k[det.field]=val;
-          if(det.provider)k.aiProvider=det.provider;
-        } else {
-          // Manual provider selection
-          const prov=providerSel.value==='auto'?'openrouter':providerSel.value;
-          k.aiKey=val;
-          k.aiProvider=prov;
-        }
-        setK(k);
-        updateStatus();
-        loadUI();
+      const k=getK();
+      k[det.field]=val;
+      if(det.provider)k.aiProvider=det.provider;
+      // If Groq key and no separate AI key, use Groq as the AI provider too
+      if(det.field==='whisperKey'&&!k.aiKey){
+        k.aiProvider='groq';
+      }
+      if(!k.sysPrompt)k.sysPrompt='You are a helpful voice assistant. Keep responses concise and conversational (1-3 sentences).';
+      setK(k);
+      updateStatus();
 
-        // Replace the setup form with a success message
-        bubble.innerHTML='<div style="font-size:13px;color:var(--ok)">Connected! Try sending your message again.</div><div class="chat-meta">'+new Date().toLocaleTimeString()+'</div>';
-        showToast('API key saved','ok');
-      });
+      // Show masked key in user bubble
+      const masked=val.slice(0,8)+'...' +val.slice(-4);
+      addBubble('user',masked);
 
-      // Focus the input
-      keyInput.focus();
+      // Respond based on what was just set
+      const responses={
+        aiKey:getNextSetupStep,
+        whisperKey:()=>{
+          const k2=getK();
+          if(!k2.aiKey){
+            // Groq is the only key -- it covers everything
+            return getNextSetupStep();
+          }
+          return `<h3>Groq Key Saved</h3>
+<p>Voice input (Whisper) is now active -- hold the mic button to speak.</p>
+${getOptionalSteps()}`;
+        },
+        ttsKey:()=>`<h3>ElevenLabs Connected</h3>
+<p>Voice responses are now active. I'll speak my replies out loud.</p>
+${getOptionalSteps()}`,
+        tgToken:()=>`<h3>Telegram Bot Token Saved</h3>
+<p>Now I need your <strong>Chat ID</strong>. To find it:</p>
+<ol>
+<li>Open Telegram and message <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a></li>
+<li>It will reply with your Chat ID (a number like <code>123456789</code>)</li>
+<li>For a group, add the bot to the group and use <code>-100</code> + the group ID</li>
+</ol>
+<p>Paste the Chat ID here.</p>`,
+        tgChatId:()=>{
+          const k2=getK();k2.tgEnabled=true;setK(k2);
+          return `<h3>Telegram Connected!</h3>
+<p>Messages will now be forwarded to your Telegram chat. You can type <code>/telegram off</code> to disable or <code>/telegram on</code> to re-enable.</p>
+${getOptionalSteps()}`;
+        },
+        gwUrl:()=>`<h3>Gateway URL Saved</h3>
+<p>Now paste the gateway <strong>token</strong> (the 32+ hex character string).</p>`,
+        gwToken:()=>`<h3>Gateway Configured</h3>
+<p>Switch to Agent mode on the Agent tab to route through your gateway.</p>
+${getOptionalSteps()}`,
+        imageGenUrl:()=>`<h3>Image Gen Endpoint Saved</h3>
+<p>Type <code>/imagine your prompt</code> in chat to generate images.</p>
+${getOptionalSteps()}`
+      };
+
+      const respFn=responses[det.field];
+      if(respFn){
+        const html=typeof respFn==='function'?respFn():respFn;
+        sysBubble(html);
+      } else {
+        sysBubble(`<p><strong>${det.label}</strong> saved!</p>${getOptionalSteps()}`);
+      }
+
+      showToast(det.label+' saved','ok');
+      return true;
+    }
+
+    function getNextSetupStep(){
+      const k=getK();
+      const provider=k.aiProvider==='openrouter'?'OpenRouter':k.aiProvider==='groq'?'Groq':'Anthropic';
+      let html=`<h3>Connected!</h3>
+<p>You're using <strong>${provider}</strong>. `;
+
+      if(k.aiProvider==='groq'){
+        html+=`One key covers chat, vision, and voice input. You're all set!</p>`;
+      } else {
+        html+=`You can start chatting now.</p>`;
+      }
+
+      html+=`<hr><p><strong>Optional upgrades</strong> (paste a key anytime, or skip):</p><ul>`;
+
+      if(!k.ttsKey){
+        html+=`<li><strong>Voice Output</strong> -- <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs key</a> (<code>sk_...</code>) to hear AI speak</li>`;
+      }
+
+      if(!k.whisperKey&&k.aiProvider!=='groq'){
+        html+=`<li><strong>Voice Input</strong> -- <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq key</a> (<code>gsk_...</code>) to speak instead of type</li>`;
+      }
+
+      if(k.aiProvider==='groq'&&!getK().aiKey2){
+        html+=`<li><strong>Premium AI</strong> -- <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter key</a> (<code>sk-or-v1-...</code>) for Gemini, Claude, GPT</li>`;
+      }
+
+      html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to forward conversations</li>`;
+      html+=`</ul>`;
+      html+=`<p>Or just start chatting! Use the gear icon (top right) to manage keys later.</p>`;
+      return html;
+    }
+
+    function getOptionalSteps(){
+      const k=getK();
+      const missing=[];
+      if(!k.aiKey)missing.push('AI key (<code>sk-or-v1-</code>, <code>gsk_</code>, or <code>sk-ant-</code>)');
+      if(!k.whisperKey&&k.aiProvider!=='groq')missing.push('Groq key for voice input (<code>gsk_</code>)');
+      if(!k.ttsKey)missing.push('ElevenLabs key for voice output (<code>sk_</code>)');
+      if(!missing.length)return '<p>All set! Type <code>/help</code> to see available commands.</p>';
+      return `<p>You can also add: ${missing.join(', ')}. Just paste anytime.</p>`;
     }
 
     // ── Pipeline ───────────────────────────────────────
@@ -1207,7 +1102,15 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       try{
         const aiText=await callAI(text,imageBase64);
         removeTyping();
-        if(aiText==='__NO_KEY__'){showSetupBubble();return}
+        if(aiText==='__NO_KEY__'){
+          sysBubble(`<p>I need an AI key to respond. Paste one of these in the chat:</p>
+<ul>
+<li><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> -- <code>sk-or-v1-...</code> (recommended)</li>
+<li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free + fast)</li>
+<li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic</a> -- <code>sk-ant-...</code></li>
+</ul>`);
+          return;
+        }
         if(!aiText){addBubble('ai','(No response)');return}
 
         // Forward AI response to Telegram
@@ -1242,21 +1145,112 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
     // ── Send ───────────────────────────────────────────
     function send(){
       const text=$('textIn').value.trim();
-      // Gather all image data URLs
       const images=pendingFiles.filter(f=>f.dataUrl).map(f=>f.dataUrl);
       const firstImage=images[0]||null;
       if(!text&&!firstImage)return;
       $('textIn').value='';$('textIn').style.height='auto';
       clearAllFiles();
       updateActionBtn();
-      // /imagine command → image generation pipeline
-      if(text.startsWith('/imagine ')){
-        const prompt=text.slice(9).trim();
-        if(prompt)imagePipeline(prompt);
-        else showToast('Usage: /imagine your prompt here','err');
-        return;
+
+      // Check if it's an API key being pasted
+      if(text&&!firstImage&&handleChatKey(text))return;
+
+      // Chat commands
+      if(text.startsWith('/')){
+        const cmd=text.toLowerCase();
+        if(cmd==='/help'){
+          sysBubble(`<h3>Commands</h3>
+<ul>
+<li><code>/setup</code> -- restart the setup wizard</li>
+<li><code>/telegram</code> -- set up Telegram forwarding</li>
+<li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
+<li><code>/imagine prompt</code> -- generate an image</li>
+<li><code>/keys</code> -- show what's configured</li>
+<li><code>/clear</code> -- clear chat history</li>
+<li><code>/voice</code> -- change TTS voice</li>
+</ul>
+<p>You can also paste any API key directly in the chat to add it.</p>`);
+          return;
+        }
+        if(cmd==='/setup'){
+          sysBubble(`<h3>Setup Wizard</h3>
+<p>Paste any of these keys in the chat to configure:</p>
+<p><strong>AI Key</strong> (required -- pick one):</p>
+<ul>
+<li><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> -- <code>sk-or-v1-...</code> (recommended, Gemini Flash default)</li>
+<li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free, fast, also enables voice input)</li>
+<li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic</a> -- <code>sk-ant-...</code></li>
+</ul>
+<p><strong>Voice Input</strong> (optional): <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq key</a> -- <code>gsk_...</code></p>
+<p><strong>Voice Output</strong> (optional): <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs key</a> -- <code>sk_...</code></p>
+<p><strong>Telegram</strong>: Type <code>/telegram</code> for setup instructions.</p>`);
+          return;
+        }
+        if(cmd==='/telegram'){
+          sysBubble(`<h3>Telegram Setup</h3>
+<p>Forward your TealClaw conversations to a Telegram chat.</p>
+<h3>Step 1: Create a Bot</h3>
+<ol>
+<li>Open Telegram and message <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a></li>
+<li>Send <code>/newbot</code> and follow the prompts</li>
+<li>Copy the <strong>bot token</strong> (looks like <code>123456:ABC-DEF...</code>)</li>
+<li>Paste it right here in the chat</li>
+</ol>
+<h3>Step 2: Get Your Chat ID</h3>
+<ol>
+<li>Message <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a> on Telegram</li>
+<li>It replies with your <strong>Chat ID</strong> (a number like <code>123456789</code>)</li>
+<li>Paste it here after the bot token</li>
+</ol>
+<p>For a group chat: add your bot to the group, then use <code>-100</code> + the group ID.</p>`);
+          return;
+        }
+        if(cmd==='/telegram on'){
+          const k=getK();k.tgEnabled=true;setK(k);
+          sysBubble('<p>Telegram forwarding <strong>enabled</strong>.</p>');return;
+        }
+        if(cmd==='/telegram off'){
+          const k=getK();k.tgEnabled=false;setK(k);
+          sysBubble('<p>Telegram forwarding <strong>disabled</strong>.</p>');return;
+        }
+        if(cmd==='/keys'){
+          const k=getK();
+          const lines=[];
+          lines.push(k.aiKey?`AI: <strong>${k.aiProvider||'openrouter'}</strong> (${k.aiKey.slice(0,8)}...)`:'AI: <strong>not set</strong>');
+          lines.push(`Model: <code>${k.aiModel||'google/gemini-2.5-flash-preview'}</code>`);
+          lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>'+(k.aiProvider==='groq'?' (using AI key)':''));
+          lines.push(k.ttsKey?'Voice Out: <strong>ElevenLabs</strong> (set)':'Voice Out: <strong>not set</strong> (text-only)');
+          lines.push(k.tgToken&&k.tgChatId?`Telegram: <strong>${k.tgEnabled?'active':'configured (off)'}</strong>`:'Telegram: <strong>not set</strong>');
+          lines.push(k.imageGenUrl?'Image Gen: <strong>configured</strong>':'Image Gen: <strong>not set</strong>');
+          sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
+<p>Paste any key to update. Type <code>/clear keys</code> to wipe all keys.</p>`);
+          return;
+        }
+        if(cmd==='/clear'){
+          chatHistory=[];setChat([]);renderChat();showToast('Chat cleared','ok');return;
+        }
+        if(cmd==='/clear keys'){
+          localStorage.removeItem('tc-keys');updateStatus();
+          sysBubble('<p>All keys cleared. Type <code>/setup</code> to reconfigure.</p>');
+          showToast('Keys cleared','ok');return;
+        }
+        if(cmd==='/voice'){
+          const k=getK();
+          if(!k.ttsKey){sysBubble('<p>Set an ElevenLabs key first. Get one at <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">elevenlabs.io</a> and paste the <code>sk_</code> key here.</p>');return}
+          sysBubble(`<h3>Voice Settings</h3>
+<p>Current voice: <code>${k.ttsVoice||'ThT5KcBeYPX7keBQBPPD'}</code> (Rachel default)</p>
+<p>To change voice, go to the <strong>Agent</strong> tab, or visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a> to find voice IDs.</p>`);
+          return;
+        }
+        if(text.startsWith('/imagine ')){
+          const prompt=text.slice(9).trim();
+          if(prompt)imagePipeline(prompt);
+          else showToast('Usage: /imagine your prompt here','err');
+          return;
+        }
       }
-      // For multiple images, send first as vision + mention count
+
+      // Normal message
       const imageNote=images.length>1?` [${images.length} images attached]`:'';
       pipeline(text+imageNote,firstImage);
     }
@@ -1382,42 +1376,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       }catch(e){console.warn('Telegram send failed:',e)}
     }
 
-    $('testTgBtn').addEventListener('click',async()=>{
-      const token=$('tgToken').value.trim(),chatId=$('tgChatId').value.trim();
-      if(!token||!chatId){showToast('Enter bot token and chat ID','err');return}
-      try{
-        const res=await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({chat_id:chatId,text:'TealClaw connected!'})
-        });
-        const d=await res.json();
-        if(d.ok){showToast('Message sent to Telegram','ok')}
-        else{showToast(d.description||'Telegram error','err')}
-      }catch(e){showToast('Failed: '+e.message,'err')}
-    });
-
     // ── Image Generation ──────────────────────────────
-    $('saveImageGenBtn').addEventListener('click',()=>{
-      const k=getK();
-      k.imageGenUrl=$('imageGenUrl').value.trim();
-      k.imageGenKey=$('imageGenKey').value.trim();
-      k.imageGenModel=$('imageGenModel').value.trim();
-      k.imageGenSize=$('imageGenSize').value;
-      setK(k);updateStatus();showToast('Image gen saved','ok');
-    });
-
-    $('testImageGenBtn').addEventListener('click',async()=>{
-      const k=getK();
-      if(!k.imageGenUrl){showToast('Set image gen endpoint first','err');return}
-      $('testImageGenBtn').textContent='Generating...';
-      try{
-        const url=await generateImage('A teal cat claw logo on a dark background');
-        if(url){showToast('Image generated!','ok')}
-        else{showToast('No image returned','err')}
-      }catch(e){showToast('Failed: '+e.message,'err')}
-      $('testImageGenBtn').textContent='Test Generate';
-    });
-
     async function generateImage(prompt){
       const k=getK();
       if(!k.imageGenUrl)return null;
@@ -1606,42 +1565,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       $('camOverlay').classList.add('hidden');torchOn=false;$('camTorch').classList.remove('on');
     }
 
-    // ── Voice Selector (ElevenLabs) ─────────────────────
-    $('loadVoicesBtn').addEventListener('click',async()=>{
-      const k=getK();
-      if(!k.ttsKey){showToast('Enter ElevenLabs key first','err');return}
-      $('loadVoicesBtn').textContent='Loading...';
-      try{
-        const res=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':k.ttsKey}});
-        const d=await res.json();
-        if(!d.voices?.length){showToast('No voices found','err');$('loadVoicesBtn').textContent='Voices';return}
-        const sel=$('voiceSelect');
-        sel.innerHTML='<option value="">-- Select voice --</option>'+
-          d.voices.map(v=>`<option value="${v.voice_id}" ${v.voice_id===k.ttsVoice?'selected':''}>${esc(v.name)} (${v.labels?.accent||v.labels?.gender||''})</option>`).join('');
-        sel.style.display='block';
-        $('ttsVoice').style.display='none';
-        sel.addEventListener('change',()=>{
-          $('ttsVoice').value=sel.value;
-          const k2=getK();k2.ttsVoice=sel.value;setK(k2);
-        });
-        $('loadVoicesBtn').textContent='Voices';
-        showToast(d.voices.length+' voices loaded','ok');
-      }catch(e){showToast('Failed to load voices','err');$('loadVoicesBtn').textContent='Voices'}
-    });
 
-    $('previewVoiceBtn').addEventListener('click',async()=>{
-      const k=getK();
-      if(!k.ttsKey){showToast('Enter ElevenLabs key first','err');return}
-      const vid=$('ttsVoice').value||$('voiceSelect').value||'ThT5KcBeYPX7keBQBPPD';
-      $('previewVoiceBtn').textContent='...';
-      try{
-        const buf=await speak('Hello! This is a voice preview from TealClaw.');
-        if(buf&&audioEnabled){
-          playAudioBuffer(buf);
-        }else if(buf){showToast('Enable audio first','err')}
-        $('previewVoiceBtn').textContent='Play';
-      }catch{showToast('Preview failed','err');$('previewVoiceBtn').textContent='Play'}
-    });
 
     // ── Auto-Config (URL hash import) ─────────────────
     // URL hash fragment (#config=BASE64) never leaves the browser.
@@ -1691,7 +1615,10 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
     }
 
     // ── Init ───────────────────────────────────────────
-    if(importFromHash()){loadUI()}else{loadUI()}
+    importFromHash();
+    loadUI();
+    // Run onboarding if no keys set and no chat history
+    setTimeout(()=>runOnboarding(),300);
     if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
   </script>
 </body>
