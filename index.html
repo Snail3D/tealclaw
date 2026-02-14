@@ -747,9 +747,52 @@
       renderAgentSelector();
     }));
 
-    // ── Audio ──────────────────────────────────────────
-    $('enableBtn').addEventListener('click',()=>{audioEnabled=true;$('overlay').classList.add('hidden');audio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';audio.play().then(()=>showToast('Audio enabled','ok'))});
+    // ── Audio (Web Audio API for reliable mobile playback) ──
+    let audioCtx=null;
+
+    function ensureAudioCtx(){
+      if(!audioCtx){
+        audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+      }
+      // Resume if suspended (mobile browsers suspend until gesture)
+      if(audioCtx.state==='suspended')audioCtx.resume();
+      return audioCtx;
+    }
+
+    // Play audio buffer reliably on all platforms
+    async function playAudioBuffer(arrayBuffer){
+      const ctx=ensureAudioCtx();
+      try{
+        const decoded=await ctx.decodeAudioData(arrayBuffer.slice(0));
+        const source=ctx.createBufferSource();
+        source.buffer=decoded;
+        source.connect(ctx.destination);
+        source.start(0);
+        return source;
+      }catch(e){
+        // Fallback to <audio> element if Web Audio fails
+        console.warn('Web Audio fallback:',e);
+        const blob=new Blob([arrayBuffer],{type:'audio/mpeg'});
+        audio.src=URL.createObjectURL(blob);
+        audio.play().catch(()=>{});
+        return null;
+      }
+    }
+
+    $('enableBtn').addEventListener('click',()=>{
+      audioEnabled=true;
+      $('overlay').classList.add('hidden');
+      // Unlock both Web Audio API and <audio> element on user gesture
+      ensureAudioCtx();
+      audio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+      audio.play().then(()=>showToast('Audio enabled','ok'));
+    });
     audio.volume=0.8;
+
+    // Also unlock audio context on any user interaction (belt + suspenders)
+    ['touchstart','mousedown','keydown'].forEach(evt=>{
+      document.addEventListener(evt,function unlock(){ensureAudioCtx();document.removeEventListener(evt,unlock)},{once:true});
+    });
 
     // ── Chat Rendering ─────────────────────────────────
     function renderChat(){
@@ -769,9 +812,11 @@
       }).join('');
       s.scrollTop=s.scrollHeight;
 
-      s.querySelectorAll('.play-inline').forEach(b=>b.addEventListener('click',()=>{
+      s.querySelectorAll('.play-inline').forEach(b=>b.addEventListener('click',async()=>{
         const m=chatHistory[+b.dataset.idx];
-        if(m?.audioUrl&&audioEnabled){audio.src=m.audioUrl;audio.play().catch(()=>{})}
+        if(!m?.audioUrl||!audioEnabled)return;
+        // Replay uses <audio> element (user just tapped = gesture context)
+        audio.src=m.audioUrl;audio.play().catch(()=>{});
       }));
     }
 
@@ -917,7 +962,8 @@
         if(ttsData){
           const blob=new Blob([ttsData],{type:'audio/mpeg'});
           audioUrl=URL.createObjectURL(blob);
-          if(audioEnabled){audio.src=audioUrl;audio.play().catch(()=>{})}
+          // Use Web Audio API for reliable mobile autoplay
+          if(audioEnabled)playAudioBuffer(ttsData);
         }
         addBubble('ai',aiText,audioUrl?{audioUrl}:{});
       }catch(e){
@@ -1206,8 +1252,7 @@
       try{
         const buf=await speak('Hello! This is a voice preview from TealClaw.');
         if(buf&&audioEnabled){
-          const blob=new Blob([buf],{type:'audio/mpeg'});
-          audio.src=URL.createObjectURL(blob);audio.play();
+          playAudioBuffer(buf);
         }else if(buf){showToast('Enable audio first','err')}
         $('previewVoiceBtn').textContent='Play';
       }catch{showToast('Preview failed','err');$('previewVoiceBtn').textContent='Play'}
