@@ -56,8 +56,9 @@ All values are stored in browser localStorage. No server, no database.
 | Field | Type | Description |
 |-------|------|-------------|
 | gifEnabled | boolean | Show fullscreen GIF overlay on AI responses. Default: true |
+| gifTenorKey | string | Tenor/Google API key (AIza* prefix). Required for GIF reactions to work. Get free at console.cloud.google.com (enable Tenor API) |
 
-When enabled, AI responses with `[gif:search term]` trigger a specific Tenor GIF.
+When enabled and a Tenor key is set, AI responses with `[gif:search term]` trigger a specific Tenor GIF.
 Without a tag, auto-searches based on response text.
 
 ## Visual Customization — Colors
@@ -82,7 +83,7 @@ Without a tag, auto-searches based on response text.
 | Field | Type | Description |
 |-------|------|-------------|
 | fontSize | string | "small" / "medium" / "large" or CSS value like "16px" |
-| fontFamily | string | Custom font family name |
+| fontFamily | string | Custom font family. Built-in choices: `"'Inter',system-ui,sans-serif"`, `"Georgia,'Times New Roman',serif"`, `"'JetBrains Mono','SF Mono',Menlo,monospace"`, `"'Nunito',system-ui,sans-serif"`, `"'Space Grotesk',system-ui,sans-serif"`. Or any CSS font-family value. Google Fonts are auto-loaded for built-in choices |
 | inputFontSize | string | Chat input font size. Default: "15px" |
 | lineHeight | string | Custom line height (e.g. "1.8") |
 | letterSpacing | string | Custom letter spacing (e.g. "0.03em") |

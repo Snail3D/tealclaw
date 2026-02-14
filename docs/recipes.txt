@@ -353,6 +353,93 @@ Disable all message animations for maximum performance or accessibility.
 ```
 Dramatic slow reveal with a fullscreen background. Great for narrative or RPG bots.
 
+## Interactive Component Recipes (tc-ui)
+
+These are examples of tc-ui blocks that AI agents can include in responses.
+They render as interactive UI elements in the chat.
+
+### Decision Buttons
+```tc-ui
+{"components":[{"type":"buttons","label":"How should I proceed?","items":[
+  {"id":"approve","text":"Approve","style":"success"},
+  {"id":"revise","text":"Request Changes","style":"secondary"},
+  {"id":"reject","text":"Reject","style":"danger"}
+]}]}
+```
+
+### Quiz Card
+```tc-ui
+{"components":[{"type":"card","title":"Quick Quiz","description":"What is the capital of France?","actions":[
+  {"id":"paris","text":"Paris","style":"primary"},
+  {"id":"london","text":"London","style":"secondary"},
+  {"id":"berlin","text":"Berlin","style":"secondary"}
+]}]}
+```
+
+### Topic Selector (Multi-Select Chips)
+```tc-ui
+{"components":[{"type":"chips","label":"Select your interests","multi":true,"items":[
+  {"id":"tech","text":"Technology"},
+  {"id":"science","text":"Science"},
+  {"id":"art","text":"Art & Design"},
+  {"id":"music","text":"Music"}
+]}]}
+```
+
+### Status Indicator
+```tc-ui
+{"components":[{"type":"status","state":"loading","text":"Processing your request..."}]}
+```
+
+### Expandable Details
+```tc-ui
+{"components":[{"type":"collapse","title":"View Technical Details","body":"## Implementation\n\nThe system uses **WebSocket** connections with automatic reconnection and exponential backoff.\n\n- Connection timeout: 30s\n- Max retries: 5\n- Heartbeat interval: 15s"}]}
+```
+
+### Button Grid Layout
+```tc-ui
+{"components":[{"type":"buttons","label":"Pick a template","layout":"grid","items":[
+  {"id":"minimal","text":"Minimal","style":"ghost"},
+  {"id":"cozy","text":"Cozy Warm","style":"ghost"},
+  {"id":"neon","text":"Neon Cyber","style":"ghost"},
+  {"id":"pro","text":"Professional","style":"ghost"}
+]}]}
+```
+
+### Combined Components
+```tc-ui
+{"components":[
+  {"type":"status","state":"success","text":"Configuration saved"},
+  {"type":"buttons","label":"What next?","items":[
+    {"id":"test","text":"Test It","style":"primary"},
+    {"id":"customize","text":"Customize More","style":"secondary"},
+    {"id":"done","text":"I'm Done","style":"ghost"}
+  ]}
+]}
+```
+
+## Font Recipes
+
+### Elegant Serif
+```json
+{"fontFamily":"Georgia,'Times New Roman',serif","fontSize":"large","temperature":0.5}
+```
+
+### Developer Mode
+```json
+{"fontFamily":"'JetBrains Mono','SF Mono',Menlo,monospace","fontSize":"small","latexEnabled":true,"streamEnabled":true}
+```
+
+### Friendly Rounded
+```json
+{"fontFamily":"'Nunito',system-ui,sans-serif","fontSize":"medium","borderRadius":"round"}
+```
+
+### Modern Geometric
+```json
+{"fontFamily":"'Space Grotesk',system-ui,sans-serif","accentColor":"#8b5cf6","themeMode":"dark"}
+```
+
 ## Combined Recipes (Full Transformation)
 
 ### The Full Magic Config

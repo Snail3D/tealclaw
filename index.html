@@ -267,6 +267,88 @@
     .bubble-anim-bounce{animation:bubble-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)}
     .bubble-anim-none{animation:none}
 
+    /* ── tc-ui Interactive Components ────────────────── */
+    .tc-ui{margin-top:10px}
+    .tc-ui-label{font-size:10px;font-weight:600;color:var(--text-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.03em}
+    .tc-ui-buttons{display:flex;flex-wrap:wrap;gap:6px}
+    .tc-ui-btn{padding:8px 16px;font-size:12px;font-weight:500;font-family:var(--font);border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:all 0.2s;background:var(--bg-card);color:var(--text)}
+    .tc-ui-btn:hover{border-color:var(--teal);background:var(--teal-dim)}
+    .tc-ui-btn:active{transform:scale(0.96)}
+    .tc-ui-btn.primary{background:var(--teal);color:#fff;border-color:var(--teal)}
+    .tc-ui-btn.primary:hover{background:var(--teal-hover)}
+    .tc-ui-btn.secondary{background:var(--bg-hover);border-color:var(--border-2)}
+    .tc-ui-btn.danger{background:rgba(239,68,68,0.1);color:var(--err);border-color:rgba(239,68,68,0.3)}
+    .tc-ui-btn.danger:hover{background:var(--err);color:#fff}
+    .tc-ui-btn.success{background:rgba(34,197,94,0.1);color:var(--ok);border-color:rgba(34,197,94,0.3)}
+    .tc-ui-btn.success:hover{background:var(--ok);color:#fff}
+    .tc-ui-btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+    .tc-ui-btn.ghost:hover{background:var(--bg-hover);color:var(--text)}
+    .tc-ui-btn.selected{opacity:0.6;pointer-events:none;position:relative}
+    .tc-ui-btn.selected::after{content:' \2713';font-weight:700}
+    .tc-ui-btn.selected-other{opacity:0.35;pointer-events:none}
+    .tc-ui-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px}
+
+    .tc-ui-card{padding:12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-card);margin-top:6px}
+    .tc-ui-card-title{font-size:13px;font-weight:600;margin-bottom:4px}
+    .tc-ui-card-desc{font-size:11px;color:var(--text-2);line-height:1.4;margin-bottom:8px}
+    .tc-ui-card-img{width:100%;max-height:160px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:8px}
+    .tc-ui-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+    .tc-ui-chips{display:flex;flex-wrap:wrap;gap:6px}
+    .tc-ui-chip{padding:5px 12px;font-size:11px;font-weight:500;font-family:var(--font);border:1px solid var(--border);border-radius:100px;cursor:pointer;transition:all 0.2s;background:var(--bg-card);color:var(--text-2)}
+    .tc-ui-chip:hover{border-color:var(--teal);color:var(--teal)}
+    .tc-ui-chip.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+    .tc-ui-chip.locked{pointer-events:none;opacity:0.6}
+
+    .tc-ui-status{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--r-md);font-size:11px;font-weight:500;margin-top:6px}
+    .tc-ui-status.pending{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.25)}
+    .tc-ui-status.success{background:rgba(34,197,94,0.12);color:var(--ok);border:1px solid rgba(34,197,94,0.25)}
+    .tc-ui-status.error{background:rgba(239,68,68,0.12);color:var(--err);border:1px solid rgba(239,68,68,0.25)}
+    .tc-ui-status.loading{background:var(--teal-dim);color:var(--teal);border:1px solid rgba(13,148,136,0.25)}
+    .tc-ui-status .status-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+    .tc-ui-status.loading .status-dot{animation:dot-bounce 1s ease-in-out infinite}
+
+    .tc-ui-collapse{border:1px solid var(--border);border-radius:var(--r-md);margin-top:6px;overflow:hidden}
+    .tc-ui-collapse-head{padding:8px 12px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;background:var(--bg-hover);transition:background 0.2s;user-select:none}
+    .tc-ui-collapse-head:hover{background:var(--bg-card)}
+    .tc-ui-collapse-head::before{content:'\25B6';font-size:8px;transition:transform 0.2s;color:var(--text-3)}
+    .tc-ui-collapse.open .tc-ui-collapse-head::before{transform:rotate(90deg)}
+    .tc-ui-collapse-body{padding:0 12px;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s ease}
+    .tc-ui-collapse.open .tc-ui-collapse-body{padding:8px 12px;max-height:600px}
+
+    /* ── Code Block Copy Button ──────────────────────── */
+    .code-block-wrap{position:relative}
+    .code-block-wrap .code-copy-btn{position:absolute;bottom:6px;right:6px;padding:3px 8px;font-size:10px;font-weight:500;font-family:var(--font);background:var(--bg-card);color:var(--text-2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;opacity:0;transition:all 0.2s;z-index:1}
+    .code-block-wrap:hover .code-copy-btn{opacity:1}
+    .code-block-wrap .code-copy-btn:hover{border-color:var(--teal);color:var(--teal)}
+    .code-block-wrap .code-copy-btn.copied{background:var(--ok);color:#fff;border-color:var(--ok)}
+
+    /* ── Collapsible Details in Markdown ─────────────── */
+    .chat-bubble .md-content details{border:1px solid var(--border);border-radius:var(--r-md);margin:6px 0;overflow:hidden}
+    .chat-bubble .md-content details summary{padding:8px 12px;font-size:12px;font-weight:500;cursor:pointer;background:var(--bg-hover);list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
+    .chat-bubble .md-content details summary::before{content:'\25B6';font-size:8px;transition:transform 0.2s;color:var(--text-3)}
+    .chat-bubble .md-content details[open] summary::before{transform:rotate(90deg)}
+    .chat-bubble .md-content details summary::-webkit-details-marker{display:none}
+    .chat-bubble .md-content details>:not(summary){padding:8px 12px}
+
+    /* ── Message Search ──────────────────────────────── */
+    .search-bar{display:none;align-items:center;gap:8px;padding:6px 16px;background:var(--bg-1);border-bottom:1px solid var(--border)}
+    .search-bar.open{display:flex}
+    .search-bar input{flex:1;padding:6px 10px;font-size:12px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none}
+    .search-bar input:focus{border-color:var(--teal)}
+    .search-bar .search-count{font-size:10px;color:var(--text-3);white-space:nowrap;min-width:50px;text-align:center}
+    .search-bar .search-close{width:24px;height:24px;border-radius:50%;border:none;background:var(--bg-hover);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;line-height:1}
+    .search-bar .search-nav{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px}
+    .search-bar .search-nav:hover{border-color:var(--teal);color:var(--teal)}
+    .chat-bubble.search-hit{outline:2px solid var(--teal);outline-offset:2px}
+
+    /* ── Connected Services Summary ──────────────────── */
+    .connected-services{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+    .svc-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:10px;font-weight:500;border-radius:100px;border:1px solid}
+    .svc-pill.active{background:rgba(34,197,94,0.08);color:var(--ok);border-color:rgba(34,197,94,0.2)}
+    .svc-pill.inactive{background:var(--bg-hover);color:var(--text-3);border-color:var(--border)}
+    .svc-pill .svc-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
     /* ── Quick Reply Chips ────────────────────────────── */
     .quick-replies{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;justify-content:center}
     .quick-reply{padding:6px 14px;font-size:11px;font-weight:500;font-family:var(--font);color:var(--teal);background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);border-radius:100px;cursor:pointer;transition:all var(--t);white-space:nowrap}
@@ -497,6 +579,9 @@
     </div>
     <div class="topbar-r">
       <div class="pill off" id="pill"><span class="pill-dot"></span><span id="pillLabel">Setup</span></div>
+      <button class="icon-btn" id="searchBtn" title="Search (Ctrl+F)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
       <button class="icon-btn" id="settingsBtn" title="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -506,6 +591,13 @@
     </div>
   </header>
 
+  <div class="search-bar" id="searchBar">
+    <input type="text" id="searchInput" placeholder="Search messages...">
+    <span class="search-count" id="searchCount"></span>
+    <button class="search-nav" id="searchPrev" title="Previous">&uarr;</button>
+    <button class="search-nav" id="searchNext" title="Next">&darr;</button>
+    <button class="search-close" id="searchClose">&times;</button>
+  </div>
   <div class="main">
     <div class="chat-scroll" id="chatScroll">
       <div class="chat-empty" id="chatEmpty"></div>
@@ -626,11 +718,15 @@
       });
       html=html.replace(/(<tr>.*<\/tr>\n?)+/g,'<table>$&</table>');
 
+      // Collapsible details/summary sections (escaped HTML form)
+      html=html.replace(/&lt;details&gt;\s*&lt;summary&gt;([\s\S]*?)&lt;\/summary&gt;([\s\S]*?)&lt;\/details&gt;/gi,
+        (m,title,body)=>`<details><summary>${title.trim()}</summary><div>${renderMd(body.trim())}</div></details>`);
+
       // Paragraphs: wrap remaining loose text lines
       html=html.split('\n').map(line=>{
         const trimmed=line.trim();
         if(!trimmed)return '';
-        if(/^<(h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|th|td|div)/.test(trimmed))return line;
+        if(/^<(h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|th|td|div|details|summary)/.test(trimmed))return line;
         return `<p>${trimmed}</p>`;
       }).join('\n');
 
@@ -648,8 +744,99 @@
       html=html.replace(/(<\/table>)<\/p>/g,'$1');
       html=html.replace(/<p>(<hr>)/g,'$1');
       html=html.replace(/(<hr>)<\/p>/g,'$1');
+      html=html.replace(/<p>(<details)/g,'$1');
+      html=html.replace(/(<\/details>)<\/p>/g,'$1');
 
       return html;
+    }
+
+    // ── tc-ui Interactive Components ─────────────────────
+    function parseTcComponents(text){
+      // Extract ```tc-ui ... ``` blocks (only when closing fence is present = not mid-stream)
+      const blocks=[];
+      const re=/```tc-ui\s*([\s\S]*?)```/g;
+      let m;
+      while((m=re.exec(text))!==null){
+        try{const parsed=JSON.parse(m[1].trim());blocks.push(parsed)}catch{}
+      }
+      // Remove tc-ui blocks from text for normal rendering
+      const cleanText=text.replace(/```tc-ui\s*[\s\S]*?```/g,'').trim();
+      return{cleanText,components:blocks};
+    }
+
+    function renderTcComponent(comp,msgIdx){
+      if(!comp.type)return '';
+      switch(comp.type){
+        case 'buttons':{
+          const label=comp.label?`<div class="tc-ui-label">${esc(comp.label)}</div>`:'';
+          const layout=comp.layout==='grid'?'tc-ui-grid':'tc-ui-buttons';
+          const items=(comp.items||[]).map(item=>{
+            const style=item.style||'secondary';
+            return `<button class="tc-ui-btn ${esc(style)}" data-tc-msg="${msgIdx}" data-tc-id="${esc(item.id||item.text)}" data-tc-text="${esc(item.text)}">${esc(item.text)}</button>`;
+          }).join('');
+          return `<div class="tc-ui">${label}<div class="${layout}">${items}</div></div>`;
+        }
+        case 'card':{
+          const img=comp.image?`<img class="tc-ui-card-img" src="${esc(comp.image)}" alt="">`:'';
+          const title=comp.title?`<div class="tc-ui-card-title">${esc(comp.title)}</div>`:'';
+          const desc=comp.description?`<div class="tc-ui-card-desc">${esc(comp.description)}</div>`:'';
+          const actions=(comp.actions||[]).map(a=>{
+            const style=a.style||'primary';
+            return `<button class="tc-ui-btn ${esc(style)}" data-tc-msg="${msgIdx}" data-tc-id="${esc(a.id||a.text)}" data-tc-text="${esc(a.text)}">${esc(a.text)}</button>`;
+          }).join('');
+          const actionsWrap=actions?`<div class="tc-ui-card-actions">${actions}</div>`:'';
+          return `<div class="tc-ui"><div class="tc-ui-card">${img}${title}${desc}${actionsWrap}</div></div>`;
+        }
+        case 'chips':{
+          const label=comp.label?`<div class="tc-ui-label">${esc(comp.label)}</div>`:'';
+          const multi=comp.multi||false;
+          const items=(comp.items||[]).map(item=>{
+            return `<button class="tc-ui-chip" data-tc-msg="${msgIdx}" data-tc-chip="${esc(item.id||item.text)}" data-tc-text="${esc(item.text)}" data-tc-multi="${multi}">${esc(item.text)}</button>`;
+          }).join('');
+          return `<div class="tc-ui">${label}<div class="tc-ui-chips">${items}</div></div>`;
+        }
+        case 'status':{
+          const state=comp.state||'pending';
+          const text=comp.text||state;
+          return `<div class="tc-ui"><div class="tc-ui-status ${esc(state)}"><span class="status-dot"></span>${esc(text)}</div></div>`;
+        }
+        case 'collapse':{
+          const title=comp.title||'Details';
+          const bodyHtml=comp.body?renderMd(comp.body):'';
+          return `<div class="tc-ui"><div class="tc-ui-collapse"><div class="tc-ui-collapse-head">${esc(title)}</div><div class="tc-ui-collapse-body"><div class="md-content">${bodyHtml}</div></div></div></div>`;
+        }
+        default:return '';
+      }
+    }
+
+    function renderTcComponents(components,msgIdx){
+      return components.flatMap(block=>(block.components||[block]).map(c=>renderTcComponent(c,msgIdx))).join('');
+    }
+
+    function applyTcSelections(container,msgIdx){
+      // Restore previously selected buttons/chips from chatHistory
+      const entry=chatHistory[msgIdx];
+      if(!entry||!entry.tcSelections)return;
+      const sels=entry.tcSelections;
+      // Buttons
+      if(sels.buttons){
+        container.querySelectorAll('.tc-ui-btn[data-tc-msg="'+msgIdx+'"]').forEach(btn=>{
+          const id=btn.dataset.tcId;
+          if(sels.buttons.includes(id)){
+            btn.classList.add('selected');
+          } else if(sels.buttons.length>0){
+            btn.classList.add('selected-other');
+          }
+        });
+      }
+      // Chips
+      if(sels.chips){
+        container.querySelectorAll('.tc-ui-chip[data-tc-msg="'+msgIdx+'"]').forEach(chip=>{
+          if(sels.chips.includes(chip.dataset.tcChip)){
+            chip.classList.add('active','locked');
+          }
+        });
+      }
     }
 
     // ── Storage ────────────────────────────────────────
@@ -672,6 +859,7 @@
       if(/^https?:\/\/.+:\d{4,5}$/.test(val))return{field:'gwUrl',label:'Gateway URL'};
       if(/^[a-f0-9]{32,}$/.test(val))return{field:'gwToken',label:'Gateway Token'};
       if(/^https?:\/\/.*\/(images|generate|img)/i.test(val))return{field:'imageGenUrl',label:'Image Gen Endpoint'};
+      if(/^AIza[A-Za-z0-9_-]{30,}$/.test(val))return{field:'gifTenorKey',label:'Tenor/Google API Key (GIF)'};
       if(val.startsWith('sk-'))return{field:'aiKey',provider:'openrouter',label:'AI Key (OpenRouter?)'};
       return null;
     }
@@ -717,7 +905,24 @@
         {label:'Telegram Chat ID',desc:'Your user or group ID',field:'tgChatId',val:k.tgChatId,link:'https://t.me/userinfobot',linkText:'Get ID'}
       ];
 
-      let html=`<div class="sheet-section"><div class="sheet-section-title">API Keys</div>`;
+      // Connected Services summary
+      const svcs=[
+        {name:'AI Chat',active:!!(k.aiKey||k.whisperKey)},
+        {name:'Voice In',active:!!k.whisperKey},
+        {name:'Voice Out',active:!!k.ttsKey},
+        {name:'Telegram',active:!!(k.tgToken&&k.tgEnabled)},
+        {name:'GIF',active:!!(k.gifEnabled!==false&&k.gifTenorKey)},
+        {name:'Agent',active:!!getAgents().length},
+        {name:'Streaming',active:!!k.streamEnabled},
+        {name:'LaTeX',active:!!k.latexEnabled}
+      ];
+      let html=`<div class="sheet-section"><div class="sheet-section-title">Connected Services</div><div class="connected-services">`;
+      svcs.forEach(s=>{
+        html+=`<span class="svc-pill ${s.active?'active':'inactive'}"><span class="svc-dot"></span>${s.name}</span>`;
+      });
+      html+=`</div></div>`;
+
+      html+=`<div class="sheet-section"><div class="sheet-section-title">API Keys</div>`;
       keys.forEach(({label,desc,field,val,link,linkText,prefix})=>{
         const on=!!val;
         const masked=val?val.slice(0,6)+'...'+val.slice(-3):'Not set';
@@ -768,6 +973,14 @@
           <button class="mode-btn gif-mode-btn ${!gifOn?'active':''}" data-gif="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gifOn?'var(--teal)':'transparent'};border:none;color:${!gifOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
         <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show a relevant GIF overlay for 10 seconds on each AI response.</div>
+        <div style="margin-top:8px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Tenor API Key</div>
+          <div style="display:flex;gap:5px">
+            <input type="password" class="sheet-input" id="sheetTenorKey" value="${esc(k.gifTenorKey||'')}" placeholder="AIza..." style="font-family:var(--mono);font-size:11px">
+            <button class="btn btn-teal" id="sheetTenorKeySave">Set</button>
+          </div>
+          <div style="font-size:10px;color:var(--text-3);margin-top:3px">Get a free key at <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--teal)">console.cloud.google.com</a> (enable Tenor API)</div>
+        </div>
       </div>`;
 
       // PIN Code Security
@@ -802,6 +1015,19 @@
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Font Size</div>
           <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
             ${['small','medium','large'].map(s=>`<button class="mode-btn font-size-btn ${curSize===s?'active':''}" data-size="${s}" style="flex:1;padding:8px;font-size:${s==='small'?'10px':s==='medium'?'12px':'14px'};font-weight:500;font-family:var(--font);background:${curSize===s?'var(--teal)':'transparent'};border:none;color:${curSize===s?'#fff':'var(--text-3)'};cursor:pointer">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Font</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+            ${[
+              {id:'system',label:'System Default',css:"-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,sans-serif"},
+              {id:'inter',label:'Inter',css:"'Inter',system-ui,sans-serif"},
+              {id:'georgia',label:'Georgia',css:"Georgia,'Times New Roman',serif"},
+              {id:'jetbrains',label:'JetBrains Mono',css:"'JetBrains Mono','SF Mono',Menlo,monospace"},
+              {id:'nunito',label:'Nunito',css:"'Nunito',system-ui,sans-serif"},
+              {id:'space-grotesk',label:'Space Grotesk',css:"'Space Grotesk',system-ui,sans-serif"}
+            ].map(f=>`<button class="mode-btn font-choice-btn ${(k.fontFamily||'')===(f.id==='system'?'':f.css)?'active':''}" data-font-id="${f.id}" data-font-css="${esc(f.css)}" style="padding:6px 8px;font-size:11px;font-weight:500;font-family:${f.css};background:${(k.fontFamily||'')===(f.id==='system'?'':f.css)?'var(--teal)':'var(--bg-input)'};border:1px solid ${(k.fontFamily||'')===(f.id==='system'?'':f.css)?'var(--teal)':'var(--border)'};border-radius:var(--r-sm);color:${(k.fontFamily||'')===(f.id==='system'?'':f.css)?'#fff':'var(--text-2)'};cursor:pointer;transition:all 0.2s;text-align:center">${f.label}</button>`).join('')}
           </div>
         </div>
         <div style="margin-bottom:12px">
@@ -973,6 +1199,13 @@
         const k2=getK();k2.gifEnabled=b.dataset.gif==='true';setK(k2);
         renderSheetContent();
       }));
+      // Wire up Tenor key save
+      $('sheetBody').querySelector('#sheetTenorKeySave')?.addEventListener('click',()=>{
+        const val=$('sheetBody').querySelector('#sheetTenorKey').value.trim();
+        const k2=getK();
+        if(val){k2.gifTenorKey=val}else{delete k2.gifTenorKey}
+        setK(k2);showToast(val?'Tenor key saved':'Tenor key removed','ok');
+      });
 
       // Wire up accent color swatches
       $('sheetBody').querySelectorAll('.accent-swatch').forEach(b=>b.addEventListener('click',()=>{
@@ -984,6 +1217,19 @@
       $('sheetBody').querySelectorAll('.font-size-btn').forEach(b=>b.addEventListener('click',()=>{
         const k2=getK();k2.fontSize=b.dataset.size;setK(k2);
         applyVisualConfig();renderSheetContent();renderChat();
+      }));
+
+      // Wire up font choice buttons
+      $('sheetBody').querySelectorAll('.font-choice-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();
+        const id=b.dataset.fontId;
+        const css=b.dataset.fontCss;
+        if(id==='system'){delete k2.fontFamily}else{k2.fontFamily=css}
+        setK(k2);
+        // Load Google Font if needed
+        loadChosenFont(id);
+        applyVisualConfig();renderSheetContent();renderChat();
+        showToast(`Font: ${b.textContent}`,'ok');
       }));
 
       // Wire up bot name
@@ -1237,10 +1483,14 @@
         if(m.role==='ai'){
           if(m.raw)content+=m.text;
           else{
-            let rendered=renderMd(m.text);if(getK().latexEnabled)rendered=renderLatex(rendered);
+            // Parse tc-ui component blocks before rendering markdown
+            const{cleanText,components}=parseTcComponents(m.text);
+            let rendered=renderMd(cleanText);if(getK().latexEnabled)rendered=renderLatex(rendered);
             content+=`<div class="md-content">${rendered}</div>`;
+            // Render interactive components
+            if(components.length)content+=renderTcComponents(components,i);
             // Detect config blocks and add "Applied" badge
-            const cfgMatch=m.text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+            const cfgMatch=cleanText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
             if(cfgMatch){try{const cfg=JSON.parse(cfgMatch[1]);const recognized=Object.keys(CONFIG_KEYS);if(recognized.some(ck=>cfg[ck]!==undefined)){
               const keys=recognized.filter(ck=>cfg[ck]!==undefined);
               content+=`<div class="config-apply-card"><div class="config-preview">${keys.length} settings detected: ${keys.slice(0,4).join(', ')}${keys.length>4?'...':''}</div><button class="config-apply-btn applied">Applied &#10003;</button></div>`;
@@ -1259,10 +1509,88 @@
         }
         const avatarUrl=m.role==='user'?ck.userAvatar:ck.aiAvatar;
         if(avatarUrl){
-          return `<div class="chat-bubble-wrap ${m.role}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${content}<div class="chat-meta">${m.time||''}</div></div></div>`;
+          return `<div class="chat-bubble-wrap ${m.role}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${content}<div class="chat-meta">${m.time||''}</div></div></div>`;
         }
-        return `<div class="chat-bubble ${m.role}">${content}<div class="chat-meta">${m.time||''}</div></div>`;
+        return `<div class="chat-bubble ${m.role}" data-msg-idx="${i}">${content}<div class="chat-meta">${m.time||''}</div></div>`;
       }).join('');
+
+      // Wrap code blocks with copy button
+      s.querySelectorAll('.md-content pre').forEach(pre=>{
+        if(pre.parentElement.classList.contains('code-block-wrap'))return;
+        const wrap=document.createElement('div');
+        wrap.className='code-block-wrap';
+        pre.parentNode.insertBefore(wrap,pre);
+        wrap.appendChild(pre);
+        const btn=document.createElement('button');
+        btn.className='code-copy-btn';btn.textContent='Copy';
+        btn.addEventListener('click',()=>{
+          const code=pre.querySelector('code')?.textContent||pre.textContent;
+          navigator.clipboard.writeText(code).then(()=>{
+            btn.textContent='Copied!';btn.classList.add('copied');
+            setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied')},2000);
+          }).catch(()=>{});
+        });
+        wrap.appendChild(btn);
+      });
+
+      // Apply saved tc-ui selections
+      chatHistory.forEach((m,i)=>{if(m.tcSelections)applyTcSelections(s,i)});
+
+      // Wire up tc-ui button clicks (event delegation)
+      s.querySelectorAll('.tc-ui-btn[data-tc-msg]').forEach(btn=>{
+        if(btn.classList.contains('selected')||btn.classList.contains('selected-other'))return;
+        btn.addEventListener('click',()=>{
+          const msgIdx=+btn.dataset.tcMsg;
+          const id=btn.dataset.tcId;
+          const text=btn.dataset.tcText;
+          // Save selection
+          if(!chatHistory[msgIdx].tcSelections)chatHistory[msgIdx].tcSelections={};
+          if(!chatHistory[msgIdx].tcSelections.buttons)chatHistory[msgIdx].tcSelections.buttons=[];
+          chatHistory[msgIdx].tcSelections.buttons.push(id);
+          setChat(chatHistory);
+          // Visual feedback
+          btn.classList.add('selected');
+          btn.closest('.tc-ui-buttons,.tc-ui-grid,.tc-ui-card-actions')?.querySelectorAll('.tc-ui-btn').forEach(sib=>{
+            if(sib!==btn)sib.classList.add('selected-other');
+          });
+          // Send as next message
+          handleSend(text);
+        });
+      });
+
+      // Wire up tc-ui chip clicks
+      s.querySelectorAll('.tc-ui-chip[data-tc-msg]').forEach(chip=>{
+        if(chip.classList.contains('locked'))return;
+        chip.addEventListener('click',()=>{
+          const msgIdx=+chip.dataset.tcMsg;
+          const id=chip.dataset.tcChip;
+          const text=chip.dataset.tcText;
+          const multi=chip.dataset.tcMulti==='true';
+          if(!chatHistory[msgIdx].tcSelections)chatHistory[msgIdx].tcSelections={};
+          if(!chatHistory[msgIdx].tcSelections.chips)chatHistory[msgIdx].tcSelections.chips=[];
+          if(multi){
+            chip.classList.toggle('active');
+            const idx=chatHistory[msgIdx].tcSelections.chips.indexOf(id);
+            if(idx>=0)chatHistory[msgIdx].tcSelections.chips.splice(idx,1);
+            else chatHistory[msgIdx].tcSelections.chips.push(id);
+            setChat(chatHistory);
+          } else {
+            chatHistory[msgIdx].tcSelections.chips=[id];
+            setChat(chatHistory);
+            chip.closest('.tc-ui-chips')?.querySelectorAll('.tc-ui-chip').forEach(c=>{
+              c.classList.remove('active');c.classList.add('locked');
+            });
+            chip.classList.add('active');
+            handleSend(text);
+          }
+        });
+      });
+
+      // Wire up tc-ui collapse toggles
+      s.querySelectorAll('.tc-ui-collapse-head').forEach(head=>{
+        head.addEventListener('click',()=>head.parentElement.classList.toggle('open'));
+      });
+
       if(getK().autoScroll!==false)s.scrollTop=s.scrollHeight;
 
       // Wire up Play/Replay buttons
@@ -1271,10 +1599,8 @@
         const m=chatHistory[idx];
         if(!m||!audioEnabled)return;
         if(m.audioUrl){
-          // Replay from cache — no API call
           audio.src=m.audioUrl;audio.play().catch(()=>{});
         } else {
-          // On-demand: call ElevenLabs, cache result
           b.classList.remove('on-demand');b.classList.add('loading');
           b.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Playing...';
           const ttsData=await speak(m.text);
@@ -1285,7 +1611,6 @@
             setChat(chatHistory);
             playAudioBuffer(ttsData);
           }
-          // Re-render so button becomes Replay
           renderChat();
         }
       }));
@@ -1642,13 +1967,12 @@ ${getOptionalSteps()}`
 
     // ── GIF Overlay ──────────────────────────────────────
     let gifTimer=null;
-    const TENOR_KEY='TENOR_API_KEY_HERE'; // Register at console.cloud.google.com → enable Tenor API
-
     async function searchGif(query){
-      if(!TENOR_KEY||TENOR_KEY.includes('_HERE'))return null;
+      const tenorKey=getK().gifTenorKey;
+      if(!tenorKey)return null;
       try{
         const q=encodeURIComponent(query.slice(0,80));
-        const res=await fetch(`https://tenor.googleapis.com/v2/search?q=${q}&key=${TENOR_KEY}&limit=8&media_filter=gif&contentfilter=medium`);
+        const res=await fetch(`https://tenor.googleapis.com/v2/search?q=${q}&key=${tenorKey}&limit=8&media_filter=gif&contentfilter=medium`);
         if(!res.ok)return null;
         const d=await res.json();
         if(!d.results?.length)return null;
@@ -2516,6 +2840,12 @@ Rules:
       pipeline(text+imageNote,firstImage);
     }
 
+    // Programmatic send (used by tc-ui button/chip callbacks)
+    function handleSend(text){
+      $('textIn').value=text;
+      send();
+    }
+
     $('sendBtn').addEventListener('click',send);
     $('textIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
     $('textIn').addEventListener('input',()=>{
@@ -2818,7 +3148,7 @@ Rules:
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
-      gifEnabled:'gifEnabled',
+      gifEnabled:'gifEnabled',gifTenorKey:'gifTenorKey',
       accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
       bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
       chatUserColor:'chatUserColor',chatAiColor:'chatAiColor',
@@ -2891,6 +3221,33 @@ Rules:
       let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
       r=Math.max(0,Math.round(r*(1-amt)));g=Math.max(0,Math.round(g*(1-amt)));b=Math.max(0,Math.round(b*(1-amt)));
       return '#'+[r,g,b].map(c=>c.toString(16).padStart(2,'0')).join('');
+    }
+
+    // Load Google Font for font picker choices
+    const loadedFonts=new Set();
+    function loadChosenFont(id){
+      const googleFonts={
+        'inter':'Inter:wght@400;500;600;700',
+        'nunito':'Nunito:wght@400;500;600;700',
+        'space-grotesk':'Space+Grotesk:wght@400;500;600;700',
+        'jetbrains':'JetBrains+Mono:wght@400;500;600;700'
+      };
+      if(!googleFonts[id]||loadedFonts.has(id))return;
+      loadedFonts.add(id);
+      const link=document.createElement('link');
+      link.rel='stylesheet';
+      link.href=`https://fonts.googleapis.com/css2?family=${googleFonts[id]}&display=swap`;
+      document.head.appendChild(link);
+    }
+    // Auto-load font on startup if custom font is set
+    function autoLoadFont(){
+      const k=getK();if(!k.fontFamily)return;
+      const map={
+        'Inter':'inter','Nunito':'nunito','Space Grotesk':'space-grotesk','JetBrains Mono':'jetbrains'
+      };
+      for(const[name,id]of Object.entries(map)){
+        if(k.fontFamily.includes(name)){loadChosenFont(id);break}
+      }
     }
 
     function applyVisualConfig(){
@@ -3183,11 +3540,71 @@ Rules:
       renderDots();renderPad();
     }
 
+    // ── Message Search ──────────────────────────────────
+    let searchHits=[],searchIdx=-1;
+    function openSearch(){
+      $('searchBar').classList.add('open');
+      $('searchInput').focus();
+    }
+    function closeSearch(){
+      $('searchBar').classList.remove('open');
+      $('searchInput').value='';
+      $('searchCount').textContent='';
+      searchHits=[];searchIdx=-1;
+      document.querySelectorAll('.chat-bubble.search-hit').forEach(b=>b.classList.remove('search-hit'));
+    }
+    function doSearch(){
+      const q=$('searchInput').value.trim().toLowerCase();
+      document.querySelectorAll('.chat-bubble.search-hit').forEach(b=>b.classList.remove('search-hit'));
+      searchHits=[];searchIdx=-1;
+      if(!q){$('searchCount').textContent='';return}
+      // Find matching bubbles
+      const bubbles=document.querySelectorAll('.chat-bubble');
+      bubbles.forEach(b=>{
+        const text=(b.textContent||'').toLowerCase();
+        if(text.includes(q)){
+          b.classList.add('search-hit');
+          searchHits.push(b);
+        }
+      });
+      if(searchHits.length){
+        searchIdx=0;
+        searchHits[0].scrollIntoView({behavior:'smooth',block:'center'});
+        $('searchCount').textContent=`1 / ${searchHits.length}`;
+      } else {
+        $('searchCount').textContent='0 results';
+      }
+    }
+    function searchNav(dir){
+      if(!searchHits.length)return;
+      searchIdx=(searchIdx+dir+searchHits.length)%searchHits.length;
+      searchHits[searchIdx].scrollIntoView({behavior:'smooth',block:'center'});
+      $('searchCount').textContent=`${searchIdx+1} / ${searchHits.length}`;
+    }
+    $('searchBtn').addEventListener('click',()=>{
+      if($('searchBar').classList.contains('open'))closeSearch();else openSearch();
+    });
+    $('searchClose').addEventListener('click',closeSearch);
+    $('searchInput').addEventListener('input',doSearch);
+    $('searchPrev').addEventListener('click',()=>searchNav(-1));
+    $('searchNext').addEventListener('click',()=>searchNav(1));
+    $('searchInput').addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();searchNav(e.shiftKey?-1:1)}
+      if(e.key==='Escape')closeSearch();
+    });
+    document.addEventListener('keydown',e=>{
+      if((e.metaKey||e.ctrlKey)&&e.key==='f'){
+        e.preventDefault();
+        if($('searchBar').classList.contains('open'))closeSearch();else openSearch();
+      }
+    });
+
     // ── Init ───────────────────────────────────────────
     // Widget/embed mode
     if(new URLSearchParams(location.search).get('embed')==='true')document.body.classList.add('embed-mode');
 
     importFromHash();
+    autoLoadFont();
     applyVisualConfig();
     loadUI();
     // PIN lock on startup

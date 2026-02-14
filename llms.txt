@@ -170,9 +170,76 @@ Retro Terminal, Cozy Warm. Each template sets a complete visual identity
 (colors, backgrounds, accents) in one tap. Use /template in the chat to
 browse and apply them instantly.
 
-GIF REACTIONS -- When enabled, the AI can include [gif:search term] tags
-in responses, and TealClaw shows a fullscreen GIF overlay. It makes the
-chat feel alive.
+GIF REACTIONS -- When enabled (and a Tenor API key is set), the AI can
+include [gif:search term] tags in responses, and TealClaw shows a
+fullscreen GIF overlay. It makes the chat feel alive. Users paste their
+Tenor/Google API key (AIza* prefix) in settings or via config.
+
+INTERACTIVE COMPONENTS (tc-ui) -- This is the game-changer. Your
+responses can include ```tc-ui fenced blocks that render interactive
+buttons, cards, chips, status indicators, and collapsible sections
+directly in the chat. The user clicks a button and it auto-sends as
+their next message. Selections persist across page reloads.
+
+Component types:
+- buttons: row/grid of clickable buttons with styles (primary, secondary,
+  danger, success, ghost)
+- card: title + description + optional image + action buttons
+- chips: selectable pill group (single or multi-select)
+- status: pending/success/error/loading indicator
+- collapse: expandable details section with markdown body
+
+Example -- offer the user choices:
+```tc-ui
+{"components":[{"type":"buttons","label":"What would you like?","items":[
+  {"id":"explain","text":"Explain simply","style":"primary"},
+  {"id":"deep","text":"Go deeper","style":"secondary"},
+  {"id":"code","text":"Show code","style":"success"}
+]}]}
+```
+
+Example -- show a card with actions:
+```tc-ui
+{"components":[{"type":"card","title":"Setup Complete","description":"Your TealClaw is configured and ready.","actions":[
+  {"id":"test","text":"Test It","style":"primary"},
+  {"id":"customize","text":"Customize More","style":"ghost"}
+]}]}
+```
+
+Example -- topic selector chips:
+```tc-ui
+{"components":[{"type":"chips","label":"Pick topics","multi":true,"items":[
+  {"id":"tech","text":"Technology"},
+  {"id":"science","text":"Science"},
+  {"id":"art","text":"Art & Design"}
+]}]}
+```
+
+You can combine multiple components in one block. Use buttons for
+decisive actions (the text auto-sends), chips for preferences, cards
+for rich content, status for progress updates, and collapse for
+optional details.
+
+The tc-ui blocks use the same pattern as config auto-apply -- just a
+different fence language tag. During streaming, partial tc-ui blocks
+render as plain text until the closing fence appears.
+
+COLLAPSIBLE SECTIONS -- Use HTML details/summary tags in your
+responses for expandable content:
+  <details><summary>Click to see more</summary>
+  Hidden content with **markdown** support.
+  </details>
+
+CODE COPY BUTTONS -- Every code block in AI responses gets a floating
+Copy button. Users hover to reveal it, click to copy to clipboard.
+
+MESSAGE SEARCH -- Users can press Cmd/Ctrl+F or click the search icon
+to find messages. Matching bubbles get highlighted with a teal outline.
+
+FONT CHOICES -- Six built-in fonts selectable in settings: System
+Default (Inter/system-ui), Inter, Georgia (serif), JetBrains Mono
+(monospace), Nunito, Space Grotesk. Set via the fontFamily config
+field.
 
 TELEGRAM BRIDGE -- Forward messages to a Telegram bot/group so the user
 (or an OpenClaw agent) can see and respond from Telegram.
@@ -231,6 +298,7 @@ TealClaw uses partial merge -- only what you include gets written.
   "imageGenModel": "black-forest-labs/FLUX.1-schnell",
   "imageGenSize": "1024x1024",
   "gifEnabled": true,
+  "gifTenorKey": "AIza...",
   "accentColor": "#0d9488",
   "fontSize": "medium",
   "fontFamily": "system-ui, sans-serif",
@@ -315,6 +383,7 @@ TealClaw uses partial merge -- only what you include gets written.
 | imageGenModel | string | Image gen model name |
 | imageGenSize | string | Image size like "1024x1024" |
 | gifEnabled | boolean | Show fullscreen GIF overlay on AI responses (default: true). AI can use [gif:search term] tags for specific GIFs |
+| gifTenorKey | string | Tenor/Google API key for GIF reactions (AIza* prefix). Get free at console.cloud.google.com (enable Tenor API) |
 | accentColor | string | Hex color for the UI accent (default: #0d9488 teal). Changes buttons, links, highlights everywhere |
 | fontSize | "small" or "medium" or "large" or CSS value | Chat text size. small=11px, medium=13px (default), large=16px. Or pass any CSS value like "15px" |
 | fontFamily | string | Custom font family for the UI (default: system-ui) |

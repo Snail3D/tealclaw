@@ -115,6 +115,7 @@ Only include fields the user wants to set or change. Omit everything else.
 | imageGenModel | string | Image gen model name |
 | imageGenSize | string | e.g. "1024x1024" |
 | gifEnabled | boolean | Show fullscreen GIF overlay on AI responses (default: true) |
+| gifTenorKey | string | Tenor/Google API key for GIF reactions (AIza* prefix) |
 | accentColor | string | Hex color for UI accent (default: #0d9488). Cascades everywhere |
 | fontSize | string | "small" / "medium" / "large" or CSS value like "16px" |
 | fontFamily | string | Custom font family |
@@ -195,6 +196,88 @@ Only include fields the user wants to set or change. Omit everything else.
 | agents | array | OpenClaw gateway agents (replaces entire list) |
 
 Agent objects: `{ id, name, url, token, active }` — see llms.txt for full details.
+
+## Interactive Components (tc-ui)
+
+AI responses can include ` ```tc-ui ` fenced code blocks to render interactive UI
+components directly in the chat. This is the same pattern as config auto-apply
+(` ```json `) but for UI elements.
+
+### Component Types
+
+**buttons** — Row or grid of clickable buttons:
+```tc-ui
+{"components":[{"type":"buttons","label":"Choose one","items":[
+  {"id":"yes","text":"Approve","style":"primary"},
+  {"id":"no","text":"Deny","style":"danger"}
+]}]}
+```
+Button styles: `primary`, `secondary`, `danger`, `success`, `ghost`. Add `"layout":"grid"` for grid layout.
+
+**card** — Rich card with title, description, optional image, and action buttons:
+```tc-ui
+{"components":[{"type":"card","title":"Weather Report","description":"Sunny, 72F","image":"https://example.com/sun.jpg","actions":[
+  {"id":"details","text":"Details","style":"primary"},
+  {"id":"dismiss","text":"Dismiss","style":"ghost"}
+]}]}
+```
+
+**chips** — Selectable pill group:
+```tc-ui
+{"components":[{"type":"chips","label":"Topics","multi":false,"items":[
+  {"id":"tech","text":"Technology"},
+  {"id":"science","text":"Science"},
+  {"id":"art","text":"Art"}
+]}]}
+```
+Set `"multi":true` for multi-select.
+
+**status** — Status indicator:
+```tc-ui
+{"components":[{"type":"status","state":"success","text":"Task completed"}]}
+```
+States: `pending`, `success`, `error`, `loading`.
+
+**collapse** — Expandable details section:
+```tc-ui
+{"components":[{"type":"collapse","title":"Technical Details","body":"The implementation uses **WebSocket** connections with automatic reconnection."}]}
+```
+
+### Callback Flow
+
+When a user clicks a button or single-select chip:
+1. Visual pressed state (checkmark + dimmed siblings)
+2. Button text auto-sends as the next chat message
+3. Selection persists across page reloads via `chatHistory[i].tcSelections`
+
+### Streaming Compatibility
+
+`tc-ui` blocks only activate when the closing ` ``` ` fence is present. During
+streaming, partial blocks render as plain text until complete.
+
+### Collapsible Sections in Markdown
+
+AI responses can also use HTML-style collapsible sections:
+```
+<details><summary>Click to expand</summary>
+Hidden content here with **markdown** support.
+</details>
+```
+
+### Font Choices
+
+TealClaw includes 6 built-in font options (selectable in settings or via config):
+- System Default (Inter/system-ui)
+- Inter
+- Georgia (serif)
+- JetBrains Mono (monospace)
+- Nunito
+- Space Grotesk
+
+Set via `fontFamily` config field using the CSS value, e.g.:
+```json
+{"fontFamily": "'Space Grotesk',system-ui,sans-serif"}
+```
 
 ## /research Command
 
@@ -349,6 +432,7 @@ For a single key, the user can just paste it bare (no JSON needed):
 - `sk-or-v1-*` → auto-detected as OpenRouter AI key
 - `gsk_*` → auto-detected as Groq Whisper key
 - `sk_` + hex → auto-detected as ElevenLabs TTS key
+- `AIza*` → auto-detected as Tenor/Google API key (GIF reactions)
 
 ## Architecture
 
