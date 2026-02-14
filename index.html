@@ -156,6 +156,46 @@
     .privacy-bar a{color:var(--text-3);text-decoration:none;transition:color var(--t)}
     .privacy-bar a:hover{color:#ffdd00}
 
+    /* ── Smart Paste ──────────────────────────────────── */
+    .smart-paste{position:relative}
+    .smart-paste-input{width:100%;padding:10px 12px;font-size:12px;font-family:var(--mono);color:var(--text);background:var(--bg-input);border:2px dashed var(--border-2);border-radius:var(--r-md);outline:none;transition:all var(--t);text-align:center}
+    .smart-paste-input:focus{border-color:var(--teal);background:var(--bg-card)}
+    .smart-paste-input::placeholder{color:var(--text-3);font-family:var(--font)}
+    .smart-paste-result{font-size:10px;color:var(--ok);margin-top:3px;text-align:center;min-height:14px}
+
+    /* ── Camera ───────────────────────────────────────── */
+    .cam-overlay{position:fixed;inset:0;background:var(--bg-root);z-index:1000;display:flex;flex-direction:column}
+    .cam-overlay.hidden{display:none}
+    .cam-video{flex:1;object-fit:cover;background:#000}
+    .cam-controls{display:flex;align-items:center;justify-content:center;gap:20px;padding:16px;background:var(--bg-1);border-top:1px solid var(--border)}
+    .cam-btn{width:48px;height:48px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--t)}
+    .cam-btn svg{width:20px;height:20px}
+    .cam-shutter{width:60px;height:60px;background:#fff;border:3px solid var(--teal)}
+    .cam-shutter:active{background:var(--teal)}
+    .cam-flip{background:var(--bg-hover);color:var(--text-2);border:1px solid var(--border)}
+    .cam-torch{background:var(--bg-hover);color:var(--text-2);border:1px solid var(--border)}
+    .cam-torch.on{background:rgba(245,158,11,0.15);color:var(--warn);border-color:var(--warn)}
+    .cam-close{background:rgba(239,68,68,0.1);color:var(--err);border:1px solid transparent}
+
+    /* ── Voice Selector ───────────────────────────────── */
+    .voice-select{width:100%;padding:8px 10px;font-size:11px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none;transition:border var(--t)}
+    .voice-select:focus{border-color:var(--teal)}
+    .voice-preview{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:10px;color:var(--teal);background:var(--teal-dim);border:none;border-radius:var(--r-sm);cursor:pointer;font-family:var(--font)}
+
+    /* ── Agent Selector (Chat) ────────────────────────── */
+    .agent-selector{display:flex;align-items:center;gap:6px;padding:4px 0;margin-bottom:4px}
+    .agent-selector select{flex:1;padding:5px 8px;font-size:11px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);outline:none}
+    .agent-selector select:focus{border-color:var(--teal)}
+    .agent-selector-label{font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap}
+
+    /* ── Agent List (Settings) ────────────────────────── */
+    .agent-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:6px}
+    .agent-item.active{border-color:var(--teal)}
+    .agent-item-info{flex:1;min-width:0}
+    .agent-item-name{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .agent-item-url{font-size:10px;color:var(--text-3);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .agent-item-actions{display:flex;gap:4px}
+
     /* ── Responsive ────────────────────────────────────── */
     @media(max-width:600px){
       .topbar{padding:0 10px;height:44px;gap:6px} .logo{font-size:13px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
@@ -211,9 +251,16 @@
           <span class="file-preview-name" id="fileName">file.png</span>
           <button class="clear-file" id="clearFile">&times;</button>
         </div>
+        <div class="agent-selector" id="agentSelectorBar" style="display:none">
+          <span class="agent-selector-label">Agent:</span>
+          <select id="agentChatSelect"></select>
+        </div>
         <div class="input-row">
           <button class="circle-btn attach-btn" id="attachBtn" title="Attach file">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <button class="circle-btn attach-btn" id="cameraBtn" title="Take photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
           <textarea class="input-text" id="textIn" placeholder="Type a message..." rows="1"></textarea>
           <button class="circle-btn mic-circle" id="micBtn" title="Hold to speak">
@@ -230,6 +277,22 @@
     <!-- ═══ Keys ═══ -->
     <div class="tab-page" id="page-keys">
       <div class="page-scroll">
+        <!-- Smart Paste -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+              Quick Setup
+            </div>
+            <div style="font-size:10px;color:var(--text-3)">Auto-detects key type</div>
+          </div>
+          <div class="smart-paste">
+            <input type="text" class="smart-paste-input" id="smartPaste" placeholder="Paste any API key here -- auto-detected and routed">
+            <div class="smart-paste-result" id="smartResult"></div>
+          </div>
+        </div>
+
+        <!-- API Keys -->
         <div class="card">
           <div class="card-head">
             <div class="card-title">
@@ -237,6 +300,16 @@
               API Keys
             </div>
             <div style="font-size:10px;color:var(--text-3)">Browser-only storage</div>
+          </div>
+
+          <div class="key-row">
+            <div class="key-label">Groq Key</div>
+            <div class="key-desc">Used for Whisper transcription + Groq AI models</div>
+            <div class="key-input-row">
+              <input type="password" id="whisperKey" class="key-input" placeholder="gsk_...">
+              <button class="btn btn-ghost btn-sm" onclick="toggleVis('whisperKey')">Show</button>
+            </div>
+            <div class="key-status off" id="whisperStatus">Not set</div>
           </div>
 
           <div class="key-row">
@@ -259,16 +332,6 @@
           </div>
 
           <div class="key-row">
-            <div class="key-label">Whisper Transcription</div>
-            <div class="key-desc">Groq key for voice. Auto-uses AI key if provider is Groq.</div>
-            <div class="key-input-row">
-              <input type="password" id="whisperKey" class="key-input" placeholder="gsk_...">
-              <button class="btn btn-ghost btn-sm" onclick="toggleVis('whisperKey')">Show</button>
-            </div>
-            <div class="key-status off" id="whisperStatus">Not set</div>
-          </div>
-
-          <div class="key-row">
             <div class="key-label">ElevenLabs TTS</div>
             <div class="key-desc">Voice responses. Without this, text-only.</div>
             <div class="key-input-row">
@@ -279,8 +342,13 @@
           </div>
 
           <div class="key-row">
-            <div class="key-label">Voice ID</div>
-            <input type="text" id="ttsVoice" class="key-input" placeholder="ThT5KcBeYPX7keBQBPPD (Rachel)" style="font-family:var(--font)">
+            <div class="key-label">Voice</div>
+            <div class="key-input-row">
+              <select id="voiceSelect" class="voice-select" style="display:none"></select>
+              <input type="text" id="ttsVoice" class="key-input" placeholder="ThT5KcBeYPX7keBQBPPD (Rachel)" style="font-family:var(--font)">
+              <button class="btn btn-ghost btn-sm" id="loadVoicesBtn" title="Load voices from ElevenLabs">Voices</button>
+              <button class="voice-preview" id="previewVoiceBtn" title="Preview voice">Play</button>
+            </div>
           </div>
 
           <div class="key-row">
@@ -359,28 +427,25 @@
           <div class="card-head">
             <div class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
-              Agent via Tailscale
+              Agents via Tailscale
             </div>
             <span class="pill off" id="agentPill"><span class="pill-dot"></span><span id="agentPillLabel">Off</span></span>
           </div>
 
-          <div class="key-row">
-            <div class="key-label">Gateway URL (Tailscale)</div>
-            <div class="key-desc">Your OpenClaw gateway address on your Tailnet</div>
-            <input type="text" id="gwUrl" class="key-input" placeholder="http://your-machine.tail12345.ts.net:18789" style="font-family:var(--font)">
-          </div>
+          <div class="key-desc" style="margin-bottom:10px">Add multiple OpenClaw gateways. Switch between them in the chat.</div>
 
-          <div class="key-row">
-            <div class="key-label">Gateway Token</div>
-            <div class="key-input-row">
-              <input type="password" id="gwToken" class="key-input" placeholder="your-gateway-token">
-              <button class="btn btn-ghost btn-sm" onclick="toggleVis('gwToken')">Show</button>
+          <div id="agentList"></div>
+
+          <div style="border:1px dashed var(--border-2);border-radius:var(--r-md);padding:12px;margin-top:8px">
+            <div class="key-row">
+              <div class="key-label">Add Agent</div>
+              <input type="text" id="newAgentName" class="key-input" placeholder="Name (e.g. Home, Work, Pi)" style="font-family:var(--font);margin-bottom:5px">
+              <input type="text" id="newAgentUrl" class="key-input" placeholder="http://machine.tail12345.ts.net:18789" style="font-family:var(--font);margin-bottom:5px">
+              <div class="key-input-row">
+                <input type="password" id="newAgentToken" class="key-input" placeholder="Gateway token">
+                <button class="btn btn-teal btn-sm" id="addAgentBtn">Add</button>
+              </div>
             </div>
-          </div>
-
-          <div style="display:flex;gap:6px;margin-top:10px">
-            <button class="btn btn-teal btn-sm" id="testGwBtn">Test Connection</button>
-            <button class="btn btn-ghost btn-sm" id="saveGwBtn">Save</button>
           </div>
 
           <div class="agent-info" style="margin-top:12px">
@@ -401,8 +466,26 @@
 
   <div class="privacy-bar">Your keys never leave your browser. All traffic goes directly to the AI provider. &middot; <a href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener">Buy Me a Coffee</a></div>
 
+  <!-- Camera overlay -->
+  <div class="cam-overlay hidden" id="camOverlay">
+    <video id="camVideo" class="cam-video" autoplay playsinline></video>
+    <div class="cam-controls">
+      <button class="cam-btn cam-close" id="camClose" title="Cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <button class="cam-btn cam-torch" id="camTorch" title="Flashlight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </button>
+      <button class="cam-btn cam-shutter" id="camShutter" title="Take photo"></button>
+      <button class="cam-btn cam-flip" id="camFlip" title="Switch camera">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </button>
+    </div>
+  </div>
+
   <audio id="audio" style="display:none"></audio>
   <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.json,.js,.ts,.py,.md,.csv,.log" style="display:none">
+  <canvas id="camCanvas" style="display:none"></canvas>
 
   <script>
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
@@ -416,6 +499,67 @@
     function setK(k){localStorage.setItem('tc-keys',JSON.stringify(k))}
     function getChat(){try{return JSON.parse(localStorage.getItem('tc-chat')||'[]')}catch{return[]}}
     function setChat(c){localStorage.setItem('tc-chat',JSON.stringify(c.slice(-100)))}
+    function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
+    function setAgents(a){localStorage.setItem('tc-agents',JSON.stringify(a))}
+
+    // ── Smart Key Detection ─────────────────────────────
+    function detectKey(val){
+      val=val.trim();
+      if(val.startsWith('sk-or-v1-'))return{field:'aiKey',provider:'openrouter',label:'OpenRouter AI Key'};
+      if(val.startsWith('sk-ant-'))return{field:'aiKey',provider:'anthropic',label:'Anthropic AI Key'};
+      if(val.startsWith('gsk_'))return{field:'whisperKey',label:'Groq Key'};
+      if(/^sk_[a-f0-9]{40,}$/i.test(val))return{field:'ttsKey',label:'ElevenLabs TTS Key'};
+      if(/^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(val))return{field:'tgToken',label:'Telegram Bot Token'};
+      if(/^-?\d{6,}$/.test(val))return{field:'tgChatId',label:'Telegram Chat ID'};
+      if(/^https?:\/\/.+:\d{4,5}$/.test(val))return{field:'gwUrl',label:'Gateway URL'};
+      if(/^[a-f0-9]{32,}$/.test(val))return{field:'gwToken',label:'Gateway Token'};
+      if(val.startsWith('sk-'))return{field:'aiKey',provider:'openrouter',label:'AI Key (OpenRouter?)'};
+      return null;
+    }
+
+    $('smartPaste').addEventListener('input',()=>{
+      const val=$('smartPaste').value;
+      const det=detectKey(val);
+      const res=$('smartResult');
+      if(!val){res.textContent='';return}
+      if(det){
+        res.textContent=det.label+' detected';res.style.color='var(--ok)';
+      }else{
+        res.textContent='Unknown key format';res.style.color='var(--text-3)';
+      }
+    });
+
+    $('smartPaste').addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        const val=$('smartPaste').value.trim();
+        const det=detectKey(val);
+        if(!det){showToast('Could not detect key type','err');return}
+        const k=getK();
+        k[det.field]=val;
+        if(det.provider){k.aiProvider=det.provider}
+        setK(k);
+        $('smartPaste').value='';$('smartResult').textContent=det.label+' saved!';
+        loadUI();
+        showToast(det.label+' saved','ok');
+      }
+    });
+
+    // Also auto-detect on paste in any key input
+    document.querySelectorAll('.key-input').forEach(inp=>{
+      inp.addEventListener('paste',e=>{
+        setTimeout(()=>{
+          const val=inp.value.trim();
+          const det=detectKey(val);
+          if(det&&inp.id!==det.field){
+            const k=getK();k[det.field]=val;
+            if(det.provider)k.aiProvider=det.provider;
+            setK(k);inp.value='';loadUI();
+            showToast(det.label+' auto-routed','ok');
+          }
+        },50);
+      });
+    });
 
     function loadUI(){
       const k=getK();
@@ -426,8 +570,6 @@
       $('ttsKey').value=k.ttsKey||'';
       $('ttsVoice').value=k.ttsVoice||'';
       $('sysPrompt').value=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise and conversational (1-3 sentences).';
-      $('gwUrl').value=k.gwUrl||'';
-      $('gwToken').value=k.gwToken||'';
       $('tgToken').value=k.tgToken||'';
       $('tgChatId').value=k.tgChatId||'';
       $('tgEnabled').checked=!!k.tgEnabled;
@@ -435,22 +577,21 @@
       document.querySelectorAll('.mode-btn').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode)});
       updateModeDesc(mode);
       updateStatus();
+      renderAgentList();
+      renderAgentSelector();
       chatHistory=getChat();
       renderChat();
     }
 
     function saveUI(){
-      setK({
-        aiProvider:$('aiProvider').value, aiKey:$('aiKey').value,
-        aiModel:$('aiModel').value||'google/gemini-3-flash-preview',
-        whisperKey:$('whisperKey').value, ttsKey:$('ttsKey').value, ttsVoice:$('ttsVoice').value,
-        sysPrompt:$('sysPrompt').value,
-        gwUrl:$('gwUrl').value, gwToken:$('gwToken').value,
-        mode:document.querySelector('.mode-btn.active')?.dataset.mode||'direct',
-        tgToken:$('tgToken').value, tgChatId:$('tgChatId').value,
-        tgEnabled:$('tgEnabled').checked
-      });
-      updateStatus();showToast('Saved','ok');
+      const k=getK();
+      k.aiProvider=$('aiProvider').value;k.aiKey=$('aiKey').value;
+      k.aiModel=$('aiModel').value||'google/gemini-3-flash-preview';
+      k.whisperKey=$('whisperKey').value;k.ttsKey=$('ttsKey').value;k.ttsVoice=$('ttsVoice').value;
+      k.sysPrompt=$('sysPrompt').value;
+      k.mode=document.querySelector('.mode-btn.active')?.dataset.mode||'direct';
+      k.tgToken=$('tgToken').value;k.tgChatId=$('tgChatId').value;k.tgEnabled=$('tgEnabled').checked;
+      setK(k);updateStatus();showToast('Saved','ok');
     }
 
     function updateStatus(){
@@ -466,12 +607,17 @@
       $('tgStatus').textContent=hasTg?(k.tgEnabled?'Active':'Configured (off)'):'Not configured';
       $('tgStatus').className='key-status '+(hasTg&&k.tgEnabled?'ok':'off');
       const pill=$('pill');
-      if(k.aiKey){pill.className='pill ok';$('pillLabel').textContent='Ready'}
+      if(k.aiKey||k.whisperKey){pill.className='pill ok';$('pillLabel').textContent='Ready'}
       else{pill.className='pill off';$('pillLabel').textContent='No Keys'}
+      // Agent pill
+      const agents=getAgents();
+      const active=agents.find(a=>a.active);
+      if(active){$('agentPill').className='pill ok';$('agentPillLabel').textContent=active.name}
+      else if(agents.length>0){$('agentPill').className='pill off';$('agentPillLabel').textContent='No active'}
+      else{$('agentPill').className='pill off';$('agentPillLabel').textContent='None'}
     }
 
     $('saveKeysBtn').addEventListener('click',saveUI);
-    $('saveGwBtn').addEventListener('click',saveUI);
     $('saveTgBtn').addEventListener('click',saveUI);
     $('tgEnabled').addEventListener('change',()=>{const k=getK();k.tgEnabled=$('tgEnabled').checked;setK(k);updateStatus()});
     $('clearKeysBtn').addEventListener('click',()=>{localStorage.removeItem('tc-keys');loadUI();showToast('Keys cleared','ok')});
@@ -499,6 +645,7 @@
       document.querySelectorAll('.mode-btn').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');updateModeDesc(b.dataset.mode);
       const k=getK();k.mode=b.dataset.mode;setK(k);
+      renderAgentSelector();
     }));
 
     // ── Audio ──────────────────────────────────────────
@@ -544,7 +691,7 @@
       const k=getK();
       const mode=k.mode||'direct';
 
-      if(mode==='agent'&&k.gwUrl&&k.gwToken){
+      if(mode==='agent'&&getActiveAgent()){
         return callAgent(userText,imageBase64);
       }
 
@@ -595,17 +742,25 @@
     }
 
     // ── Agent Call (Tailscale) ──────────────────────────
+    function getActiveAgent(){
+      const agents=getAgents();
+      const sel=$('agentChatSelect').value;
+      if(sel)return agents.find(a=>a.id===sel);
+      return agents.find(a=>a.active)||agents[0];
+    }
+
     async function callAgent(text,imageBase64){
-      const k=getK();
+      const agent=getActiveAgent();
+      if(!agent)throw new Error('No agent configured');
       let content;
       if(imageBase64){
         content=[{type:'text',text:text||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}];
       } else {
         content=text;
       }
-      const res=await fetch(`${k.gwUrl}/v1/chat/completions`,{
+      const res=await fetch(`${agent.url}/v1/chat/completions`,{
         method:'POST',
-        headers:{'Authorization':`Bearer ${k.gwToken}`,'Content-Type':'application/json'},
+        headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
         body:JSON.stringify({messages:[{role:'user',content}],max_tokens:400})
       });
       if(!res.ok) throw new Error(`Gateway: ${res.status}`);
@@ -788,26 +943,170 @@
       }catch(e){showToast('Failed: '+e.message,'err')}
     });
 
-    // ── Agent Test ──────────────────────────────────────
-    $('testGwBtn').addEventListener('click',async()=>{
-      const url=$('gwUrl').value.trim(),token=$('gwToken').value.trim();
-      if(!url||!token){showToast('Enter gateway URL and token','err');return}
-      $('gwStatus').textContent='Testing...';
+    // ── Multi-Agent Management ─────────────────────────
+    function renderAgentList(){
+      const agents=getAgents(),el=$('agentList');
+      if(agents.length===0){el.innerHTML='<div style="font-size:11px;color:var(--text-3);text-align:center;padding:8px">No agents yet</div>';return}
+      el.innerHTML=agents.map(a=>`
+        <div class="agent-item ${a.active?'active':''}" data-id="${a.id}">
+          <div class="agent-item-info">
+            <div class="agent-item-name">${esc(a.name)}</div>
+            <div class="agent-item-url">${esc(a.url)}</div>
+          </div>
+          <div class="agent-item-actions">
+            <button class="btn btn-teal btn-sm agent-test-btn" data-id="${a.id}">Test</button>
+            <button class="btn btn-ghost btn-sm agent-activate-btn" data-id="${a.id}">${a.active?'Active':'Use'}</button>
+            <button class="btn btn-danger btn-sm agent-del-btn" data-id="${a.id}">&times;</button>
+          </div>
+        </div>`).join('');
+
+      el.querySelectorAll('.agent-test-btn').forEach(b=>b.addEventListener('click',()=>testAgent(b.dataset.id)));
+      el.querySelectorAll('.agent-activate-btn').forEach(b=>b.addEventListener('click',()=>{
+        const agents=getAgents();
+        agents.forEach(a=>a.active=(a.id===b.dataset.id));
+        setAgents(agents);renderAgentList();renderAgentSelector();updateStatus();
+      }));
+      el.querySelectorAll('.agent-del-btn').forEach(b=>b.addEventListener('click',()=>{
+        setAgents(getAgents().filter(a=>a.id!==b.dataset.id));
+        renderAgentList();renderAgentSelector();updateStatus();
+      }));
+    }
+
+    function renderAgentSelector(){
+      const agents=getAgents(),sel=$('agentChatSelect'),bar=$('agentSelectorBar');
+      const k=getK();
+      if(agents.length<2||(k.mode||'direct')==='direct'){bar.style.display='none';return}
+      bar.style.display='flex';
+      sel.innerHTML=agents.map(a=>`<option value="${a.id}" ${a.active?'selected':''}>${esc(a.name)}</option>`).join('');
+    }
+
+    $('addAgentBtn').addEventListener('click',()=>{
+      const name=$('newAgentName').value.trim()||'Agent';
+      const url=$('newAgentUrl').value.trim();
+      const token=$('newAgentToken').value.trim();
+      if(!url||!token){showToast('Enter URL and token','err');return}
+      const agents=getAgents();
+      const id=Date.now().toString(36);
+      if(agents.length===0)agents.push({id,name,url,token,active:true});
+      else agents.push({id,name,url,token,active:false});
+      setAgents(agents);
+      $('newAgentName').value='';$('newAgentUrl').value='';$('newAgentToken').value='';
+      renderAgentList();renderAgentSelector();updateStatus();
+      showToast(name+' added','ok');
+    });
+
+    async function testAgent(id){
+      const agents=getAgents();
+      const a=agents.find(x=>x.id===id);
+      if(!a)return;
+      $('gwStatus').textContent='Testing '+a.name+'...';
       const start=Date.now();
       try{
-        const res=await fetch(`${url}/v1/chat/completions`,{
-          method:'POST',headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},
+        const res=await fetch(`${a.url}/v1/chat/completions`,{
+          method:'POST',headers:{'Authorization':`Bearer ${a.token}`,'Content-Type':'application/json'},
           body:JSON.stringify({messages:[{role:'user',content:'ping'}],max_tokens:20})
         });
         const d=await res.json();
-        $('gwStatus').textContent='Connected';$('gwModel').textContent=d.model||'--';$('gwLatency').textContent=`${Date.now()-start}ms`;
-        $('agentPill').className='pill ok';$('agentPillLabel').textContent='Connected';
-        showToast('Agent connected','ok');
+        $('gwStatus').textContent=a.name+': Connected';$('gwModel').textContent=d.model||'--';$('gwLatency').textContent=`${Date.now()-start}ms`;
+        showToast(a.name+' connected','ok');
       }catch(e){
-        $('gwStatus').textContent='Failed';$('gwLatency').textContent='--';
-        $('agentPill').className='pill off';$('agentPillLabel').textContent='Off';
+        $('gwStatus').textContent=a.name+': Failed';$('gwLatency').textContent='--';
         showToast('Failed: '+e.message,'err');
       }
+    }
+
+    // ── Camera ──────────────────────────────────────────
+    let camStream=null,facingMode='environment',torchOn=false;
+
+    $('cameraBtn').addEventListener('click',openCamera);
+
+    async function openCamera(){
+      $('camOverlay').classList.remove('hidden');
+      try{
+        camStream=await navigator.mediaDevices.getUserMedia({
+          video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
+        });
+        $('camVideo').srcObject=camStream;
+      }catch(e){showToast('Camera access denied','err');closeCamera()}
+    }
+
+    $('camShutter').addEventListener('click',()=>{
+      const video=$('camVideo'),canvas=$('camCanvas');
+      canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+      canvas.getContext('2d').drawImage(video,0,0);
+      const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+      closeCamera();
+      pendingFile={name:'camera-photo.jpg',dataUrl};
+      $('fileThumb').src=dataUrl;$('fileThumb').style.display='block';
+      $('fileName').textContent='Camera Photo';$('filePreview').classList.add('visible');
+    });
+
+    $('camFlip').addEventListener('click',async()=>{
+      facingMode=facingMode==='environment'?'user':'environment';
+      if(camStream){camStream.getTracks().forEach(t=>t.stop())}
+      torchOn=false;$('camTorch').classList.remove('on');
+      try{
+        camStream=await navigator.mediaDevices.getUserMedia({
+          video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
+        });
+        $('camVideo').srcObject=camStream;
+      }catch(e){showToast('Camera flip failed','err')}
+    });
+
+    $('camTorch').addEventListener('click',async()=>{
+      if(!camStream)return;
+      const track=camStream.getVideoTracks()[0];
+      if(!track)return;
+      try{
+        torchOn=!torchOn;
+        await track.applyConstraints({advanced:[{torch:torchOn}]});
+        $('camTorch').classList.toggle('on',torchOn);
+      }catch{showToast('Flashlight not available','err');torchOn=false}
+    });
+
+    $('camClose').addEventListener('click',closeCamera);
+
+    function closeCamera(){
+      if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
+      $('camOverlay').classList.add('hidden');torchOn=false;$('camTorch').classList.remove('on');
+    }
+
+    // ── Voice Selector (ElevenLabs) ─────────────────────
+    $('loadVoicesBtn').addEventListener('click',async()=>{
+      const k=getK();
+      if(!k.ttsKey){showToast('Enter ElevenLabs key first','err');return}
+      $('loadVoicesBtn').textContent='Loading...';
+      try{
+        const res=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':k.ttsKey}});
+        const d=await res.json();
+        if(!d.voices?.length){showToast('No voices found','err');$('loadVoicesBtn').textContent='Voices';return}
+        const sel=$('voiceSelect');
+        sel.innerHTML='<option value="">-- Select voice --</option>'+
+          d.voices.map(v=>`<option value="${v.voice_id}" ${v.voice_id===k.ttsVoice?'selected':''}>${esc(v.name)} (${v.labels?.accent||v.labels?.gender||''})</option>`).join('');
+        sel.style.display='block';
+        $('ttsVoice').style.display='none';
+        sel.addEventListener('change',()=>{
+          $('ttsVoice').value=sel.value;
+          const k2=getK();k2.ttsVoice=sel.value;setK(k2);
+        });
+        $('loadVoicesBtn').textContent='Voices';
+        showToast(d.voices.length+' voices loaded','ok');
+      }catch(e){showToast('Failed to load voices','err');$('loadVoicesBtn').textContent='Voices'}
+    });
+
+    $('previewVoiceBtn').addEventListener('click',async()=>{
+      const k=getK();
+      if(!k.ttsKey){showToast('Enter ElevenLabs key first','err');return}
+      const vid=$('ttsVoice').value||$('voiceSelect').value||'ThT5KcBeYPX7keBQBPPD';
+      $('previewVoiceBtn').textContent='...';
+      try{
+        const buf=await speak('Hello! This is a voice preview from TealClaw.');
+        if(buf&&audioEnabled){
+          const blob=new Blob([buf],{type:'audio/mpeg'});
+          audio.src=URL.createObjectURL(blob);audio.play();
+        }else if(buf){showToast('Enable audio first','err')}
+        $('previewVoiceBtn').textContent='Play';
+      }catch{showToast('Preview failed','err');$('previewVoiceBtn').textContent='Play'}
     });
 
     // ── Auto-Config (URL hash import) ─────────────────
@@ -823,8 +1122,8 @@
         const keyMap={
           aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
           whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',
-          sysPrompt:'sysPrompt',gwUrl:'gwUrl',gwToken:'gwToken',
-          mode:'mode',tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled'
+          sysPrompt:'sysPrompt',mode:'mode',
+          tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled'
         };
         const k=getK();
         let count=0;
@@ -832,6 +1131,15 @@
           if(cfg[from]!==undefined){k[to]=cfg[from];count++}
         }
         setK(k);
+        // Import agents if provided
+        if(cfg.agents&&Array.isArray(cfg.agents)){
+          setAgents(cfg.agents);count+=cfg.agents.length;
+        } else if(cfg.gwUrl&&cfg.gwToken){
+          // Legacy single-agent import
+          const agents=getAgents();
+          agents.push({id:Date.now().toString(36),name:cfg.agentName||'Agent',url:cfg.gwUrl,token:cfg.gwToken,active:true});
+          setAgents(agents);count+=2;
+        }
         // Strip hash from URL (never persisted, never sent)
         history.replaceState(null,'',location.pathname);
         showToast(`Imported ${count} settings`,'ok');
@@ -842,6 +1150,7 @@
     // Export config as copyable hash URL (for agent to generate)
     function exportConfigUrl(){
       const k=getK();
+      k.agents=getAgents();
       const json=JSON.stringify(k);
       return location.origin+'/#config='+btoa(json);
     }
