@@ -1,6 +1,6 @@
 # TealClaw
 
-**BYOK voice dashboard PWA at [tealclaw.ai](https://tealclaw.ai)**. Zero server. Total privacy. 90+ configurable fields.
+**BYOK voice dashboard PWA at [tealclaw.ai](https://tealclaw.ai)**. Zero server. Total privacy. 95+ configurable fields.
 
 Your API keys never leave your browser. All traffic goes directly from your browser to the AI provider. We see nothing.
 
@@ -22,6 +22,8 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 
 - **Chat** — Multi-turn conversation with persistent history
 - **Streaming** — Token-by-token AI response display
+- **Typing Animation** — Typewriter character reveal for AI responses (slow/medium/fast)
+- **Bubble Animations** — Slide, fade, scale, bounce entrance effects for chat messages
 - **Voice In** — Hold-to-speak with Groq Whisper transcription
 - **Voice Out** — ElevenLabs TTS with auto-play or tap-to-play
 - **Vision** — Drag-and-drop, paste, camera, or attach images for AI vision
@@ -31,6 +33,7 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - **LaTeX/Math** — KaTeX rendering for $inline$ and $$block$$ math
 - **Quick Replies** — Configurable chip buttons for common prompts
 - **Multi-Model Routing** — Auto-select fast or capable model based on query complexity
+- **Style Templates** — Pre-built visual themes and bot configurations via `/template`
 - **Config Profiles** — Save/load/switch between different bot configurations
 - **QR Code Sharing** — Generate QR codes to configure another device instantly
 - **Chat Export** — Download conversations as Markdown
@@ -40,7 +43,7 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - **Widget/Embed Mode** — `?embed=true` for iframe embedding
 - **Agent Mode** — Route through your OpenClaw gateway via Tailscale
 - **Telegram** — Forward conversations (including full research context) to Telegram
-- **85+ Config Fields** — Colors, fonts, layout, markdown, buttons, accessibility, and more
+- **95+ Config Fields** — Colors, fonts, layout, animations, markdown, buttons, accessibility, and more
 - **Custom Bot Persona** — Name, icon, greeting, system prompt — transform into any chatbot
 - **Accessibility** — Dyslexia font, high contrast, reduce motion, focus indicators
 - **Haptic Feedback** — Vibration patterns for send/receive/error (default ON)
@@ -104,6 +107,7 @@ TealClaw does partial merge — only fields present get updated.
 | `/setup` | Setup wizard |
 | `/keys` | Show current config |
 | `/clear` | Clear chat history |
+| `/template` | Browse and apply style templates |
 | `/telegram` | Telegram setup |
 | `/voice` | Voice settings |
 

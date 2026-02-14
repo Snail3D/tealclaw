@@ -58,8 +58,7 @@
     /* ── Chat Layout ───────────────────────────────────── */
     .chat-scroll{flex:1;overflow-y:auto;padding:16px}
     .chat-empty{text-align:center;padding:40px 16px;color:var(--text-3);font-size:12px}
-    .chat-bubble{max-width:85%;margin-bottom:10px;padding:var(--bubble-pad,10px 14px);border-radius:var(--bubble-radius,var(--r-lg));font-size:var(--chat-font,13px);line-height:1.6;word-break:break-word;animation:bubble-in 0.25s ease-out}
-    @keyframes bubble-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .chat-bubble{max-width:85%;margin-bottom:10px;padding:var(--bubble-pad,10px 14px);border-radius:var(--bubble-radius,var(--r-lg));font-size:var(--chat-font,13px);line-height:1.6;word-break:break-word;animation:var(--bubble-anim,bubble-slide-up 0.3s ease-out)}
     .chat-bubble.user{background:var(--user-bg);margin-left:auto;border-bottom-right-radius:4px;color:var(--user-text,var(--text))}
     .chat-bubble.ai{background:var(--ai-bg);margin-right:auto;border-bottom-left-radius:4px;border:1px solid var(--border);color:var(--ai-text,var(--text))}
     .chat-bubble .chat-meta{font-size:10px;color:var(--text-3);margin-top:6px;font-family:var(--mono)}
@@ -74,7 +73,12 @@
     .chat-bubble .tts-play.replay{padding:6px 16px;font-size:11px;font-weight:500;min-height:0;background:var(--teal-dim);color:var(--teal);border-color:transparent}
     .chat-bubble .tts-play.replay:hover{background:var(--teal);color:#fff}
     .chat-bubble .tts-play.replay svg{width:12px;height:12px}
-    .chat-typing{color:var(--text-3);font-style:italic;font-size:12px;padding:4px 14px}
+    .chat-typing{display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:12px;padding:8px 14px;max-width:180px;background:var(--ai-bg);border:1px solid var(--border);border-radius:var(--r-lg);border-bottom-left-radius:4px;margin-bottom:10px;animation:bubble-slide-up 0.25s ease-out}
+    .typing-dots{display:flex;gap:4px;align-items:center}
+    .typing-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);opacity:0.4;animation:dot-bounce 1.4s ease-in-out infinite}
+    .typing-dot:nth-child(2){animation-delay:0.16s}
+    .typing-dot:nth-child(3){animation-delay:0.32s}
+    @keyframes dot-bounce{0%,60%,100%{transform:translateY(0);opacity:0.4}30%{transform:translateY(-6px);opacity:1}}
 
     /* ── Inline Key Setup (in chat) ──────────────────── */
     .chat-setup{margin-top:8px}
@@ -239,6 +243,23 @@
     .pin-key.wide{grid-column:span 1;font-size:13px;font-weight:500}
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
+    /* ── Typing Animation ──────────────────────────────── */
+    .typing-cursor{display:inline-block;width:2px;height:1.1em;background:var(--teal);margin-left:1px;vertical-align:text-bottom;border-radius:1px;animation:cursor-blink 0.7s step-end infinite}
+    @keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
+    .chat-bubble.ai.typing-active{min-height:38px}
+    .chat-bubble.ai.typing-active .md-content{min-height:1.6em}
+
+    /* ── Bubble Animations ──────────────────────────────── */
+    @keyframes bubble-fade{from{opacity:0}to{opacity:1}}
+    @keyframes bubble-slide-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes bubble-scale-in{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:scale(1)}}
+    @keyframes bubble-bounce{from{opacity:0;transform:translateY(16px) scale(0.95)}60%{opacity:1;transform:translateY(-2px) scale(1.01)}to{transform:translateY(0) scale(1)}}
+    .bubble-anim-fade{animation:bubble-fade 0.35s ease-out}
+    .bubble-anim-slide{animation:bubble-slide-up 0.3s ease-out}
+    .bubble-anim-scale{animation:bubble-scale-in 0.28s cubic-bezier(0.34,1.56,0.64,1)}
+    .bubble-anim-bounce{animation:bubble-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+    .bubble-anim-none{animation:none}
+
     /* ── Quick Reply Chips ────────────────────────────── */
     .quick-replies{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;justify-content:center}
     .quick-reply{padding:6px 14px;font-size:11px;font-weight:500;font-family:var(--font);color:var(--teal);background:var(--teal-dim);border:1px solid rgba(13,148,136,0.2);border-radius:100px;cursor:pointer;transition:all var(--t);white-space:nowrap}
@@ -388,6 +409,15 @@
     .agent-item-name{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .agent-item-url{font-size:10px;color:var(--text-3);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .agent-item-actions{display:flex;gap:4px}
+
+    /* ── Template Gallery ───────────────────────────────── */
+    .template-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+    .template-card{padding:12px;border-radius:var(--r-md);border:1.5px solid var(--border);cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden}
+    .template-card:hover{border-color:var(--teal);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+    .template-card:active{transform:scale(0.97)}
+    .template-card-name{font-size:12px;font-weight:600;margin-bottom:2px}
+    .template-card-desc{font-size:9px;opacity:0.7;line-height:1.3}
+    .template-card-dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%}
 
     /* ── Responsive ────────────────────────────────────── */
     @media(max-width:600px){
@@ -748,6 +778,29 @@
         </div>
       </div>`;
 
+      // Animations
+      const curAnim=k.bubbleAnimation||'slide';
+      const typingOn=k.typingAnimation!==false;
+      const curSpeed=k.typingSpeed||'medium';
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Animations</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1"><div style="font-size:12px;font-weight:500">Typing Animation</div><div style="font-size:10px;color:var(--text-3)">Reveal AI responses character by character</div></div>
+          <button class="anim-toggle btn ${typingOn?'btn-teal':'btn-ghost'} btn-sm" data-key="typingAnimation" data-on="${typingOn}">${typingOn?'On':'Off'}</button>
+        </div>
+        <div style="margin:8px 0">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Typing Speed</div>
+          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+            ${['slow','medium','fast'].map(s=>`<button class="mode-btn typing-speed-btn ${curSpeed===s?'active':''}" data-speed="${s}" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${curSpeed===s?'var(--teal)':'transparent'};border:none;color:${curSpeed===s?'#fff':'var(--text-3)'};cursor:pointer">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Bubble Animation</div>
+          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;flex-wrap:wrap">
+            ${['slide','fade','scale','bounce','none'].map(a=>`<button class="mode-btn bubble-anim-btn ${curAnim===a?'active':''}" data-anim="${a}" style="flex:1;min-width:60px;padding:8px;font-size:10px;font-weight:500;font-family:var(--font);background:${curAnim===a?'var(--teal)':'transparent'};border:none;color:${curAnim===a?'#fff':'var(--text-3)'};cursor:pointer">${a[0].toUpperCase()+a.slice(1)}</button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+
       // Accessibility
       html+=`<div class="sheet-section"><div class="sheet-section-title">Accessibility</div>`;
       const a11yToggles=[
@@ -907,6 +960,18 @@
       $('sheetBody').querySelector('#sheetBgImageClear')?.addEventListener('click',()=>{
         const k2=getK();delete k2.bgImage;setK(k2);applyVisualConfig();renderSheetContent();showToast('Background cleared','ok');
       });
+
+      // Wire up animation toggles
+      $('sheetBody').querySelectorAll('.anim-toggle').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();const on=b.dataset.on==='true';
+        k2[b.dataset.key]=on?false:true;setK(k2);renderSheetContent();
+      }));
+      $('sheetBody').querySelectorAll('.typing-speed-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.typingSpeed=b.dataset.speed;setK(k2);renderSheetContent();showToast(`Typing speed: ${b.dataset.speed}`,'ok');
+      }));
+      $('sheetBody').querySelectorAll('.bubble-anim-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.bubbleAnimation=b.dataset.anim;setK(k2);applyVisualConfig();renderSheetContent();showToast(`Bubble: ${b.dataset.anim}`,'ok');
+      }));
 
       // Wire up accessibility toggles
       $('sheetBody').querySelectorAll('.a11y-toggle').forEach(b=>b.addEventListener('click',()=>{
@@ -1193,11 +1258,49 @@
     function addTyping(){
       const s=$('chatScroll');const k=getK();
       const emoji=k.loadingEmoji?k.loadingEmoji+' ':'';
-      const txt=emoji+(k.loadingText||'Thinking...');
-      const el=document.createElement('div');el.className='chat-typing';el.id='typing';el.textContent=txt;
+      const txt=k.loadingText||'Thinking';
+      const el=document.createElement('div');el.className='chat-typing';el.id='typing';
+      el.innerHTML=`<div class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div><span>${emoji}${esc(txt)}</span>`;
       s.appendChild(el);s.scrollTop=s.scrollHeight;
+      playTypingSound();
     }
     function removeTyping(){const el=$('typing');if(el)el.remove()}
+
+    // ── Typing Animation Engine ──────────────────────────
+    let typeRevealAbort=null;
+    function typeReveal(fullText,targetEl,k){
+      if(typeRevealAbort)typeRevealAbort.abort=true;
+      const ctrl={abort:false};typeRevealAbort=ctrl;
+      const speeds={slow:45,medium:22,fast:8};
+      const ms=speeds[k.typingSpeed]||22;
+      return new Promise(resolve=>{
+        let pos=0;const len=fullText.length;
+        function tick(){
+          if(ctrl.abort){resolve();return}
+          // Advance: skip faster through whitespace and punctuation
+          const ch=fullText[pos]||'';
+          const step=ch===' '||ch==='\n'?Math.min(3,len-pos):ch===','||ch==='.'?2:1;
+          pos=Math.min(pos+step,len);
+          const partial=fullText.slice(0,pos);
+          let rendered=renderMd(partial);
+          if(k.latexEnabled)rendered=renderLatex(rendered);
+          targetEl.innerHTML=rendered+'<span class="typing-cursor"></span>';
+          if(pos>=len){
+            setTimeout(()=>{
+              if(!ctrl.abort){
+                targetEl.innerHTML=renderMd(fullText);
+                if(k.latexEnabled)targetEl.innerHTML=renderLatex(targetEl.innerHTML);
+              }
+              resolve();
+            },350);
+            return;
+          }
+          setTimeout(tick,ms);
+        }
+        tick();
+      });
+    }
+    function stopTypeReveal(){if(typeRevealAbort){typeRevealAbort.abort=true;typeRevealAbort=null}}
 
     // ── AI Call ─────────────────────────────────────────
     async function callAI(userText,imageBase64){
@@ -1490,6 +1593,8 @@ ${getOptionalSteps()}`
     }
     function playSendSound(){if(getK().soundEnabled)playTone(880,0.06,0.12)}
     function playReceiveSound(){if(getK().soundEnabled){playTone(660,0.06,0.1);setTimeout(()=>playTone(880,0.08,0.12),70)}}
+    function playTypingSound(){if(getK().soundEnabled){playTone(440,0.03,0.08);setTimeout(()=>playTone(520,0.03,0.08),100);setTimeout(()=>playTone(440,0.03,0.06),200)}}
+    function playBubbleSound(){if(getK().soundEnabled)playTone(600,0.04,0.1)}
 
     // ── GIF Overlay ──────────────────────────────────────
     let gifTimer=null;
@@ -1734,6 +1839,45 @@ Rules:
     }
 
     // ── Export Chat ──────────────────────────────────────
+    // ── Template Gallery ───────────────────────────────
+    const TEMPLATES=[
+      {name:'Midnight Purple',desc:'Deep purple vibes, dreamy and calm',accent:'#8b5cf6',bg:'#0a0520',user:'#1a1040',ai:'#0f0a2a',theme:'dark'},
+      {name:'Sunset Orange',desc:'Warm sunset tones, energetic',accent:'#f97316',bg:'#1a0f05',user:'#2a1a0a',ai:'#1a1205',theme:'dark'},
+      {name:'Ocean Blue',desc:'Cool ocean depths, professional',accent:'#3b82f6',bg:'#0a1628',user:'#0f1e3a',ai:'#0a1a30',theme:'dark'},
+      {name:'Forest Green',desc:'Natural and grounding',accent:'#22c55e',bg:'#051a0a',user:'#0a2a14',ai:'#05200a',theme:'dark'},
+      {name:'Rose Pink',desc:'Soft and elegant',accent:'#ec4899',bg:'#1a0a14',user:'#2a1020',ai:'#1a0a16',theme:'dark'},
+      {name:'Golden Hour',desc:'Warm gold tones, luxurious',accent:'#eab308',bg:'#1a1505',user:'#2a2410',ai:'#1a1a05',theme:'dark'},
+      {name:'Arctic White',desc:'Clean, minimal, and bright',accent:'#0d9488',bg:'#f8fafc',user:'#e2e8f0',ai:'#f0fdfa',theme:'light'},
+      {name:'Cotton Candy',desc:'Playful pastels',accent:'#ec4899',bg:'#fdf2f8',user:'#fce7f3',ai:'#faf5ff',theme:'light'},
+      {name:'Neon Cyber',desc:'High-energy cyberpunk',accent:'#22d3ee',bg:'#020617',user:'#0a1628',ai:'#051525',theme:'dark',extra:{borderColor:'rgba(34,211,238,0.15)'}},
+      {name:'Minimal Zen',desc:'Stripped down, pure focus',accent:'#6b7280',bg:'#f9fafb',user:'#f3f4f6',ai:'#ffffff',theme:'light',extra:{hideTopbar:true,borderRadius:'sharp',bubbleAnimation:'fade'}},
+      {name:'Retro Terminal',desc:'Green-on-black hacker style',accent:'#22c55e',bg:'#0a0a0a',user:'#111111',ai:'#0d0d0d',theme:'dark',extra:{fontFamily:'Menlo, monospace',borderRadius:'sharp'}},
+      {name:'Cozy Warm',desc:'Warm and inviting for long chats',accent:'#f59e0b',bg:'#1c1410',user:'#2a1f16',ai:'#1a1510',theme:'dark',extra:{fontSize:'large',bubbleAnimation:'bounce'}}
+    ];
+
+    function showTemplateGallery(){
+      let html='<h3>Style Templates</h3><p style="font-size:11px;color:var(--text-2);margin-bottom:8px">Tap a template to instantly transform TealClaw. Mix and match with your own tweaks.</p>';
+      html+='<div class="template-grid">';
+      TEMPLATES.forEach((t,i)=>{
+        html+=`<div class="template-card" data-tidx="${i}" style="background:${t.ai};color:${t.theme==='light'?'#1a1a2e':'#e2e8f0'}">
+          <div class="template-card-dot" style="background:${t.accent}"></div>
+          <div class="template-card-name" style="color:${t.accent}">${esc(t.name)}</div>
+          <div class="template-card-desc">${esc(t.desc)}</div>
+        </div>`;
+      });
+      html+='</div>';
+      const el=document.createElement('div');el.className='chat-bubble ai';el.style.maxWidth='100%';
+      el.innerHTML=html;
+      $('chatScroll').appendChild(el);
+      $('chatScroll').scrollTop=$('chatScroll').scrollHeight;
+      el.querySelectorAll('.template-card').forEach(card=>card.addEventListener('click',()=>{
+        const t=TEMPLATES[+card.dataset.tidx];
+        const cfg={accentColor:t.accent,bgColor:t.bg,chatUserColor:t.user,chatAiColor:t.ai,themeMode:t.theme,...(t.extra||{})};
+        importConfig(cfg);applyVisualConfig();renderChat();
+        showToast(`Applied: ${t.name}`,'ok');haptic('success');
+      }));
+    }
+
     function exportChat(){
       if(!chatHistory.length){sysBubble('<p>No chat to export.</p>');return}
       const k=getK();const botName=k.botName||'TealClaw';
@@ -1807,6 +1951,19 @@ Rules:
     // ── QR Code Config Sharing ──────────────────────────
     async function generateQR(){
       const url=exportConfigUrl();
+      // Warn if URL is too long for QR (>2500 chars gets unreliable)
+      if(url.length>2500){
+        sysBubble(`<h3>Config Too Large for QR</h3>
+<p>Your configuration has too many custom settings for a single QR code (${url.length} chars).</p>
+<p><strong>Options:</strong></p>
+<ul>
+<li><strong>Copy the link</strong> and share it directly (works at any size)</li>
+<li><strong>Export as JSON</strong> — type <code>/export</code> or save settings with <code>/profile save</code></li>
+</ul>
+<p style="word-break:break-all;font-family:var(--mono);font-size:9px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);max-height:60px;overflow:auto">${esc(url)}</p>
+<button class="btn btn-teal" style="margin-top:8px" onclick="navigator.clipboard?.writeText('${url.replace(/'/g,"\\'")}');showToast('Link copied','ok')">Copy Link</button>`);
+        return;
+      }
       sysBubble('<p style="color:var(--text-3)">Generating QR code...</p>');
       try{
         await loadScript('https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js');
@@ -2000,7 +2157,7 @@ Rules:
       const useStream=pk.streamEnabled&&!imageBase64&&pk.mode!=='agent';
 
       if(useStream){
-        // Streaming mode: show tokens as they arrive
+        // Streaming mode: show tokens as they arrive with cursor
         const streamIdx=chatHistory.length;
         addBubble('ai','...');
         const scroll=$('chatScroll');
@@ -2010,11 +2167,13 @@ Rules:
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
+              last.classList.add('typing-active');
               const md=last.querySelector('.md-content');
               let rendered=renderMd(partial);
               if(pk.latexEnabled)rendered=renderLatex(rendered);
-              if(md)md.innerHTML=rendered;
-              else last.innerHTML=`<div class="md-content">${rendered}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
+              const withCursor=rendered+'<span class="typing-cursor"></span>';
+              if(md)md.innerHTML=withCursor;
+              else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
             }
             if(pk.autoScroll!==false)scroll.scrollTop=scroll.scrollHeight;
           });
@@ -2046,7 +2205,7 @@ Rules:
           showToast(e.message,'err');haptic('error');
         }
       } else {
-        // Non-streaming mode
+        // Non-streaming mode: bouncing dots, then typewriter reveal
         addTyping();
         try{
           const aiText=await callAI(text,imageBase64);
@@ -2071,18 +2230,39 @@ Rules:
           sendTelegram(`AI: ${displayText}`);
           fireWebhook('message.receive',{text:displayText});
 
-          // TTS
+          // TTS (start in parallel with typing animation)
           let audioUrl=null;
-          if(audioEnabled&&pk.ttsKey&&pk.ttsAutoPlay!==false){
-            const ttsData=await speak(displayText);
+          const ttsPromise=(audioEnabled&&pk.ttsKey&&pk.ttsAutoPlay!==false)?speak(displayText):Promise.resolve(null);
+
+          // Typing animation: reveal character by character
+          if(pk.typingAnimation!==false){
+            const bubbleIdx=chatHistory.length;
+            addBubble('ai','');
+            const scroll=$('chatScroll');
+            const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
+            const lastBubble=bubbles[bubbles.length-1];
+            if(lastBubble){
+              lastBubble.classList.add('typing-active');
+              const mdEl=lastBubble.querySelector('.md-content')||lastBubble;
+              playBubbleSound();
+              await typeReveal(displayText,mdEl,pk);
+              lastBubble.classList.remove('typing-active');
+            }
+            chatHistory[bubbleIdx].text=displayText;
+            const ttsData=await ttsPromise;
+            if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});audioUrl=URL.createObjectURL(blob);chatHistory[bubbleIdx].audioUrl=audioUrl;playAudioBuffer(ttsData)}
+            setChat(chatHistory);renderChat();
+          } else {
+            // No typing animation: instant display
+            const ttsData=await ttsPromise;
             if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData)}
+            addBubble('ai',displayText,audioUrl?{audioUrl}:{});
           }
-          addBubble('ai',displayText,audioUrl?{audioUrl}:{});
           // Auto-detect and apply TealClaw config in AI response
           detectAndApplyConfig(displayText);
           playReceiveSound();haptic('receive');renderQuickReplies();
         }catch(e){
-          removeTyping();
+          removeTyping();stopTypeReveal();
           addBubble('ai',`Error: ${e.message}`);
           showToast(e.message,'err');haptic('error');
         }
@@ -2173,9 +2353,10 @@ Rules:
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear chat history</li>
 <li><code>/voice</code> -- change TTS voice</li>
+<li><code>/template</code> -- browse and apply style templates</li>
 </ul>
 <p>You can also paste any API key or JSON config directly in the chat.</p>
-<p><strong>Tips:</strong> Attach an image with <code>/research</code> for visual analysis. Use <code>/qr</code> to set up another device instantly.</p>`);
+<p><strong>Tips:</strong> Attach an image with <code>/research</code> for visual analysis. Use <code>/qr</code> to set up another device instantly. Try <code>/template</code> for instant visual makeovers.</p>`);
           return;
         }
         if(cmd==='/setup'){
@@ -2280,6 +2461,9 @@ Rules:
         }
         if(text.startsWith('/qr')){
           generateQR();return;
+        }
+        if(cmd==='/template'||cmd==='/templates'){
+          showTemplateGallery();return;
         }
       }
 
@@ -2628,7 +2812,9 @@ Rules:
       webhookUrl:'webhookUrl',webhookEvents:'webhookEvents',
       scheduledMessages:'scheduledMessages',latexEnabled:'latexEnabled',
       // Security
-      pinCode:'pinCode',pinRequired:'pinRequired'
+      pinCode:'pinCode',pinRequired:'pinRequired',
+      // Animations
+      typingAnimation:'typingAnimation',typingSpeed:'typingSpeed',bubbleAnimation:'bubbleAnimation'
     };
 
     function importConfig(cfg){
@@ -2813,6 +2999,10 @@ Rules:
       if(k.chatBubbleRadius)root.style.setProperty('--bubble-radius',k.chatBubbleRadius);
       if(k.chatBubblePadding)root.style.setProperty('--bubble-pad',k.chatBubblePadding);
 
+      // Bubble animation
+      const animMap={fade:'bubble-fade 0.35s ease-out',slide:'bubble-slide-up 0.3s ease-out',scale:'bubble-scale-in 0.28s cubic-bezier(0.34,1.56,0.64,1)',bounce:'bubble-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)',none:'none'};
+      root.style.setProperty('--bubble-anim',animMap[k.bubbleAnimation]||animMap.slide);
+
       // Hide BMC link
       document.querySelectorAll('.bmc-link,.bmc-card').forEach(el=>el.style.display=k.hideBmc?'none':'');
 
@@ -2874,17 +3064,26 @@ Rules:
     }
 
     // Export config as copyable hash URL (strips sensitive keys for sharing)
+    // Default values — only export fields that differ from defaults
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,gifEnabled:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,hideBmc:false};
+
     function exportConfigUrl(includeSensitive=false){
       const k=getK();
-      k.agents=getAgents();
-      if(!includeSensitive){
-        // Strip API keys and tokens — these should never be in shared QR codes
-        const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode'];
-        sensitive.forEach(s=>{delete k[s]});
-        // Strip tokens from agents too
-        if(k.agents)k.agents=k.agents.map(a=>({...a,token:undefined}));
+      const agents=getAgents();
+      // Only include non-default, non-empty values to keep QR codes small
+      const out={};
+      for(const[key,val]of Object.entries(k)){
+        if(val===''||val===null||val===undefined)continue;
+        if(CONFIG_DEFAULTS[key]!==undefined&&JSON.stringify(CONFIG_DEFAULTS[key])===JSON.stringify(val))continue;
+        out[key]=val;
       }
-      const json=JSON.stringify(k);
+      if(agents.length)out.agents=agents;
+      if(!includeSensitive){
+        const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode'];
+        sensitive.forEach(s=>{delete out[s]});
+        if(out.agents)out.agents=out.agents.map(a=>({...a,token:undefined}));
+      }
+      const json=JSON.stringify(out);
       return location.origin+'/#config='+btoa(json);
     }
 

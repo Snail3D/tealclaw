@@ -159,6 +159,16 @@ Without a tag, auto-searches based on response text.
 | latexEnabled | boolean | Render LaTeX math ($inline$ and $$block$$) using KaTeX. Default: false |
 | contextMessages | number | Number of conversation messages to include as context. Default: 20. Range: 2-50 |
 
+## Animations
+
+| Field | Type | Description |
+|-------|------|-------------|
+| typingAnimation | boolean | Enable typewriter character reveal for AI responses. Default: true |
+| typingSpeed | string | Typing speed: "slow" (45ms), "medium" (22ms), "fast" (8ms). Default: "medium" |
+| bubbleAnimation | string | Chat bubble entrance animation: "slide" / "fade" / "scale" / "bounce" / "none". Default: "slide" |
+
+When `typingAnimation` is enabled, AI response text appears character by character at the selected speed. Combine with `bubbleAnimation` for polished message entrances. Set `reduceMotion: true` to override both and disable all animations.
+
 ## Quick Replies & Avatars
 
 | Field | Type | Description |

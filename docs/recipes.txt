@@ -308,6 +308,51 @@ Fires POST requests on message events with full payload data.
 {"customCSS":".chat-bubble.ai { border-left: 3px solid var(--teal); }"}
 ```
 
+## Animation Recipes
+
+### Slow Typewriter (Dramatic Reveal)
+```json
+{"typingAnimation":true,"typingSpeed":"slow","bubbleAnimation":"fade"}
+```
+Characters appear one by one at 45ms. Great for storytelling or dramatic bots.
+
+### Fast Typing with Bounce
+```json
+{"typingAnimation":true,"typingSpeed":"fast","bubbleAnimation":"bounce"}
+```
+Snappy 8ms typing with a playful bounce entrance. Good for casual/fun bots.
+
+### Slide-In with Medium Typing (Default)
+```json
+{"typingAnimation":true,"typingSpeed":"medium","bubbleAnimation":"slide"}
+```
+The default look — smooth slide entrance with natural-feeling character reveal.
+
+### Scale Pop-In (No Typing)
+```json
+{"typingAnimation":false,"bubbleAnimation":"scale"}
+```
+Messages pop in at full size with a scale animation. Instant text, animated entrance.
+
+### No Animations (Performance)
+```json
+{"typingAnimation":false,"bubbleAnimation":"none"}
+```
+Disable all message animations for maximum performance or accessibility.
+
+### Cinematic Chat (Slow Typing + Background + Sound Off)
+```json
+{
+  "typingAnimation":true,
+  "typingSpeed":"slow",
+  "bubbleAnimation":"fade",
+  "bgImage":"https://example.com/cinematic-bg.jpg",
+  "soundEnabled":false,
+  "fontSize":"large"
+}
+```
+Dramatic slow reveal with a fullscreen background. Great for narrative or RPG bots.
+
 ## Combined Recipes (Full Transformation)
 
 ### The Full Magic Config

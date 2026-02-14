@@ -24,6 +24,7 @@
 | `/telegram` | Show Telegram setup instructions (BotFather + Chat ID) |
 | `/telegram on` | Enable Telegram message forwarding |
 | `/telegram off` | Disable Telegram message forwarding |
+| `/template` | Browse and apply pre-built style templates |
 | `/voice` | Show voice settings and current voice ID |
 
 ## Command Details
@@ -102,6 +103,12 @@ Manage configuration profiles — save, load, switch between different bot setup
 
 Profiles are stored in localStorage. Great for switching between different bot personas,
 visual themes, or API configurations without re-entering everything.
+
+### /template
+Browse and apply pre-built style templates. Shows a gallery of curated visual themes
+and bot configurations that can be applied with one tap. Templates include color schemes,
+typography presets, layout styles, and full bot personas. Applying a template does a
+partial merge — only the fields defined in the template are changed.
 
 ### /qr
 Generates a QR code containing your current TealClaw configuration. The QR code:
