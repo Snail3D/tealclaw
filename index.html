@@ -532,8 +532,11 @@
       // Horizontal rules
       html=html.replace(/^---$/gm,'<hr>');
 
-      // Links [text](url)
-      html=html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+      // Links [text](url) — block javascript:/data:/vbscript: protocols
+      html=html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,text,url)=>{
+        if(/^(javascript|data|vbscript):/i.test(url.replace(/\s/g,'')))return text;
+        return `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
+      });
 
       // Unordered lists
       html=html.replace(/^[\-\*] (.+)$/gm,'<li>$1</li>');
