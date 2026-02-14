@@ -1210,6 +1210,43 @@ ${getOptionalSteps()}`
     });
 
     function handleFile(file){
+      // JSON config file import (from agent or manual)
+      if(file.name?.endsWith('.json')||file.type==='application/json'){
+        const reader=new FileReader();
+        reader.onload=e=>{
+          try{
+            const cfg=JSON.parse(e.target.result);
+            // Check if it looks like a TealClaw config (has any recognized keys)
+            const recognized=Object.keys(CONFIG_KEYS);
+            const hasConfig=recognized.some(k=>cfg[k]!==undefined)||cfg.agents||cfg.gwUrl;
+            if(hasConfig){
+              const count=importConfig(cfg);
+              updateStatus();renderAgentSelector();
+              const parts=[];
+              if(cfg.agents?.length)parts.push(`${cfg.agents.length} agent(s)`);
+              else if(cfg.gwUrl)parts.push('gateway');
+              if(cfg.aiKey)parts.push('AI key');
+              if(cfg.whisperKey)parts.push('Groq/Whisper');
+              if(cfg.ttsKey)parts.push('ElevenLabs TTS');
+              if(cfg.ttsVoice)parts.push('voice');
+              if(cfg.tgToken)parts.push('Telegram');
+              sysBubble(`<h3>Config Imported!</h3>
+<p>Loaded <strong>${count}</strong> settings from <code>${esc(file.name)}</code>:</p>
+<p>${parts.join(', ')||'Configuration updated'}</p>
+<p>${cfg.mode==='agent'?'Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway.':'You\'re ready to chat!'}</p>`);
+              showToast(`Imported ${count} settings`,'ok');
+              return;
+            }
+          }catch{}
+          // Not a config file, treat as regular text
+          const txt=e.target.result?.slice(0,8000);
+          $('textIn').value=($('textIn').value+'\n\n--- '+file.name+' ---\n'+txt).trim();
+          $('textIn').dispatchEvent(new Event('input'));
+        };
+        reader.readAsText(file);
+        return;
+      }
+
       if(file.type?.startsWith('image/')){
         const reader=new FileReader();
         reader.onload=e=>{
@@ -1410,39 +1447,39 @@ ${getOptionalSteps()}`
 
 
 
-    // ── Auto-Config (URL hash import) ─────────────────
+    // ── Config Import (shared by hash, file drop, paste) ──
+    const CONFIG_KEYS={
+      aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
+      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',
+      sysPrompt:'sysPrompt',mode:'mode',
+      tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
+      imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize'
+    };
+
+    function importConfig(cfg){
+      const k=getK();
+      let count=0;
+      for(const[from,to]of Object.entries(CONFIG_KEYS)){
+        if(cfg[from]!==undefined){k[to]=cfg[from];count++}
+      }
+      setK(k);
+      if(cfg.agents&&Array.isArray(cfg.agents)){
+        setAgents(cfg.agents);count+=cfg.agents.length;
+      } else if(cfg.gwUrl&&cfg.gwToken){
+        const agents=getAgents();
+        agents.push({id:Date.now().toString(36),name:cfg.agentName||'Agent',url:cfg.gwUrl,token:cfg.gwToken,active:true});
+        setAgents(agents);count+=2;
+      }
+      return count;
+    }
+
     // URL hash fragment (#config=BASE64) never leaves the browser.
-    // Agent constructs: tealclaw.com/#config=BASE64_JSON
-    // Keys auto-populate, hash is stripped, nothing hits the server.
     function importFromHash(){
       const h=location.hash;
       if(!h.startsWith('#config='))return false;
       try{
-        const json=atob(h.slice(8));
-        const cfg=JSON.parse(json);
-        const keyMap={
-          aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
-          whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',
-          sysPrompt:'sysPrompt',mode:'mode',
-          tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
-          imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize'
-        };
-        const k=getK();
-        let count=0;
-        for(const[from,to]of Object.entries(keyMap)){
-          if(cfg[from]!==undefined){k[to]=cfg[from];count++}
-        }
-        setK(k);
-        // Import agents if provided
-        if(cfg.agents&&Array.isArray(cfg.agents)){
-          setAgents(cfg.agents);count+=cfg.agents.length;
-        } else if(cfg.gwUrl&&cfg.gwToken){
-          // Legacy single-agent import
-          const agents=getAgents();
-          agents.push({id:Date.now().toString(36),name:cfg.agentName||'Agent',url:cfg.gwUrl,token:cfg.gwToken,active:true});
-          setAgents(agents);count+=2;
-        }
-        // Strip hash from URL (never persisted, never sent)
+        const cfg=JSON.parse(atob(h.slice(8)));
+        const count=importConfig(cfg);
         history.replaceState(null,'',location.pathname);
         showToast(`Imported ${count} settings`,'ok');
         return true;
