@@ -1,0 +1,144 @@
+# TealClaw /research Command — Deep Research Reports
+
+> GROQ-powered research reports with ORNOT-style segmented results.
+> Main skill guide: https://tealclaw.ai/llms.txt
+
+## Overview
+
+The `/research` command is a built-in deep research tool in TealClaw. It uses the
+Groq API (same free key as Whisper voice input) to generate comprehensive, structured
+research reports on any topic — including visual analysis of images.
+
+Inspired by the orNotAI.com suite (VINorNOT, PlantOrNOT, DashOrNOT, etc.), results
+display as segmented reports with color-coded verdict badges, finding sections, and
+severity indicators.
+
+## How to Use
+
+### Text Research
+Type in the TealClaw chat:
+```
+/research what is quantum computing
+/research best programming languages 2025
+/research compare React vs Vue vs Svelte
+/research is this product safe for pets
+```
+
+### Image Research
+1. Attach an image (drag-drop, paste, camera, or file picker)
+2. Type `/research` (with optional additional context)
+3. The AI analyzes the image and provides a structured report
+
+### Just the Command
+Type `/research` with no query to see usage instructions.
+
+## Requirements
+
+Only needs a **Groq API key** (`whisperKey`). The same free key that enables voice input.
+
+Setup:
+```json
+{"whisperKey": "gsk_USER_GROQ_KEY"}
+```
+
+Get a free key at: https://console.groq.com/keys
+
+## What the User Sees
+
+### 1. Processing Animation
+Animated steps show progress:
+- Analyzing query...
+- Searching knowledge base...
+- Cross-referencing sources...
+- Compiling report...
+- Generating insights...
+
+Each step transitions from a spinner to a checkmark as it completes.
+
+### 2. Verdict Badge
+A color-coded badge at the top of results:
+- **Green** — Good / Safe / Positive (e.g. "HIGHLY RECOMMENDED")
+- **Yellow** — Caution / Mixed results
+- **Orange** — Concerning / Risky
+- **Red** — Bad / Dangerous / Not recommended
+- **Blue** — Informational / Neutral
+- **Gray** — Unknown / Insufficient data
+
+### 3. Summary
+A 2-3 sentence overview of findings.
+
+### 4. Finding Sections (4-8 cards)
+Each section has:
+- **Title** — e.g. "Key Benefits", "Risk Factors", "Alternatives"
+- **Severity indicator** — colored left border (green=ok, yellow=warn, red=danger, gray=neutral)
+- **Content** — detailed findings with markdown bold emphasis
+- **Bullets** — specific data points
+
+### 5. Sources
+Referenced links for verification.
+
+## Two-Layer Output (Agent Context)
+
+This is the powerful part: the user sees a clean summary, but the backend gets 3-4x more detail.
+
+### What the user sees:
+- Verdict, summary, and section cards (readable, scannable)
+
+### What the OpenClaw agent receives (via Telegram / gateway):
+- Everything the user sees, PLUS:
+- `fullContext` field — extended analysis with:
+  - Raw data and statistical details
+  - Alternative interpretations
+  - Related tangents and edge cases
+  - Methodology notes
+  - Caveats and confidence levels
+  - Deeper technical detail
+
+This means the OpenClaw agent can answer follow-up questions with much deeper context
+than what appeared on the user's screen.
+
+### Forwarding destinations:
+- **Telegram** — if `tgToken` and `tgChatId` are configured, the full research payload is sent
+- **OpenClaw Gateway** — if in agent mode, the full context is posted to the agent for memory
+
+## Technical Details
+
+### API Call
+- Endpoint: `https://api.groq.com/openai/v1/chat/completions`
+- Text model: `llama-3.3-70b-versatile`
+- Vision model: `meta-llama/llama-4-maverick-17b-128e-instruct` (when image attached)
+- Max tokens: 4000
+- Temperature: 0.3 (focused, factual)
+- Response format: Structured JSON with verdict, sections, sources, fullContext
+
+### Fallback
+If the AI returns non-JSON (happens rarely), the response displays as plain markdown
+text instead. No crash, no error — just a different format.
+
+### Cost
+Groq's free tier handles this easily. Research queries typically use 2000-4000 tokens
+of output. At Groq's free tier limits (30 requests/minute), a user could do rapid-fire
+research without hitting limits.
+
+## Agent Setup for Research
+
+If you're an AI agent setting up TealClaw for a user who wants research:
+
+```json
+{"whisperKey": "gsk_USER_GROQ_KEY"}
+```
+
+That's it. One key enables:
+- Voice input (Whisper transcription)
+- /research command (structured reports)
+- Free chat (Groq as chat provider fallback)
+- Vision analysis (with image attachment)
+
+To also enable chat + voice output:
+```json
+{
+  "whisperKey": "gsk_KEY",
+  "aiKey": "sk-or-v1-KEY",
+  "ttsKey": "sk_KEY"
+}
+```

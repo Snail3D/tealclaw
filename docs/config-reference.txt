@@ -1,0 +1,245 @@
+# TealClaw Config Reference — Complete Field Guide
+
+> Full documentation for every configurable field in TealClaw.
+> Main skill guide: https://tealclaw.ai/llms.txt
+
+TealClaw uses partial merge — only include fields you want to set or change.
+All values are stored in browser localStorage. No server, no database.
+
+## Delivery Methods
+
+1. **URL hash**: `https://tealclaw.ai/#config=BASE64_JSON` (best — zero user effort)
+2. **JSON file**: Drag a `.json` file into the TealClaw chat
+3. **Chat paste**: Paste raw JSON into the chat input
+4. **Bare key**: Paste a single API key (auto-detected by prefix)
+
+## API Provider Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| aiProvider | "openrouter" / "groq" / "anthropic" | AI provider for chat completions |
+| aiKey | string | API key for chat. Prefixes: sk-or-v1-* (OpenRouter), gsk_* (Groq), sk-ant-* (Anthropic) |
+| aiModel | string | Model ID. Default: google/gemini-2.5-flash-preview. Examples: llama-3.3-70b-versatile (Groq), claude-sonnet-4-5-20250929 (Anthropic) |
+| whisperKey | string | Groq API key for Whisper voice transcription AND /research command. Get free at console.groq.com |
+| ttsKey | string | ElevenLabs API key for text-to-speech output |
+| ttsVoice | string | ElevenLabs voice ID. Default: ThT5KcBeYPX7keBQBPPD (Rachel). Browse at elevenlabs.io/voice-lab |
+| ttsAutoPlay | boolean | Auto-speak AI responses. Default: true. Set false to save ElevenLabs credits (play on tap) |
+| maxTokens | number | Max tokens per AI response. Default: 400. Range: 50-2000 |
+| temperature | number | AI creativity. 0=focused, 2=creative. Default: 0.7 |
+
+## System Prompt & Mode
+
+| Field | Type | Description |
+|-------|------|-------------|
+| sysPrompt | string | System prompt sent to the AI. Supports any instructions, persona, etc. |
+| mode | "direct" / "agent" | Direct = browser calls provider API. Agent = route through OpenClaw gateway |
+
+## Telegram Forwarding
+
+| Field | Type | Description |
+|-------|------|-------------|
+| tgToken | string | Telegram bot token from @BotFather (format: 123456:ABC-DEF...) |
+| tgChatId | string | Telegram chat ID. Personal: positive number. Group: -100 + group ID |
+| tgEnabled | boolean | Toggle Telegram forwarding on/off |
+
+## Image Generation
+
+| Field | Type | Description |
+|-------|------|-------------|
+| imageGenUrl | string | Image gen API endpoint (e.g. https://api.together.xyz/v1/images/generations) |
+| imageGenKey | string | Image gen API key. Falls back to aiKey if not set |
+| imageGenModel | string | Image gen model name (e.g. black-forest-labs/FLUX.1-schnell) |
+| imageGenSize | string | Image dimensions (e.g. "1024x1024") |
+
+## GIF Reactions
+
+| Field | Type | Description |
+|-------|------|-------------|
+| gifEnabled | boolean | Show fullscreen GIF overlay on AI responses. Default: true |
+
+When enabled, AI responses with `[gif:search term]` trigger a specific Tenor GIF.
+Without a tag, auto-searches based on response text.
+
+## Visual Customization — Colors
+
+| Field | Type | Description |
+|-------|------|-------------|
+| accentColor | string | Primary accent color (hex). Default: #0d9488. Cascades to buttons, links, highlights |
+| bgColor | string | Background color override |
+| textColor | string | Main text color override |
+| chatUserColor | string | User bubble background color |
+| chatAiColor | string | AI bubble background color |
+| chatUserTextColor | string | User bubble text color |
+| chatAiTextColor | string | AI bubble text color |
+| borderColor | string | Border color throughout UI |
+| sendBtnColor | string | Send button background color |
+| micBtnColor | string | Mic button background color |
+| topbarBg | string | Topbar background (color or CSS gradient like "linear-gradient(135deg, #0d9488, #3b82f6)") |
+| inputBarBg | string | Input bar background color |
+
+## Visual Customization — Typography
+
+| Field | Type | Description |
+|-------|------|-------------|
+| fontSize | string | "small" / "medium" / "large" or CSS value like "16px" |
+| fontFamily | string | Custom font family name |
+| inputFontSize | string | Chat input font size. Default: "15px" |
+| lineHeight | string | Custom line height (e.g. "1.8") |
+| letterSpacing | string | Custom letter spacing (e.g. "0.03em") |
+| wordSpacing | string | Custom word spacing (e.g. "0.1em") |
+
+## Visual Customization — Layout
+
+| Field | Type | Description |
+|-------|------|-------------|
+| buttonSize | string | Mic/send button size. Default: "44px" |
+| borderRadius | string | "sharp" / "round" or CSS value |
+| chatMaxWidth | string | Chat container max width. Default: "760px". Use "100%" for full-width |
+| chatBubbleRadius | string | Chat bubble border radius |
+| chatBubblePadding | string | Chat bubble padding |
+| inputPlaceholder | string | Chat input placeholder text |
+
+## Visual Customization — Branding
+
+| Field | Type | Description |
+|-------|------|-------------|
+| botName | string | Custom name in header. Replaces "TealClaw" |
+| botIcon | string | URL to custom header icon image |
+| botGreeting | string | Custom welcome message. Supports Markdown |
+| bgImage | string | URL for fullscreen background image. Enables frosted-glass blur effects |
+| themeMode | string | "dark" or "light" |
+
+## Visual Customization — Hide Elements
+
+| Field | Type | Description |
+|-------|------|-------------|
+| hideTopbar | boolean | Hide the top navigation bar entirely |
+| hideAttachBtn | boolean | Hide the file attach button |
+| hideCameraBtn | boolean | Hide the camera button |
+| hideBmc | boolean | Hide the Buy Me a Coffee link |
+
+## Visual Customization — Custom Button Images
+
+| Field | Type | Description |
+|-------|------|-------------|
+| sendBtnImage | string | URL to custom send button image |
+| micBtnImage | string | URL to custom mic button image |
+
+## Visual Customization — Markdown Styling
+
+| Field | Type | Description |
+|-------|------|-------------|
+| mdHeadingColor | string | Markdown heading color in AI responses |
+| mdBoldColor | string | Markdown bold text color |
+| mdLinkColor | string | Markdown link color |
+| mdCodeBg | string | Inline code background color |
+| mdCodeColor | string | Inline code text color |
+| mdBlockquoteBorder | string | Blockquote left border color |
+| mdBlockquoteBg | string | Blockquote background color |
+
+## Accessibility
+
+| Field | Type | Description |
+|-------|------|-------------|
+| reduceMotion | boolean | Disable all animations and transitions |
+| highContrast | boolean | Boost text and border contrast for visibility |
+| dyslexiaFont | boolean | Use OpenDyslexic font for better readability |
+| focusHighlight | boolean | Show visible focus outlines on all focused elements |
+| compactMode | boolean | Reduce spacing throughout UI for more content on screen |
+
+## Chat Behavior
+
+| Field | Type | Description |
+|-------|------|-------------|
+| autoScroll | boolean | Auto-scroll to bottom on new messages. Default: true |
+| hapticFeedback | boolean | Vibrate on interactions (mobile). Default: true |
+| soundEnabled | boolean | Play subtle tones on send/receive |
+| cameraEnabled | boolean | Enable/disable camera access. Default: true |
+| streamEnabled | boolean | Show AI responses as they generate (token by token streaming). Default: false |
+| latexEnabled | boolean | Render LaTeX math ($inline$ and $$block$$) using KaTeX. Default: false |
+| contextMessages | number | Number of conversation messages to include as context. Default: 20. Range: 2-50 |
+
+## Quick Replies & Avatars
+
+| Field | Type | Description |
+|-------|------|-------------|
+| quickReplies | array | Quick reply chip buttons shown below chat. Array of strings. Example: ["Tell me more", "New topic", "Summarize"] |
+| userAvatar | string | URL to user avatar image shown next to user bubbles |
+| aiAvatar | string | URL to AI avatar image shown next to AI bubbles |
+| loadingText | string | Custom "thinking" text. Default: "Thinking..." |
+| loadingEmoji | string | Emoji prefix for loading text. Example: "🧠" shows "🧠 Thinking..." |
+
+## Multi-Model Routing
+
+| Field | Type | Description |
+|-------|------|-------------|
+| fastModel | string | Model ID for quick/simple messages. Used when message is short and simple |
+| complexModel | string | Model ID for complex messages. Used when message contains analytical keywords or is long |
+| routingThreshold | number | Character length threshold to trigger complex model. Default: 80 |
+
+Routing logic: messages under `routingThreshold` chars without complex keywords (explain, analyze, compare, etc.) use `fastModel`. Others use `complexModel`. If neither is set, the default model is used.
+
+## Input Rules
+
+| Field | Type | Description |
+|-------|------|-------------|
+| maxInputLength | number | Maximum characters allowed in chat input. Messages exceeding this are blocked |
+| inputPrefix | string | Text automatically prepended to every user message. Example: "[Customer Support]" |
+
+## Webhooks
+
+| Field | Type | Description |
+|-------|------|-------------|
+| webhookUrl | string | HTTP endpoint to POST event data to |
+| webhookEvents | string | Comma-separated event types to fire. Default: "message.send,message.receive" |
+
+Webhook payload: `{"event":"message.send","timestamp":1234567890,"botName":"TealClaw","data":{"text":"..."}}`
+
+## Scheduled Messages
+
+| Field | Type | Description |
+|-------|------|-------------|
+| scheduledMessages | array | Array of scheduled greeting objects. Each: {time: "HH:MM", text: "Markdown greeting", days: ["mon","tue",...]} |
+
+Example:
+```json
+{"scheduledMessages": [
+  {"time": "09:00", "text": "# Good morning!\nReady to help today.", "days": ["mon","tue","wed","thu","fri"]},
+  {"time": "17:00", "text": "Wrapping up? I'm here if you need anything."}
+]}
+```
+
+## Profiles
+
+Use `/profile save name` and `/profile load name` in chat. Profiles save and restore your entire configuration including keys, visual settings, and persona.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| activeProfile | string | Name of the currently active profile (set automatically) |
+
+## Security
+
+| Field | Type | Description |
+|-------|------|-------------|
+| pinCode | string | 4-6 digit PIN code to lock message sending |
+| pinRequired | boolean | Whether PIN is required to send messages. Default: false |
+
+PIN codes protect your TealClaw from unauthorized use on shared or unlocked devices. API keys are never included in QR code exports.
+
+## Advanced
+
+| Field | Type | Description |
+|-------|------|-------------|
+| customCSS | string | Inject arbitrary CSS. Ultimate escape hatch for styling |
+| agents | array | OpenClaw gateway agents. Array of {id, name, url, token, active} objects. Replaces entire list |
+
+## Key Auto-Detection Prefixes
+
+When a bare key is pasted (no JSON), TealClaw auto-detects:
+- sk-or-v1-* → aiKey (OpenRouter)
+- gsk_* → whisperKey (Groq)
+- sk_ + 40+ hex chars → ttsKey (ElevenLabs)
+- 123456:ABC-* → tgToken (Telegram bot)
+- Negative or 6+ digit number → tgChatId
+- http(s)://...:port → gateway URL
+- 32+ hex chars → gateway token

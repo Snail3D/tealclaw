@@ -1,0 +1,116 @@
+# TealClaw Accessibility — Configuration Guide
+
+> Make TealClaw accessible for all users.
+> Main skill guide: https://tealclaw.ai/llms.txt
+
+## Accessibility Fields
+
+| Field | Type | Default | What It Does |
+|-------|------|---------|-------------|
+| reduceMotion | boolean | false | Disable all animations, transitions, and motion effects |
+| highContrast | boolean | false | Boost text and border contrast. Works in both dark and light modes |
+| dyslexiaFont | boolean | false | Load OpenDyslexic font for improved readability |
+| focusHighlight | boolean | false | Show visible 3px focus outlines on all interactive elements |
+| compactMode | boolean | false | Reduce padding and spacing throughout the UI |
+| lineHeight | string | "1.5" | Custom line height for all text |
+| letterSpacing | string | "normal" | Custom letter spacing (e.g. "0.03em") |
+| wordSpacing | string | "normal" | Custom word spacing (e.g. "0.1em") |
+| fontSize | string | "medium" | Text size: "small", "medium", "large", or CSS value |
+
+## Quick Recipes
+
+### Dyslexia-Friendly Setup
+```json
+{
+  "dyslexiaFont": true,
+  "highContrast": true,
+  "fontSize": "large",
+  "lineHeight": "1.8",
+  "letterSpacing": "0.03em",
+  "focusHighlight": true,
+  "reduceMotion": true
+}
+```
+
+### Low Vision / High Contrast
+```json
+{
+  "highContrast": true,
+  "fontSize": "large",
+  "focusHighlight": true,
+  "buttonSize": "56px",
+  "inputFontSize": "18px"
+}
+```
+
+### Motion Sensitivity
+```json
+{
+  "reduceMotion": true,
+  "gifEnabled": false,
+  "soundEnabled": false
+}
+```
+
+### Big Touch Targets (Elderly / Motor)
+```json
+{
+  "buttonSize": "56px",
+  "inputFontSize": "18px",
+  "fontSize": "large",
+  "borderRadius": "round",
+  "hapticFeedback": true
+}
+```
+
+### Calm Reading Mode
+```json
+{
+  "reduceMotion": true,
+  "gifEnabled": false,
+  "soundEnabled": false,
+  "hapticFeedback": false,
+  "temperature": 0.3,
+  "maxTokens": 800,
+  "autoScroll": false
+}
+```
+
+## How Each Feature Works
+
+### Reduce Motion
+Applies `animation-duration: 0.01ms !important` and `transition-duration: 0.01ms !important`
+to all elements. This eliminates:
+- Chat bubble slide-in animations
+- GIF overlay fade transitions
+- Button hover transitions
+- Toast notification animations
+
+### High Contrast
+Overrides CSS variables to increase contrast:
+- Dark mode: white text, lighter borders, darker card backgrounds
+- Light mode: black text, darker borders, white card backgrounds
+- Also makes active buttons bold (font-weight: 700)
+- AI chat bubbles get 2px borders instead of 1px
+
+### Dyslexia Font
+Loads OpenDyslexic from CDN on demand. The font is designed to reduce letter confusion
+for readers with dyslexia. Heavy bottom weighting on letters prevents visual rotation.
+Only loaded when enabled — no performance impact when off.
+
+### Focus Highlight
+Shows a 3px solid teal outline with 2px offset on all `:focus-visible` elements.
+Essential for keyboard navigation. Uses `!important` to override any element-level styles.
+
+### Compact Mode
+Reduces padding and margins throughout:
+- Chat bubbles: 6px 10px padding, 4px margin
+- Chat scroll area: 8px padding
+- Input bar: 6px 10px padding
+- Settings rows: 8px 10px padding, 4px margin
+
+## PWA Note
+
+All accessibility settings persist in localStorage and are applied on app launch.
+When TealClaw is installed as a PWA, these settings carry over — the installed app
+retains all accessibility configuration.

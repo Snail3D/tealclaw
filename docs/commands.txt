@@ -1,0 +1,138 @@
+# TealClaw Chat Commands — Complete Reference
+
+> All commands users can type in the TealClaw chat input.
+> Main skill guide: https://tealclaw.ai/llms.txt
+
+## Command List
+
+| Command | What It Does |
+|---------|-------------|
+| `/help` | Show all available commands |
+| `/setup` | Restart the setup wizard with links to get API keys |
+| `/research query` | Deep research report (GROQ-powered, ORNOT-style segmented results) |
+| `/research` + image | Visual analysis — attach an image and type `/research` |
+| `/imagine prompt` | Generate an image using the configured image gen API |
+| `/export` | Download entire chat history as a Markdown file |
+| `/profile save name` | Save current configuration as a named profile |
+| `/profile load name` | Load a previously saved profile |
+| `/profile list` | Show all saved profiles |
+| `/profile delete name` | Remove a saved profile |
+| `/qr` | Generate a QR code for sharing your current config |
+| `/keys` | Show current config status (which keys are set, model, providers) |
+| `/clear` | Clear chat history |
+| `/clear keys` | Remove all API keys and reset to blank state |
+| `/telegram` | Show Telegram setup instructions (BotFather + Chat ID) |
+| `/telegram on` | Enable Telegram message forwarding |
+| `/telegram off` | Disable Telegram message forwarding |
+| `/voice` | Show voice settings and current voice ID |
+
+## Command Details
+
+### /help
+Shows the full command list in a formatted card. Always available.
+
+### /setup
+Displays the setup wizard with direct links to get API keys:
+- OpenRouter (sk-or-v1-*) — recommended for chat
+- Groq (gsk_*) — free, also enables voice input and /research
+- ElevenLabs (sk_*) — voice output (optional)
+- Telegram setup instructions
+
+### /research
+Deep research powered by Groq API. Returns a structured report with:
+- Color-coded verdict badge (green/yellow/orange/red/blue/gray)
+- 2-3 sentence summary
+- 4-8 finding sections with severity indicators
+- Source references
+- Full context forwarded to Telegram/OpenClaw agent (3-4x more detail)
+
+Requires: Groq key (whisperKey). Same free key as voice input.
+
+### /keys
+Shows current configuration status:
+- AI provider and key status
+- Current model
+- Voice input (Groq Whisper) status
+- Voice output (ElevenLabs) status
+- Telegram forwarding status
+- Image generation status
+
+### /clear
+Removes all chat history from the current session. Config and keys are NOT affected.
+
+### /clear keys
+Removes ALL API keys and resets configuration. The user will need to set up again.
+Config fields (colors, persona, etc.) are preserved in localStorage.
+
+### /telegram
+Shows step-by-step instructions for setting up Telegram forwarding:
+1. Create a bot via @BotFather
+2. Get the bot token
+3. Get the chat ID from @userinfobot
+4. Paste both in the TealClaw chat
+
+### /telegram on / /telegram off
+Toggle Telegram message forwarding without changing the token or chat ID.
+
+### /voice
+Shows current TTS voice settings:
+- Current voice ID
+- Link to ElevenLabs Voice Lab to browse voices
+- Instructions to change voice by pasting a new voice ID
+
+### /imagine
+Generate images using a configured image generation API.
+Requires: imageGenUrl, imageGenModel, and optionally imageGenKey.
+
+Usage: `/imagine a sunset over mountains in watercolor style`
+
+### /export
+Downloads the entire chat history as a Markdown (.md) file. The file includes:
+- Bot name and export timestamp
+- All messages with sender role and timestamps
+- File auto-downloads with a descriptive name (e.g. `tealclaw-chat-2026-02-14.md`)
+
+### /profile
+Manage configuration profiles — save, load, switch between different bot setups.
+
+**Save**: `/profile save WorkBot` — saves current config (keys, colors, persona, everything)
+**Load**: `/profile load WorkBot` — restores all settings from a saved profile
+**List**: `/profile list` — shows all saved profiles with active indicator
+**Delete**: `/profile delete WorkBot` — removes a saved profile
+
+Profiles are stored in localStorage. Great for switching between different bot personas,
+visual themes, or API configurations without re-entering everything.
+
+### /qr
+Generates a QR code containing your current TealClaw configuration. The QR code:
+- Encodes a `tealclaw.ai/#config=BASE64` URL
+- Can be scanned by any phone camera
+- Instantly applies the entire configuration on the scanned device
+- Includes a "Copy Link" button for sharing as a URL
+- Includes a "Download QR" button to save the QR image
+
+Perfect for setting up TealClaw on a phone from a computer, or sharing your exact
+bot configuration with someone else. The QR code uses your accent color for branding.
+
+## Non-Command Input Methods
+
+### Bare API Key Paste
+Paste any API key directly — TealClaw auto-detects by prefix:
+- `sk-or-v1-*` → OpenRouter AI key
+- `gsk_*` → Groq Whisper key
+- `sk_` + hex → ElevenLabs TTS key
+- `123456:ABC-*` → Telegram bot token
+
+### JSON Config Paste
+Paste a JSON object with recognized config fields:
+```json
+{"aiKey":"sk-or-v1-xxx","accentColor":"#8b5cf6"}
+```
+TealClaw auto-detects, imports, and applies the config immediately.
+
+### File Drag-and-Drop
+Drag a `.json` config file into the chat area. TealClaw reads and imports it.
+
+### URL Hash Config
+Open: `tealclaw.ai/#config=BASE64_JSON`
+TealClaw reads the hash, imports the config, and clears the URL.

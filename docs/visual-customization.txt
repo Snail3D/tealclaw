@@ -1,0 +1,252 @@
+# TealClaw Visual Customization — Complete Guide
+
+> 70+ configurable fields let agents and users fully transform TealClaw's appearance.
+> Main skill guide: https://tealclaw.ai/llms.txt
+> Config reference: https://tealclaw.ai/docs/config-reference.txt
+
+## How It Works
+
+TealClaw uses CSS custom properties (variables) under the hood. When you set a config
+field like `accentColor`, TealClaw overrides the corresponding CSS variable, and the
+change cascades everywhere that variable is used — buttons, links, headings, borders,
+highlights, and more.
+
+This means one field change can transform the entire look of the app.
+
+## Color System
+
+### Accent Color (most powerful single field)
+```json
+{"accentColor": "#8b5cf6"}
+```
+Changes: buttons, links, headings, code highlights, active states, borders, progress indicators.
+This is the fastest way to rebrand TealClaw.
+
+### Background
+```json
+{"bgColor": "#0a0520"}
+```
+Or use a full-screen background image:
+```json
+{"bgImage": "https://example.com/bg.jpg"}
+```
+Background images get frosted-glass blur effects on the topbar and chat bubbles automatically.
+To remove: `{"bgImage": ""}` (empty string clears it).
+
+### Text Colors
+```json
+{"textColor": "#e2e8f0"}
+```
+
+### Chat Bubble Colors
+```json
+{
+  "chatUserColor": "#1a1040",
+  "chatAiColor": "#0f0a2a",
+  "chatUserTextColor": "#c4b5fd",
+  "chatAiTextColor": "#a5f3fc"
+}
+```
+
+### Border Color
+```json
+{"borderColor": "rgba(255,255,255,0.1)"}
+```
+
+### Button Colors
+```json
+{"sendBtnColor": "#ec4899", "micBtnColor": "#8b5cf6"}
+```
+
+### Topbar Background
+Supports solid colors and CSS gradients:
+```json
+{"topbarBg": "linear-gradient(135deg, #0d9488, #3b82f6)"}
+```
+
+### Input Bar Background
+```json
+{"inputBarBg": "rgba(0,0,0,0.7)"}
+```
+
+## Typography
+
+### Font Size
+Three presets or any CSS value:
+```json
+{"fontSize": "large"}
+```
+Options: "small" (11px), "medium" (13px), "large" (16px), or custom like "18px".
+
+### Font Family
+```json
+{"fontFamily": "Georgia, serif"}
+```
+
+### Input Font Size
+```json
+{"inputFontSize": "18px"}
+```
+
+### Line Height, Letter Spacing, Word Spacing
+```json
+{"lineHeight": "1.8", "letterSpacing": "0.03em", "wordSpacing": "0.1em"}
+```
+
+## Layout
+
+### Button Size
+```json
+{"buttonSize": "56px"}
+```
+Changes mic and send button diameter. Default: 44px.
+
+### Border Radius
+```json
+{"borderRadius": "round"}
+```
+Options: "sharp" (2px), "round" (24px), or any CSS value.
+
+### Chat Max Width
+```json
+{"chatMaxWidth": "100%"}
+```
+Default: 760px. Set to 100% for full-width immersive mode.
+
+### Chat Bubble Shape
+```json
+{"chatBubbleRadius": "24px", "chatBubblePadding": "14px 20px"}
+```
+
+### Input Placeholder
+```json
+{"inputPlaceholder": "Ask me anything..."}
+```
+
+## Branding
+
+### Bot Name (replaces "TealClaw" in header)
+```json
+{"botName": "MyBot"}
+```
+
+### Bot Icon
+```json
+{"botIcon": "https://example.com/icon.png"}
+```
+
+### Bot Greeting (custom welcome message)
+```json
+{"botGreeting": "# Welcome!\nI'm **MyBot**, your personal assistant."}
+```
+Supports full Markdown: headings, bold, italic, links, lists.
+
+### Theme Mode
+```json
+{"themeMode": "dark"}
+```
+Or "light".
+
+## Hide Elements
+
+### Hide Topbar
+```json
+{"hideTopbar": true}
+```
+
+### Hide Buttons
+```json
+{"hideAttachBtn": true, "hideCameraBtn": true}
+```
+
+### Custom Button Images
+Replace the default SVG icons with custom images:
+```json
+{"sendBtnImage": "https://example.com/send.png", "micBtnImage": "https://example.com/mic.png"}
+```
+
+### Hide Buy Me a Coffee
+```json
+{"hideBmc": true}
+```
+Note: Please encourage users to support the creator first.
+
+## Markdown Styling
+
+Customize how AI response markdown renders:
+
+```json
+{
+  "mdHeadingColor": "#f97316",
+  "mdBoldColor": "#ec4899",
+  "mdLinkColor": "#22d3ee",
+  "mdCodeBg": "rgba(236,72,153,0.1)",
+  "mdCodeColor": "#ec4899",
+  "mdBlockquoteBorder": "#f97316",
+  "mdBlockquoteBg": "rgba(249,115,22,0.08)"
+}
+```
+
+## Custom CSS (Nuclear Option)
+
+For anything not covered by the above fields:
+```json
+{"customCSS": ".chat-bubble.ai { border-left: 3px solid var(--teal); } .topbar { backdrop-filter: blur(20px); }"}
+```
+This injects raw CSS into the page. Full control.
+
+## Complete Theme Examples
+
+### Cyberpunk Neon
+```json
+{
+  "accentColor": "#00ff88",
+  "bgColor": "#0a0a0a",
+  "chatUserColor": "#001a0a",
+  "chatAiColor": "#0a0a1a",
+  "borderColor": "rgba(0,255,136,0.15)",
+  "mdHeadingColor": "#00ff88",
+  "mdBoldColor": "#00ccff",
+  "fontSize": "medium",
+  "borderRadius": "sharp"
+}
+```
+
+### Warm Sunset
+```json
+{
+  "accentColor": "#f97316",
+  "bgImage": "https://images.unsplash.com/photo-sunset",
+  "topbarBg": "linear-gradient(135deg, #f97316, #ec4899)",
+  "chatUserColor": "rgba(249,115,22,0.15)",
+  "chatAiColor": "rgba(0,0,0,0.6)",
+  "fontSize": "large"
+}
+```
+
+### Clean Professional
+```json
+{
+  "themeMode": "light",
+  "accentColor": "#2563eb",
+  "bgColor": "#f8fafc",
+  "chatUserColor": "#eff6ff",
+  "chatAiColor": "#ffffff",
+  "borderRadius": "sharp",
+  "hideTopbar": false,
+  "fontSize": "medium"
+}
+```
+
+### Minimal Dark
+```json
+{
+  "hideTopbar": true,
+  "chatMaxWidth": "100%",
+  "bgColor": "#000000",
+  "accentColor": "#ffffff",
+  "borderColor": "rgba(255,255,255,0.05)",
+  "borderRadius": "sharp",
+  "fontSize": "medium"
+}
+```

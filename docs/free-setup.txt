@@ -1,0 +1,125 @@
+# TealClaw Free Setup Guide — Zero Cost Chatbot
+
+> Set up a fully functional AI chatbot for free using Groq's free tier.
+> Main skill guide: https://tealclaw.ai/llms.txt
+
+## What You Get for Free
+
+With ONE free Groq API key, TealClaw gives you:
+- AI chat (Llama 3.3 70B) — fast, smart, free
+- Vision (Llama 4 Maverick) — analyze images, free
+- Voice input (Whisper Large V3) — speak to your bot, free
+- /research command — deep research reports, free
+- All visual customization — free
+- PWA installation — free
+- GIF reactions — free (uses baked-in Tenor key)
+
+The only things that cost money are:
+- Voice OUTPUT (ElevenLabs TTS) — optional, skip it for text-only
+- Premium AI models via OpenRouter — optional, Groq is excellent
+
+## Step-by-Step Free Setup
+
+### 1. Get a Groq API Key (free, takes 30 seconds)
+1. Go to https://console.groq.com/keys
+2. Sign up with Google or GitHub
+3. Click "Create API Key"
+4. Copy the key (starts with `gsk_`)
+
+### 2. Configure TealClaw
+Paste this in the TealClaw chat (replace KEY with your actual key):
+```json
+{"whisperKey": "gsk_YOUR_KEY_HERE", "aiProvider": "groq", "ttsAutoPlay": false}
+```
+
+Or just paste the bare key: `gsk_YOUR_KEY_HERE` — TealClaw auto-detects it.
+
+### 3. Done!
+You now have:
+- AI chat in the text input
+- Voice input via the mic button (hold to speak)
+- /research command for deep research
+- Image analysis (drag-drop or camera)
+
+## Free + Custom Bot Persona
+```json
+{
+  "whisperKey": "gsk_KEY",
+  "aiProvider": "groq",
+  "ttsAutoPlay": false,
+  "botName": "MyBot",
+  "botGreeting": "# Hey there!\nI'm **MyBot**. How can I help?",
+  "sysPrompt": "You are MyBot, a helpful and friendly AI assistant.",
+  "accentColor": "#3b82f6"
+}
+```
+This gives you a branded chatbot for free. Install as PWA for the full app experience.
+
+## Free + Kid-Safe Story Bot
+```json
+{
+  "whisperKey": "gsk_KEY",
+  "aiProvider": "groq",
+  "ttsAutoPlay": false,
+  "botName": "StoryBot",
+  "botGreeting": "# Hey adventurer!\nWhat story should we tell today?",
+  "sysPrompt": "You are StoryBot for kids ages 5-10. Tell fun, safe, engaging stories. Ask what happens next. Never use scary content.",
+  "accentColor": "#f97316",
+  "fontSize": "large",
+  "gifEnabled": true
+}
+```
+
+## Adding Voice Output Later
+
+If the user wants the bot to SPEAK responses, they need an ElevenLabs key:
+1. Go to https://elevenlabs.io/app/settings/api-keys
+2. Create an API key (starts with `sk_`)
+3. Paste it in TealClaw
+
+ElevenLabs has a free tier (10,000 characters/month). To conserve credits:
+```json
+{"ttsAutoPlay": false}
+```
+This makes TTS on-demand only (tap to hear) instead of auto-playing every response.
+
+## Adding Premium AI Later
+
+For better models (Gemini Flash, Claude, GPT-4), add an OpenRouter key:
+1. Go to https://openrouter.ai/keys
+2. Create an API key (starts with `sk-or-v1-`)
+3. Paste in TealClaw or:
+```json
+{"aiKey": "sk-or-v1-KEY"}
+```
+
+OpenRouter gives access to 200+ models. Gemini Flash (default) is very cheap.
+
+## Groq Free Tier Limits
+
+As of 2025, Groq's free tier includes:
+- 30 requests/minute for chat
+- 20 requests/minute for Whisper transcription
+- No monthly usage cap
+- Llama 3.3 70B for text, Llama 4 Maverick for vision
+
+These limits are generous for personal use. A user chatting normally won't hit them.
+
+## Agent Config for Free Setup
+
+If you're an AI agent setting up TealClaw for free:
+```json
+{"whisperKey": "gsk_USER_KEY", "aiProvider": "groq", "ttsAutoPlay": false}
+```
+
+That's the minimum. Add persona/visual fields for a custom experience:
+```json
+{
+  "whisperKey": "gsk_USER_KEY",
+  "aiProvider": "groq",
+  "ttsAutoPlay": false,
+  "botName": "USER_CHOSEN_NAME",
+  "sysPrompt": "USER_CHOSEN_PERSONA",
+  "accentColor": "#USER_COLOR"
+}
+```

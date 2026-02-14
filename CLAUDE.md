@@ -24,7 +24,7 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 ## Stack
 
 - Static HTML/CSS/JS (no build step)
-- Hosted on Cloudflare Pages (tealclaw.com)
+- Hosted on Cloudflare Pages (tealclaw.ai)
 - PWA with service worker
 - BYOK: OpenRouter, Groq, Anthropic, ElevenLabs
 - Agent: OpenClaw gateway via Tailscale
