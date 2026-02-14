@@ -536,6 +536,14 @@
         <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${mode==='direct'?'Gemini Flash via OpenRouter -- fast, no agent memory':'Routes through your OpenClaw gateway -- shared context across all channels'}</div>
       </div>`;
 
+      // Stats link
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Analytics</div>`;
+      html+=`<div class="sheet-row" id="sheetStatsRow">
+        <div class="sheet-row-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div>
+        <div class="sheet-row-info"><div class="sheet-row-label">Stats</div><div class="sheet-row-desc">View site analytics</div></div>
+        <div class="sheet-row-action">Open</div>
+      </div></div>`;
+
       // Actions
       html+=`<div class="sheet-section">
         <button class="sheet-btn sheet-btn-ghost" id="sheetClearChat" style="margin-bottom:8px">Clear Chat History</button>
@@ -566,6 +574,9 @@
 
       // Wire up agent row
       $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
+
+      // Wire up stats row
+      $('sheetBody').querySelector('#sheetStatsRow')?.addEventListener('click',()=>{closeSheet();window.open('/stats.html','_blank')});
 
       // Wire up actions
       $('sheetBody').querySelector('#sheetClearChat')?.addEventListener('click',()=>{

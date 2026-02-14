@@ -1,0 +1,249 @@
+# TealClaw — Agent Skill
+
+> TealClaw is a BYOK voice dashboard PWA at tealclaw.com.
+> All config lives in the user's browser (localStorage). No backend. No database.
+> You (the AI agent) can configure TealClaw by generating JSON.
+
+## Your Job as an Agent
+
+When a user asks you to set up or change their TealClaw config, you should:
+
+1. Collect the info you need (API keys, preferences, etc.)
+2. Build a JSON config object with ONLY the fields that need to change
+3. Give it to the user in one of these ready-to-use formats
+
+TealClaw uses **partial merge** — only the fields you include get updated.
+Everything else stays untouched. So you can change one thing or everything at once.
+
+## How to Deliver Config to the User
+
+Pick the best method based on what you can do. The first option is the best —
+if you can open a browser, the user doesn't have to do anything.
+
+### Option A: Open a Browser and Inject Directly (best — zero user effort)
+
+If you have access to the user's system (computer use, shell, browser tool, MCP,
+Puppeteer, Playwright, etc.), you can inject the config with zero user effort:
+
+1. Build the config JSON with the user's keys
+2. Base64-encode it
+3. Open this URL in the user's browser:
+
+```
+https://tealclaw.com/#config=BASE64_ENCODED_JSON
+```
+
+TealClaw reads the `#config=` hash on page load, imports every field, clears the
+hash from the URL bar, and shows a toast confirming the import. The hash fragment
+never leaves the browser — it's not sent to any server.
+
+**Shell (macOS/Linux/Windows):**
+```bash
+CONFIG=$(echo -n '{"aiKey":"sk-or-v1-xxx","whisperKey":"gsk_xxx","ttsKey":"sk_xxx"}' | base64)
+open "https://tealclaw.com/#config=$CONFIG"          # macOS
+xdg-open "https://tealclaw.com/#config=$CONFIG"      # Linux
+start "https://tealclaw.com/#config=$CONFIG"          # Windows
+```
+
+**JavaScript (browser automation / Puppeteer / Playwright):**
+```javascript
+const config = { aiKey: "sk-or-v1-xxx", whisperKey: "gsk_xxx", ttsKey: "sk_xxx" };
+const url = "https://tealclaw.com/#config=" + btoa(JSON.stringify(config));
+window.open(url);        // from browser console
+// page.goto(url);       // Playwright / Puppeteer
+```
+
+**Python:**
+```python
+import json, base64, webbrowser
+config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx", "ttsKey": "sk_xxx"}
+payload = base64.b64encode(json.dumps(config).encode()).decode()
+webbrowser.open(f"https://tealclaw.com/#config={payload}")
+```
+
+The browser opens, TealClaw loads, config imports instantly, done.
+
+### Option B: Generate a JSON File (user drags into TealClaw)
+
+Write a `.json` file to disk. Tell the user to drag it into the TealClaw chat window.
+TealClaw auto-detects JSON files on drop and imports them.
+
+```python
+import json
+config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx"}
+with open("tealclaw-config.json", "w") as f:
+    json.dump(config, f)
+# Tell user: "Drag tealclaw-config.json into your TealClaw chat."
+```
+
+### Option C: Copy-Paste JSON Block (if you can only output text)
+
+Give the user a single JSON code block. They paste it into the TealClaw chat input
+and TealClaw auto-detects it as config and imports it.
+
+Example response to user:
+> Here's your TealClaw config. Copy this entire block, then paste it into your
+> TealClaw chat:
+>
+> ```json
+> {"aiKey":"sk-or-v1-abc...","whisperKey":"gsk_xyz...","ttsKey":"sk_123..."}
+> ```
+>
+> TealClaw will detect the JSON and import all 3 keys at once.
+
+### Option D: Give the User a One-Click URL
+
+If you can't open a browser yourself, give the user the URL to click:
+
+```
+Open this link to apply your TealClaw config:
+https://tealclaw.com/#config=eyJhaUtleSI6InNrLW9yLXYxLXh4eCJ9
+```
+
+Build it: `"https://tealclaw.com/#config=" + btoa(JSON.stringify(config))`
+
+## Config Schema — All Fields
+
+Only include fields the user wants to set or change. Omit everything else.
+
+```json
+{
+  "aiProvider": "openrouter",
+  "aiKey": "sk-or-v1-...",
+  "aiModel": "google/gemini-2.5-flash-preview",
+  "whisperKey": "gsk_...",
+  "ttsKey": "sk_...",
+  "ttsVoice": "ThT5KcBeYPX7keBQBPPD",
+  "sysPrompt": "You are a helpful assistant.",
+  "mode": "direct",
+  "tgToken": "123456:ABC-DEF...",
+  "tgChatId": "-100123456",
+  "tgEnabled": true,
+  "imageGenUrl": "https://api.together.xyz/v1/images/generations",
+  "imageGenKey": "...",
+  "imageGenModel": "black-forest-labs/FLUX.1-schnell",
+  "imageGenSize": "1024x1024",
+  "agents": [
+    {
+      "id": "agent1",
+      "name": "My Server",
+      "url": "http://myhost.tail12345.ts.net:18789",
+      "token": "abc123def456",
+      "active": true
+    }
+  ]
+}
+```
+
+### Field Reference
+
+| Field | Type | What It Does |
+|-------|------|-------------|
+| aiProvider | "openrouter" or "groq" or "anthropic" | Which AI provider to use |
+| aiKey | string | API key for chat (OpenRouter: sk-or-v1-*, Groq: gsk_*, Anthropic: sk-ant-*) |
+| aiModel | string | Model ID (default: google/gemini-2.5-flash-preview) |
+| whisperKey | string | Groq API key for Whisper voice transcription (gsk_*) |
+| ttsKey | string | ElevenLabs API key for text-to-speech (sk_*) |
+| ttsVoice | string | ElevenLabs voice ID (default: ThT5KcBeYPX7keBQBPPD = Rachel) |
+| sysPrompt | string | System prompt sent to the AI |
+| mode | "direct" or "agent" | Direct = call AI provider; Agent = route through OpenClaw gateway |
+| tgToken | string | Telegram bot token from @BotFather |
+| tgChatId | string | Telegram chat/group ID to forward messages to |
+| tgEnabled | boolean | Whether Telegram forwarding is active |
+| imageGenUrl | string | Image generation API endpoint |
+| imageGenKey | string | Image gen API key (falls back to aiKey if omitted) |
+| imageGenModel | string | Image gen model name |
+| imageGenSize | string | Image size like "1024x1024" |
+| agents | array | OpenClaw gateway agents (replaces entire list) |
+
+### Agent Object Fields
+
+| Field | Type | What It Does |
+|-------|------|-------------|
+| id | string | Unique ID (use timestamp or random string) |
+| name | string | Display name shown in TealClaw UI |
+| url | string | Gateway URL (usually http://hostname.tail*.ts.net:18789) |
+| token | string | Gateway auth token |
+| active | boolean | Set true for the currently selected agent |
+
+## Merge Rules
+
+- Only fields present in your JSON get written — everything else is untouched
+- You can change 1 field or all 15 at once
+- `agents` array replaces the whole list (not appended)
+- Legacy shorthand: `gwUrl` + `gwToken` + `agentName` auto-creates one agent entry
+
+## Common Recipes
+
+### Full Setup (all keys at once — copy-paste ready)
+When a user gives you all their keys, build one JSON with everything:
+
+```json
+{
+  "aiKey": "sk-or-v1-USER_KEY_HERE",
+  "whisperKey": "gsk_USER_KEY_HERE",
+  "ttsKey": "sk_USER_KEY_HERE",
+  "ttsVoice": "ThT5KcBeYPX7keBQBPPD"
+}
+```
+
+Tell the user: "Paste this into TealClaw to set up everything at once."
+
+### Change Just the Voice
+```json
+{"ttsVoice": "NEW_VOICE_ID"}
+```
+
+### Switch AI Provider
+```json
+{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}
+```
+
+### Enable Telegram Forwarding
+```json
+{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}
+```
+
+### Add an OpenClaw Gateway Agent
+```json
+{"agents": [{"id": "gw1", "name": "Home Server", "url": "http://myhost.tail12345.ts.net:18789", "token": "abc123", "active": true}]}
+```
+
+### Set Up Image Generation
+```json
+{"imageGenUrl": "https://api.together.xyz/v1/images/generations", "imageGenModel": "black-forest-labs/FLUX.1-schnell", "imageGenSize": "1024x1024"}
+```
+
+### Set a Custom System Prompt
+```json
+{"sysPrompt": "You are a pirate who speaks in nautical metaphors."}
+```
+
+## Smart Key Detection (Bonus)
+
+If the user just pastes a bare API key into TealClaw (no JSON), the app auto-detects
+which field it belongs to based on the prefix:
+
+- sk-or-v1-* → aiKey (OpenRouter)
+- gsk_* → whisperKey (Groq)
+- sk_ + 40+ hex chars → ttsKey (ElevenLabs)
+- 123456:ABC-* pattern → tgToken (Telegram bot)
+- Negative or 6+ digit number → tgChatId
+- http(s)://...:port → gateway URL
+- 32+ hex chars → gateway token
+
+So for a single key, you can just tell the user to paste it directly.
+Use the JSON approach when setting multiple things at once.
+
+## Architecture
+
+```
+Browser → OpenRouter/Groq/Anthropic (chat completions)
+Browser → Groq Whisper (voice transcription)
+Browser → ElevenLabs (text-to-speech)
+Browser → OpenClaw Gateway via Tailscale (agent mode)
+Browser → Telegram Bot API (message forwarding)
+```
+
+No server-side processing. The tealclaw.com domain serves only static files.
+All API keys stay in the user's browser localStorage. Nothing is ever sent to TealClaw.
