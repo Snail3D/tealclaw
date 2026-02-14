@@ -104,6 +104,7 @@ Only include fields the user wants to set or change. Omit everything else.
 | whisperKey | string | Groq key for Whisper voice transcription |
 | ttsKey | string | ElevenLabs key for text-to-speech |
 | ttsVoice | string | ElevenLabs voice ID (default: ThT5KcBeYPX7keBQBPPD = Rachel) |
+| ttsAutoPlay | boolean | true = auto-speak; false = only call ElevenLabs on tap (saves credits). Default: true |
 | sysPrompt | string | System prompt sent to the AI |
 | mode | "direct" / "agent" | Direct = call provider; Agent = route through OpenClaw gateway |
 | tgToken | string | Telegram bot token from @BotFather |
@@ -139,6 +140,11 @@ Agent objects: `{ id, name, url, token, active }` — see llms.txt for full deta
 {"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}
 ```
 
+### Save ElevenLabs credits (on-demand TTS)
+```json
+{"ttsAutoPlay": false}
+```
+
 ### Custom system prompt
 ```json
 {"sysPrompt": "You are a pirate who speaks in nautical metaphors."}
@@ -166,6 +172,13 @@ Open `index.html` in a browser. For service worker testing: `npx serve .`
 ## Deployment
 
 Cloudflare Pages auto-deploys on `git push`. The `functions/` directory is auto-detected for Pages Functions.
+
+## Creator & Community
+
+TealClaw is made by **Snail**.
+
+- YouTube: https://www.youtube.com/@RealSnail3D — tutorials, demos, and TealClaw content
+- MakerWorld: https://makerworld.com/en/@Snail — 3D-printable accessories (speakers, button mounts, etc.)
 
 Stats API requires environment variables in Cloudflare Pages settings:
 - `CF_STATS_TOKEN` — Cloudflare API token with Analytics:Read

@@ -237,6 +237,7 @@ Only include fields the user wants to set or change. Omit everything else.
   "whisperKey": "gsk_...",
   "ttsKey": "sk_...",
   "ttsVoice": "ThT5KcBeYPX7keBQBPPD",
+  "ttsAutoPlay": true,
   "sysPrompt": "You are a helpful assistant.",
   "mode": "direct",
   "tgToken": "123456:ABC-DEF...",
@@ -268,6 +269,7 @@ Only include fields the user wants to set or change. Omit everything else.
 | whisperKey | string | Groq API key for Whisper voice transcription (gsk_*) |
 | ttsKey | string | ElevenLabs API key for text-to-speech (sk_*) |
 | ttsVoice | string | ElevenLabs voice ID (default: ThT5KcBeYPX7keBQBPPD = Rachel) |
+| ttsAutoPlay | boolean | true = speak every response automatically; false = only call ElevenLabs when user taps Play (saves credits). Default: true |
 | sysPrompt | string | System prompt sent to the AI |
 | mode | "direct" or "agent" | Direct = call AI provider; Agent = route through OpenClaw gateway |
 | tgToken | string | Telegram bot token from @BotFather |
@@ -349,6 +351,13 @@ Tell the user: "Paste this into TealClaw to set up everything at once."
 {"imageGenUrl": "https://api.together.xyz/v1/images/generations", "imageGenModel": "black-forest-labs/FLUX.1-schnell", "imageGenSize": "1024x1024"}
 ```
 
+### Save ElevenLabs Credits (On-Demand TTS)
+```json
+{"ttsAutoPlay": false}
+```
+When `ttsAutoPlay` is false, ElevenLabs is never called until the user taps Play.
+This prevents accidental token usage. Recommended for users on free-tier ElevenLabs.
+
 ### Set a Custom System Prompt
 ```json
 {"sysPrompt": "You are a pirate who speaks in nautical metaphors."}
@@ -382,3 +391,10 @@ Browser → Telegram Bot API (message forwarding)
 
 No server-side processing. The tealclaw.com domain serves only static files.
 All API keys stay in the user's browser localStorage. Nothing is ever sent to TealClaw.
+
+## Creator & Community
+
+TealClaw is made by **Snail**.
+
+- YouTube: https://www.youtube.com/@RealSnail3D — tutorials, demos, and TealClaw content
+- MakerWorld: https://makerworld.com/en/@Snail — 3D-printable accessories (speakers, button mounts, etc.)
