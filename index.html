@@ -1734,6 +1734,14 @@
       return agents.find(a=>a.active)||agents[0];
     }
 
+    // Auto-upgrade HTTP gateway URLs to HTTPS when page is HTTPS (mixed content fix)
+    function gwUrl(baseUrl){
+      if(location.protocol==='https:'&&baseUrl.startsWith('http://')){
+        return baseUrl.replace('http://','https://');
+      }
+      return baseUrl;
+    }
+
     async function callAgent(text,imageBase64){
       const agent=getActiveAgent();
       if(!agent)throw new Error('No agent configured');
@@ -1743,7 +1751,8 @@
       } else {
         content=text;
       }
-      const res=await fetch(`${agent.url}/v1/chat/completions`,{
+      const url=gwUrl(agent.url);
+      const res=await fetch(`${url}/v1/chat/completions`,{
         method:'POST',
         headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
         body:JSON.stringify({messages:[{role:'user',content}],max_tokens:400})
@@ -2163,7 +2172,7 @@ Rules:
         if(mode==='agent'&&getActiveAgent()){
           try{
             const agent=getActiveAgent();
-            await fetch(`${agent.url}/v1/chat/completions`,{
+            await fetch(`${gwUrl(agent.url)}/v1/chat/completions`,{
               method:'POST',
               headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
               body:JSON.stringify({messages:[{role:'user',content:`[RESEARCH CONTEXT - User researched: "${query||'image'}"]\n\n${fullPayload}\n\nRemember this research context for follow-up questions.`}],max_tokens:100})
