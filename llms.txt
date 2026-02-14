@@ -286,7 +286,7 @@ TealClaw uses partial merge -- only what you include gets written.
     {
       "id": "agent1",
       "name": "My Server",
-      "url": "http://myhost.tail12345.ts.net:18789",
+      "url": "https://gw.tealclaw.ai",
       "token": "abc123def456",
       "active": true
     }
@@ -399,7 +399,7 @@ TealClaw uses partial merge -- only what you include gets written.
 |-------|------|-------------|
 | id | string | Unique ID (use timestamp or random string) |
 | name | string | Display name shown in TealClaw UI |
-| url | string | Gateway URL (usually http://hostname.tail*.ts.net:18789) |
+| url | string | Gateway URL (HTTPS required, e.g. https://gw.tealclaw.ai) |
 | token | string | Gateway auth token |
 | active | boolean | Set true for the currently selected agent |
 
@@ -555,10 +555,10 @@ from Telegram, or for OpenClaw agents that need a Telegram bridge.
 ```
 
 ### Add an OpenClaw Gateway Agent
-Connects TealClaw to a self-hosted OpenClaw gateway over Tailscale. This
-turns TealClaw into a front-end for the user's own agent infrastructure.
+Connects TealClaw to a self-hosted OpenClaw gateway via Cloudflare Tunnel. This
+turns TealClaw into a front-end for the user's own agent infrastructure. The URL must be HTTPS.
 ```json
-{"agents": [{"id": "gw1", "name": "Home Server", "url": "http://myhost.tail12345.ts.net:18789", "token": "abc123", "active": true}]}
+{"agents": [{"id": "gw1", "name": "Home Server", "url": "https://gw.tealclaw.ai", "token": "abc123", "active": true}]}
 ```
 
 ### Set Up Image Generation
@@ -1162,7 +1162,7 @@ them to repeat everything.
 Browser --> OpenRouter/Groq/Anthropic (chat completions)
 Browser --> Groq Whisper (voice transcription)
 Browser --> ElevenLabs (text-to-speech)
-Browser --> OpenClaw Gateway via Tailscale (agent mode)
+Browser --> OpenClaw Gateway via Cloudflare Tunnel (agent mode, HTTPS)
 Browser --> Telegram Bot API (message forwarding)
 ```
 
