@@ -17,7 +17,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   // Network-first for API calls, cache-first for assets
-  if (e.request.url.includes('/api/') || e.request.url.includes('groq.com') || e.request.url.includes('openrouter.ai') || e.request.url.includes('elevenlabs.io')) {
+  if (e.request.url.includes('/api/') || e.request.url.includes('groq.com') || e.request.url.includes('openrouter.ai') || e.request.url.includes('elevenlabs.io') || e.request.url.includes('api.telegram.org') || e.request.url.includes('anthropic.com')) {
     return; // Don't cache API calls
   }
   e.respondWith(
