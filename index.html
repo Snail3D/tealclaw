@@ -74,6 +74,18 @@
     .chat-bubble .play-inline svg{width:10px;height:10px}
     .chat-typing{color:var(--text-3);font-style:italic;font-size:12px;padding:4px 14px}
 
+    /* ── Inline Key Setup (in chat) ──────────────────── */
+    .chat-setup{margin-top:8px}
+    .chat-setup-label{font-size:10px;font-weight:600;color:var(--text-2);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.03em}
+    .chat-setup-row{display:flex;gap:5px;margin-bottom:6px}
+    .chat-setup-input{flex:1;padding:8px 10px;font-size:11px;font-family:var(--mono);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none;transition:border var(--t)}
+    .chat-setup-input:focus{border-color:var(--teal)}
+    .chat-setup-input::placeholder{color:var(--text-3)}
+    .chat-setup-select{padding:8px 8px;font-size:11px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none}
+    .chat-setup-btn{padding:7px 14px;font-size:11px;font-weight:600;font-family:var(--font);background:var(--teal);color:#fff;border:none;border-radius:var(--r-md);cursor:pointer;transition:all var(--t)}
+    .chat-setup-btn:hover{background:var(--teal-hover)}
+    .chat-setup-hint{font-size:10px;color:var(--text-3);margin-top:4px}
+
     /* ── Markdown in bubbles ──────────────────────────── */
     .chat-bubble .md-content{font-size:13px;line-height:1.6}
     .chat-bubble .md-content p{margin:0 0 8px 0} .chat-bubble .md-content p:last-child{margin-bottom:0}
@@ -279,8 +291,8 @@
       <div class="chat-scroll" id="chatScroll">
         <div class="chat-empty" id="chatEmpty">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;color:var(--text-3);margin-bottom:8px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <div>Set up your API keys to get started</div>
-          <div style="margin-top:4px;font-size:11px">Keys tab -- add an AI key, then talk or type</div>
+          <div>Just start typing -- we'll help you connect</div>
+          <div style="margin-top:4px;font-size:11px">Send a message and you can add your API key right here in the chat</div>
         </div>
       </div>
 
@@ -970,7 +982,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
     // ── Chat Rendering ─────────────────────────────────
     function renderChat(){
       const s=$('chatScroll');
-      if(chatHistory.length===0){s.innerHTML='<div class="chat-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;color:var(--text-3);margin-bottom:8px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Set up your API keys, then talk or type</div></div>';return}
+      if(chatHistory.length===0){s.innerHTML='<div class="chat-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:32px;height:32px;color:var(--text-3);margin-bottom:8px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg><div>Just start typing -- we\'ll help you connect</div><div style="margin-top:4px;font-size:11px">Send a message and add your API key right here</div></div>';return}
       s.innerHTML=chatHistory.map((m,i)=>{
         let content='';
         if(m.image) content+=`<img class="chat-img" src="${m.image}">`;
@@ -1017,7 +1029,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
         return callAgent(userText,imageBase64);
       }
 
-      if(!k.aiKey){showToast('Set up your AI key first','err');return ''}
+      if(!k.aiKey)return '__NO_KEY__';
 
       const providers={
         openrouter:{url:'https://openrouter.ai/api/v1/chat/completions',model:k.aiModel||'google/gemini-3-flash-preview'},
@@ -1113,6 +1125,76 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       if(!res.ok)return null;return await res.arrayBuffer();
     }
 
+    // ── Inline Key Setup (in chat) ────────────────────
+    function showSetupBubble(){
+      const scroll=$('chatScroll');
+      const bubble=document.createElement('div');
+      bubble.className='chat-bubble ai';
+      bubble.innerHTML=`
+        <div style="margin-bottom:6px;font-size:13px">Hey! You need an API key to chat. Paste one below to get started instantly.</div>
+        <div class="chat-setup">
+          <div class="chat-setup-label">Paste any API key</div>
+          <div class="chat-setup-row">
+            <input type="text" class="chat-setup-input" id="chatSetupKey" placeholder="sk-or-v1-... or gsk_... or sk-ant-..." autocomplete="off" spellcheck="false">
+          </div>
+          <div class="chat-setup-row">
+            <select class="chat-setup-select" id="chatSetupProvider">
+              <option value="auto">Auto-detect</option>
+              <option value="openrouter">OpenRouter</option>
+              <option value="groq">Groq</option>
+              <option value="anthropic">Anthropic</option>
+            </select>
+            <button class="chat-setup-btn" id="chatSetupSave">Connect</button>
+          </div>
+          <div class="chat-setup-hint">
+            Get a free key: <a href="https://console.groq.com" target="_blank" rel="noopener" style="color:var(--teal)">Groq</a> &middot;
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" style="color:var(--teal)">OpenRouter</a> &middot;
+            <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--teal)">Anthropic</a>
+          </div>
+        </div>`;
+      scroll.appendChild(bubble);
+      scroll.scrollTop=scroll.scrollHeight;
+
+      const keyInput=bubble.querySelector('#chatSetupKey');
+      const providerSel=bubble.querySelector('#chatSetupProvider');
+      const saveBtn=bubble.querySelector('#chatSetupSave');
+
+      // Auto-detect on paste/input
+      keyInput.addEventListener('input',()=>{
+        const det=detectKey(keyInput.value.trim());
+        if(det?.provider){
+          providerSel.value=det.provider;
+        }
+      });
+
+      saveBtn.addEventListener('click',()=>{
+        const val=keyInput.value.trim();
+        if(!val){showToast('Paste an API key','err');return}
+        const det=detectKey(val);
+        const k=getK();
+
+        if(det){
+          k[det.field]=val;
+          if(det.provider)k.aiProvider=det.provider;
+        } else {
+          // Manual provider selection
+          const prov=providerSel.value==='auto'?'openrouter':providerSel.value;
+          k.aiKey=val;
+          k.aiProvider=prov;
+        }
+        setK(k);
+        updateStatus();
+        loadUI();
+
+        // Replace the setup form with a success message
+        bubble.innerHTML='<div style="font-size:13px;color:var(--ok)">Connected! Try sending your message again.</div><div class="chat-meta">'+new Date().toLocaleTimeString()+'</div>';
+        showToast('API key saved','ok');
+      });
+
+      // Focus the input
+      keyInput.focus();
+    }
+
     // ── Pipeline ───────────────────────────────────────
     async function pipeline(text,imageBase64){
       if(!text&&!imageBase64)return;
@@ -1125,6 +1207,7 @@ Browser -> Telegram Bot API -> Telegram Chat</code></pre>
       try{
         const aiText=await callAI(text,imageBase64);
         removeTyping();
+        if(aiText==='__NO_KEY__'){showSetupBubble();return}
         if(!aiText){addBubble('ai','(No response)');return}
 
         // Forward AI response to Telegram
