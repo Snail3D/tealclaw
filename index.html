@@ -4665,6 +4665,73 @@ Rules:
       return md;
     }
 
+    // ── HTML to Markdown converter ──────────────────────
+    function htmlToMd(html){
+      if(!html||!/<[a-z][\s\S]*>/i.test(html))return html; // already plain text/md
+      const doc=new DOMParser().parseFromString('<div>'+html+'</div>','text/html');
+      const root=doc.body.firstChild;
+      function walk(node){
+        if(node.nodeType===3)return node.textContent;
+        if(node.nodeType!==1)return '';
+        const tag=node.tagName.toLowerCase();
+        const kids=Array.from(node.childNodes).map(walk).join('');
+        switch(tag){
+          case 'h1': return '\n# '+kids.trim()+'\n';
+          case 'h2': return '\n## '+kids.trim()+'\n';
+          case 'h3': return '\n### '+kids.trim()+'\n';
+          case 'h4': return '\n#### '+kids.trim()+'\n';
+          case 'strong':case 'b': return '**'+kids+'**';
+          case 'em':case 'i': return '*'+kids+'*';
+          case 'code': return node.parentElement?.tagName==='PRE'?kids:'`'+kids+'`';
+          case 'pre': {const lang=node.dataset?.lang||'';return '\n```'+lang+'\n'+kids.trim()+'\n```\n'}
+          case 'a': {const href=node.getAttribute('href');return href?'['+kids+']('+href+')':kids}
+          case 'br': return '\n';
+          case 'hr': return '\n---\n';
+          case 'p': return '\n'+kids.trim()+'\n';
+          case 'li': return '- '+kids.trim()+'\n';
+          case 'ul':case 'ol': return '\n'+kids;
+          case 'blockquote': return '\n> '+kids.trim().replace(/\n/g,'\n> ')+'\n';
+          case 'table': return '\n'+tableToMd(node)+'\n';
+          case 'img': return '![image]('+node.getAttribute('src')+')';
+          case 'div': {
+            // Research-specific classes
+            if(node.classList.contains('research-result'))return kids;
+            if(node.classList.contains('research-verdict-green')||node.classList.contains('research-verdict-blue')||node.classList.contains('research-verdict-yellow')||node.classList.contains('research-verdict-orange')||node.classList.contains('research-verdict-red'))return '\n**'+kids.trim()+'**\n';
+            if(node.classList.contains('research-section'))return kids;
+            if(node.classList.contains('research-section-title'))return '\n## '+kids.trim()+'\n';
+            if(node.classList.contains('research-sources'))return '\n## Sources\n'+kids;
+            if(node.classList.contains('md-content'))return kids;
+            if(node.classList.contains('research-processing'))return '';
+            if(node.classList.contains('config-apply-card'))return '';
+            if(node.classList.contains('tc-action-badge'))return '';
+            return kids;
+          }
+          case 'svg':case 'button':case 'canvas': return '';
+          default: return kids;
+        }
+      }
+      function tableToMd(table){
+        const rows=Array.from(table.querySelectorAll('tr'));
+        if(!rows.length)return '';
+        let md='';
+        rows.forEach((row,i)=>{
+          const cells=Array.from(row.querySelectorAll('th,td')).map(c=>c.textContent.trim());
+          md+='| '+cells.join(' | ')+' |\n';
+          if(i===0)md+='| '+cells.map(()=>'---').join(' | ')+' |\n';
+        });
+        return md;
+      }
+      return walk(root).replace(/\n{3,}/g,'\n\n').trim();
+    }
+
+    function getShareText(idx){
+      const m=chatHistory[idx];if(!m)return '';
+      // Raw HTML messages (research results, system bubbles) → convert to markdown
+      if(m.raw)return htmlToMd(m.text||'');
+      // Regular messages are already markdown/plain text
+      return m.text||'';
+    }
+
     // ── Per-Message Share & Obsidian Save ─────────────────
     async function svgToBlob(svgEl){
       const clone=svgEl.cloneNode(true);
@@ -4708,7 +4775,7 @@ Rules:
 
     async function shareMessage(idx){
       const m=chatHistory[idx];if(!m)return;
-      const text=m.text||'';
+      const text=getShareText(idx);
       const files=[];
       // Find the bubble element
       const el=document.querySelector(`[data-msg-idx="${idx}"]`);
@@ -4736,9 +4803,10 @@ Rules:
 
     function saveMessageToObsidian(idx){
       const m=chatHistory[idx];if(!m)return;
-      const text=m.text||'';
+      const text=getShareText(idx);
       const tag=m.role==='user'?'prompt':'response';
-      const title=text.replace(/[#*`\n\r]/g,' ').trim().slice(0,50).trim()||(m.role==='user'?'Message':'Response');
+      const cleanText=text.replace(/[#*`\n\r]/g,' ').trim();
+      const title=cleanText.slice(0,50).trim()||(m.role==='user'?'Message':'Response');
       const now=new Date().toISOString();
       const content=`---\ntags: [tealclaw, ${tag}]\ncreated: ${now}\nsource: "[[TealClaw]]"\n---\n\n${text}`;
       saveToObsidian(title,content,'Daily');
