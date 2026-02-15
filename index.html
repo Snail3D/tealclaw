@@ -116,10 +116,15 @@
     @media(min-width:600px){.conv-dropdown{left:16px;right:auto;width:340px}}
 
     /* ── Layout ────────────────────────────────────────── */
-    .main{flex:1;display:flex;flex-direction:column;width:100%;overflow:hidden}
+    .main{flex:1;display:flex;flex-direction:column;width:100%;overflow:hidden;position:relative}
 
     /* ── Chat Layout ───────────────────────────────────── */
-    .chat-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 16px;max-width:760px;width:100%;margin:0 auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scroll-behavior:smooth}
+    .chat-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 16px;max-width:760px;width:100%;margin:0 auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+    .scroll-anchor{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;width:40px;height:40px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+    .scroll-anchor.visible{opacity:1;pointer-events:auto}
+    .scroll-anchor:hover{border-color:var(--teal);color:var(--teal);transform:translateX(-50%) scale(1.08)}
+    .scroll-anchor:active{transform:translateX(-50%) scale(0.95)}
+    .scroll-anchor svg{width:18px;height:18px}
     .chat-empty{text-align:center;padding:60px 16px;color:var(--text-3);font-size:13px}
     .chat-bubble{max-width:85%;margin-bottom:14px;padding:var(--bubble-pad,12px 16px);border-radius:var(--bubble-radius,20px);font-size:var(--chat-font,14px);line-height:1.7;word-break:break-word;animation:var(--bubble-anim,bubble-slide-up 0.3s ease-out)}
     .chat-bubble.user{background:var(--user-bg);margin-left:auto;border-bottom-right-radius:6px;color:var(--user-text,var(--text));position:relative}
@@ -307,6 +312,7 @@
     body.compact-mode .chat-scroll{padding:8px}
     body.compact-mode .input-bar{padding:6px 10px}
     body.kb-open .input-bar{padding-bottom:8px}
+    body.kb-open .scroll-anchor{bottom:54px}
     body.compact-mode .sheet-row{padding:8px 10px;margin-bottom:4px}
     *:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
     body.focus-visible *:focus-visible{outline:3px solid var(--teal)!important;outline-offset:2px!important}
@@ -650,6 +656,7 @@
     @media(max-width:600px){
       .topbar{padding:0 10px;height:48px;gap:6px} .logo{font-size:14px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
       .chat-scroll{padding:12px} .input-bar{padding:8px 10px 12px} .input-row{padding:4px 4px 4px 12px} .page-scroll{padding:10px} .card{padding:12px;border-radius:var(--r-md)}
+      .scroll-anchor{bottom:60px;width:36px;height:36px} .scroll-anchor svg{width:16px;height:16px}
       .key-input-row{flex-direction:column}
     }
     ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -791,6 +798,9 @@
     <div class="chat-scroll" id="chatScroll" role="log" aria-live="polite" aria-label="Chat messages">
       <div class="chat-empty" id="chatEmpty"></div>
     </div>
+    <button class="scroll-anchor" id="scrollAnchor" aria-label="Scroll to bottom">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
 
     <div class="input-bar">
       <div class="agent-selector" id="agentSelectorBar" style="display:none">
@@ -2279,9 +2289,7 @@
       s.querySelectorAll('.del-msg-btn').forEach(b=>b.addEventListener('click',()=>deleteMessage(+b.dataset.idx)));
 
       if(getK().autoScroll!==false){
-        // Only auto-scroll if user is near bottom (within 150px) to avoid hijacking scroll position
-        const nearBottom=s.scrollHeight-s.scrollTop-s.clientHeight<150;
-        if(nearBottom||chatHistory.length<=1)s.scrollTop=s.scrollHeight;
+        if(isNearBottom(s,150)||chatHistory.length<=1)smoothScrollToBottom(s);
       }
 
       // Wire up Play/Replay buttons
@@ -2323,7 +2331,7 @@
       const txt=k.loadingText||'Thinking';
       const el=document.createElement('div');el.className='chat-typing';el.id='typing';
       el.innerHTML=`<div class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div><span>${emoji}${esc(txt)}</span>`;
-      s.appendChild(el);s.scrollTop=s.scrollHeight;
+      s.appendChild(el);smoothScrollToBottom(s,280);
       playTypingSound();
     }
     function removeTyping(){const el=$('typing');if(el)el.remove()}
@@ -2499,7 +2507,7 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
       bubble.className='chat-bubble ai';
       bubble.innerHTML=`<div class="md-content">${html}</div><div class="chat-meta">${fmtTime()}</div>`;
       scroll.appendChild(bubble);
-      scroll.scrollTop=scroll.scrollHeight;
+      smoothScrollToBottom(scroll,320);
       return bubble;
     }
 
@@ -3089,7 +3097,7 @@ Rules:
       const el=document.createElement('div');el.className='chat-bubble ai';el.style.maxWidth='100%';
       el.innerHTML=html;
       $('chatScroll').appendChild(el);
-      $('chatScroll').scrollTop=$('chatScroll').scrollHeight;
+      smoothScrollToBottom($('chatScroll'),320);
       el.querySelectorAll('.template-card').forEach(card=>card.addEventListener('click',()=>{
         const t=TEMPLATES[+card.dataset.tidx];
         const cfg={accentColor:t.accent,bgColor:t.bg,chatUserColor:t.user,chatAiColor:t.ai,themeMode:t.theme,...(t.extra||{})};
@@ -3736,6 +3744,10 @@ Rules:
       if(pk.inputPrefix&&text&&!text.startsWith('/'))text=pk.inputPrefix+' '+text;
 
       addBubble('user',text||'[Image]',imageBase64?{image:imageBase64}:{});
+      // User sent a message — always scroll to bottom, reset scroll state
+      _userScrolledUp=false;
+      _scrollBtn.classList.remove('visible');
+      smoothScrollToBottom($('chatScroll'),300);
       playSendSound();
       fireWebhook('message.send',{text:text||'[Image]',hasImage:!!imageBase64});
 
@@ -3766,7 +3778,7 @@ Rules:
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
             }
-            if(pk.autoScroll!==false&&scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight<150)scroll.scrollTop=scroll.scrollHeight;
+            if(pk.autoScroll!==false&&isNearBottom(scroll,150))snapScrollToBottom(scroll);
           });
           const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
           const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
@@ -4228,6 +4240,11 @@ Rules:
 
     $('sendBtn').addEventListener('click',send);
     $('textIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+    // On mobile, tapping input should scroll chat to bottom so user sees latest messages
+    $('textIn').addEventListener('focus',()=>{
+      if(!_userScrolledUp)return;
+      setTimeout(()=>smoothScrollToBottom(_chatScroll,300),150);
+    });
     $('textIn').addEventListener('input',()=>{
       const t=$('textIn');t.style.height='auto';t.style.height=Math.min(t.scrollHeight,140)+'px';
       updateActionBtn();
@@ -5436,6 +5453,12 @@ Rules:
     importFromHash();
     autoLoadFont();
     applyVisualConfig();
+
+    // ── Smooth Scroll System (init before loadUI) ─────
+    var _scrollRafId=null;
+    var _userScrolledUp=false;
+    var _scrollBtn=$('scrollAnchor');
+    var _chatScroll=$('chatScroll');
     loadUI();
     // PIN lock on startup
     checkPinLock();
@@ -5770,6 +5793,50 @@ Rules:
       navigator.storage.persist().then(g=>{if(g)console.log('[TealClaw] Storage persistent')});
     }
 
+    // ── Smooth Scroll System (event wiring) ─────────────
+    function easeOutCubic(t){return 1-Math.pow(1-t,3)}
+
+    function smoothScrollToBottom(el,duration){
+      if(_scrollRafId){cancelAnimationFrame(_scrollRafId);_scrollRafId=null}
+      const target=el.scrollHeight-el.clientHeight;
+      const start=el.scrollTop;
+      const distance=target-start;
+      if(distance<=0)return;
+      // Reduced motion or short distance: snap instantly
+      if(document.body.classList.contains('reduce-motion')||distance<20){el.scrollTop=target;return}
+      const dur=duration||(distance>800?500:distance>300?380:280);
+      const t0=performance.now();
+      function step(now){
+        const elapsed=now-t0;
+        const progress=Math.min(elapsed/dur,1);
+        el.scrollTop=start+distance*easeOutCubic(progress);
+        if(progress<1)_scrollRafId=requestAnimationFrame(step);
+        else _scrollRafId=null;
+      }
+      _scrollRafId=requestAnimationFrame(step);
+    }
+
+    function snapScrollToBottom(el){
+      if(_scrollRafId){cancelAnimationFrame(_scrollRafId);_scrollRafId=null}
+      el.scrollTop=el.scrollHeight;
+    }
+
+    function isNearBottom(el,threshold){
+      return el.scrollHeight-el.scrollTop-el.clientHeight<(threshold||150);
+    }
+
+    // Scroll-to-bottom button (wiring)
+    _chatScroll.addEventListener('scroll',()=>{
+      _userScrolledUp=!isNearBottom(_chatScroll,150);
+      _scrollBtn.classList.toggle('visible',_userScrolledUp);
+    },{passive:true});
+
+    _scrollBtn.addEventListener('click',()=>{
+      smoothScrollToBottom(_chatScroll,400);
+      _userScrolledUp=false;
+      _scrollBtn.classList.remove('visible');
+    });
+
     // ── Keyboard-aware safe area (iOS standalone) ──────
     if(window.visualViewport){
       const vv=window.visualViewport;
@@ -5778,6 +5845,8 @@ Rules:
         const kbOpen=vv.height<baseH-100;
         document.body.classList.toggle('kb-open',kbOpen);
         if(!kbOpen)baseH=vv.height;
+        // When keyboard opens/closes, re-check scroll position and adjust
+        if(kbOpen&&!_userScrolledUp)requestAnimationFrame(()=>snapScrollToBottom(_chatScroll));
       });
     }
 
