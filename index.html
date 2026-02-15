@@ -1129,7 +1129,7 @@
   </div>
 
   <audio id="audio" style="display:none"></audio>
-  <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.json,.js,.ts,.py,.md,.csv,.tsv,.log,.xml,.html,.css,.yaml,.yml,.toml,.ini,.cfg,.env,.sh,.bash,.zsh,.sql,.r,.rb,.go,.rs,.c,.cpp,.h,.hpp,.java,.kt,.swift,.m,.docx,.doc,.rtf,.xlsx,.xls,.pptx" multiple style="display:none">
+  <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.json,.js,.ts,.py,.md,.csv,.tsv,.log,.xml,.html,.htm,.css,.yaml,.yml,.toml,.ini,.cfg,.env,.sh,.bash,.zsh,.sql,.r,.rb,.go,.rs,.c,.cpp,.h,.hpp,.java,.kt,.swift,.m,.docx,.doc,.rtf,.xlsx,.xls,.pptx,.ppt" multiple style="display:none">
   <canvas id="camCanvas" style="display:none"></canvas>
 
   <script>
@@ -6130,7 +6130,8 @@ Rules:
     function send(){
       if(_sending)return;
       let text=$('textIn').value.trim();
-      const images=pendingFiles.filter(f=>f.dataUrl&&f.type==='image').map(f=>f.dataUrl);
+      const imageFiles=pendingFiles.filter(f=>f.dataUrl&&f.type==='image');
+      const images=imageFiles.map(f=>f.dataUrl);
       const docs=pendingFiles.filter(f=>f.type==='document'&&f.text);
       const firstImage=images[0]||null;
       if(!text&&!firstImage&&docs.length===0)return;
@@ -6139,6 +6140,9 @@ Rules:
         const docText=docs.map(d=>`--- ${d.name} ---\n${d.text}`).join('\n\n');
         text=text?(docText+'\n\n'+text):docText;
       }
+      // Append EXIF metadata for images so the AI has camera/location context
+      const exifTexts=imageFiles.filter(f=>f.exifText).map(f=>f.exifText);
+      if(exifTexts.length){text=(text||'')+'\n'+exifTexts.join('\n')}
 
       // PIN code gate
       if(!checkPinLock())return;
@@ -6634,7 +6638,26 @@ ${agentNote}`);
       return header+pages.join('\n\n---\n\n');
     }
 
-    // ── DOCX to Markdown (lazy-load mammoth.js) ─────────
+    // ── Turndown (HTML→Markdown, lazy-load) ──────────────
+    let turndownLoaded=false;
+    function loadTurndown(){
+      if(turndownLoaded)return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/turndown/7.2.0/turndown.js';
+        s.onload=()=>{turndownLoaded=true;resolve()};
+        s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+    function htmlToMarkdown(html){
+      if(!window.TurndownService)return html.replace(/<[^>]+>/g,'');
+      const td=new window.TurndownService({headingStyle:'atx',codeBlockStyle:'fenced',bulletListMarker:'-'});
+      td.addRule('strikethrough',{filter:['del','s'],replacement:c=>'~~'+c+'~~'});
+      return td.turndown(html);
+    }
+
+    // ── DOCX to Markdown (lazy-load mammoth.js + turndown) ─
     let mammothLoaded=false;
     function loadMammoth(){
       if(mammothLoaded)return Promise.resolve();
@@ -6648,26 +6671,156 @@ ${agentNote}`);
     }
 
     async function docxToMarkdown(arrayBuffer,fileName){
-      await loadMammoth();
+      await Promise.all([loadMammoth(),loadTurndown()]);
       if(!window.mammoth)throw new Error('mammoth.js failed to load');
       const result=await window.mammoth.convertToHtml({arrayBuffer});
-      // Convert basic HTML to markdown-ish text
-      let md=result.value
-        .replace(/<h1[^>]*>(.*?)<\/h1>/gi,'\n# $1\n')
-        .replace(/<h2[^>]*>(.*?)<\/h2>/gi,'\n## $1\n')
-        .replace(/<h3[^>]*>(.*?)<\/h3>/gi,'\n### $1\n')
-        .replace(/<h4[^>]*>(.*?)<\/h4>/gi,'\n#### $1\n')
-        .replace(/<strong>(.*?)<\/strong>/gi,'**$1**')
-        .replace(/<b>(.*?)<\/b>/gi,'**$1**')
-        .replace(/<em>(.*?)<\/em>/gi,'*$1*')
-        .replace(/<i>(.*?)<\/i>/gi,'*$1*')
-        .replace(/<li>(.*?)<\/li>/gi,'- $1\n')
-        .replace(/<br\s*\/?>/gi,'\n')
-        .replace(/<p>(.*?)<\/p>/gi,'$1\n\n')
-        .replace(/<[^>]+>/g,'')
-        .replace(/\n{3,}/g,'\n\n')
-        .trim();
+      const md=htmlToMarkdown(result.value);
       return `# ${fileName}\n\n*Converted from DOCX*\n\n${md}`;
+    }
+
+    // ── HTML file to Markdown (lazy-load turndown) ────────
+    async function htmlFileToMarkdown(text,fileName){
+      await loadTurndown();
+      const md=htmlToMarkdown(text);
+      return `# ${fileName}\n\n*Converted from HTML*\n\n${md}`;
+    }
+
+    // ── XLSX/XLS to Markdown (lazy-load SheetJS) ──────────
+    let sheetjsLoaded=false;
+    function loadSheetJS(){
+      if(sheetjsLoaded)return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+        s.onload=()=>{sheetjsLoaded=true;resolve()};
+        s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function xlsxToMarkdown(arrayBuffer,fileName){
+      await loadSheetJS();
+      if(!window.XLSX)throw new Error('SheetJS failed to load');
+      const wb=window.XLSX.read(arrayBuffer,{type:'array'});
+      const parts=[];
+      for(const sheetName of wb.SheetNames){
+        const ws=wb.Sheets[sheetName];
+        const rows=window.XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        if(!rows.length)continue;
+        let md=`## ${sheetName}\n\n`;
+        const header=rows[0].map(c=>String(c??''));
+        md+='| '+header.join(' | ')+' |\n';
+        md+='| '+header.map(()=>'---').join(' | ')+' |\n';
+        for(let i=1;i<Math.min(rows.length,500);i++){
+          md+='| '+rows[i].map(c=>String(c??'').replace(/\|/g,'\\|')).join(' | ')+' |\n';
+        }
+        if(rows.length>500)md+=`\n*...truncated (showing 500 of ${rows.length} rows)*\n`;
+        parts.push(md);
+      }
+      return `# ${fileName}\n\n*${wb.SheetNames.length} sheet(s) — converted to Markdown*\n\n${parts.join('\n\n---\n\n')}`;
+    }
+
+    // ── PPTX to Markdown (lazy-load JSZip) ────────────────
+    let jszipLoaded=false;
+    function loadJSZip(){
+      if(jszipLoaded)return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload=()=>{jszipLoaded=true;resolve()};
+        s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function pptxToMarkdown(arrayBuffer,fileName){
+      await loadJSZip();
+      if(!window.JSZip)throw new Error('JSZip failed to load');
+      const zip=await window.JSZip.loadAsync(arrayBuffer);
+      const slides=[];
+      // PPTX slides are in ppt/slides/slide1.xml, slide2.xml, etc.
+      const slideFiles=Object.keys(zip.files).filter(f=>f.match(/^ppt\/slides\/slide\d+\.xml$/)).sort((a,b)=>{
+        const na=parseInt(a.match(/slide(\d+)/)[1]),nb=parseInt(b.match(/slide(\d+)/)[1]);
+        return na-nb;
+      });
+      for(const path of slideFiles){
+        const xml=await zip.file(path).async('text');
+        // Extract text from <a:t> tags (PowerPoint text runs)
+        const texts=[];
+        const re=/<a:t>([^<]*)<\/a:t>/g;
+        let m;while((m=re.exec(xml))!==null){if(m[1].trim())texts.push(m[1])}
+        if(texts.length){
+          const num=path.match(/slide(\d+)/)[1];
+          slides.push(`## Slide ${num}\n\n${texts.join(' ')}`);
+        }
+      }
+      // Extract speaker notes from ppt/notesSlides/
+      const noteFiles=Object.keys(zip.files).filter(f=>f.match(/^ppt\/notesSlides\/notesSlide\d+\.xml$/));
+      for(const path of noteFiles){
+        const xml=await zip.file(path).async('text');
+        const texts=[];
+        const re=/<a:t>([^<]*)<\/a:t>/g;
+        let m;while((m=re.exec(xml))!==null){if(m[1].trim()&&m[1]!=='*')texts.push(m[1])}
+        if(texts.length){
+          const num=path.match(/notesSlide(\d+)/)[1];
+          const slideIdx=slides.findIndex(s=>s.startsWith(`## Slide ${num}`));
+          if(slideIdx>=0)slides[slideIdx]+=`\n\n> **Speaker Notes:** ${texts.join(' ')}`;
+        }
+      }
+      return `# ${fileName}\n\n*${slideFiles.length} slides — converted from PPTX*\n\n${slides.join('\n\n---\n\n')}`;
+    }
+
+    // ── EXIF Metadata (lazy-load exif-js) ─────────────────
+    let exifLoaded=false;
+    function loadExif(){
+      if(exifLoaded)return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js';
+        s.onload=()=>{exifLoaded=true;resolve()};
+        s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function extractExif(file){
+      try{
+        await loadExif();
+        if(!window.EXIF)return null;
+        return new Promise(resolve=>{
+          const reader=new FileReader();
+          reader.onload=e=>{
+            try{
+              const exif=window.EXIF.readFromBinaryFile(e.target.result);
+              if(!exif||!Object.keys(exif).length){resolve(null);return}
+              const pick={};
+              const fields={Make:'Camera Make',Model:'Camera Model',DateTime:'Date Taken',ExposureTime:'Exposure',FNumber:'F-Stop',ISOSpeedRatings:'ISO',FocalLength:'Focal Length',GPSLatitude:'GPS Lat',GPSLongitude:'GPS Lon',GPSAltitude:'GPS Alt',ImageWidth:'Width',ImageHeight:'Height',Software:'Software',Artist:'Artist',Copyright:'Copyright',LensModel:'Lens'};
+              for(const[k,label] of Object.entries(fields)){
+                if(exif[k]!==undefined&&exif[k]!==null){
+                  let v=exif[k];
+                  if(k==='ExposureTime'&&typeof v==='number')v=v<1?`1/${Math.round(1/v)}s`:`${v}s`;
+                  else if(k==='FNumber'&&typeof v==='number')v=`f/${v}`;
+                  else if(k==='FocalLength'&&typeof v==='number')v=`${v}mm`;
+                  else if((k==='GPSLatitude'||k==='GPSLongitude')&&Array.isArray(v))v=`${v[0]}° ${v[1]}' ${v[2]}"`;
+                  else if(k==='GPSAltitude'&&typeof v==='number')v=`${Math.round(v)}m`;
+                  else if(k==='ISOSpeedRatings'&&Array.isArray(v))v=v[0];
+                  pick[label]=String(v);
+                }
+              }
+              resolve(Object.keys(pick).length?pick:null);
+            }catch{resolve(null)}
+          };
+          reader.onerror=()=>resolve(null);
+          reader.readAsArrayBuffer(file);
+        });
+      }catch{return null}
+    }
+
+    function exifToMarkdown(exif,fileName){
+      if(!exif)return '';
+      let md=`\n\n**EXIF Metadata (${fileName}):**\n`;
+      for(const[k,v] of Object.entries(exif))md+=`- ${k}: ${v}\n`;
+      return md;
     }
 
     // ── CSV/TSV to Markdown Table ───────────────────────
@@ -6835,22 +6988,28 @@ ${agentNote}`);
         return;
       }
 
-      // Images — compress and add to file stack
+      // Images — compress, extract EXIF, and add to file stack
       if(file.type?.startsWith('image/')){
         const idx=pendingFiles.length;
         pendingFiles.push({name,type:'image',processing:true,origSize:file.size,dataUrl:null});
         renderFileStack();updateActionBtn();
+        // Extract EXIF in parallel with compression
+        const exifPromise=(ext==='jpg'||ext==='jpeg'||ext==='tiff'||ext==='tif')?extractExif(file):Promise.resolve(null);
         const reader=new FileReader();
         reader.onload=async e=>{
           const raw=e.target.result;
-          // Skip compression for tiny images (<100KB) or GIFs/SVGs
+          let dataUrl,compSize;
           if(file.size<102400||ext==='gif'||ext==='svg'||ext==='svg+xml'){
-            pendingFiles[idx]={name,type:'image',dataUrl:raw,origSize:file.size,compSize:file.size,processing:false};
+            dataUrl=raw;compSize=file.size;
           } else {
             const comp=await compressImage(raw,file);
-            pendingFiles[idx]={name,type:'image',dataUrl:comp.dataUrl,origSize:file.size,compSize:comp.compSize,processing:false};
+            dataUrl=comp.dataUrl;compSize=comp.compSize;
           }
+          const exif=await exifPromise;
+          const exifMd=exifToMarkdown(exif,name);
+          pendingFiles[idx]={name,type:'image',dataUrl,origSize:file.size,compSize,processing:false,exifText:exifMd||null};
           renderFileStack();updateActionBtn();
+          if(exif)showToast(`EXIF extracted: ${Object.keys(exif).length} fields`,'ok');
         };
         reader.readAsDataURL(file);
         return;
@@ -6895,6 +7054,44 @@ ${agentNote}`);
         return;
       }
 
+      // XLSX/XLS — convert to markdown tables
+      if(ext==='xlsx'||ext==='xls'||file.type==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'||file.type==='application/vnd.ms-excel'){
+        const idx=pendingFiles.length;
+        pendingFiles.push({name,type:'document',processing:true,size:file.size});
+        renderFileStack();updateActionBtn();
+        try{
+          const buf=await file.arrayBuffer();
+          const md=await xlsxToMarkdown(buf,name);
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:md};
+          renderFileStack();
+          showToast(`Spreadsheet converted: ${name}`,'ok');
+        }catch(err){
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:`[Could not convert ${name}: ${err.message}]`};
+          renderFileStack();
+          showToast(`Spreadsheet conversion failed`,'err');
+        }
+        return;
+      }
+
+      // PPTX — extract slide text
+      if(ext==='pptx'||file.type==='application/vnd.openxmlformats-officedocument.presentationml.presentation'){
+        const idx=pendingFiles.length;
+        pendingFiles.push({name,type:'document',processing:true,size:file.size});
+        renderFileStack();updateActionBtn();
+        try{
+          const buf=await file.arrayBuffer();
+          const md=await pptxToMarkdown(buf,name);
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:md};
+          renderFileStack();
+          showToast(`Presentation converted: ${name}`,'ok');
+        }catch(err){
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:`[Could not convert ${name}: ${err.message}]`};
+          renderFileStack();
+          showToast(`PPTX conversion failed`,'err');
+        }
+        return;
+      }
+
       // CSV/TSV — convert to markdown table
       if(ext==='csv'||ext==='tsv'||file.type==='text/csv'){
         const reader=new FileReader();
@@ -6909,8 +7106,29 @@ ${agentNote}`);
         return;
       }
 
+      // HTML files — convert to markdown via turndown
+      if(ext==='html'||ext==='htm'||file.type==='text/html'){
+        const idx=pendingFiles.length;
+        pendingFiles.push({name,type:'document',processing:true,size:file.size});
+        renderFileStack();updateActionBtn();
+        const reader2=new FileReader();
+        reader2.onload=async e=>{
+          try{
+            const md=await htmlFileToMarkdown(e.target.result,name);
+            pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:md};
+            renderFileStack();
+            showToast(`HTML converted: ${name}`,'ok');
+          }catch{
+            pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:e.target.result?.slice(0,100000)};
+            renderFileStack();
+          }
+        };
+        reader2.readAsText(file);
+        return;
+      }
+
       // All other text-based files — read as text document
-      const textExts=['txt','md','js','ts','jsx','tsx','py','rb','go','rs','c','cpp','h','hpp','java','kt','swift','m','css','html','xml','yaml','yml','toml','ini','cfg','env','sh','bash','zsh','sql','r','log','rtf','tex','makefile','dockerfile','gitignore'];
+      const textExts=['txt','md','js','ts','jsx','tsx','py','rb','go','rs','c','cpp','h','hpp','java','kt','swift','m','css','xml','yaml','yml','toml','ini','cfg','env','sh','bash','zsh','sql','r','log','rtf','tex','makefile','dockerfile','gitignore'];
       if(textExts.includes(ext)||file.type?.startsWith('text/')){
         const reader=new FileReader();
         reader.onload=e=>{
