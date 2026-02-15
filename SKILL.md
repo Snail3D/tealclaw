@@ -196,6 +196,14 @@ Only include fields to set/change. TC uses partial merge.
 
 Agent objects: `{ id, name, url, token, active }` -- see llms.txt for details.
 
+**Switching to Agent mode**: Config MUST include `"mode": "agent"` alongside `agents` array.
+Without `"mode": "agent"`, agents get saved but TealClaw stays in direct mode.
+Correct: `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home", "url": "https://host:18789", "token": "tok", "active": true}]}`
+
+**Status pill**: Shows agent name when in agent mode (e.g., "Home"), "Ready"/"Groq" in direct mode.
+
+**Common error**: "Cannot reach gateway" = gateway URL unreachable. Tailscale URLs (*.ts.net) require Tailscale running on the device.
+
 **Gateway + Tailscale**: When using tailscale serve/funnel, gateway `bind` MUST be `"loopback"` (NOT `"tailnet"`). `bind: "tailnet"` crashes the gateway. See llms.txt for full config example.
 
 ## Interactive Components (tc-ui)

@@ -588,7 +588,7 @@ Ready-to-use cfg blocks. Use as starting points, customize per usr.
 | Change voice | `{"ttsVoice": "NEW_VOICE_ID"}` |
 | Switch to AP | `{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}` |
 | Enable TG | `{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}` |
-| Add gateway agent | `{"agents": [{"id": "gw1", "name": "Home Server", "url": "https://gw.tealclaw.ai", "token": "abc123", "active": true}]}` |
+| Switch to Agent mode | `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home Server", "url": "https://gw.example.com", "token": "abc123", "active": true}]}` |
 | Image gen | `{"imageGenUrl": "https://api.together.xyz/v1/images/generations", "imageGenModel": "black-forest-labs/FLUX.1-schnell", "imageGenSize": "1024x1024"}` |
 | Save EL credits | `{"ttsAutoPlay": false}` |
 | Custom prompt | `{"sysPrompt": "You are a pirate who speaks in nautical metaphors."}` |
@@ -955,6 +955,54 @@ Browser --> TG Bot API (msg forwarding)
 
 No server-side processing. tealclaw.ai serves only static files.
 All API keys stay in usr's browser LS.
+
+
+## Agent Mode Setup (OpenClaw Gateway)
+
+Agent mode routes all chat through an OpenClaw gateway instead of calling
+provider APIs directly. This enables shared context across channels.
+
+### How to enable agent mode
+
+The user must paste a JSON config with BOTH `mode` AND `agents`:
+
+```json
+{
+  "mode": "agent",
+  "agents": [{"id": "home", "name": "Home", "url": "https://gateway-host:18789", "token": "gateway-token-here", "active": true}]
+}
+```
+
+**CRITICAL: `"mode": "agent"` must be included.** Without it, agents get added
+but TealClaw stays in direct mode and won't use the gateway.
+
+### Status pill behavior
+
+- Agent mode active: pill shows agent name (e.g., "Home")
+- Direct mode with OpenRouter key: pill shows "Ready"
+- Direct mode with Groq key only: pill shows "Groq"
+- No keys, no agent: pill shows "Setup"
+
+### Settings UI
+
+Settings > Chat Mode has two buttons: "Direct (Gemini)" and "Agent (OpenClaw)".
+The user can also toggle mode there.
+
+### /keys command
+
+Shows current mode, active agent name + URL, plus all configured keys.
+
+### Common issues
+
+- **"Cannot reach gateway" error**: The gateway URL must be reachable from
+  the user's device. Tailscale URLs (*.ts.net) require Tailscale to be
+  running on the device.
+- **Pill shows "Groq" but config has mode:agent**: If the config paste
+  didn't include `"mode": "agent"`, TealClaw stays in direct mode even
+  though agents are configured. Fix: paste `{"mode": "agent"}` to switch.
+- **"Failed to fetch" in agent mode**: The gateway is unreachable. Check
+  network, Tailscale status, or gateway URL. The error message will show
+  the URL that failed and suggest Tailscale if it's a .ts.net address.
 
 
 ## Supporting the Creator

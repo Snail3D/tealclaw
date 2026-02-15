@@ -1403,8 +1403,15 @@
     function updateStatus(){
       const k=getK();
       const pill=$('pill');
-      if(k.aiKey||k.whisperKey){pill.className='pill ok';$('pillLabel').textContent=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)?'Groq':'Ready'}
-      else{pill.className='pill off';$('pillLabel').textContent='Setup'}
+      if(k.mode==='agent'&&getAgents().some(a=>a.active||a.url)){
+        pill.className='pill ok';
+        const ag=getAgents().find(a=>a.active)||getAgents()[0];
+        $('pillLabel').textContent=ag?.name||'Agent';
+      } else if(k.aiKey||k.whisperKey){
+        pill.className='pill ok';$('pillLabel').textContent=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)?'Groq':'Ready';
+      } else {
+        pill.className='pill off';$('pillLabel').textContent='Setup';
+      }
       // Webhook indicator
       const wb=$('webhookBadge');
       if(wb){k.webhookUrl?wb.classList.remove('hidden'):wb.classList.add('hidden')}
@@ -2458,7 +2465,7 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
 
     async function callAgent(text,imageBase64){
       const agent=getActiveAgent();
-      if(!agent)throw new Error('No agent configured');
+      if(!agent)throw new Error('No agent configured. Open Settings and add a gateway agent, or switch to Direct mode.');
       let content;
       if(imageBase64){
         content=[{type:'text',text:text||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}];
@@ -2466,12 +2473,23 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
         content=text;
       }
       const url=gwUrl(agent.url);
-      const res=await fetch(`${url}/v1/chat/completions`,{
-        method:'POST',
-        headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
-        body:JSON.stringify({messages:[{role:'user',content}],max_tokens:400})
-      });
-      if(!res.ok) throw new Error(`Gateway: ${res.status}`);
+      let res;
+      try{
+        res=await fetch(`${url}/v1/chat/completions`,{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
+          body:JSON.stringify({messages:[{role:'user',content}],max_tokens:400})
+        });
+      }catch(e){
+        // Network error — gateway unreachable
+        const host=new URL(url).hostname;
+        const isTailscale=host.includes('.ts.net')||host.includes('.tail');
+        const hint=isTailscale
+          ?'This is a Tailscale URL — make sure Tailscale is running on this device and you are signed into the same tailnet.'
+          :'Check that the gateway is running and the URL is reachable from this device.';
+        throw new Error(`Cannot reach gateway "${agent.name}" at ${url}. ${hint}`);
+      }
+      if(!res.ok) throw new Error(`Gateway "${agent.name}" returned ${res.status}. Check the gateway logs.`);
       const d=await res.json();
       const c=d.choices?.[0]?.message?.content||'';
       if(c.includes('Unhandled stop reason')) throw new Error('Agent busy, try again');
@@ -3948,10 +3966,12 @@ Rules:
             if(cfg.ttsKey)parts.push('ElevenLabs TTS');
             if(cfg.tgToken)parts.push('Telegram');
             if(cfg.gifEnabled!==undefined)parts.push('GIF reactions');
+            if(cfg.mode)parts.push(`mode: ${cfg.mode}`);
+            const agentNote=cfg.mode==='agent'?'<p>Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway. Make sure the gateway is reachable from this device.</p>':'<p>Your TealClaw has been customized.</p>';
             sysBubble(`<h3>Config Applied!</h3>
 <p>Imported <strong>${count}</strong> settings:</p>
 <p>${parts.join(', ')||'Configuration updated'}</p>
-<p>Your TealClaw has been customized.</p>`);
+${agentNote}`);
             showToast(`Imported ${count} settings`,'ok');
             // Custom greeting after visual config
             if(cfg.botGreeting){
@@ -4052,9 +4072,16 @@ Rules:
         }
         if(cmd==='/keys'){
           const k=getK();
+          const mode=k.mode||'direct';
+          const agents=getAgents();
+          const activeAg=agents.find(a=>a.active)||agents[0];
           const lines=[];
+          lines.push(`Mode: <strong>${mode==='agent'?'Agent (Gateway)':'Direct'}</strong>`);
+          if(mode==='agent'&&activeAg){
+            lines.push(`Agent: <strong>${esc(activeAg.name)}</strong> -- <code>${esc(activeAg.url||'no url')}</code>`);
+          }
           lines.push(k.aiKey?`AI: <strong>OpenRouter</strong> (${k.aiKey.slice(0,8)}...)`:'AI: <strong>not set</strong>'+(k.whisperKey?' (using Groq fallback)':''));
-          lines.push(`Model: <code>${k.aiModel||'google/gemini-2.5-flash-preview'}</code>`);
+          if(mode==='direct')lines.push(`Model: <code>${k.aiModel||'google/gemini-2.5-flash-preview'}</code>`);
           lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>'+(k.aiProvider==='groq'?' (using AI key)':''));
           lines.push(k.ttsKey?'Voice Out: <strong>ElevenLabs</strong> (set)':'Voice Out: <strong>not set</strong> (text-only)');
           lines.push(k.tgToken&&k.tgChatId?`Telegram: <strong>${k.tgEnabled?'active':'configured (off)'}</strong>`:'Telegram: <strong>not set</strong>');
