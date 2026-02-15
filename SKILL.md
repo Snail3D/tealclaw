@@ -422,8 +422,17 @@ Agents control TC via ```tc-action blocks in rsp. Parsed, executed, stripped fro
 | `style` | `vars: {"--teal": "#f00"}` | Update CSS vars |
 | `navigate` | `target` (settings/new-chat) | Navigate UI |
 | `bubble` | `html` or `text` | Inject system bubble |
+| `video` | `url, title, live, muted` | Embed video stream (HLS/MP4/WebM). Auto-PiP on scroll. |
 
 Multiple blocks per rsp OK -- execute sequentially.
+
+### Video Streaming Example
+````
+```tc-action
+{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}
+```
+````
+Embeds a live video player in chat. When user scrolls away, video auto-enters a draggable floating PiP mini-player. Controls: mute, PiP, close, back-to-video.
 
 ## Smart Paste
 

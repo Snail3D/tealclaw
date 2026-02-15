@@ -146,7 +146,9 @@ Example first-time cfg:
 
 - **CODE COPY** -- Every code block gets a floating Copy btn.
 
-- **MESSAGE SEARCH** -- Cmd/Ctrl+F or search icon. Matching bubbles highlighted.
+- **MESSAGE SEARCH** -- Cmd/Ctrl+F or search icon. Two modes: text (Aa) and media (image icon). Media mode finds bubbles containing images, videos, or audio. Optional text filter narrows media results.
+
+- **VIDEO STREAMING** -- Agents stream video feeds into chat via tc-action type "video". Supports HLS (.m3u8), MP4, WebM. Auto-PiP: video floats as draggable mini player when scrolled out of view. Controls: mute/unmute, PiP toggle, close, back-to-video.
 
 - **FONTS** -- 6 built-in: System Default, Inter, Georgia, JetBrains Mono, Nunito, Space Grotesk. Set via fontFamily.
 
@@ -219,6 +221,10 @@ Example first-time cfg:
                Opens settings sheet or creates new conversation.
     bubble   -- {"type":"bubble","text":"md here"} or {"html":"<h3>Hi</h3>"}
                Injects a system information bubble.
+    video    -- {"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true,"muted":true}
+               Embeds a video player in chat. Supports HLS (.m3u8), MP4, WebM.
+               Auto-enters Picture-in-Picture when user scrolls away.
+               PiP is draggable, has mute/close/back-to-video controls.
 
   Example -- text + actions in one rsp:
     Here is your new purple theme!
