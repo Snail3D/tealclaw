@@ -4426,6 +4426,7 @@ RULES:
             if(pk.autoScroll!==false)snapScrollToBottom(scroll2);
           }).then(aiResult=>{
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+            if(aiText==='__NO_KEY__'){chatHistory.pop();sysBubble(`<p>I need an AI key to respond. Paste one of these:</p><ul><li><a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a> -- <code>sk-or-v1-...</code></li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- <code>gsk_...</code> (free)</li></ul>`);return}
             let displayText=aiText||'How can I help you with TealClaw?';
             const{cleanText,actions}=parseTcActions(displayText);
             if(actions.length){displayText=cleanText;executeTcActions(actions).catch(()=>{})}
@@ -4441,6 +4442,7 @@ RULES:
           callAI(helpMsg,null).then(aiResult=>{
             removeTyping();
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+            if(aiText==='__NO_KEY__'){sysBubble(`<p>I need an AI key to respond. Paste one of these:</p><ul><li><a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a> -- <code>sk-or-v1-...</code></li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- <code>gsk_...</code> (free)</li></ul>`);return}
             let displayText=aiText||'How can I help you with TealClaw?';
             const{cleanText,actions}=parseTcActions(displayText);
             if(actions.length){displayText=cleanText;executeTcActions(actions).catch(()=>{})}
@@ -6295,7 +6297,7 @@ Rules:
 
           // GIF overlay
           if(pk.gifEnabled!==false){
-            const{cleanText,gifQuery}=parseGifTag(aiText);displayText=cleanText;
+            const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
           }
 
