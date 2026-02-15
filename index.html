@@ -2867,8 +2867,18 @@ Rules:
       // Chat commands
       if(text.startsWith('/')){
         const cmd=text.toLowerCase();
+        const isAgentMode=getK().mode==='agent'&&getActiveAgent();
+        // TealClaw-only commands (always handle locally)
+        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/imagine','/telegram','/help'];
+        const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
+        // In agent mode, pass unrecognized commands straight to the gateway
+        if(isAgentMode&&!isTcCommand){
+          const imageNote=images.length>1?` [${images.length} images attached]`:'';
+          pipeline(text+imageNote,firstImage);
+          return;
+        }
         if(cmd==='/help'){
-          sysBubble(`<h3>Commands</h3>
+          const helpHtml=`<h3>TealClaw Commands</h3>
 <ul>
 <li><code>/setup</code> -- restart the setup wizard</li>
 <li><code>/research query</code> -- deep research report (GROQ-powered)</li>
@@ -2876,16 +2886,20 @@ Rules:
 <li><code>/export</code> -- download chat as markdown file</li>
 <li><code>/profile save|load|list|delete name</code> -- manage config profiles</li>
 <li><code>/share</code> -- create an encrypted share link (includes API keys, protected by passphrase)</li>
-<li><code>/qr</code> -- generate QR code to share your config (visual settings only, no keys)</li>
+<li><code>/qr</code> -- generate encrypted QR code to share your config</li>
 <li><code>/telegram</code> -- set up Telegram forwarding</li>
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear chat history</li>
 <li><code>/voice</code> -- change TTS voice</li>
 <li><code>/template</code> -- browse and apply style templates</li>
-</ul>
-<p>You can also paste any API key or JSON config directly in the chat.</p>
+</ul>`;
+          if(isAgentMode){
+            sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
+          } else {
+            sysBubble(helpHtml+`<p>You can also paste any API key or JSON config directly in the chat.</p>
 <p><strong>Tips:</strong> Attach an image with <code>/research</code> for visual analysis. Use <code>/qr</code> to set up another device instantly. Try <code>/template</code> for instant visual makeovers.</p>`);
+          }
           return;
         }
         if(cmd==='/setup'){
