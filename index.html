@@ -400,6 +400,11 @@
     .code-block-wrap:hover .code-copy-btn{opacity:1}
     .code-block-wrap .code-copy-btn:hover{border-color:var(--teal);color:var(--teal)}
     .code-block-wrap .code-copy-btn.copied{background:var(--ok);color:#fff;border-color:var(--ok)}
+    .mermaid-block{margin:12px 0;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);overflow-x:auto;text-align:center}
+    .mermaid-block svg{max-width:100%;height:auto}
+    .mermaid-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-3);font-size:12px;padding:20px 0}
+    .mermaid-error{text-align:left}
+    .mermaid-err-msg{font-size:11px;color:var(--err);margin-top:6px;text-align:center}
 
     /* ── Collapsible Details in Markdown ─────────────── */
     .chat-bubble .md-content details{border:1px solid var(--border);border-radius:var(--r-md);margin:6px 0;overflow:hidden}
@@ -839,6 +844,10 @@
     function renderMd(text){
       if(!text)return '';
       let html=esc(text);
+
+      // Mermaid diagrams — render as special container (before generic code blocks)
+      html=html.replace(/```mermaid\n([\s\S]*?)```/g,(m,code)=>
+        `<div class="mermaid-block" data-mermaid="${btoa(unescape(encodeURIComponent(code.trim())))}"><div class="mermaid-loading"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg> Rendering diagram...</div></div>`);
 
       // Code blocks (``` ... ```) - must be first
       html=html.replace(/```(\w*)\n([\s\S]*?)```/g,(m,lang,code)=>
@@ -1310,6 +1319,12 @@
       const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
       document.documentElement.setAttribute('data-theme',n);localStorage.setItem('tc-theme',n);
       if(typeof updateThemeColor==='function')updateThemeColor();
+      // Re-init mermaid theme on toggle
+      if(mermaidLoaded&&window.mermaid){
+        window.mermaid.initialize({startOnLoad:false,theme:n==='dark'?'dark':'default',securityLevel:'strict'});
+        document.querySelectorAll('.mermaid-block.rendered').forEach(b=>b.classList.remove('rendered'));
+        renderMermaidBlocks($('chatScroll')).catch(()=>{});
+      }
     });
 
     // ── About Modal ──────────────────────────────────
@@ -2089,6 +2104,9 @@
         });
         wrap.appendChild(btn);
       });
+
+      // Render mermaid diagrams
+      renderMermaidBlocks(s).catch(()=>{});
 
       // Apply saved tc-ui selections
       chatHistory.forEach((m,i)=>{if(m.tcSelections)applyTcSelections(s,i)});
@@ -3096,6 +3114,36 @@ Rules:
         try{return katex.renderToString(tex.trim(),{displayMode:false,throwOnError:false})}catch{return m}
       });
       return html;
+    }
+
+    // ── Mermaid Diagrams ──────────────────────────────────
+    let mermaidLoaded=false;
+    async function loadMermaid(){
+      if(mermaidLoaded)return;
+      await loadScript('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js');
+      const theme=document.documentElement.getAttribute('data-theme')==='dark'?'dark':'default';
+      window.mermaid.initialize({startOnLoad:false,theme,securityLevel:'strict',fontFamily:'var(--font)',themeVariables:{
+        primaryColor:'var(--teal)',primaryTextColor:'var(--text)',lineColor:'var(--text-3)',secondaryColor:'var(--bg-card)',tertiaryColor:'var(--bg-input)',
+        primaryBorderColor:'var(--border)',noteBkgColor:'var(--bg-card)',noteTextColor:'var(--text)',sectionBkgColor:'var(--bg-card)'
+      }});
+      mermaidLoaded=true;
+    }
+    async function renderMermaidBlocks(container){
+      const blocks=container.querySelectorAll('.mermaid-block:not(.rendered)');
+      if(!blocks.length)return;
+      await loadMermaid();
+      for(const block of blocks){
+        try{
+          const src=decodeURIComponent(escape(atob(block.dataset.mermaid)));
+          const id='mermaid-'+Math.random().toString(36).slice(2,9);
+          const{svg}=await window.mermaid.render(id,src);
+          block.innerHTML=svg;
+          block.classList.add('rendered');
+        }catch(e){
+          block.innerHTML=`<pre class="mermaid-error" data-lang="mermaid"><code>${esc(decodeURIComponent(escape(atob(block.dataset.mermaid))))}</code></pre><div class="mermaid-err-msg">Diagram error: ${esc(e.message||'Parse failed')}</div>`;
+          block.classList.add('rendered');
+        }
+      }
     }
 
     // ── Streaming AI Call ────────────────────────────────
