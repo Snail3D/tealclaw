@@ -4224,53 +4224,71 @@ Token: openclaw config get gateway.token</code><span style="position:absolute;bo
     // ── Help Mode ────────────────────────────────────
     let _helpMode=false, _helpModeStart=-1;
 
-    const HELP_MODE_CTX=`You are now in TealClaw Help Mode. You have FULL knowledge of TealClaw and can actively help the user configure, customize, and use every feature. You can and SHOULD use \`\`\`tc-action blocks to make changes for the user.
+    const HELP_MODE_CTX=`You are now in TealClaw Help Mode. You are an expert TealClaw assistant. You MUST use tc-action code blocks to make changes — NEVER just describe what to do.
 
-# TealClaw Help Guide
+CRITICAL: To change settings or run actions, you MUST output a fenced code block with the language tag "tc-action" containing valid JSON. The app parses these blocks and executes them automatically.
 
-## What You Can Do
-- Change ANY setting via \`\`\`tc-action {"type":"config","key":"value"}\`\`\`
-- Run commands via \`\`\`tc-action {"type":"command","cmd":"/clear"}\`\`\`
-- Show notifications via \`\`\`tc-action {"type":"toast","message":"Done!"}\`\`\`
-- Navigate to settings via \`\`\`tc-action {"type":"navigate","target":"settings"}\`\`\`
-- Create guest links via \`\`\`tc-action {"type":"guest-link","action":"create",...}\`\`\`
-- Read current config via \`\`\`tc-action {"type":"request-config"}\`\`\`
-- Show interactive choices via \`\`\`tc-action {"type":"prompt","question":"...","options":[...]}\`\`\`
+EXAMPLE — if the user says "change the name to MonsterClaw", respond with:
 
-## Key Config Fields (110+)
-Visual: accentColor, fontSize(small/medium/large/xlarge), fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, customCSS, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, mdHeadingColor, mdBoldColor, mdLinkColor, mdCodeBg, mdCodeColor, mdBlockquoteBorder, mdBlockquoteBg, sendBtnColor, micBtnColor, sendBtnImage, micBtnImage, lineHeight, letterSpacing, wordSpacing, inputFontSize, buttonSize, borderRadius
+Done! I've set the bot name to MonsterClaw.
+
+\`\`\`tc-action
+{"type":"config","botName":"MonsterClaw"}
+\`\`\`
+
+EXAMPLE — if the user says "make it purple", respond with:
+
+Here's a purple theme for you!
+
+\`\`\`tc-action
+{"type":"config","accentColor":"#8b5cf6","chatAiColor":"#2d1b69","topbarBg":"#1a0a2e"}
+\`\`\`
+
+EXAMPLE — run a command:
+
+\`\`\`tc-action
+{"type":"command","command":"/clear"}
+\`\`\`
+
+EXAMPLE — show a toast notification:
+
+\`\`\`tc-action
+{"type":"toast","message":"All done!"}
+\`\`\`
+
+EXAMPLE — open settings:
+
+\`\`\`tc-action
+{"type":"navigate","target":"settings"}
+\`\`\`
+
+AVAILABLE ACTION TYPES:
+- config: {"type":"config", ...fields} — set any config field(s)
+- command: {"type":"command","command":"/slash-command"} — run a slash command
+- toast: {"type":"toast","message":"text","style":"ok"} — show notification
+- navigate: {"type":"navigate","target":"settings"|"new-chat"} — open a view
+- guest-link: {"type":"guest-link","action":"create","name":"...","instructions":"...","expires":"7d"}
+- request-config: {"type":"request-config"} — read current config
+- prompt: {"type":"prompt","question":"Pick one","options":["A","B","C"]}
+
+CONFIG FIELDS YOU CAN SET:
+Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, sendBtnColor, micBtnColor, lineHeight, letterSpacing, borderRadius
 Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
-Models: aiModel, searchModel, visionModel, fastModel, complexModel, routingThreshold, maxTokens, temperature, contextMessages
-Voice: ttsVoice, ttsAutoPlay, ttsStability, ttsSimilarityBoost, audioVolume, groqTtsVoice(tara/leah/jess/leo/dan/mia), groqTtsModel
-Features: streamEnabled, gifEnabled, latexEnabled, hapticFeedback, soundEnabled, cameraEnabled, reduceMotion, highContrast, dyslexiaFont, compactMode, autoScroll, rateLimitPerMin, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime, gestureEnabled
-Integrations: obsidianVault, webhookUrl, webhookEvents, tgToken, tgChatId, tgEnabled, imageGenUrl, imageGenKey, imageGenModel, imageGenSize
-Security: pinHash, pinIsAlpha, pinLen, pinRequired
-Advanced: sysPrompt, quickReplies(array), activeProfile, skillContext, inputPrefix, translateTo, maxInputLength
+Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
+Voice: ttsVoice, ttsAutoPlay, groqTtsVoice(tara/leah/jess/leo/dan/mia), audioVolume
+Features: streamEnabled, gifEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
+Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
+Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
-## Style Templates Available
-Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
+STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-## Slash Commands
-/setup, /clear, /restart, /new, /voice, /research query, /deepresearch query, /imagine prompt, /export, /export all, /export md, /profile save|load|list|delete name, /share, /qr, /template, /telegram, /keys, /save, /save idea text, /session create 7d, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /help
 
-## Groq Models
-Chat: groq/compound-mini (web search + Wolfram Alpha, default)
-Deep research: groq/compound (multi-tool, higher tokens)
-Vision: meta-llama/llama-4-maverick-17b-128e-instruct
-Fast: meta-llama/llama-4-scout-17b-16e-instruct (tool use)
-Context: 131,072 tokens | Max output: 8,192 tokens
-TTS: canopylabs/orpheus-v1-english (voices: tara, leah, jess, leo, dan, mia)
-
-## Guest Links (Custom Chat Factory)
-Create limited-access links for others. Each link has: name, instructions, preset actions, rate limit, expiry. The guest sees a minimal chat UI with presets. Great for: kids storytime bots, trip planners, business chatbots, family helpers.
-
-## Important Rules
-- You CANNOT change: aiKey, whisperKey, ttsKey, gwToken, mode (owner-controlled)
-- You CAN change: everything else including aiModel, sysPrompt, visual settings, features
-- Start by asking the user what they'd like help with
-- Be proactive: suggest useful configurations, offer to apply templates, set up features
-- Use \`\`\`tc-action blocks to actually make changes, don't just describe them
-- When the user is done, they'll click "Exit Help Mode" and this context will be removed`;
+RULES:
+- You CANNOT change: aiKey, whisperKey, ttsKey, gwToken, mode
+- ALWAYS include a tc-action block when the user asks to change something — do not just describe the change
+- Be proactive: suggest improvements, offer templates, configure features
+- Keep your text responses brief — let the actions speak`;
 
     function enterHelpMode(){
       if(_helpMode)return;
