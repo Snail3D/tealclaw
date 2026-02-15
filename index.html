@@ -539,9 +539,9 @@
     .chat-bubble.search-hit{outline:2px solid var(--teal);outline-offset:2px}
 
     /* ── About Modal ─────────────────────────────────── */
-    .about-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity 0.3s}
+    .about-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity 0.3s;overflow-y:auto;padding:20px 0;-webkit-overflow-scrolling:touch}
     .about-overlay.hidden{opacity:0;pointer-events:none;display:none}
-    .about-modal{max-width:420px;width:90%;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 24px;position:relative;animation:bubble-scale-in 0.3s ease-out}
+    .about-modal{max-width:420px;width:90%;max-height:calc(100vh - 40px);overflow-y:auto;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 24px;position:relative;animation:bubble-scale-in 0.3s ease-out;margin:auto}
     .about-modal-close{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:none;background:var(--bg-hover);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;line-height:1}
     .about-modal h2{font-size:18px;font-weight:700;color:var(--teal);margin-bottom:4px}
     .about-modal .about-subtitle{font-size:11px;color:var(--text-3);margin-bottom:16px}
@@ -962,7 +962,20 @@
         <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:6px;display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> More than a chatbot</div>
         <p style="font-size:11px;line-height:1.6;margin:0;color:var(--text-2)">Connect to <strong style="color:var(--text)">OpenClaw</strong> and TealClaw becomes a full control surface — your AI can manage smart devices, run automations, monitor cameras, stream video, and execute real-world actions through the <code style="font-size:10px;padding:1px 4px;background:var(--bg-hover);border-radius:4px">tc-action</code> protocol. Create guest links for family. Deep research with live sources. It's an AI dashboard that does whatever you build it to do.</p>
       </div>
-      <p style="margin-top:12px;padding:10px;background:var(--bg-hover);border-radius:var(--r-md);font-size:11px;line-height:1.6;color:var(--text-2)"><strong style="color:var(--text)">For sale: $2,000,000.</strong> If you have that kind of chedda', you can figure out how to get a hold of me. The terms are simple: TealClaw remains free and anonymous forever. But right here, in this little heart menu, you can put whatever you want (if it's Godly). That's the deal.</p>
+      <p style="margin-top:12px;padding:10px;background:var(--bg-hover);border-radius:var(--r-md);font-size:11px;line-height:1.6;color:var(--text-2)"><strong style="color:var(--text)">For sale: <span id="forSalePrice">$2,000,000</span>.</strong> If you have that kind of chedda', you can figure out how to get a hold of me. The terms are simple: TealClaw remains free and anonymous forever. But right here, in this little heart menu, you can put whatever you want (if it's Godly). That's the deal.</p>
+      <div id="forSaleBtn" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 18px;margin:10px 0;background:linear-gradient(135deg,#f59e0b,#d97706);border:1px solid rgba(217,119,6,0.4);border-radius:var(--r-md);cursor:default;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 60%);pointer-events:none"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;position:relative">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span id="forSaleBtnPrice" style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.5px;text-shadow:0 1px 2px rgba(0,0,0,0.2)">$2,000,000</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,0.85)">
+            <span>Next raise to <strong id="forSaleNext" style="color:#fff">$3,000,000</strong> in</span>
+            <span id="forSaleCountdown" style="font-variant-numeric:tabular-nums;font-weight:600;color:#fff;background:rgba(0,0,0,0.2);padding:2px 6px;border-radius:4px;font-size:10px;letter-spacing:0.5px">--d --h --m --s</span>
+          </div>
+        </div>
+      </div>
       <a class="about-donate" href="https://buymeacoffee.com/snail3d" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
         Buy Snail a Coffee
@@ -1503,6 +1516,8 @@
 
     async function switchConversation(id){
       if(id===getActiveConvId())return;
+      // Flush auto-save for current conversation before switching
+      await ObsidianSync.flush().catch(()=>{});
       // Save current
       const curId=getActiveConvId();
       if(curId)await ConvDB.save(curId,chatHistory).catch(()=>{});
@@ -1514,6 +1529,7 @@
       renderChat();
       updateConvTitle(record?.title||'New Chat');
       closeConvDropdown();
+      ObsidianSync.resetTracking();
     }
 
     async function deleteConversation(id){
@@ -1917,6 +1933,30 @@
     $('aboutClose').addEventListener('click',()=>$('aboutOverlay').classList.add('hidden'));
     $('aboutOverlay').addEventListener('click',e=>{if(e.target===$('aboutOverlay'))$('aboutOverlay').classList.add('hidden')});
 
+    // ── For Sale Price Escalation ─────────────────────
+    (function initForSalePrice(){
+      const START=new Date('2026-02-15T00:00:00'),BASE=2e6,STEP=1e6,PERIOD=2;
+      function update(){
+        const now=new Date();
+        let months=(now.getFullYear()-START.getFullYear())*12+(now.getMonth()-START.getMonth());
+        if(now.getDate()<START.getDate()) months--;
+        const periods=Math.max(0,Math.floor(months/PERIOD));
+        const price=BASE+periods*STEP;
+        const nextDate=new Date(START);
+        nextDate.setMonth(nextDate.getMonth()+(periods+1)*PERIOD);
+        const diff=Math.max(0,nextDate-now);
+        const d=Math.floor(diff/864e5),h=Math.floor(diff%864e5/36e5),m=Math.floor(diff%36e5/6e4),s=Math.floor(diff%6e4/1e3);
+        const fmt=n=>'$'+n.toLocaleString();
+        const el=id=>document.getElementById(id);
+        el('forSalePrice').textContent=fmt(price);
+        el('forSaleBtnPrice').textContent=fmt(price);
+        el('forSaleNext').textContent=fmt(price+STEP);
+        el('forSaleCountdown').textContent=d+'d '+h+'h '+m+'m '+s+'s';
+      }
+      update();
+      setInterval(update,1000);
+    })();
+
     // ── Bottom Sheet ───────────────────────────────────
     const sheetBackdrop=$('sheetBackdrop'), settingsSheet=$('settingsSheet');
 
@@ -2134,6 +2174,17 @@
             <button class="btn btn-teal btn-sm" id="sheetObsidianSave">Set</button>
           </div>
           <div style="font-size:9px;color:var(--text-3);margin-top:3px">Used by /save command for obsidian:// links</div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Obsidian Auto-Save</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-2);cursor:pointer">
+              <input type="checkbox" id="sheetObsidianAutoSave" ${k.obsidianAutoSave?'checked':''} style="accent-color:var(--teal)">
+              Auto-save conversations to folder
+            </label>
+            <button class="btn btn-teal btn-sm" id="sheetObsidianPickFolder" style="font-size:10px">${k.obsidianAutoSave?'Change Folder':'Pick Folder'}</button>
+          </div>
+          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Saves Markdown files via File System Access API (Chrome/Edge)</div>
         </div>
         <div style="margin-bottom:10px">
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Quick Replies</div>
@@ -2622,6 +2673,12 @@
         const val=$('sheetBody').querySelector('#sheetObsidianVault').value.trim();
         const k2=getK();if(val){k2.obsidianVault=val}else{delete k2.obsidianVault}setK(k2);showToast(`Vault: ${val||'ObsidianVault'}`,'ok');
       });
+      $('sheetBody').querySelector('#sheetObsidianAutoSave')?.addEventListener('change',e=>{
+        const k2=getK();k2.obsidianAutoSave=e.target.checked;setK(k2);
+        if(e.target.checked&&!ObsidianSync._handle)ObsidianSync.pickFolder();
+        else showToast(e.target.checked?'Auto-save enabled':'Auto-save disabled','ok');
+      });
+      $('sheetBody').querySelector('#sheetObsidianPickFolder')?.addEventListener('click',()=>ObsidianSync.pickFolder());
       $('sheetBody').querySelector('#sheetQuickRepliesSave')?.addEventListener('click',()=>{
         const val=$('sheetBody').querySelector('#sheetQuickReplies').value.trim();
         const k2=getK();if(val){k2.quickReplies=val.split(',').map(s=>s.trim()).filter(Boolean)}else{delete k2.quickReplies}setK(k2);showToast('Quick replies saved','ok');
@@ -3572,6 +3629,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       if(!extra.synced)broadcastChatSync(entry);
       // Auto-title conversation from first user message
       if(role==='user'&&chatHistory.filter(m=>m.role==='user').length===1)autoTitleConversation(text);
+      // Obsidian auto-save
+      ObsidianSync.schedule();
       return entry;
     }
 
@@ -3909,6 +3968,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       });
       setChat(chatHistory);
       renderChat();
+      ObsidianSync.schedule();
       showToast(`Synced from ${devName}`,'ok');
     }
 
@@ -4724,6 +4784,126 @@ Rules:
       }
       return md;
     }
+
+    // ── Obsidian Auto-Save (File System Access API) ────
+    const ObsidianSync={
+      _handle:null,_timer:null,_lastLen:0,_dbName:'tealclaw-obsidian',
+      // Store/retrieve directory handle from its own IDB
+      async _openHandleDB(){
+        return new Promise((res,rej)=>{
+          const req=indexedDB.open(this._dbName,1);
+          req.onupgradeneeded=e=>e.target.result.createObjectStore('handles');
+          req.onsuccess=e=>res(e.target.result);
+          req.onerror=()=>rej(req.error);
+        });
+      },
+      async storeHandle(handle){
+        const db=await this._openHandleDB();
+        return new Promise((res,rej)=>{
+          const tx=db.transaction('handles','readwrite');
+          tx.objectStore('handles').put(handle,'vault');
+          tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);
+        });
+      },
+      async loadHandle(){
+        try{
+          const db=await this._openHandleDB();
+          return new Promise((res,rej)=>{
+            const tx=db.transaction('handles','readonly');
+            const req=tx.objectStore('handles').get('vault');
+            req.onsuccess=()=>res(req.result||null);
+            req.onerror=()=>rej(req.error);
+          });
+        }catch{return null}
+      },
+      async getHandle(){
+        if(this._handle)return this._handle;
+        const h=await this.loadHandle();
+        if(!h)return null;
+        // Verify we still have permission
+        if(await h.queryPermission({mode:'readwrite'})==='granted'){this._handle=h;return h}
+        // Try requesting (needs user gesture context for the first time after reload)
+        try{if(await h.requestPermission({mode:'readwrite'})==='granted'){this._handle=h;return h}}catch{}
+        return null;
+      },
+      async pickFolder(){
+        if(!window.showDirectoryPicker){showToast('Browser doesn\'t support folder access — use Chrome or Edge','err');return null}
+        try{
+          const handle=await window.showDirectoryPicker({id:'obsidian-vault',mode:'readwrite',startIn:'documents'});
+          this._handle=handle;
+          await this.storeHandle(handle);
+          const k=getK();k.obsidianAutoSave=true;setK(k);
+          showToast(`Auto-save: ${handle.name}/TealClaw/`,'ok');
+          return handle;
+        }catch(e){
+          if(e.name!=='AbortError')showToast('Folder access denied','err');
+          return null;
+        }
+      },
+      async write(convId,messages,title){
+        const handle=await this.getHandle();
+        if(!handle||!messages.length)return;
+        try{
+          const tcDir=await handle.getDirectoryHandle('TealClaw',{create:true});
+          const k=getK(),bot=k.botName||'TealClaw';
+          const slug=(title||'Chat').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'-').slice(0,40);
+          const fileName=`TC-${slug}-${convId}.md`;
+          const created=messages[0]?.time||new Date().toISOString();
+          const updated=new Date().toISOString();
+          // Build full document
+          let md=`---\ntags:\n  - tealclaw\n  - tc-md\ntc-id: "${convId}"\ntc-title: "${(title||'Chat').replace(/"/g,'\\"')}"\ncreated: ${created}\nupdated: ${updated}\nsource: "[[TealClaw]]"\n---\n\n# ${title||'Chat'}\n\n`;
+          for(const m of messages){
+            const role=m.role==='user'?'You':m.role==='system'?'System':bot;
+            const time=m.time?' ('+m.time+')':'';
+            md+=`### ${role}${time}\n${m.text||''}\n\n`;
+          }
+          md+=`---\n*Auto-saved by TealClaw · ${updated}*\n`;
+          const file=await tcDir.getFileHandle(fileName,{create:true});
+          const wr=await file.createWritable();
+          await wr.write(md);
+          await wr.close();
+        }catch(e){
+          // Silent fail for auto-save — don't disrupt the user
+          console.warn('[ObsidianSync] write failed:',e.message);
+        }
+      },
+      schedule(){
+        if(!getK().obsidianAutoSave)return;
+        if(this._timer)clearTimeout(this._timer);
+        this._timer=setTimeout(()=>this.flush(),2000);
+      },
+      async flush(){
+        if(!getK().obsidianAutoSave)return;
+        const convId=getActiveConvId();
+        if(!convId||chatHistory.length===0)return;
+        if(chatHistory.length===this._lastLen)return; // nothing new
+        this._lastLen=chatHistory.length;
+        const title=(chatHistory.find(m=>m.role==='user')?.text||'Chat').slice(0,60);
+        await this.write(convId,chatHistory,title);
+      },
+      async listSaved(){
+        const handle=await this.getHandle();
+        if(!handle)return[];
+        try{
+          const tcDir=await handle.getDirectoryHandle('TealClaw');
+          const files=[];
+          for await(const entry of tcDir.values()){
+            if(entry.kind==='file'&&entry.name.startsWith('TC-')&&entry.name.endsWith('.md')){
+              files.push(entry);
+            }
+          }
+          return files;
+        }catch{return[]}
+      },
+      async readFile(fileHandle){
+        try{
+          const file=await fileHandle.getFile();
+          return await file.text();
+        }catch{return null}
+      },
+      // Reset saved length when switching conversations
+      resetTracking(){this._lastLen=0}
+    };
 
     // ── HTML to Markdown converter ──────────────────────
     function htmlToMd(html){
