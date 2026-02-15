@@ -134,6 +134,17 @@
 
     /* ── Chat Layout ───────────────────────────────────── */
     .chat-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 16px;max-width:760px;width:100%;margin:0 auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+    /* ── TTS Mute Toggle ────────────────────────────────── */
+    .tts-mute-btn{position:absolute;top:8px;right:12px;z-index:40;width:32px;height:32px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-3);display:none;align-items:center;justify-content:center;cursor:pointer;transition:all 0.25s;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+    .tts-mute-btn:hover{border-color:var(--teal);color:var(--teal);transform:scale(1.08)}
+    .tts-mute-btn.visible{display:flex}
+    .tts-mute-btn .tts-mute-on{display:block}
+    .tts-mute-btn .tts-mute-off{display:none}
+    .tts-mute-btn.muted{color:var(--err);border-color:var(--err)}
+    .tts-mute-btn.muted:hover{color:var(--err)}
+    .tts-mute-btn.muted .tts-mute-on{display:none}
+    .tts-mute-btn.muted .tts-mute-off{display:block}
+
     .scroll-anchor{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;width:40px;height:40px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
     .scroll-anchor.visible{opacity:1;pointer-events:auto}
     .scroll-anchor:hover{border-color:var(--teal);color:var(--teal);transform:translateX(-50%) scale(1.08)}
@@ -1035,6 +1046,10 @@
     <button class="search-close" id="searchClose" aria-label="Close search">&times;</button>
   </div>
   <div class="main">
+    <button class="tts-mute-btn" id="ttsMuteBtn" title="Toggle voice" aria-label="Toggle voice output">
+      <svg class="tts-mute-on" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      <svg class="tts-mute-off" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+    </button>
     <div class="chat-scroll" id="chatScroll" role="log" aria-live="polite" aria-label="Chat messages">
       <div class="chat-empty" id="chatEmpty"></div>
     </div>
@@ -1722,6 +1737,8 @@
       // Webhook indicator
       const wb=$('webhookBadge');
       if(wb){k.webhookUrl?wb.classList.remove('hidden'):wb.classList.add('hidden')}
+      // Keep TTS mute button in sync with config
+      updateMuteBtn();
     }
 
     // ── Channel Selector ────────────────────────────────
@@ -3332,13 +3349,28 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     $('enableBtn').addEventListener('click',enableAudio);
     audio.volume=getK().audioVolume!==undefined?getK().audioVolume:0.8;
 
-    // Auto-enable on desktop (no user gesture needed for AudioContext)
-    if(!('ontouchstart' in window)){enableAudio()}
+    // Auto-enable audio when TTS is available (skip overlay gate)
+    if(hasTTS()){enableAudio()}
+    else if(!('ontouchstart' in window)){enableAudio()}
 
     // Belt+suspenders: unlock audio context on any user interaction
     ['touchstart','mousedown','keydown'].forEach(evt=>{
-      document.addEventListener(evt,function unlock(){ensureAudioCtx();document.removeEventListener(evt,unlock)},{once:true});
+      document.addEventListener(evt,function unlock(){ensureAudioCtx();if(hasTTS()&&!audioEnabled)enableAudio();document.removeEventListener(evt,unlock)},{once:true});
     });
+
+    // TTS mute toggle button
+    function updateMuteBtn(){
+      const btn=$('ttsMuteBtn');
+      if(hasTTS()){btn.classList.add('visible')}else{btn.classList.remove('visible')}
+      if(audioEnabled){btn.classList.remove('muted')}else{btn.classList.add('muted')}
+    }
+    $('ttsMuteBtn').addEventListener('click',()=>{
+      audioEnabled=!audioEnabled;
+      if(audioEnabled)ensureAudioCtx();
+      updateMuteBtn();
+      showToast(audioEnabled?'Voice on':'Voice muted','ok');
+    });
+    updateMuteBtn();
 
     // ── Token Usage Display ─────────────────────────────
     function fmtTokens(usage){
@@ -4367,6 +4399,8 @@ Create limited-access links for others. Each link has: name, instructions, prese
       if(!k.sysPrompt)k.sysPrompt='You are a helpful voice assistant. Keep responses concise and conversational (1-3 sentences).';
       setK(k);
       updateStatus();
+      // Auto-enable audio when TTS becomes available after key setup
+      if(hasTTS(k)&&!audioEnabled){enableAudio()}
 
       // Show masked key in user bubble
       const masked=val.slice(0,8)+'...' +val.slice(-4);
