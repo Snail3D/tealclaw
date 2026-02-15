@@ -325,6 +325,12 @@
     .overlay-btn{padding:12px 32px;font-size:13px;font-weight:600;font-family:var(--font);background:var(--teal);color:#fff;border:none;border-radius:var(--r-lg);cursor:pointer}
     .overlay-hint{margin-top:8px;font-size:11px;color:var(--text-3)}
 
+    /* ── Help Mode Banner ─────────────────────────────── */
+    .help-mode-banner{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 16px;background:var(--teal);color:#fff;font-size:12px;font-weight:600;font-family:var(--font);animation:slideDown 0.3s ease-out}
+    .help-mode-banner button{padding:5px 14px;border:1.5px solid rgba(255,255,255,0.6);border-radius:100px;background:transparent;color:#fff;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.2s}
+    .help-mode-banner button:hover{background:rgba(255,255,255,0.15);border-color:#fff}
+    @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+
     /* ── Buy Me a Coffee ──────────────────────────────── */
     .bmc-link{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-2);text-decoration:none;transition:all var(--t)}
     .bmc-link:hover{border-color:#ffdd00;color:#ffdd00;background:rgba(255,221,0,0.08)}
@@ -977,6 +983,9 @@
       <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span><span class="pill-caret"></span>
         <div class="channel-dropdown" id="channelDropdown"></div>
       </div>
+      <button class="icon-btn" id="helpBtn" title="Help" aria-label="Help">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
       <button class="icon-btn" id="searchBtn" title="Search (Ctrl+F)" aria-label="Search messages">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
@@ -1833,6 +1842,42 @@
         document.querySelectorAll('.mermaid-block.rendered').forEach(b=>b.classList.remove('rendered'));
         renderMermaidBlocks($('chatScroll')).catch(()=>{});
       }
+    });
+
+    // ── Help Button ─────────────────────────────────
+    $('helpBtn').addEventListener('click',()=>{
+      const k=getK();
+      const hasAI=!!(k.aiKey||k.whisperKey||(k.mode==='agent'&&getAgents().some(a=>a.url)));
+      if(_helpMode){
+        // Already in help mode — just scroll to top to show banner
+        $('chatScroll').scrollTop=0;return;
+      }
+      if(!hasAI){
+        // No AI connected — guide through key setup
+        sysBubble(`<h3>Get Started</h3>
+<p>To use Help Mode, you need an AI connection first. The fastest way is a free Groq key:</p>
+<ol style="font-size:13px;line-height:1.8">
+<li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">console.groq.com/keys</a></li>
+<li>Sign up (free) and create an API key</li>
+<li>Copy the <code>gsk_...</code> key and paste it right here in this chat</li>
+</ol>
+<p style="font-size:11px;color:var(--text-3)">Groq gives you free chat, vision, voice, TTS, web search, and Wolfram Alpha. Or paste an <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> key for 200+ models.</p>`);
+        return;
+      }
+      // Show help commands with Start Help Mode button
+      sysBubble(`<h3>TealClaw Help</h3>
+<p>Quick commands:</p>
+<table style="width:100%;border-collapse:collapse;font-size:12px;margin:6px 0">
+<tr><td style="padding:3px 6px"><code>/help</code></td><td>Full command list</td></tr>
+<tr><td style="padding:3px 6px"><code>/clear</code></td><td>Clear context window</td></tr>
+<tr><td style="padding:3px 6px"><code>/new</code></td><td>New conversation</td></tr>
+<tr><td style="padding:3px 6px"><code>/voice</code></td><td>Voice settings</td></tr>
+<tr><td style="padding:3px 6px"><code>/template</code></td><td>Style templates</td></tr>
+<tr><td style="padding:3px 6px"><code>/research</code></td><td>Web research</td></tr>
+</table>
+<p style="margin-top:10px">Or let the AI guide you through everything:</p>
+<button onclick="enterHelpMode()" style="display:flex;align-items:center;gap:6px;margin:8px auto 0;padding:10px 20px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.2s"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Start Help Mode</button>
+<p style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px">The AI will have full TealClaw knowledge and can change settings for you</p>`);
     });
 
     // ── About Modal ──────────────────────────────────
@@ -4131,6 +4176,163 @@ Token: openclaw config get gateway.token</code><span style="position:absolute;bo
           });
         });
       },100);
+    }
+
+    // ── Help Mode ────────────────────────────────────
+    let _helpMode=false, _helpModeStart=-1;
+
+    const HELP_MODE_CTX=`You are now in TealClaw Help Mode. You have FULL knowledge of TealClaw and can actively help the user configure, customize, and use every feature. You can and SHOULD use \`\`\`tc-action blocks to make changes for the user.
+
+# TealClaw Help Guide
+
+## What You Can Do
+- Change ANY setting via \`\`\`tc-action {"type":"config","key":"value"}\`\`\`
+- Run commands via \`\`\`tc-action {"type":"command","cmd":"/clear"}\`\`\`
+- Show notifications via \`\`\`tc-action {"type":"toast","message":"Done!"}\`\`\`
+- Navigate to settings via \`\`\`tc-action {"type":"navigate","target":"settings"}\`\`\`
+- Create guest links via \`\`\`tc-action {"type":"guest-link","action":"create",...}\`\`\`
+- Read current config via \`\`\`tc-action {"type":"request-config"}\`\`\`
+- Show interactive choices via \`\`\`tc-action {"type":"prompt","question":"...","options":[...]}\`\`\`
+
+## Key Config Fields (110+)
+Visual: accentColor, fontSize(small/medium/large/xlarge), fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, customCSS, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, mdHeadingColor, mdBoldColor, mdLinkColor, mdCodeBg, mdCodeColor, mdBlockquoteBorder, mdBlockquoteBg, sendBtnColor, micBtnColor, sendBtnImage, micBtnImage, lineHeight, letterSpacing, wordSpacing, inputFontSize, buttonSize, borderRadius
+Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
+Models: aiModel, searchModel, visionModel, fastModel, complexModel, routingThreshold, maxTokens, temperature, contextMessages
+Voice: ttsVoice, ttsAutoPlay, ttsStability, ttsSimilarityBoost, audioVolume, groqTtsVoice(tara/leah/jess/leo/dan/mia), groqTtsModel
+Features: streamEnabled, gifEnabled, latexEnabled, hapticFeedback, soundEnabled, cameraEnabled, reduceMotion, highContrast, dyslexiaFont, compactMode, autoScroll, rateLimitPerMin, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime, gestureEnabled
+Integrations: obsidianVault, webhookUrl, webhookEvents, tgToken, tgChatId, tgEnabled, imageGenUrl, imageGenKey, imageGenModel, imageGenSize
+Security: pinHash, pinIsAlpha, pinLen, pinRequired
+Advanced: sysPrompt, quickReplies(array), activeProfile, skillContext, inputPrefix, translateTo, maxInputLength
+
+## Style Templates Available
+Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
+
+## Slash Commands
+/setup, /clear, /restart, /new, /voice, /research query, /deepresearch query, /imagine prompt, /export, /export all, /export md, /profile save|load|list|delete name, /share, /qr, /template, /telegram, /keys, /save, /save idea text, /session create 7d, /help
+
+## Groq Models
+Chat: groq/compound-mini (web search + Wolfram Alpha, default)
+Deep research: groq/compound (multi-tool, higher tokens)
+Vision: meta-llama/llama-4-maverick-17b-128e-instruct
+Fast: meta-llama/llama-4-scout-17b-16e-instruct (tool use)
+Context: 131,072 tokens | Max output: 8,192 tokens
+TTS: canopylabs/orpheus-v1-english (voices: tara, leah, jess, leo, dan, mia)
+
+## Guest Links (Custom Chat Factory)
+Create limited-access links for others. Each link has: name, instructions, preset actions, rate limit, expiry. The guest sees a minimal chat UI with presets. Great for: kids storytime bots, trip planners, business chatbots, family helpers.
+
+## Important Rules
+- You CANNOT change: aiKey, whisperKey, ttsKey, gwToken, mode (owner-controlled)
+- You CAN change: everything else including aiModel, sysPrompt, visual settings, features
+- Start by asking the user what they'd like help with
+- Be proactive: suggest useful configurations, offer to apply templates, set up features
+- Use \`\`\`tc-action blocks to actually make changes, don't just describe them
+- When the user is done, they'll click "Exit Help Mode" and this context will be removed`;
+
+    function enterHelpMode(){
+      if(_helpMode)return;
+      _helpMode=true;
+      _helpModeStart=chatHistory.length;
+      // Show banner
+      const banner=document.createElement('div');
+      banner.className='help-mode-banner';
+      banner.id='helpModeBanner';
+      banner.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Help Mode Active <button id="exitHelpBtn">Exit Help Mode</button>';
+      const scroll=$('chatScroll');
+      scroll.parentNode.insertBefore(banner,scroll);
+      $('exitHelpBtn').addEventListener('click',exitHelpMode);
+      // Send help context to the model silently
+      const k=getK();
+      if(k.mode==='agent'){
+        // Agent mode: send as a message to the agent
+        const agent=getAgents().find(a=>a.active)||getAgents()[0];
+        if(agent){
+          const conn=agentConnections.get(agent.id);
+          if(conn&&conn.state==='connected'){
+            conn.send(JSON.stringify({type:'chat.send',text:'[SYSTEM] Entering TealClaw Help Mode. Here are your full instructions:\n\n'+HELP_MODE_CTX+'\n\nPlease greet the user and ask what they need help with. You can actively change settings and configure TealClaw for them using tc-action blocks.',idempotencyKey:'help-'+Date.now()}));
+            addBubble('user','[Help Mode activated]',{hidden:true});
+            addTyping();
+          } else {
+            // Not connected — fall back to showing help commands
+            sysBubble('<p>Agent not connected. Connect to your agent first, then try help mode again.</p>');
+            _helpMode=false;_helpModeStart=-1;banner.remove();
+          }
+        }
+      } else {
+        // Direct mode: inject context and send initial message
+        _helpSysBackup=k.sysPrompt||'';
+        k.sysPrompt=(k.sysPrompt||'You are a helpful voice assistant.')+'\n\n'+HELP_MODE_CTX;
+        setK(k);
+        // Trigger a message to the AI
+        const helpMsg='[Help Mode activated — guide me through TealClaw]';
+        addBubble('user',helpMsg);
+        const pk=getK();
+        const useStream=pk.streamEnabled!==false;
+        if(useStream){
+          const streamIdx=chatHistory.length;
+          addBubble('ai','...');
+          const scroll2=$('chatScroll');
+          callAIStream(helpMsg,null,(partial)=>{
+            chatHistory[streamIdx].text=partial;
+            const bubbles=scroll2.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
+            const last=bubbles[bubbles.length-1];
+            if(last){
+              last.classList.add('typing-active');
+              const md=last.querySelector('.md-content');
+              let rendered=renderMd(partial);rendered=renderLatex(rendered);
+              if(md)md.innerHTML=rendered+'<span class="typing-cursor"></span>';
+              else last.innerHTML='<div class="md-content">'+rendered+'<span class="typing-cursor"></span></div><div class="chat-meta">'+(chatHistory[streamIdx].time||'')+'</div>';
+            }
+            if(pk.autoScroll!==false)snapScrollToBottom(scroll2);
+          }).then(aiResult=>{
+            const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+            let displayText=aiText||'How can I help you with TealClaw?';
+            const{cleanText,actions}=parseTcActions(displayText);
+            if(actions.length){displayText=cleanText;executeTcActions(actions).catch(()=>{})}
+            chatHistory[streamIdx].text=displayText;
+            if(actions.length)chatHistory[streamIdx].actionsRun=actions.length;
+            setChat(chatHistory);renderChat();
+          }).catch(()=>{
+            removeTyping();
+            sysBubble('<p>Could not reach the AI. Check your API key and try again.</p>');
+          });
+        } else {
+          addTyping();
+          callAI(helpMsg,null).then(aiResult=>{
+            removeTyping();
+            const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+            let displayText=aiText||'How can I help you with TealClaw?';
+            const{cleanText,actions}=parseTcActions(displayText);
+            if(actions.length){displayText=cleanText;executeTcActions(actions).catch(()=>{})}
+            addBubble('ai',displayText,actions.length?{actionsRun:actions.length}:{});
+          }).catch(()=>{removeTyping();sysBubble('<p>Could not reach the AI.</p>')});
+        }
+      }
+    }
+
+    let _helpSysBackup='';
+
+    function exitHelpMode(){
+      if(!_helpMode)return;
+      _helpMode=false;
+      // Remove banner
+      const banner=$('helpModeBanner');
+      if(banner)banner.remove();
+      // Restore system prompt in direct mode
+      const k=getK();
+      if(k.mode!=='agent'&&_helpSysBackup!==undefined){
+        k.sysPrompt=_helpSysBackup;
+        setK(k);
+        _helpSysBackup='';
+      }
+      // Remove all help mode messages from history
+      if(_helpModeStart>=0&&_helpModeStart<chatHistory.length){
+        chatHistory.splice(_helpModeStart);
+        setChat(chatHistory);
+      }
+      _helpModeStart=-1;
+      renderChat();
+      showToast('Help mode ended','ok');
     }
 
     // Handle key pasted in chat -- returns true if it was a key (intercepted)
