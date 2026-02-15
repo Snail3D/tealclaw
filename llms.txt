@@ -342,6 +342,47 @@ render as interactive SVG diagrams (flowcharts, sequence diagrams, pie
 charts, mindmaps, etc). Lazy-loads Mermaid.js v11 on first encounter.
 Theme syncs with dark/light mode.
 
+AGENT ACTION PROTOCOL (tc-action) -- Agents can control TealClaw in
+real-time by embedding tc-action blocks in responses. Blocks are parsed,
+executed silently, and stripped from the displayed message. The user sees
+a subtle badge showing how many actions ran.
+
+Format: wrap JSON in ```tc-action fences. Multiple blocks per response OK.
+
+Action types:
+  config   -- {"type":"config","data":{"botName":"Reef","tealColor":"#8b5cf6"}}
+             Updates any config field live. All CONFIG_KEYS are supported.
+  command  -- {"type":"command","command":"/save idea user wants X"}
+             Triggers any TealClaw slash command.
+  save     -- {"type":"save","name":"Note Title","folder":"Projects",
+              "content":"# Markdown content","tags":["tag1","tag2"]}
+             Saves directly to Obsidian vault.
+  research -- {"type":"research","query":"quantum computing 2026"}
+             Triggers the Groq-powered research pipeline.
+  toast    -- {"type":"toast","message":"Done!","style":"ok"}
+             Shows a notification. style: ok, err.
+  style    -- {"type":"style","vars":{"--teal":"#f00","--bg-root":"#000"}}
+             Live-update CSS custom properties.
+  navigate -- {"type":"navigate","target":"settings"} or "new-chat"
+             Opens settings sheet or creates new conversation.
+  bubble   -- {"type":"bubble","text":"markdown here"} or {"html":"<h3>Hi</h3>"}
+             Injects a system information bubble.
+
+Example -- agent responds with text AND actions in one message:
+  Here is your new purple theme!
+  ```tc-action
+  {"type":"config","data":{"tealColor":"#8b5cf6","bgColor":"#0a0520"}}
+  ```
+  ```tc-action
+  {"type":"toast","message":"Theme applied!","style":"ok"}
+  ```
+  ```tc-action
+  {"type":"save","name":"Theme Log","folder":"Daily","content":"# Theme\nPurple applied."}
+  ```
+
+The user sees: "Here is your new purple theme!" plus a badge "3 actions executed".
+The config updates live, a toast appears, and a note saves to Obsidian.
+
 CUSTOM CSS -- The ultimate escape hatch. Inject arbitrary CSS rules for
 anything the built-in fields do not cover.
 

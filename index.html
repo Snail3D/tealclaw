@@ -405,6 +405,7 @@
     .mermaid-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-3);font-size:12px;padding:20px 0}
     .mermaid-error{text-align:left}
     .mermaid-err-msg{font-size:11px;color:var(--err);margin-top:6px;text-align:center}
+    .tc-action-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 10px;font-size:10px;font-weight:500;border-radius:100px;background:rgba(13,148,136,0.1);color:var(--teal);letter-spacing:0.02em}
 
     /* ── Collapsible Details in Markdown ─────────────── */
     .chat-bubble .md-content details{border:1px solid var(--border);border-radius:var(--r-md);margin:6px 0;overflow:hidden}
@@ -2070,6 +2071,8 @@
         } else {
           content+=esc(m.text);
         }
+        // Action badge for messages that executed tc-action blocks
+        if(m.actionsRun)content+=`<div class="tc-action-badge">\u26A1 ${m.actionsRun} action${m.actionsRun>1?'s':''} executed</div>`;
         // Show Play/Replay button on AI messages when TTS key is configured
         if(m.role==='ai'&&hasTts){
           if(m.audioUrl){
@@ -3120,6 +3123,108 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
+    // ── Agent Action Protocol (tc-action) ──────────────
+    // Agents embed ```tc-action blocks in responses to control TealClaw.
+    // Parsed, executed, and stripped before display.
+    function parseTcActions(text){
+      const actions=[];
+      const re=/```tc-action\s*([\s\S]*?)```/g;
+      let m;
+      while((m=re.exec(text))!==null){
+        try{actions.push(JSON.parse(m[1].trim()))}catch{}
+      }
+      const cleanText=text.replace(/```tc-action\s*[\s\S]*?```/g,'').trim();
+      return{cleanText,actions};
+    }
+
+    async function executeTcActions(actions){
+      const results=[];
+      for(const action of actions){
+        try{
+          switch(action.type){
+            case 'config':{
+              // Update TealClaw config fields
+              const count=importConfig(action.data||action);
+              applyVisualConfig();updateStatus();renderAgentSelector();renderQuickReplies();
+              results.push({type:'config',ok:true,count});
+              break;
+            }
+            case 'command':{
+              // Trigger a slash command (queued to run after render)
+              const cmd=action.command||action.text||'';
+              if(cmd.startsWith('/')){
+                setTimeout(()=>{$('textIn').value=cmd;send()},300);
+                results.push({type:'command',ok:true,command:cmd});
+              }
+              break;
+            }
+            case 'save':{
+              // Save content to Obsidian
+              const name=action.name||`Agent Note - ${new Date().toISOString().slice(0,10)}`;
+              const folder=action.folder||'Daily';
+              const tags=action.tags||['tealclaw','agent'];
+              const now=new Date().toISOString();
+              let md=`---\ntags: [${tags.join(', ')}]\ncreated: ${now}\nsource: "[[TealClaw]]"\nagent: true\n---\n\n`;
+              md+=(action.content||action.text||'');
+              saveToObsidian(name,md,folder);
+              results.push({type:'save',ok:true,name});
+              break;
+            }
+            case 'research':{
+              // Trigger research pipeline
+              const query=action.query||action.text||'';
+              if(query){
+                setTimeout(()=>researchPipeline(query,null),300);
+                results.push({type:'research',ok:true,query});
+              }
+              break;
+            }
+            case 'toast':{
+              showToast(action.message||action.text||'',action.style||'ok');
+              if(action.style==='err')haptic('error');else haptic('light');
+              results.push({type:'toast',ok:true});
+              break;
+            }
+            case 'style':{
+              // Live visual update — set CSS custom properties directly
+              const root=document.documentElement;
+              if(action.vars&&typeof action.vars==='object'){
+                Object.entries(action.vars).forEach(([k,v])=>{
+                  if(k.startsWith('--'))root.style.setProperty(k,v);
+                });
+              }
+              results.push({type:'style',ok:true});
+              break;
+            }
+            case 'navigate':{
+              // Switch conversation, open settings, etc.
+              if(action.target==='settings'){openSheet()}
+              else if(action.target==='new-chat'){newConversation()}
+              results.push({type:'navigate',ok:true});
+              break;
+            }
+            case 'bubble':{
+              // Inject a system bubble with custom HTML
+              const html=action.html||renderMd(action.text||'');
+              setTimeout(()=>sysBubble(html),200);
+              results.push({type:'bubble',ok:true});
+              break;
+            }
+          }
+        }catch(e){results.push({type:action.type,ok:false,error:e.message})}
+      }
+      return results;
+    }
+
+    // Badge shown on messages that executed actions
+    function renderActionBadge(actions){
+      if(!actions.length)return '';
+      const types=[...new Set(actions.map(a=>a.type))];
+      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD'};
+      const labels=types.map(t=>icons[t]||'\u26A1').join(' ');
+      return `<div class="tc-action-badge" title="${types.length} action${types.length>1?'s':''} executed: ${types.join(', ')}">${labels} ${types.length} action${types.length>1?'s':''}</div>`;
+    }
+
     function detectAndApplyConfig(text){
       // Look for JSON in markdown code blocks or bare JSON objects
       const patterns=[
@@ -3328,11 +3433,15 @@ Rules:
           }
           // Finalize
           let displayText=aiText||'(No response)';
+          // Parse and execute agent actions
+          const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
+          if(tcActions.length){displayText=actionClean;executeTcActions(tcActions).catch(()=>{})}
           if(pk.gifEnabled!==false){
-            const{cleanText,gifQuery}=parseGifTag(aiText);displayText=cleanText;
+            const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
           }
           chatHistory[streamIdx].text=displayText;
+          if(tcActions.length)chatHistory[streamIdx].actionsRun=tcActions.length;
           if(aiUsage)chatHistory[streamIdx].usage=aiUsage;
           setChat(chatHistory);renderChat();
           // Auto-detect and apply TealClaw config in AI response
@@ -3367,8 +3476,12 @@ Rules:
           }
           if(!aiText){addBubble('ai','(No response)');return}
 
-          // GIF overlay
+          // Parse and execute agent actions
           let displayText=aiText;
+          const{cleanText:actionClean2,actions:tcActions2}=parseTcActions(displayText);
+          if(tcActions2.length){displayText=actionClean2;executeTcActions(tcActions2).catch(()=>{})}
+
+          // GIF overlay
           if(pk.gifEnabled!==false){
             const{cleanText,gifQuery}=parseGifTag(aiText);displayText=cleanText;
             searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
