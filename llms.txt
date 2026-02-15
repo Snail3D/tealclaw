@@ -946,11 +946,12 @@ settings, quick replies. Regenerate their full cfg from memory on new devices.
 ## Architecture
 
 ```
-Browser --> OR/GQ/AP (chat completions)
-Browser --> GQ Whisper (voice transcription)
-Browser --> EL (TTS)
-Browser --> OpenClaw Gateway via Cloudflare Tunnel (agent mode, HTTPS)
-Browser --> TG Bot API (msg forwarding)
+Browser --(WebSocket)--> OpenClaw Gateway (agent mode, preferred)
+Browser --(HTTPS)------> OR/GQ/AP (chat completions, direct mode)
+Browser --(HTTPS)------> GQ Whisper (voice transcription)
+Browser --(HTTPS)------> EL (TTS)
+Browser --(HTTPS)------> OpenClaw Gateway (HTTP fallback for non-WS agents)
+Browser --(HTTPS)------> TG Bot API (msg forwarding)
 ```
 
 No server-side processing. tealclaw.ai serves only static files.
@@ -962,6 +963,18 @@ All API keys stay in usr's browser LS.
 Agent mode routes all chat through an OpenClaw gateway instead of calling
 provider APIs directly. This enables shared context across channels.
 
+### Transport: WebSocket (preferred)
+
+TealClaw connects to OpenClaw gateways via **WebSocket** (wss://). This
+bypasses CORS and Private Network Access restrictions that block HTTP
+fetch from tealclaw.ai to Tailscale/private network addresses.
+
+- URLs are auto-converted: https:// -> wss://, http:// -> ws://
+- Full OpenClaw protocol: challenge/connect handshake, chat streaming,
+  agent events, tick keepalive
+- Auto-reconnect with exponential backoff (1s -> 30s)
+- Falls back to HTTP (OpenAI-compatible) for non-OpenClaw gateways
+
 ### How to enable agent mode
 
 The user must paste a JSON config with BOTH `mode` AND `agents`:
@@ -969,19 +982,40 @@ The user must paste a JSON config with BOTH `mode` AND `agents`:
 ```json
 {
   "mode": "agent",
-  "agents": [{"id": "home", "name": "Home", "url": "https://gateway-host:18789", "token": "gateway-token-here", "active": true}]
+  "agents": [{"id": "home", "name": "Home", "url": "https://machine.tail12345.ts.net", "token": "gateway-token-here", "active": true}]
 }
 ```
+
+Or configure via Settings > OpenClaw Agent > Add Agent.
 
 **CRITICAL: `"mode": "agent"` must be included.** Without it, agents get added
 but TealClaw stays in direct mode and won't use the gateway.
 
 ### Status pill behavior
 
-- Agent mode active: pill shows agent name (e.g., "Home")
+- Agent mode + WS connected: pill shows "Home WS" (green)
+- Agent mode + HTTP fallback: pill shows "Home HTTP"
 - Direct mode with OpenRouter key: pill shows "Ready"
 - Direct mode with Groq key only: pill shows "Groq"
 - No keys, no agent: pill shows "Setup"
+
+### Builder Agent Tabs
+
+When the OpenClaw gateway spawns builder/sub-agent runs, TealClaw shows
+live tabs in a bar below the topbar. Each tab has a spinner while running,
+and expands to show a streaming log panel with color-coded output
+(stdout=white, stderr=red, tool=teal, lifecycle=yellow). A Stop button
+can abort the run via chat.abort.
+
+### Agent Management (Settings)
+
+- **Add**: Settings > OpenClaw Agent > Add (name, URL, token)
+- **Edit**: Click Edit on any agent to change name/URL/token inline
+- **Test**: Click Test to perform a WS handshake and show the server version
+- **Remove**: Click X to delete an agent
+- **Clear All**: Remove all agents at once (2+ agents)
+- **Status dots**: Green=connected, Yellow=connecting, Red=offline
+- **Auto-connect**: Switching to agent mode auto-opens a WebSocket
 
 ### Settings UI
 
@@ -1000,9 +1034,11 @@ Shows current mode, active agent name + URL, plus all configured keys.
 - **Pill shows "Groq" but config has mode:agent**: If the config paste
   didn't include `"mode": "agent"`, TealClaw stays in direct mode even
   though agents are configured. Fix: paste `{"mode": "agent"}` to switch.
-- **"Failed to fetch" in agent mode**: The gateway is unreachable. Check
-  network, Tailscale status, or gateway URL. The error message will show
-  the URL that failed and suggest Tailscale if it's a .ts.net address.
+- **CORS/PNA errors**: If you see CORS or Private Network Access errors
+  in the console, the WebSocket transport should bypass these. Make sure
+  the URL is correct and the gateway is accepting WebSocket connections.
+- **"ws closed: 1008"**: Token is missing or invalid. Check the token
+  in Settings > OpenClaw Agent > Edit.
 
 
 ## Supporting the Creator

@@ -153,17 +153,19 @@ Only include fields to set/change. TC uses partial merge.
 | lineHeight | string | e.g. "1.8" |
 | letterSpacing | string | e.g. "0.05em" |
 | wordSpacing | string | e.g. "0.1em" |
-| focusHighlight | boolean | Focus outlines |
+| focusHighlight | boolean | Focus outlines (dflt: true) |
 | compactMode | boolean | Reduce spacing |
 | autoScroll | boolean | Auto-scroll (dflt: true) |
 | hapticFeedback | boolean | Vibrate on send (mobile) |
-| soundEnabled | boolean | Tones on send/receive |
+| soundEnabled | boolean | Tones on send/receive (dflt: true) |
 | maxTokens | number | Max tokens (dflt: 400) |
 | temperature | number | Creativity 0-2 (dflt: 0.7) |
 | hideBmc | boolean | Hide BMC link |
 | cameraEnabled | boolean | Camera access (dflt: true) |
-| streamEnabled | boolean | Stream rsp (dflt: false) |
-| latexEnabled | boolean | LaTeX via KaTeX (dflt: false) |
+| ttsStability | number | EL voice stability 0-1 (dflt: 0.3) |
+| ttsSimilarityBoost | number | EL similarity boost 0-1 (dflt: 1.0) |
+| audioVolume | number | Playback volume 0-1 (dflt: 0.8) |
+| gestureConfidence | number | Gesture detection confidence 0.3-0.95 (dflt: 0.6) |
 | contextMessages | number | Context msgs (dflt: 20, 2-50) |
 | quickReplies | array | Quick reply chips (string array) |
 | userAvatar | string | Usr avatar URL |
@@ -196,11 +198,26 @@ Only include fields to set/change. TC uses partial merge.
 
 Agent objects: `{ id, name, url, token, active }` -- see llms.txt for details.
 
+**Transport**: WebSocket (wss://) preferred. URLs auto-convert (https->wss, http->ws).
+WebSocket bypasses CORS/PNA restrictions for Tailscale/private network access.
+Falls back to HTTP (OpenAI-compatible) for non-OpenClaw gateways.
+
 **Switching to Agent mode**: Config MUST include `"mode": "agent"` alongside `agents` array.
 Without `"mode": "agent"`, agents get saved but TealClaw stays in direct mode.
-Correct: `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home", "url": "https://host:18789", "token": "tok", "active": true}]}`
+Correct: `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home", "url": "https://machine.tail12345.ts.net", "token": "tok", "active": true}]}`
 
-**Status pill**: Shows agent name when in agent mode (e.g., "Home"), "Ready"/"Groq" in direct mode.
+**Status pill**: Shows agent name + transport badge (e.g., "Home WS" or "Home HTTP").
+
+**Builder tabs**: Live builder agent runs show as tabs below topbar with streaming logs.
+
+**Agent management**: Settings > OpenClaw Agent supports Add, Edit, Test (WS handshake),
+Remove, and Clear All. Connection status dots: green=connected, yellow=connecting, red=offline.
+
+**Obsidian notify**: When saving to Obsidian, TealClaw auto-notifies the connected agent
+(via chat.inject) so it knows about the saved file. No reply expected.
+
+**Test connection**: Per-agent "Test" button opens a temporary WS, performs handshake,
+shows toast with server version or error.
 
 **Common error**: "Cannot reach gateway" = gateway URL unreachable. Tailscale URLs (*.ts.net) require Tailscale running on the device.
 
