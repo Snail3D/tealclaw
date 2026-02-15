@@ -12,7 +12,9 @@
 | `/research query` | Deep research report (GROQ-powered, ORNOT-style segmented results) |
 | `/research` + image | Visual analysis — attach an image and type `/research` |
 | `/imagine prompt` | Generate an image using the configured image gen API |
-| `/export` | Download entire chat history as a Markdown file |
+| `/export` | Export current conversation as encrypted JSON (re-importable) |
+| `/export all` | Export all conversations as encrypted JSON |
+| `/export md` | Download chat as Markdown file (for reading) |
 | `/profile save name` | Save current configuration as a named profile |
 | `/profile load name` | Load a previously saved profile |
 | `/profile list` | Show all saved profiles |
@@ -20,7 +22,8 @@
 | `/share` | Create an encrypted share link (AES-256, includes all keys, passphrase-protected) |
 | `/qr` | Generate a QR code for sharing your current config (visual settings only, no keys) |
 | `/keys` | Show current config status (which keys are set, model, providers) |
-| `/clear` | Clear chat history |
+| `/clear` | Clear current conversation |
+| `/clear all` | Delete all conversations and start fresh |
 | `/clear keys` | Remove all API keys and reset to blank state |
 | `/telegram` | Show Telegram setup instructions (BotFather + Chat ID) |
 | `/telegram on` | Enable Telegram message forwarding |
@@ -60,7 +63,10 @@ Shows current configuration status:
 - Image generation status
 
 ### /clear
-Removes all chat history from the current session. Config and keys are NOT affected.
+Clears the current conversation's messages. The conversation itself stays in the list. Config and keys are NOT affected.
+
+### /clear all
+Deletes ALL conversations from IndexedDB and starts a fresh new chat. Use this for a complete conversation reset.
 
 ### /clear keys
 Removes ALL API keys and resets configuration. The user will need to set up again.
@@ -89,7 +95,13 @@ Requires: imageGenUrl, imageGenModel, and optionally imageGenKey.
 Usage: `/imagine a sunset over mountains in watercolor style`
 
 ### /export
-Downloads the entire chat history as a Markdown (.md) file. The file includes:
+Exports the current conversation as an encrypted JSON file (AES-256-GCM). The file can be re-imported into any TealClaw by dragging it in and entering the passphrase. Useful for cross-device sync via iCloud, Dropbox, AirDrop, etc.
+
+### /export all
+Exports ALL conversations as a single encrypted JSON file. Same encryption and import flow as `/export`.
+
+### /export md
+Downloads the current chat as a Markdown (.md) file (for reading, not re-importable). Includes:
 - Bot name and export timestamp
 - All messages with sender role and timestamps
 - File auto-downloads with a descriptive name (e.g. `tealclaw-chat-2026-02-14.md`)

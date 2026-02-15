@@ -512,3 +512,31 @@ Turns off all external media fetches (Tenor GIFs) and audible/haptic feedback. G
 }
 ```
 Locks the interface for shared/public use: PIN required, minimal UI, no file uploads, no camera, no GIFs, capped input length. Good for kiosks, demos, or shared tablets.
+
+
+## Gesture Control Recipes
+
+### Enable Gesture Control (defaults)
+```json
+{"gestureEnabled": true}
+```
+Activates camera-based hand tracking with default bindings: V-sign starts voice, fist stops, open palm cancels AI, thumbs up sends emoji.
+
+### Custom Agent Workflow Gestures
+```json
+{
+  "gestureEnabled": true,
+  "gestureBindings": "[{\"gesture\":\"victory\",\"action\":\"voice_start\",\"label\":\"Start voice\"},{\"gesture\":\"fist\",\"action\":\"voice_stop\",\"label\":\"Stop voice\"},{\"gesture\":\"thumbs_up\",\"action\":\"send:Approved, please proceed.\",\"label\":\"Approve\"},{\"gesture\":\"thumbs_down\",\"action\":\"send:Rejected, please revise.\",\"label\":\"Reject\"},{\"gesture\":\"open_palm\",\"action\":\"stop_agent\",\"label\":\"Stop AI\"},{\"gesture\":\"pointing_up\",\"action\":\"send:/research\",\"label\":\"Quick research\"}]"
+}
+```
+Custom gesture-to-action mappings for hands-free agent control. Each gesture triggers a specific command or message.
+
+### Hands-Free Voice-Only Mode
+```json
+{
+  "gestureEnabled": true,
+  "ttsAutoPlay": true,
+  "gestureBindings": "[{\"gesture\":\"victory\",\"action\":\"voice_start\",\"label\":\"Start speaking\"},{\"gesture\":\"fist\",\"action\":\"voice_stop\",\"label\":\"Stop speaking\"},{\"gesture\":\"open_palm\",\"action\":\"toggle_mute\",\"label\":\"Toggle audio\"}]"
+}
+```
+Combined with TTS auto-play, this creates a fully hands-free voice conversation experience. V-sign to speak, fist to stop, open palm to mute/unmute audio.

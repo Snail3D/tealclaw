@@ -241,6 +241,58 @@ Default (Inter/system-ui), Inter, Georgia (serif), JetBrains Mono
 (monospace), Nunito, Space Grotesk. Set via the fontFamily config
 field.
 
+FILE HANDLING -- Users can drag and drop files anywhere on the page, or
+paste from clipboard, or use the attach button. TealClaw processes files
+client-side:
+- Images are auto-compressed (max 1568px, JPEG 80%) before sending to the
+  AI. Keeps quality high enough for OCR/screenshots while saving tokens.
+  Original vs compressed size shown in the file stack.
+- PDFs are converted to markdown text (up to 50 pages). Uses pdf.js
+  lazy-loaded from CDN. Page headers and text preserved.
+- DOCX files are converted to markdown (headings, bold, lists preserved).
+  Uses mammoth.js lazy-loaded from CDN.
+- CSV/TSV files become markdown tables with auto-detected delimiters.
+- Code files (30+ extensions) are read as text documents.
+- Multiple files can be dropped at once. All appear in a visual file stack
+  above the input with thumbnails, file sizes, and processing spinners.
+- Document text is prepended to the user's message automatically.
+- Images are sent as base64 data URLs to the vision-capable model.
+
+GESTURE CONTROL -- Camera-based hand gesture recognition powered by
+MediaPipe Hands. Uses the selfie cam to track hand landmarks in real time.
+When enabled, a floating pip (picture-in-picture) preview appears in the
+corner showing the camera feed with hand wireframe overlay.
+
+Default gestures:
+- Victory (V-sign): Start voice capture
+- Fist: Stop recording
+- Open palm: Stop AI response
+- Thumbs up: Send thumbs up emoji
+
+Agents can configure custom gesture bindings via the gestureBindings
+config field. This makes the gesture system fully programmable -- an agent
+can set up any gesture to trigger any action (voice start/stop, send a
+specific message, toggle settings, etc.).
+
+Available gestures: victory, fist, open_palm, thumbs_up, thumbs_down,
+pointing_up, one, two, three, four, five.
+
+Available actions: voice_start, voice_stop, stop_agent, send_message,
+toggle_mute, send_thumbsup, send:custom message text.
+
+Example -- set up custom gestures:
+```json
+{
+  "gestureEnabled": true,
+  "gestureBindings": "[{\"gesture\":\"victory\",\"action\":\"voice_start\",\"label\":\"Start voice\"},{\"gesture\":\"fist\",\"action\":\"voice_stop\",\"label\":\"Stop voice\"},{\"gesture\":\"thumbs_up\",\"action\":\"send:That sounds great!\",\"label\":\"Quick approve\"},{\"gesture\":\"open_palm\",\"action\":\"stop_agent\",\"label\":\"Stop response\"}]"
+}
+```
+
+The pip is draggable (move it anywhere on screen) and has a close button.
+The gesture system uses the lite (fast) model for real-time performance
+even on phones. Gestures must be held for 400ms to trigger, preventing
+accidental activations.
+
 TELEGRAM BRIDGE -- Forward messages to a Telegram bot/group so the user
 (or an OpenClaw agent) can see and respond from Telegram.
 
@@ -269,6 +321,15 @@ barrier before someone can use the bot.
 TRANSLATION -- Auto-translate every AI response into a target language.
 Set translateTo to any language and every response is translated before
 display.
+
+MULTI-CONVERSATION -- Multiple conversations stored in IndexedDB with
+unlimited local history. Click the conversation title in the topbar to
+switch between chats. Auto-titled from the first message. Create, rename,
+delete conversations freely. Export/import conversations as encrypted
+JSON files for cross-device sync via iCloud, Dropbox, AirDrop, etc.
+
+RATE LIMITER -- Set rateLimitPerMin to cap messages per minute and
+prevent runaway API costs. Shows a countdown toast when the limit is hit.
 
 CUSTOM CSS -- The ultimate escape hatch. Inject arbitrary CSS rules for
 anything the built-in fields do not cover.
@@ -350,6 +411,8 @@ TealClaw uses partial merge -- only what you include gets written.
   "pinRequired": false,
   "translateTo": "",
   "activeProfile": "",
+  "gestureEnabled": false,
+  "gestureBindings": "[{\"gesture\":\"victory\",\"action\":\"voice_start\",\"label\":\"Start voice capture\"},{\"gesture\":\"fist\",\"action\":\"voice_stop\",\"label\":\"Stop recording\"},{\"gesture\":\"open_palm\",\"action\":\"stop_agent\",\"label\":\"Stop AI response\"},{\"gesture\":\"thumbs_up\",\"action\":\"send_thumbsup\",\"label\":\"Send thumbs up\"}]",
   "agents": [
     {
       "id": "agent1",
@@ -461,6 +524,9 @@ TealClaw uses partial merge -- only what you include gets written.
 | pinRequired | boolean | Require PIN before sending messages (default: false) |
 | translateTo | string | Auto-translate AI responses to this language |
 | activeProfile | string | Name of the currently active config profile |
+| gestureEnabled | boolean | Enable camera-based hand gesture control (MediaPipe Hands). Shows a floating pip with selfie cam and hand tracking |
+| gestureBindings | string | JSON array of gesture binding objects. Each has gesture (name), action (what to do), and label (display name). Stringify the array before setting |
+| rateLimitPerMin | number | Max messages per minute. Default: not set (unlimited). Prevents runaway API costs |
 
 ### Agent Object Fields
 
@@ -1008,6 +1074,23 @@ need it, automatically.
 }
 ```
 
+### Enable Gesture Control
+Turn on camera-based hand gestures. V-sign starts voice, fist stops,
+open palm cancels AI response.
+```json
+{"gestureEnabled": true}
+```
+
+### Custom Gesture Bindings for Agent
+Set up gestures that trigger specific messages or actions. Great for
+hands-free workflows where the user gestures to control the AI.
+```json
+{
+  "gestureEnabled": true,
+  "gestureBindings": "[{\"gesture\":\"victory\",\"action\":\"voice_start\",\"label\":\"Start voice\"},{\"gesture\":\"fist\",\"action\":\"voice_stop\",\"label\":\"Stop\"},{\"gesture\":\"thumbs_up\",\"action\":\"send:Approved, proceed.\",\"label\":\"Approve\"},{\"gesture\":\"thumbs_down\",\"action\":\"send:Rejected, try again.\",\"label\":\"Reject\"},{\"gesture\":\"open_palm\",\"action\":\"stop_agent\",\"label\":\"Stop AI\"}]"
+}
+```
+
 ### Scheduled Morning Greeting
 ```json
 {
@@ -1212,14 +1295,17 @@ Users can type these directly in the TealClaw chat:
 | /research query | Deep research report (Groq-powered, segmented results) |
 | /research + image | Visual analysis -- attach an image and type /research |
 | /imagine prompt | Generate an image using the configured image gen API |
-| /export | Download entire chat history as a Markdown file |
+| /export | Export current conversation (encrypted JSON, re-importable) |
+| /export all | Export all conversations (encrypted JSON) |
+| /export md | Download chat as Markdown (for reading) |
 | /profile save name | Save current configuration as a named profile |
 | /profile load name | Load a previously saved profile |
 | /profile list | Show all saved profiles |
 | /profile delete name | Remove a saved profile |
 | /qr | Generate a QR code for sharing your config (scan to configure another device) |
 | /keys | Show current config status (which keys are set, current model, etc.) |
-| /clear | Clear chat history |
+| /clear | Clear current conversation |
+| /clear all | Delete all conversations and start fresh |
 | /clear keys | Remove all API keys and reset to blank state |
 | /telegram | Show Telegram setup instructions (BotFather + Chat ID) |
 | /telegram on | Enable Telegram message forwarding |
@@ -1231,7 +1317,10 @@ Users can also:
 - Paste a bare API key (auto-detected by prefix)
 - Paste a JSON config block (auto-imported)
 - Drag-and-drop a .json config file
+- Drag-and-drop files anywhere on the page (images, PDFs, DOCX, code files)
+- Paste images from clipboard (screenshots, copied images)
 - Open a tealclaw.ai/#config=BASE64 URL
+- Use hand gestures to control voice input (when gesture control is enabled)
 
 
 ## Smart Key Detection

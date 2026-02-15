@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>TealClaw — BYOK Voice AI Dashboard</title>
   <meta name="description" content="TealClaw is a zero-server BYOK voice dashboard PWA. 95+ config fields, custom personas, typing animations, style templates, voice I/O, image gen, deep research. All keys stay in your browser. Full agent skill guide at tealclaw.ai/llms.txt">
   <meta property="og:title" content="TealClaw — BYOK Voice AI Dashboard">
@@ -25,12 +25,14 @@
       --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
       --mono: 'SF Mono', 'Fira Code', Menlo, monospace;
       --teal: #0d9488; --teal-dim: rgba(13,148,136,0.12); --teal-hover: #0f766e;
+      --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom);
+      --sal: env(safe-area-inset-left); --sar: env(safe-area-inset-right);
     }
     [data-theme="dark"] {
       --bg-root: #171717; --bg-1: #212121; --bg-card: #2a2a2a;
       --bg-hover: #303030; --bg-input: #2a2a2a; --bg-overlay: rgba(0,0,0,0.85);
       --border: #333333; --border-2: #444444;
-      --text: #ececec; --text-2: #a0a0a0; --text-3: #666666;
+      --text: #ececec; --text-2: #a0a0a0; --text-3: #8a8a8a;
       --ok: #22c55e; --err: #ef4444; --warn: #f59e0b;
       --shadow: 0 1px 3px rgba(0,0,0,0.2);
       --user-bg: #2a2a2a; --ai-bg: transparent;
@@ -39,16 +41,17 @@
       --bg-root: #ffffff; --bg-1: #f9f9f9; --bg-card: #ffffff;
       --bg-hover: #f4f4f4; --bg-input: #f4f4f4; --bg-overlay: rgba(255,255,255,0.92);
       --border: #e5e5e5; --border-2: #d4d4d4;
-      --text: #1a1a1a; --text-2: #6b6b6b; --text-3: #a3a3a3;
+      --text: #1a1a1a; --text-2: #6b6b6b; --text-3: #767676;
       --ok: #16a34a; --err: #dc2626; --warn: #d97706;
       --shadow: 0 1px 2px rgba(0,0,0,0.05);
       --user-bg: #f4f4f4; --ai-bg: transparent;
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-    body{background:var(--bg-root);color:var(--text);font-family:var(--font);min-height:100vh;min-height:100dvh;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column}
+    html,body{overscroll-behavior:none;overflow:hidden}
+    body{background:var(--bg-root);color:var(--text);font-family:var(--font);min-height:100vh;min-height:100dvh;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding-left:var(--sal);padding-right:var(--sar)}
 
     /* ── Topbar ────────────────────────────────────────── */
-    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
+    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:var(--sat) 16px 0;height:calc(52px + var(--sat));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
     .logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);user-select:none;letter-spacing:-0.01em}
     .logo svg{width:18px;height:18px}
     .topbar-r{margin-left:auto;display:flex;align-items:center;gap:6px}
@@ -59,16 +62,44 @@
     .icon-btn:hover{background:var(--bg-hover);color:var(--text)}
     .icon-btn svg{width:16px;height:16px}
 
+    /* ── Conversation Picker ──────────────────────────── */
+    .conv-title{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 8px;border-radius:var(--r-md);transition:background var(--t);min-width:0;overflow:hidden}
+    .conv-title:hover{background:var(--bg-hover)}
+    .conv-title-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+    .conv-title-caret{width:12px;height:12px;flex-shrink:0;transition:transform var(--t)}
+    .conv-title-caret.open{transform:rotate(180deg)}
+    .new-chat-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--r-sm);background:var(--teal-dim);color:var(--teal);cursor:pointer;transition:all var(--t);font-size:16px;font-weight:600;flex-shrink:0}
+    .new-chat-btn:hover{background:var(--teal);color:#fff}
+    .conv-dropdown{position:absolute;top:calc(100% + 4px);left:12px;right:12px;max-height:min(400px,60vh);background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:200;display:none;flex-direction:column;overflow:hidden}
+    .conv-dropdown.open{display:flex}
+    .conv-dropdown-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
+    .conv-dropdown-header-title{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em}
+    .conv-dropdown-new{display:flex;align-items:center;gap:4px;padding:5px 12px;font-size:11px;font-weight:600;font-family:var(--font);background:var(--teal);color:#fff;border:none;border-radius:100px;cursor:pointer;transition:all var(--t)}
+    .conv-dropdown-new:hover{background:var(--teal-hover)}
+    .conv-list{overflow-y:auto;flex:1;padding:6px}
+    .conv-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-md);cursor:pointer;transition:background var(--t);position:relative}
+    .conv-item:hover{background:var(--bg-hover)}
+    .conv-item.active{background:var(--teal-dim)}
+    .conv-item-info{flex:1;min-width:0}
+    .conv-item-title{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .conv-item-meta{font-size:10px;color:var(--text-3);margin-top:2px;display:flex;gap:8px}
+    .conv-item-actions{display:flex;gap:2px;flex-shrink:0}
+    .conv-item-action{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--r-sm);background:transparent;color:var(--text-3);cursor:pointer;font-size:12px;transition:all var(--t)}
+    .conv-item-action:hover{background:var(--bg-card);color:var(--text)}
+    .conv-item-action.danger:hover{color:var(--err)}
+    @media(min-width:600px){.conv-dropdown{left:16px;right:auto;width:340px}}
+
     /* ── Layout ────────────────────────────────────────── */
     .main{flex:1;display:flex;flex-direction:column;width:100%;overflow:hidden}
 
     /* ── Chat Layout ───────────────────────────────────── */
-    .chat-scroll{flex:1;overflow-y:auto;padding:20px 16px;max-width:760px;width:100%;margin:0 auto}
+    .chat-scroll{flex:1;overflow-y:auto;padding:20px 16px;max-width:760px;width:100%;margin:0 auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
     .chat-empty{text-align:center;padding:60px 16px;color:var(--text-3);font-size:13px}
     .chat-bubble{max-width:85%;margin-bottom:14px;padding:var(--bubble-pad,12px 16px);border-radius:var(--bubble-radius,20px);font-size:var(--chat-font,14px);line-height:1.7;word-break:break-word;animation:var(--bubble-anim,bubble-slide-up 0.3s ease-out)}
     .chat-bubble.user{background:var(--user-bg);margin-left:auto;border-bottom-right-radius:6px;color:var(--user-text,var(--text))}
     .chat-bubble.ai{background:var(--ai-bg);margin-right:auto;border-bottom-left-radius:6px;border:none;color:var(--ai-text,var(--text))}
-    .chat-bubble .chat-meta{font-size:10px;color:var(--text-3);margin-top:6px;font-family:var(--mono)}
+    .chat-bubble .chat-meta{font-size:10px;color:var(--text-3);margin-top:6px;font-family:var(--mono);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .chat-meta .token-info{opacity:0.7;cursor:help}
     .chat-bubble .chat-img{max-width:100%;max-height:200px;border-radius:var(--r-sm);margin-bottom:6px;display:block}
     .chat-bubble .tts-play{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px auto 2px;padding:10px 24px;font-size:13px;font-weight:600;color:#fff;background:var(--teal);border:2px solid transparent;border-radius:100px;cursor:pointer;font-family:var(--font);transition:all 0.25s;min-height:44px}
     .chat-bubble .tts-play:hover{background:var(--teal-hover)}
@@ -124,7 +155,7 @@
     .chat-bubble .md-content th{background:var(--bg-hover);color:var(--text);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.02em}
 
     /* ── Input Bar ─────────────────────────────────────── */
-    .input-bar{flex-shrink:0;border-top:none;background:var(--bg-root);padding:12px 20px 16px}
+    .input-bar{flex-shrink:0;border-top:none;background:var(--bg-root);padding:12px 20px calc(16px + var(--sab))}
     .input-row{display:flex;gap:8px;align-items:flex-end;max-width:760px;width:100%;margin:0 auto;background:var(--bg-input);border:1px solid var(--border);border-radius:24px;padding:6px 6px 6px 16px;transition:border var(--t)}
     .input-row:focus-within{border-color:var(--teal)}
     .input-text{flex:1;padding:8px 0;font-size:var(--input-font,15px);font-family:var(--font);color:var(--text);background:transparent;border:none;outline:none;resize:none;min-height:24px;max-height:140px;line-height:1.5}
@@ -151,9 +182,40 @@
     .file-stack-item{position:relative;width:56px;height:56px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border);background:var(--bg-input)}
     .file-stack-item img{width:100%;height:100%;object-fit:cover}
     .file-stack-item .file-stack-name{position:absolute;bottom:0;left:0;right:0;padding:2px 4px;font-size:8px;color:#fff;background:rgba(0,0,0,0.6);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .file-stack-item .file-stack-size{position:absolute;top:2px;left:2px;padding:1px 4px;font-size:7px;color:#fff;background:rgba(0,0,0,0.6);border-radius:4px}
     .file-stack-item .file-stack-rm{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--err);color:#fff;border:2px solid var(--bg-1);font-size:10px;line-height:14px;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .file-stack-item.processing{opacity:0.5}
+    .file-stack-item.processing::after{content:'';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4)}
+    .file-stack-item .file-stack-spinner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+    .file-stack-item .file-stack-spinner::after{content:'';width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .file-stack-doc{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);font-size:10px;color:var(--text-2);position:relative;max-width:180px}
+    .file-stack-doc .file-stack-rm{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--err);color:#fff;border:2px solid var(--bg-1);font-size:10px;line-height:14px;text-align:center;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .file-stack-doc .doc-icon{width:14px;height:14px;flex-shrink:0}
+    .file-stack-doc .doc-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+    .file-stack-doc .doc-size{color:var(--text-3);font-size:8px;flex-shrink:0}
     .file-stack-audio{display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);font-size:10px;color:var(--text-2)}
     .file-stack-audio svg{width:12px;height:12px;color:var(--teal)}
+
+    /* ── Drag Overlay ──────────────────────────────────── */
+    .drag-overlay{position:fixed;inset:0;z-index:9000;background:rgba(13,148,136,0.08);border:3px dashed var(--teal);display:none;align-items:center;justify-content:center;pointer-events:none;backdrop-filter:blur(2px)}
+    .drag-overlay.visible{display:flex}
+    .drag-overlay-inner{text-align:center;padding:40px;border-radius:var(--r-lg);background:var(--bg-1);border:2px solid var(--teal);box-shadow:0 8px 32px rgba(13,148,136,0.2)}
+    .drag-overlay-icon{font-size:48px;margin-bottom:12px;opacity:0.7}
+    .drag-overlay-text{font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px}
+    .drag-overlay-hint{font-size:12px;color:var(--text-2)}
+
+    /* ── Gesture Pip (Hand Tracking Camera) ────────────── */
+    .gesture-pip{position:fixed;bottom:calc(140px + var(--sab,0px));right:16px;width:120px;height:160px;border-radius:var(--r-lg);overflow:hidden;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:2px solid var(--border);background:#000;display:none;cursor:grab;touch-action:none;transition:border-color 0.3s,box-shadow 0.3s}
+    .gesture-pip.active{display:block}
+    .gesture-pip.recognized{border-color:var(--teal);box-shadow:0 0 20px rgba(13,148,136,0.5)}
+    .gesture-pip.recording{border-color:var(--err);box-shadow:0 0 20px rgba(239,68,68,0.4);animation:gesture-pulse 1.5s ease-in-out infinite}
+    @keyframes gesture-pulse{0%,100%{box-shadow:0 0 20px rgba(239,68,68,0.4)}50%{box-shadow:0 0 30px rgba(239,68,68,0.6)}}
+    .gesture-pip video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+    .gesture-pip canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none}
+    .gesture-pip-label{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8);pointer-events:none;transition:opacity 0.2s}
+    .gesture-pip-close{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}
+    .gesture-pip-close:hover{background:var(--err)}
 
     /* ── Cards (Settings/Agent pages) ──────────────────── */
     .page-scroll{flex:1;overflow-y:auto;padding:16px}
@@ -218,6 +280,7 @@
     body.compact-mode .chat-bubble{margin-bottom:4px;padding:6px 10px}
     body.compact-mode .chat-scroll{padding:8px}
     body.compact-mode .input-bar{padding:6px 10px}
+    body.kb-open .input-bar{padding-bottom:8px}
     body.compact-mode .sheet-row{padding:8px 10px;margin-bottom:4px}
     body.focus-visible *:focus-visible{outline:3px solid var(--teal)!important;outline-offset:2px!important}
 
@@ -375,6 +438,14 @@
     .svc-pill.active{background:rgba(34,197,94,0.08);color:var(--ok);border-color:rgba(34,197,94,0.2)}
     .svc-pill.inactive{background:var(--bg-hover);color:var(--text-3);border-color:var(--border)}
     .svc-pill .svc-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+    /* ── Usage Stats Card ────────────────────────────── */
+    .usage-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+    .usage-stat{background:var(--bg-hover);border-radius:var(--r-sm);padding:10px 12px;text-align:center}
+    .usage-stat-value{font-size:18px;font-weight:700;color:var(--text);font-family:var(--mono);line-height:1.2}
+    .usage-stat-label{font-size:9px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px}
+    .usage-stat.wide{grid-column:1/-1}
+    .usage-breakdown{display:flex;justify-content:space-around;padding:6px 0;font-size:10px;color:var(--text-3);font-family:var(--mono)}
 
     /* ── Quick Reply Chips ────────────────────────────── */
     .quick-replies{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;justify-content:center;max-width:760px;width:100%;margin:0 auto}
@@ -545,6 +616,7 @@
   </style>
 </head>
 <body>
+  <a href="#textIn" class="skip-link" style="position:absolute;top:-100%;left:16px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:0 0 8px 8px;z-index:9999;font-size:13px;font-weight:600;text-decoration:none;transition:top 0.2s" onfocus="this.style.top='var(--sat,0px)'" onblur="this.style.top='-100%'">Skip to chat input</a>
 
   <!-- Static content visible to agents/crawlers/scrapers. JS hides it on load. -->
   <div id="staticContent" style="max-width:700px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif;color:#ececec;background:#171717">
@@ -560,8 +632,9 @@
       <li>12 built-in style templates (/template)</li>
       <li>Custom bot persona -- name, icon, greeting, system prompt</li>
       <li>Full visual customization -- colors, fonts, backgrounds, animations</li>
+      <li>Multi-conversation with IndexedDB, encrypted export/import</li>
       <li>Config profiles, QR code sharing, Telegram forwarding</li>
-      <li>Multi-model routing, LaTeX rendering, GIF reactions</li>
+      <li>Multi-model routing, LaTeX rendering, GIF reactions, rate limiter</li>
       <li>PIN code security, accessibility features, PWA installable</li>
     </ul>
     <h2>For AI Agents</h2>
@@ -605,7 +678,7 @@
     <div class="gif-text" id="gifText"></div>
     <div class="gif-attr">Powered by Tenor</div>
   </div>
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <!-- ═══ About Modal ═══ -->
   <div class="about-overlay hidden" id="aboutOverlay">
@@ -631,10 +704,14 @@
   <header class="topbar">
     <div class="logo">
       <img src="/icon-192.png" alt="TealClaw" style="width:22px;height:22px;object-fit:contain">
-      TealClaw
+      <div class="conv-title" id="convTitle" title="Switch conversation">
+        <span class="conv-title-text" id="convTitleText">TealClaw</span>
+        <svg class="conv-title-caret" id="convCaret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
     </div>
+    <button class="new-chat-btn" id="newChatBtn" title="New chat">+</button>
     <div class="topbar-r">
-      <div class="pill off" id="pill"><span class="pill-dot"></span><span id="pillLabel">Setup</span></div>
+      <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span></div>
       <button class="icon-btn" id="searchBtn" title="Search (Ctrl+F)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
@@ -648,6 +725,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
     </div>
+    <!-- Conversation dropdown -->
+    <div class="conv-dropdown" id="convDropdown">
+      <div class="conv-dropdown-header">
+        <span class="conv-dropdown-header-title">Conversations</span>
+        <button class="conv-dropdown-new" id="convDropdownNew">+ New Chat</button>
+      </div>
+      <div class="conv-list" id="convList"></div>
+    </div>
   </header>
 
   <div class="search-bar" id="searchBar">
@@ -658,7 +743,7 @@
     <button class="search-close" id="searchClose">&times;</button>
   </div>
   <div class="main">
-    <div class="chat-scroll" id="chatScroll">
+    <div class="chat-scroll" id="chatScroll" role="log" aria-live="polite" aria-label="Chat messages">
       <div class="chat-empty" id="chatEmpty"></div>
     </div>
 
@@ -688,6 +773,15 @@
     </div>
   </div>
 
+  <!-- ═══ Drag Overlay ═══ -->
+  <div class="drag-overlay" id="dragOverlay">
+    <div class="drag-overlay-inner">
+      <div class="drag-overlay-icon">+</div>
+      <div class="drag-overlay-text">Drop files here</div>
+      <div class="drag-overlay-hint">Images, PDFs, documents, code files</div>
+    </div>
+  </div>
+
   <!-- ═══ Settings Bottom Sheet ═══ -->
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="sheet" id="settingsSheet">
@@ -697,6 +791,14 @@
       <button class="sheet-close" id="sheetClose">&times;</button>
     </div>
     <div class="sheet-body" id="sheetBody"></div>
+  </div>
+
+  <!-- Gesture Pip (hand tracking camera) -->
+  <div class="gesture-pip" id="gesturePip">
+    <video id="gestureVideo" autoplay playsinline muted></video>
+    <canvas id="gestureCanvas"></canvas>
+    <div class="gesture-pip-label" id="gesturePipLabel"></div>
+    <button class="gesture-pip-close" id="gesturePipClose">&times;</button>
   </div>
 
   <!-- Camera overlay -->
@@ -717,14 +819,14 @@
   </div>
 
   <audio id="audio" style="display:none"></audio>
-  <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.json,.js,.ts,.py,.md,.csv,.log" multiple style="display:none">
+  <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.json,.js,.ts,.py,.md,.csv,.tsv,.log,.xml,.html,.css,.yaml,.yml,.toml,.ini,.cfg,.env,.sh,.bash,.zsh,.sql,.r,.rb,.go,.rs,.c,.cpp,.h,.hpp,.java,.kt,.swift,.m,.docx,.doc,.rtf,.xlsx,.xls,.pptx" multiple style="display:none">
   <canvas id="camCanvas" style="display:none"></canvas>
 
   <script>
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
-    let audioEnabled=false, chatHistory=[], pendingFile=null, stream=null, recorder=null, chunks=[], recording=false;
+    let audioEnabled=false, chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
 
-    function showToast(m,t=''){toast.textContent=m;toast.className='toast show '+t;if(t==='ok')haptic('success');if(t==='err')haptic('error');setTimeout(()=>toast.className='toast',3000)}
+    function showToast(m,t='',dur=3000){toast.textContent=m;toast.style.cursor='';toast.onclick=null;toast.className='toast show '+t;if(t==='ok')haptic('success');if(t==='err')haptic('error');setTimeout(()=>toast.className='toast',dur)}
     function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
     // ── Markdown Renderer ───────────────────────────────
@@ -903,9 +1005,265 @@
     function setK(k){localStorage.setItem('tc-keys',JSON.stringify(k))}
     function fmtTime(d){d=d||new Date();return d.toLocaleTimeString([],getK().use24HourTime?{hour:'2-digit',minute:'2-digit',hour12:false}:{})}
     function getChat(){try{return JSON.parse(localStorage.getItem('tc-chat')||'[]')}catch{return[]}}
-    function setChat(c){localStorage.setItem('tc-chat',JSON.stringify(c.slice(-100)))}
+    function setChat(c){
+      localStorage.setItem('tc-chat',JSON.stringify(c.slice(-100)));
+      // Async dual-write to IndexedDB
+      const id=localStorage.getItem('tc-active-conv');
+      if(id)ConvDB.save(id,c).catch(()=>{});
+    }
     function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
     function setAgents(a){localStorage.setItem('tc-agents',JSON.stringify(a))}
+
+    // ── ConvDB (IndexedDB storage layer) ─────────────
+    const ConvDB={
+      _db:null,
+      open(){
+        if(this._db)return Promise.resolve(this._db);
+        return new Promise((resolve,reject)=>{
+          try{
+            const req=indexedDB.open('tealclaw',1);
+            req.onupgradeneeded=e=>{
+              const db=e.target.result;
+              if(!db.objectStoreNames.contains('conversations')){
+                const store=db.createObjectStore('conversations',{keyPath:'id'});
+                store.createIndex('updatedAt','updatedAt',{unique:false});
+              }
+            };
+            req.onsuccess=e=>{this._db=e.target.result;resolve(this._db)};
+            req.onerror=()=>reject(req.error);
+          }catch(e){reject(e)}
+        });
+      },
+      async save(id,messages){
+        const db=await this.open();
+        const existing=await this.get(id);
+        const record={
+          id,
+          title:existing?.title||'New Chat',
+          createdAt:existing?.createdAt||Date.now(),
+          updatedAt:Date.now(),
+          messages:messages.slice(-100)
+        };
+        return new Promise((resolve,reject)=>{
+          const tx=db.transaction('conversations','readwrite');
+          tx.objectStore('conversations').put(record);
+          tx.oncomplete=()=>resolve();
+          tx.onerror=()=>reject(tx.error);
+        });
+      },
+      async get(id){
+        const db=await this.open();
+        return new Promise((resolve,reject)=>{
+          const tx=db.transaction('conversations','readonly');
+          const req=tx.objectStore('conversations').get(id);
+          req.onsuccess=()=>resolve(req.result||null);
+          req.onerror=()=>reject(req.error);
+        });
+      },
+      async list(){
+        const db=await this.open();
+        return new Promise((resolve,reject)=>{
+          const tx=db.transaction('conversations','readonly');
+          const req=tx.objectStore('conversations').index('updatedAt').openCursor(null,'prev');
+          const results=[];
+          req.onsuccess=e=>{
+            const cursor=e.target.result;
+            if(cursor){results.push(cursor.value);cursor.continue()}
+            else resolve(results);
+          };
+          req.onerror=()=>reject(req.error);
+        });
+      },
+      async remove(id){
+        const db=await this.open();
+        return new Promise((resolve,reject)=>{
+          const tx=db.transaction('conversations','readwrite');
+          tx.objectStore('conversations').delete(id);
+          tx.oncomplete=()=>resolve();
+          tx.onerror=()=>reject(tx.error);
+        });
+      },
+      async rename(id,title){
+        const record=await this.get(id);
+        if(!record)return;
+        record.title=title;
+        record.updatedAt=Date.now();
+        const db=await this.open();
+        return new Promise((resolve,reject)=>{
+          const tx=db.transaction('conversations','readwrite');
+          tx.objectStore('conversations').put(record);
+          tx.oncomplete=()=>resolve();
+          tx.onerror=()=>reject(tx.error);
+        });
+      },
+      async clearAll(){
+        try{const db=await this.open();return new Promise((resolve,reject)=>{
+          const tx=db.transaction('conversations','readwrite');
+          tx.objectStore('conversations').clear();
+          tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+        })}catch{}
+      }
+    };
+
+    // ── Multi-Conversation CRUD ──────────────────────
+    function genConvId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+    function getActiveConvId(){return localStorage.getItem('tc-active-conv')}
+    function setActiveConvId(id){localStorage.setItem('tc-active-conv',id)}
+
+    async function newConversation(){
+      // Save current conversation first
+      const curId=getActiveConvId();
+      if(curId)await ConvDB.save(curId,chatHistory).catch(()=>{});
+      // Create new
+      const id=genConvId();
+      setActiveConvId(id);
+      chatHistory=[];
+      setChat([]);
+      await ConvDB.save(id,[]).catch(()=>{});
+      renderChat();
+      updateConvTitle('New Chat');
+      renderConvDropdown();
+      showToast('New conversation','ok');
+    }
+
+    async function switchConversation(id){
+      if(id===getActiveConvId())return;
+      // Save current
+      const curId=getActiveConvId();
+      if(curId)await ConvDB.save(curId,chatHistory).catch(()=>{});
+      // Load target
+      const record=await ConvDB.get(id).catch(()=>null);
+      setActiveConvId(id);
+      chatHistory=record?.messages||[];
+      localStorage.setItem('tc-chat',JSON.stringify(chatHistory));
+      renderChat();
+      updateConvTitle(record?.title||'New Chat');
+      closeConvDropdown();
+    }
+
+    async function deleteConversation(id){
+      await ConvDB.remove(id).catch(()=>{});
+      if(id===getActiveConvId()){
+        // Switch to another conversation or create new
+        const all=await ConvDB.list().catch(()=>[]);
+        if(all.length>0){
+          await switchConversation(all[0].id);
+        } else {
+          await newConversation();
+        }
+      }
+      renderConvDropdown();
+      showToast('Conversation deleted','ok');
+    }
+
+    async function renameConversation(id,title){
+      await ConvDB.rename(id,title).catch(()=>{});
+      if(id===getActiveConvId())updateConvTitle(title);
+      renderConvDropdown();
+    }
+
+    function updateConvTitle(title){
+      const el=$('convTitleText');
+      const k=getK();
+      if(el)el.textContent=k.botName||title||'TealClaw';
+    }
+
+    // Auto-title from first user message
+    function autoTitleConversation(text){
+      const id=getActiveConvId();
+      if(!id)return;
+      ConvDB.get(id).then(record=>{
+        if(record&&(record.title==='New Chat'||!record.title)){
+          const title=text.slice(0,40).replace(/\n/g,' ').trim()||(text.slice(0,40));
+          ConvDB.rename(id,title).catch(()=>{});
+          updateConvTitle(title);
+        }
+      }).catch(()=>{});
+    }
+
+    // ── Conversation Picker ──────────────────────────
+    let convDropdownOpen=false;
+
+    function toggleConvDropdown(){
+      convDropdownOpen=!convDropdownOpen;
+      $('convDropdown').classList.toggle('open',convDropdownOpen);
+      $('convCaret').classList.toggle('open',convDropdownOpen);
+      if(convDropdownOpen)renderConvDropdown();
+    }
+    function closeConvDropdown(){
+      convDropdownOpen=false;
+      $('convDropdown').classList.remove('open');
+      $('convCaret').classList.remove('open');
+    }
+
+    function relativeTime(ts){
+      const diff=Date.now()-ts;
+      if(diff<60000)return'just now';
+      if(diff<3600000)return Math.floor(diff/60000)+'m ago';
+      if(diff<86400000)return Math.floor(diff/3600000)+'h ago';
+      if(diff<604800000)return Math.floor(diff/86400000)+'d ago';
+      return new Date(ts).toLocaleDateString();
+    }
+
+    async function renderConvDropdown(){
+      const list=$('convList');
+      if(!list)return;
+      const convs=await ConvDB.list().catch(()=>[]);
+      const activeId=getActiveConvId();
+      if(convs.length===0){
+        list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px">No conversations yet</div>';
+        return;
+      }
+      list.innerHTML=convs.map(c=>{
+        const msgCount=c.messages?.length||0;
+        const active=c.id===activeId?' active':'';
+        return `<div class="conv-item${active}" data-conv-id="${esc(c.id)}">
+          <div class="conv-item-info">
+            <div class="conv-item-title">${esc(c.title||'New Chat')}</div>
+            <div class="conv-item-meta"><span>${msgCount} msg${msgCount!==1?'s':''}</span><span>${relativeTime(c.updatedAt)}</span></div>
+          </div>
+          <div class="conv-item-actions">
+            <button class="conv-item-action" data-conv-rename="${esc(c.id)}" title="Rename">&#9998;</button>
+            <button class="conv-item-action danger" data-conv-delete="${esc(c.id)}" title="Delete">&times;</button>
+          </div>
+        </div>`;
+      }).join('');
+      // Wire events
+      list.querySelectorAll('.conv-item').forEach(el=>{
+        el.addEventListener('click',e=>{
+          if(e.target.closest('[data-conv-rename]')||e.target.closest('[data-conv-delete]'))return;
+          switchConversation(el.dataset.convId);
+        });
+      });
+      list.querySelectorAll('[data-conv-rename]').forEach(btn=>{
+        btn.addEventListener('click',e=>{
+          e.stopPropagation();
+          const id=btn.dataset.convRename;
+          const titleEl=btn.closest('.conv-item')?.querySelector('.conv-item-title');
+          const current=titleEl?.textContent||'';
+          const newName=prompt('Rename conversation:',current);
+          if(newName&&newName.trim())renameConversation(id,newName.trim());
+        });
+      });
+      list.querySelectorAll('[data-conv-delete]').forEach(btn=>{
+        btn.addEventListener('click',e=>{
+          e.stopPropagation();
+          if(confirm('Delete this conversation?'))deleteConversation(btn.dataset.convDelete);
+        });
+      });
+    }
+
+    // Wire topbar events
+    $('convTitle').addEventListener('click',toggleConvDropdown);
+    $('newChatBtn').addEventListener('click',()=>newConversation());
+    $('convDropdownNew').addEventListener('click',()=>{closeConvDropdown();newConversation()});
+    // Close on outside click
+    document.addEventListener('click',e=>{
+      if(convDropdownOpen&&!e.target.closest('.conv-dropdown')&&!e.target.closest('.conv-title')&&!e.target.closest('.new-chat-btn')){
+        closeConvDropdown();
+      }
+    });
 
     // ── Smart Key Detection ─────────────────────────────
     function detectKey(val){
@@ -942,6 +1300,7 @@
     $('themeBtn').addEventListener('click',()=>{
       const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
       document.documentElement.setAttribute('data-theme',n);localStorage.setItem('tc-theme',n);
+      if(typeof updateThemeColor==='function')updateThemeColor();
     });
 
     // ── About Modal ──────────────────────────────────
@@ -980,10 +1339,15 @@
         {name:'Streaming',active:!!k.streamEnabled},
         {name:'LaTeX',active:!!k.latexEnabled}
       ];
+      // Session token totals
+      const sessionTokens=chatHistory.reduce((acc,m)=>{if(m.usage){acc.prompt+=(m.usage.prompt||0);acc.completion+=(m.usage.completion||0);acc.total+=(m.usage.total||0);acc.count++}return acc},{prompt:0,completion:0,total:0,count:0});
       let html=`<div class="sheet-section"><div class="sheet-section-title">Connected Services</div><div class="connected-services">`;
       svcs.forEach(s=>{
         html+=`<span class="svc-pill ${s.active?'active':'inactive'}"><span class="svc-dot"></span>${s.name}</span>`;
       });
+      if(sessionTokens.count>0){
+        html+=`<span class="svc-pill active" title="Session: ${sessionTokens.prompt} prompt + ${sessionTokens.completion} completion = ${sessionTokens.total} total across ${sessionTokens.count} messages"><span class="svc-dot"></span>${sessionTokens.total.toLocaleString()} tokens</span>`;
+      }
       html+=`</div></div>`;
 
       html+=`<div class="sheet-section"><div class="sheet-section-title">API Keys</div>`;
@@ -1028,6 +1392,31 @@
           <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${autoPlay?'ElevenLabs is called on every AI response automatically.':'ElevenLabs is only called when you tap Play -- saves credits.'}</div>
         </div>`;
       }
+
+      // Gesture Control
+      const gestureOn=!!k.gestureEnabled;
+      const defaultBindings=[
+        {gesture:'victory',action:'voice_start',label:'Start voice capture'},
+        {gesture:'fist',action:'voice_stop',label:'Stop recording'},
+        {gesture:'open_palm',action:'stop_agent',label:'Stop AI response'},
+        {gesture:'thumbs_up',action:'send_thumbsup',label:'Send thumbs up'}
+      ];
+      const bindings=k.gestureBindings?JSON.parse(k.gestureBindings):defaultBindings;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Gesture Control</div>
+        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+          <button class="mode-btn gesture-mode-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+          <button class="mode-btn gesture-mode-btn ${!gestureOn?'active':''}" data-gesture="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gestureOn?'var(--teal)':'transparent'};border:none;color:${!gestureOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Uses your camera to detect hand gestures. V-sign starts voice, fist stops. Agents can configure custom gesture bindings.</div>
+        ${gestureOn?`<div style="margin-top:10px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Gesture Bindings</div>
+          ${bindings.map((b,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:11px;font-weight:600;color:var(--teal);min-width:80px">${esc(b.gesture.replace(/_/g,' '))}</span>
+            <span style="font-size:10px;color:var(--text-2);flex:1">${esc(b.label)}</span>
+          </div>`).join('')}
+          <div style="font-size:9px;color:var(--text-3);margin-top:6px">Gestures: victory, fist, open_palm, thumbs_up, thumbs_down, pointing_up, one, two, three, four, five. Actions: voice_start, voice_stop, stop_agent, send_message, toggle_mute, send_thumbsup, custom.</div>
+        </div>`:''}
+      </div>`;
 
       // GIF Reactions toggle
       const gifOn=k.gifEnabled!==false;
@@ -1199,10 +1588,32 @@
       html+=`</div>`;
 
       // Stats link
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Analytics</div>`;
-      html+=`<div class="sheet-row" id="sheetStatsRow">
+      // Usage Statistics
+      const msgCount=chatHistory.length;
+      const userMsgs=chatHistory.filter(m=>m.role==='user').length;
+      const aiMsgs=chatHistory.filter(m=>m.role==='ai').length;
+      const msgsWithTokens=chatHistory.filter(m=>m.usage);
+      const totIn=msgsWithTokens.reduce((a,m)=>a+(m.usage.prompt||0),0);
+      const totOut=msgsWithTokens.reduce((a,m)=>a+(m.usage.completion||0),0);
+      const totAll=msgsWithTokens.reduce((a,m)=>a+(m.usage.total||0),0);
+      const avgTokens=msgsWithTokens.length?Math.round(totAll/msgsWithTokens.length):0;
+      const modelsUsed=[...new Set(msgsWithTokens.map(m=>m.usage.model).filter(Boolean))];
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Usage Statistics</div>`;
+      html+=`<div class="usage-stats">`;
+      html+=`<div class="usage-stat"><div class="usage-stat-value">${msgCount.toLocaleString()}</div><div class="usage-stat-label">Messages</div></div>`;
+      html+=`<div class="usage-stat"><div class="usage-stat-value">${totAll.toLocaleString()}</div><div class="usage-stat-label">Total Tokens</div></div>`;
+      html+=`<div class="usage-stat"><div class="usage-stat-value">${totIn.toLocaleString()}</div><div class="usage-stat-label">Input Tokens</div></div>`;
+      html+=`<div class="usage-stat"><div class="usage-stat-value">${totOut.toLocaleString()}</div><div class="usage-stat-label">Output Tokens</div></div>`;
+      html+=`</div>`;
+      if(msgsWithTokens.length){
+        html+=`<div class="usage-breakdown"><span>${userMsgs} sent</span><span>${aiMsgs} received</span><span>~${avgTokens} tok/msg</span></div>`;
+      }
+      if(modelsUsed.length){
+        html+=`<div style="font-size:10px;color:var(--text-3);margin-top:4px;line-height:1.6">Models: ${modelsUsed.map(m=>`<code style="font-size:9px;padding:1px 5px;background:var(--bg-hover);border-radius:4px">${esc(m)}</code>`).join(' ')}</div>`;
+      }
+      html+=`<div class="sheet-row" id="sheetStatsRow" style="margin-top:8px">
         <div class="sheet-row-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div>
-        <div class="sheet-row-info"><div class="sheet-row-label">Stats</div><div class="sheet-row-desc">View site analytics</div></div>
+        <div class="sheet-row-info"><div class="sheet-row-label">Site Analytics</div><div class="sheet-row-desc">Visitor stats &amp; traffic</div></div>
         <div class="sheet-row-action">Open</div>
       </div></div>`;
 
@@ -1313,6 +1724,14 @@
         if(val){k2.gifTenorKey=val}else{delete k2.gifTenorKey}
         setK(k2);showToast(val?'Tenor key saved':'Tenor key removed','ok');
       });
+
+      // Wire up gesture control toggle
+      $('sheetBody').querySelectorAll('.gesture-mode-btn').forEach(b=>b.addEventListener('click',()=>{
+        const enabled=b.dataset.gesture==='true';
+        const k2=getK();k2.gestureEnabled=enabled;setK(k2);
+        renderSheetContent();
+        if(enabled)startGestureTracking();else stopGestureTracking();
+      }));
 
       // Wire up accent color swatches
       $('sheetBody').querySelectorAll('.accent-swatch').forEach(b=>b.addEventListener('click',()=>{
@@ -1430,7 +1849,9 @@
       });
       $('sheetBody').querySelector('#sheetWipeKeys')?.addEventListener('click',()=>{
         if(!confirm('Clear all keys and reset?'))return;
-        localStorage.removeItem('tc-keys');localStorage.removeItem('tc-agents');
+        localStorage.removeItem('tc-keys');localStorage.removeItem('tc-agents');localStorage.removeItem('tc-active-conv');
+        ConvDB.clearAll().catch(()=>{});
+        try{indexedDB.deleteDatabase('tealclaw')}catch{}
         // Reset visual customizations
         const root=document.documentElement;
         ['--teal','--teal-dim','--teal-hover','--chat-font','--font','--bg-root','--text','--user-bg','--ai-bg','--input-font','--btn-size','--r-sm','--r-md','--r-lg','--border','--md-heading','--md-bold','--md-link','--md-code-bg','--md-code','--md-bq-border','--md-bq-bg','--user-text','--ai-text','--bubble-radius','--bubble-pad'].forEach(p=>root.style.removeProperty(p));
@@ -1444,7 +1865,8 @@
         document.body.classList.remove('reduce-motion','high-contrast','dyslexia-font','compact-mode','focus-visible');
         document.body.style.lineHeight='';document.body.style.letterSpacing='';document.body.style.wordSpacing='';
         document.title='TealClaw';
-        const logo=document.querySelector('.logo');if(logo){const img=logo.querySelector('img');if(img)img.src='/icon-192.png';const tn=[...logo.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(tn)tn.textContent='\n      TealClaw\n    '}
+        const logo=document.querySelector('.logo');if(logo){const img=logo.querySelector('img');if(img)img.src='/icon-192.png'}
+        const titleEl2=document.querySelector('#convTitleText');if(titleEl2)titleEl2.textContent='TealClaw';
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#0d9488');
         updateStatus();chatHistory=[];setChat([]);renderChat();closeSheet();
         setTimeout(()=>runOnboarding(),300);showToast('Reset complete','ok');
@@ -1584,6 +2006,18 @@
       document.addEventListener(evt,function unlock(){ensureAudioCtx();document.removeEventListener(evt,unlock)},{once:true});
     });
 
+    // ── Token Usage Display ─────────────────────────────
+    function fmtTokens(usage){
+      if(!usage)return '';
+      const parts=[];
+      if(usage.prompt)parts.push(`${usage.prompt}in`);
+      if(usage.completion)parts.push(`${usage.completion}out`);
+      if(!parts.length&&usage.total)parts.push(`${usage.total}tok`);
+      if(!parts.length)return '';
+      const title=`Model: ${usage.model||'unknown'}\nPrompt: ${usage.prompt||0} tokens\nCompletion: ${usage.completion||0} tokens\nTotal: ${usage.total||0} tokens`;
+      return `<span class="token-info" title="${esc(title)}">${parts.join(' / ')}</span>`;
+    }
+
     // ── Chat Rendering ─────────────────────────────────
     function renderChat(){
       const s=$('chatScroll');
@@ -1621,10 +2055,11 @@
           }
         }
         const avatarUrl=m.role==='user'?ck.userAvatar:ck.aiAvatar;
+        const metaHtml=`<div class="chat-meta"><span>${m.time||''}</span>${fmtTokens(m.usage)}</div>`;
         if(avatarUrl){
-          return `<div class="chat-bubble-wrap ${m.role}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${content}<div class="chat-meta">${m.time||''}</div></div></div>`;
+          return `<div class="chat-bubble-wrap ${m.role}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${content}${metaHtml}</div></div>`;
         }
-        return `<div class="chat-bubble ${m.role}" data-msg-idx="${i}">${content}<div class="chat-meta">${m.time||''}</div></div>`;
+        return `<div class="chat-bubble ${m.role}" data-msg-idx="${i}">${content}${metaHtml}</div>`;
       }).join('');
 
       // Wrap code blocks with copy button
@@ -1734,6 +2169,8 @@
       chatHistory.push(entry);
       setChat(chatHistory);
       renderChat();
+      // Auto-title conversation from first user message
+      if(role==='user'&&chatHistory.filter(m=>m.role==='user').length===1)autoTitleConversation(text);
       return entry;
     }
 
@@ -1836,7 +2273,9 @@
       });
       const d=await res.json();
       if(d.error) throw new Error(d.error.message||'API error');
-      return d.choices?.[0]?.message?.content||'';
+      const aiText=d.choices?.[0]?.message?.content||'';
+      const usage=d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model}:null;
+      return {text:aiText,usage};
     }
 
     // ── Agent Call (Tailscale) ──────────────────────────
@@ -1874,7 +2313,8 @@
       const d=await res.json();
       const c=d.choices?.[0]?.message?.content||'';
       if(c.includes('Unhandled stop reason')) throw new Error('Agent busy, try again');
-      return c;
+      const usage=d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:d.model||'agent'}:null;
+      return {text:c,usage};
     }
 
     // ── Transcribe ─────────────────────────────────────
@@ -2384,6 +2824,45 @@ Rules:
       showToast('Chat exported','ok');haptic('success');
     }
 
+    // ── Encrypted Conversation Export/Import ──────────
+    async function exportConversations(all){
+      try{
+        let payload;
+        if(all){
+          const convs=await ConvDB.list().catch(()=>[]);
+          if(!convs.length){sysBubble('<p>No conversations to export.</p>');return}
+          payload={tealclaw:'export',version:1,type:'all',conversations:convs,exportedAt:Date.now()};
+        } else {
+          const id=getActiveConvId();
+          const record=id?await ConvDB.get(id).catch(()=>null):null;
+          const messages=record?.messages||chatHistory;
+          if(!messages.length){sysBubble('<p>No chat to export.</p>');return}
+          payload={tealclaw:'export',version:1,type:'single',conversation:{id:id||genConvId(),title:record?.title||'Chat',createdAt:record?.createdAt||Date.now(),updatedAt:Date.now(),messages},exportedAt:Date.now()};
+        }
+        const json=JSON.stringify(payload);
+        const passphrase=generatePassphrase();
+        const encrypted=await encryptConfig(json,passphrase);
+        const blob=new Blob([JSON.stringify({tealclaw:'encrypted-export',data:encrypted})],{type:'application/json'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=url;
+        const k=getK();const name=(k.botName||'tealclaw').toLowerCase().replace(/\s+/g,'-');
+        a.download=`${name}-${all?'all-chats':'chat'}-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+        sysBubble(`<div style="text-align:center">
+          <h3>Chat Exported</h3>
+          <p style="font-size:12px;color:var(--text-2);margin:8px 0">Your ${all?'conversations are':'conversation is'} encrypted with AES-256-GCM.</p>
+          <p style="font-size:12px;margin-bottom:12px">To import: drag the <code>.json</code> file into any TealClaw and enter this passphrase:</p>
+          <div style="font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:0.12em;color:var(--teal);margin:8px 0;user-select:all">${esc(passphrase)}</div>
+          <button class="btn btn-ghost" id="expCopyPass" style="margin-top:8px">Copy Passphrase</button>
+        </div>`);
+        const last=document.querySelector('.chat-bubble:last-child');
+        last?.querySelector('#expCopyPass')?.addEventListener('click',()=>{navigator.clipboard?.writeText(passphrase);showToast('Passphrase copied','ok');haptic('success')});
+        haptic('success');
+      }catch(e){
+        sysBubble(`<p style="color:var(--err)">Export failed: ${esc(String(e))}</p>`);
+      }
+    }
+
     // ── Profiles ─────────────────────────────────────────
     function handleProfile(arg){
       const k=getK();
@@ -2615,7 +3094,7 @@ Rules:
       const k=getK();
       if(k.mode==='agent'&&getActiveAgent())return callAgent(userText,imageBase64);
       const aiKey=k.aiKey||k.whisperKey;
-      if(!aiKey)return '__NO_KEY__';
+      if(!aiKey)return {text:'__NO_KEY__',usage:null};
       const isGroqFallback=!k.aiKey&&!!k.whisperKey;
       const url=isGroqFallback?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
       let model=isGroqFallback?(imageBase64?'meta-llama/llama-4-maverick-17b-128e-instruct':'llama-3.3-70b-versatile'):(k.aiModel||'google/gemini-2.5-flash-preview');
@@ -2630,8 +3109,8 @@ Rules:
       if(k.temperature!==undefined)body.temperature=Number(k.temperature);
       const res=await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`API error: ${res.status}`)}
-      const reader=res.body.getReader();const decoder=new TextDecoder();
-      let full='',buffer='';
+      const reader=res.body.getReader();window._tcActiveReader=reader;const decoder=new TextDecoder();
+      let full='',buffer='',streamUsage=null;
       while(true){
         const{done,value}=await reader.read();if(done)break;
         buffer+=decoder.decode(value,{stream:true});
@@ -2639,10 +3118,11 @@ Rules:
         for(const line of lines){
           if(!line.startsWith('data: '))continue;
           const data=line.slice(6);if(data==='[DONE]')continue;
-          try{const j=JSON.parse(data);const delta=j.choices?.[0]?.delta?.content;if(delta){full+=delta;onToken(full)}}catch{}
+          try{const j=JSON.parse(data);const delta=j.choices?.[0]?.delta?.content;if(delta){full+=delta;onToken(full)}if(j.usage)streamUsage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model}}catch{}
         }
       }
-      return full;
+      window._tcActiveReader=null;
+      return {text:full,usage:streamUsage};
     }
 
     // ── Scheduled Messages ──────────────────────────────
@@ -2664,9 +3144,29 @@ Rules:
       });
     }
 
+    // ── Rate Limiter ──────────────────────────────────
+    const _rateSends=[];
+    function checkRateLimit(){
+      const k=getK();
+      const limit=k.rateLimitPerMin;
+      if(!limit||limit<=0)return true;
+      const now=Date.now();
+      // Prune entries older than 60s
+      while(_rateSends.length&&_rateSends[0]<now-60000)_rateSends.shift();
+      if(_rateSends.length>=limit){
+        const oldest=_rateSends[0];
+        const waitSec=Math.ceil((oldest+60000-now)/1000);
+        showToast(`Rate limit: wait ${waitSec}s (${limit}/min)`,'err');
+        return false;
+      }
+      _rateSends.push(now);
+      return true;
+    }
+
     // ── Pipeline ───────────────────────────────────────
     async function pipeline(text,imageBase64){
       if(!text&&!imageBase64)return;
+      if(!checkRateLimit())return;
       const pk=getK();
 
       // Input prefix
@@ -2690,7 +3190,7 @@ Rules:
         addBubble('ai','...');
         const scroll=$('chatScroll');
         try{
-          const aiText=await callAIStream(text,imageBase64,(partial)=>{
+          const aiResult=await callAIStream(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
@@ -2705,6 +3205,8 @@ Rules:
             }
             if(pk.autoScroll!==false)scroll.scrollTop=scroll.scrollHeight;
           });
+          const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+          const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
           if(aiText==='__NO_KEY__'){
             chatHistory.pop();
             sysBubble(`<p>I need an AI key to respond. Paste one of these:</p><ul><li><a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a> -- <code>sk-or-v1-...</code></li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- <code>gsk_...</code> (free)</li></ul>`);
@@ -2717,6 +3219,7 @@ Rules:
             searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
           }
           chatHistory[streamIdx].text=displayText;
+          if(aiUsage)chatHistory[streamIdx].usage=aiUsage;
           setChat(chatHistory);renderChat();
           // Auto-detect and apply TealClaw config in AI response
           detectAndApplyConfig(displayText);
@@ -2736,8 +3239,10 @@ Rules:
         // Non-streaming mode: bouncing dots, then typewriter reveal
         addTyping();
         try{
-          const aiText=await callAI(text,imageBase64);
+          const aiResult=await callAI(text,imageBase64);
           removeTyping();
+          const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+          const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
           if(aiText==='__NO_KEY__'){
             sysBubble(`<p>I need an AI key to respond. Paste one of these in the chat:</p>
 <ul>
@@ -2765,7 +3270,7 @@ Rules:
           // Typing animation: reveal character by character
           if(pk.typingAnimation!==false){
             const bubbleIdx=chatHistory.length;
-            addBubble('ai','');
+            addBubble('ai','',aiUsage?{usage:aiUsage}:{});
             const scroll=$('chatScroll');
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const lastBubble=bubbles[bubbles.length-1];
@@ -2784,7 +3289,9 @@ Rules:
             // No typing animation: instant display
             const ttsData=await ttsPromise;
             if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData)}
-            addBubble('ai',displayText,audioUrl?{audioUrl}:{});
+            const extra=audioUrl?{audioUrl}:{};
+            if(aiUsage)extra.usage=aiUsage;
+            addBubble('ai',displayText,extra);
           }
           // Auto-detect and apply TealClaw config in AI response
           detectAndApplyConfig(displayText);
@@ -2808,9 +3315,15 @@ Rules:
     // ── Send ───────────────────────────────────────────
     function send(){
       let text=$('textIn').value.trim();
-      const images=pendingFiles.filter(f=>f.dataUrl).map(f=>f.dataUrl);
+      const images=pendingFiles.filter(f=>f.dataUrl&&f.type==='image').map(f=>f.dataUrl);
+      const docs=pendingFiles.filter(f=>f.type==='document'&&f.text);
       const firstImage=images[0]||null;
-      if(!text&&!firstImage)return;
+      if(!text&&!firstImage&&docs.length===0)return;
+      // Prepend document content to the message
+      if(docs.length>0){
+        const docText=docs.map(d=>`--- ${d.name} ---\n${d.text}`).join('\n\n');
+        text=text?(docText+'\n\n'+text):docText;
+      }
 
       // PIN code gate
       if(!checkPinLock())return;
@@ -2873,8 +3386,10 @@ Rules:
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
-          const imageNote=images.length>1?` [${images.length} images attached]`:'';
-          pipeline(text+imageNote,firstImage);
+          const an=[];
+          if(images.length>1)an.push(`${images.length} images`);
+          if(docs.length>0)an.push(`${docs.length} doc${docs.length>1?'s':''}`);
+          pipeline(text+(an.length?` [${an.join(' + ')} attached]`:''),firstImage);
           return;
         }
         if(cmd==='/help'){
@@ -2883,14 +3398,17 @@ Rules:
 <li><code>/setup</code> -- restart the setup wizard</li>
 <li><code>/research query</code> -- deep research report (GROQ-powered)</li>
 <li><code>/imagine prompt</code> -- generate an image</li>
-<li><code>/export</code> -- download chat as markdown file</li>
+<li><code>/export</code> -- export current chat (encrypted JSON, re-importable)</li>
+<li><code>/export all</code> -- export all conversations (encrypted JSON)</li>
+<li><code>/export md</code> -- download chat as markdown (for reading)</li>
 <li><code>/profile save|load|list|delete name</code> -- manage config profiles</li>
 <li><code>/share</code> -- create an encrypted share link (includes API keys, protected by passphrase)</li>
 <li><code>/qr</code> -- generate encrypted QR code to share your config</li>
 <li><code>/telegram</code> -- set up Telegram forwarding</li>
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
 <li><code>/keys</code> -- show what's configured</li>
-<li><code>/clear</code> -- clear chat history</li>
+<li><code>/clear</code> -- clear current chat</li>
+<li><code>/clear all</code> -- delete all conversations and start fresh</li>
 <li><code>/voice</code> -- change TTS voice</li>
 <li><code>/template</code> -- browse and apply style templates</li>
 </ul>`;
@@ -2955,6 +3473,13 @@ Rules:
 <p>Paste any key to update. Type <code>/clear keys</code> to wipe all keys.</p>`);
           return;
         }
+        if(cmd==='/clear all'){
+          chatHistory=[];setChat([]);
+          ConvDB.clearAll().catch(()=>{});
+          localStorage.removeItem('tc-active-conv');
+          newConversation();
+          showToast('All conversations cleared','ok');return;
+        }
         if(cmd==='/clear'){
           chatHistory=[];setChat([]);renderChat();showToast('Chat cleared','ok');return;
         }
@@ -2996,7 +3521,10 @@ Rules:
           return;
         }
         if(text.startsWith('/export')){
-          exportChat();return;
+          const exportArg=text.slice(7).trim().toLowerCase();
+          if(exportArg==='md'){exportChat();return}
+          if(exportArg==='all'){exportConversations(true);return}
+          exportConversations(false);return;
         }
         if(text.startsWith('/profile')){
           const arg=text.slice(8).trim();
@@ -3014,8 +3542,11 @@ Rules:
       }
 
       // Normal message
-      const imageNote=images.length>1?` [${images.length} images attached]`:'';
-      pipeline(text+imageNote,firstImage);
+      const attachNote=[];
+      if(images.length>1)attachNote.push(`${images.length} images`);
+      if(docs.length>0)attachNote.push(`${docs.length} document${docs.length>1?'s':''}`);
+      const noteStr=attachNote.length?` [${attachNote.join(' + ')} attached]`:'';
+      pipeline(text+noteStr,firstImage);
     }
 
     // Programmatic send (used by tc-ui button/chip callbacks)
@@ -3034,6 +3565,19 @@ Rules:
     // ── Multi-File Stack ─────────────────────────────
     let pendingFiles=[];
 
+    function fmtSize(bytes){
+      if(bytes<1024)return bytes+'B';
+      if(bytes<1048576)return(bytes/1024).toFixed(1)+'KB';
+      return(bytes/1048576).toFixed(1)+'MB';
+    }
+
+    function fileIcon(name){
+      const ext=(name||'').split('.').pop().toLowerCase();
+      const icons={pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="doc-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        docx:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="doc-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'};
+      return icons[ext]||icons.docx;
+    }
+
     function renderFileStack(){
       const el=$('fileStack');
       if(pendingFiles.length===0){el.classList.remove('visible');el.innerHTML='';return}
@@ -3042,7 +3586,11 @@ Rules:
         if(f.type==='audio'){
           return `<div class="file-stack-audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/></svg>${esc(f.name)}<span class="file-stack-rm" data-idx="${i}">&times;</span></div>`;
         }
-        return `<div class="file-stack-item">${f.dataUrl?`<img src="${f.dataUrl}">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:9px;color:var(--text-3);padding:4px;text-align:center">'+esc(f.name)+'</div>'}<span class="file-stack-rm" data-idx="${i}">&times;</span></div>`;
+        if(f.type==='document'){
+          return `<div class="file-stack-doc${f.processing?' processing':''}">${fileIcon(f.name)}<span class="doc-name">${esc(f.name)}</span>${f.size?`<span class="doc-size">${fmtSize(f.size)}</span>`:''}${f.processing?'<span class="file-stack-spinner"></span>':''}<span class="file-stack-rm" data-idx="${i}">&times;</span></div>`;
+        }
+        const sizeLabel=f.origSize&&f.compSize&&f.compSize<f.origSize?fmtSize(f.compSize)+' (was '+fmtSize(f.origSize)+')':f.origSize?fmtSize(f.origSize):'';
+        return `<div class="file-stack-item${f.processing?' processing':''}">${f.dataUrl?`<img src="${f.dataUrl}">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:9px;color:var(--text-3);padding:4px;text-align:center">'+esc(f.name)+'</div>'}${sizeLabel?`<span class="file-stack-size">${sizeLabel}</span>`:''}${f.processing?'<span class="file-stack-spinner"></span>':''}<span class="file-stack-rm" data-idx="${i}">&times;</span></div>`;
       }).join('');
       el.querySelectorAll('.file-stack-rm').forEach(b=>b.addEventListener('click',()=>{
         pendingFiles.splice(+b.dataset.idx,1);renderFileStack();updateActionBtn();
@@ -3050,6 +3598,139 @@ Rules:
     }
 
     function clearAllFiles(){pendingFiles=[];renderFileStack()}
+
+    // ── Image Compression ──────────────────────────────
+    function compressImage(dataUrl,file){
+      return new Promise(resolve=>{
+        const img=new Image();
+        img.onload=()=>{
+          const MAX=1568;
+          let w=img.width,h=img.height;
+          if(w>MAX||h>MAX){
+            const scale=Math.min(MAX/w,MAX/h);
+            w=Math.round(w*scale);h=Math.round(h*scale);
+          }
+          const canvas=document.createElement('canvas');
+          canvas.width=w;canvas.height=h;
+          const ctx=canvas.getContext('2d');
+          ctx.drawImage(img,0,0,w,h);
+          // Use JPEG for photos, PNG for screenshots/transparent
+          const isPng=file.type==='image/png';
+          const hasAlpha=isPng;
+          let outType=hasAlpha?'image/png':'image/jpeg';
+          let quality=0.80;
+          const compressed=canvas.toDataURL(outType,quality);
+          // If PNG and result is huge, try JPEG anyway
+          if(isPng&&compressed.length>500000){
+            const jpgVersion=canvas.toDataURL('image/jpeg',0.80);
+            if(jpgVersion.length<compressed.length*0.7){
+              resolve({dataUrl:jpgVersion,compSize:Math.round(jpgVersion.length*0.75)});return;
+            }
+          }
+          resolve({dataUrl:compressed,compSize:Math.round(compressed.length*0.75)});
+        };
+        img.onerror=()=>resolve({dataUrl,compSize:file.size});
+        img.src=dataUrl;
+      });
+    }
+
+    // ── PDF to Markdown (lazy-load pdf.js) ──────────────
+    let pdfjsLoaded=false;
+    function loadPdfJs(){
+      if(pdfjsLoaded)return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs';
+        s.type='module';
+        // pdf.js v4 uses ESM, fall back to classic build
+        s.onerror=()=>{
+          const s2=document.createElement('script');
+          s2.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          s2.onload=()=>{pdfjsLoaded=true;window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';resolve()};
+          s2.onerror=reject;
+          document.head.appendChild(s2);
+        };
+        s.onload=()=>{pdfjsLoaded=true;resolve()};
+        document.head.appendChild(s);
+      });
+    }
+
+    async function pdfToMarkdown(arrayBuffer,fileName){
+      await loadPdfJs();
+      const lib=window.pdfjsLib;
+      if(!lib)throw new Error('pdf.js failed to load');
+      lib.GlobalWorkerOptions.workerSrc=lib.GlobalWorkerOptions.workerSrc||'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf=await lib.getDocument({data:arrayBuffer}).promise;
+      const pages=[];
+      const maxPages=Math.min(pdf.numPages,50);
+      for(let i=1;i<=maxPages;i++){
+        const page=await pdf.getPage(i);
+        const content=await page.getTextContent();
+        const text=content.items.map(it=>it.str).join(' ').replace(/\s+/g,' ').trim();
+        if(text)pages.push(`## Page ${i}\n\n${text}`);
+      }
+      const header=`# ${fileName}\n\n*${pdf.numPages} pages${pdf.numPages>maxPages?` (showing first ${maxPages})`:''} — converted to text*\n\n`;
+      return header+pages.join('\n\n---\n\n');
+    }
+
+    // ── DOCX to Markdown (lazy-load mammoth.js) ─────────
+    let mammothLoaded=false;
+    function loadMammoth(){
+      if(mammothLoaded)return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js';
+        s.onload=()=>{mammothLoaded=true;resolve()};
+        s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function docxToMarkdown(arrayBuffer,fileName){
+      await loadMammoth();
+      if(!window.mammoth)throw new Error('mammoth.js failed to load');
+      const result=await window.mammoth.convertToHtml({arrayBuffer});
+      // Convert basic HTML to markdown-ish text
+      let md=result.value
+        .replace(/<h1[^>]*>(.*?)<\/h1>/gi,'\n# $1\n')
+        .replace(/<h2[^>]*>(.*?)<\/h2>/gi,'\n## $1\n')
+        .replace(/<h3[^>]*>(.*?)<\/h3>/gi,'\n### $1\n')
+        .replace(/<h4[^>]*>(.*?)<\/h4>/gi,'\n#### $1\n')
+        .replace(/<strong>(.*?)<\/strong>/gi,'**$1**')
+        .replace(/<b>(.*?)<\/b>/gi,'**$1**')
+        .replace(/<em>(.*?)<\/em>/gi,'*$1*')
+        .replace(/<i>(.*?)<\/i>/gi,'*$1*')
+        .replace(/<li>(.*?)<\/li>/gi,'- $1\n')
+        .replace(/<br\s*\/?>/gi,'\n')
+        .replace(/<p>(.*?)<\/p>/gi,'$1\n\n')
+        .replace(/<[^>]+>/g,'')
+        .replace(/\n{3,}/g,'\n\n')
+        .trim();
+      return `# ${fileName}\n\n*Converted from DOCX*\n\n${md}`;
+    }
+
+    // ── CSV/TSV to Markdown Table ───────────────────────
+    function csvToMarkdown(text,fileName){
+      const lines=text.trim().split('\n');
+      if(lines.length<2)return text;
+      // Detect delimiter
+      const delim=lines[0].includes('\t')?'\t':',';
+      const rows=lines.map(line=>{
+        const cells=[];let cell='',inQuote=false;
+        for(let i=0;i<line.length;i++){
+          const ch=line[i];
+          if(ch==='"'){inQuote=!inQuote}
+          else if(ch===delim&&!inQuote){cells.push(cell.trim());cell=''}
+          else{cell+=ch}
+        }
+        cells.push(cell.trim());
+        return cells;
+      });
+      const header=rows[0];
+      const sep=header.map(()=>'---');
+      const table=[header,sep,...rows.slice(1)].map(r=>'| '+r.join(' | ')+' |').join('\n');
+      return `# ${fileName}\n\n*${rows.length-1} rows, ${header.length} columns*\n\n${table}`;
+    }
 
     // ── File Attach ────────────────────────────────────
     $('attachBtn').addEventListener('click',()=>$('fileIn').click());
@@ -3063,23 +3744,100 @@ Rules:
       for(const item of items){if(item.kind==='file'){e.preventDefault();handleFile(item.getAsFile())}}
     });
 
-    // Drag and drop on the whole chat area
-    const chatArea=$('chatScroll');
-    ['dragenter','dragover'].forEach(ev=>chatArea.addEventListener(ev,e=>{e.preventDefault();chatArea.style.outline='2px dashed var(--teal)'}));
-    ['dragleave','drop'].forEach(ev=>chatArea.addEventListener(ev,e=>{e.preventDefault();chatArea.style.outline='none'}));
-    chatArea.addEventListener('drop',e=>{
+    // ── Full-window drag and drop ───────────────────────
+    let dragCounter=0;
+    const dragOverlay=$('dragOverlay');
+
+    document.addEventListener('dragenter',e=>{
+      e.preventDefault();
+      dragCounter++;
+      if(dragCounter===1)dragOverlay.classList.add('visible');
+    });
+    document.addEventListener('dragover',e=>{e.preventDefault()});
+    document.addEventListener('dragleave',e=>{
+      e.preventDefault();
+      dragCounter--;
+      if(dragCounter<=0){dragCounter=0;dragOverlay.classList.remove('visible')}
+    });
+    document.addEventListener('drop',e=>{
+      e.preventDefault();
+      dragCounter=0;
+      dragOverlay.classList.remove('visible');
       const files=e.dataTransfer?.files;
-      if(files){for(const f of files)handleFile(f)}
+      if(files&&files.length){for(const f of files)handleFile(f)}
     });
 
-    function handleFile(file){
+    // ── Conversation Import (encrypted) ────────────────
+    async function showConvImportPrompt(encData){
+      sysBubble(`<div style="text-align:center">
+        <h3>Encrypted Chat Import</h3>
+        <p style="font-size:12px;color:var(--text-2);margin:8px 0">Enter the passphrase to decrypt:</p>
+        <input type="text" id="convImportPass" maxlength="8" placeholder="A1b2C3d4" autocomplete="off" spellcheck="false" style="width:100%;max-width:240px;padding:10px;font-size:16px;font-family:var(--mono);text-align:center;letter-spacing:0.1em;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);outline:none;margin:8px 0">
+        <button class="btn btn-teal" id="convImportBtn" style="width:100%;max-width:240px;margin-top:8px">Unlock & Import</button>
+      </div>`);
+      const last=document.querySelector('.chat-bubble:last-child');
+      const inp=last?.querySelector('#convImportPass');
+      const btn=last?.querySelector('#convImportBtn');
+      if(!inp||!btn)return;
+      setTimeout(()=>inp.focus(),100);
+      const doImport=async()=>{
+        const pass=inp.value.trim();
+        if(pass.length<1)return;
+        try{
+          const json=await decryptConfig(encData,pass);
+          const payload=JSON.parse(json);
+          if(payload.tealclaw!=='export'){showToast('Invalid export file','err');return}
+          if(payload.type==='all'&&payload.conversations){
+            let count=0;
+            for(const conv of payload.conversations){
+              await ConvDB.save(conv.id,conv.messages||[]).catch(()=>{});
+              // Preserve title
+              if(conv.title)await ConvDB.rename(conv.id,conv.title).catch(()=>{});
+              count++;
+            }
+            // Switch to the most recent one
+            if(payload.conversations.length){
+              const latest=payload.conversations.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+              await switchConversation(latest.id);
+            }
+            showToast(`Imported ${count} conversations`,'ok');
+          } else if(payload.conversation){
+            const c=payload.conversation;
+            await ConvDB.save(c.id,c.messages||[]).catch(()=>{});
+            if(c.title)await ConvDB.rename(c.id,c.title).catch(()=>{});
+            await switchConversation(c.id);
+            showToast('Conversation imported','ok');
+          }
+          haptic('success');
+          renderConvDropdown();
+        }catch{
+          inp.style.borderColor='var(--err)';
+          inp.value='';inp.focus();
+          showToast('Wrong passphrase','err');
+          haptic('error');
+          setTimeout(()=>{inp.style.borderColor='var(--border)'},400);
+        }
+      };
+      btn.addEventListener('click',doImport);
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter')doImport()});
+    }
+
+    // ── Handle File (with auto-conversion) ──────────────
+    async function handleFile(file){
+      const name=file.name||'unnamed';
+      const ext=name.split('.').pop().toLowerCase();
+
       // JSON config file import (from agent or manual)
-      if(file.name?.endsWith('.json')||file.type==='application/json'){
+      if(ext==='json'||file.type==='application/json'){
         const reader=new FileReader();
-        reader.onload=e=>{
+        reader.onload=async e=>{
           try{
             const cfg=JSON.parse(e.target.result);
-            // Check if it looks like a TealClaw config (has any recognized keys)
+            // Encrypted conversation import
+            if(cfg.tealclaw==='encrypted-export'&&cfg.data){
+              showConvImportPrompt(cfg.data);
+              return;
+            }
             const recognized=Object.keys(CONFIG_KEYS);
             const hasConfig=recognized.some(k=>cfg[k]!==undefined)||cfg.agents||cfg.gwUrl;
             if(hasConfig){
@@ -3098,7 +3856,7 @@ Rules:
               if(cfg.botName)parts.push('bot name');
               if(cfg.fontSize)parts.push('font size');
               sysBubble(`<h3>Config Imported!</h3>
-<p>Loaded <strong>${count}</strong> settings from <code>${esc(file.name)}</code>:</p>
+<p>Loaded <strong>${count}</strong> settings from <code>${esc(name)}</code>:</p>
 <p>${parts.join(', ')||'Configuration updated'}</p>
 <p>${cfg.mode==='agent'?'Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway.':'You\'re ready to chat!'}</p>`);
               showToast(`Imported ${count} settings`,'ok');
@@ -3108,31 +3866,108 @@ Rules:
               return;
             }
           }catch{}
-          // Not a config file, treat as regular text
-          const txt=e.target.result?.slice(0,8000);
-          $('textIn').value=($('textIn').value+'\n\n--- '+file.name+' ---\n'+txt).trim();
-          $('textIn').dispatchEvent(new Event('input'));
+          // Not a config file — paste as text document
+          const txt=e.target.result?.slice(0,32000);
+          appendDocText(name,txt);
         };
         reader.readAsText(file);
         return;
       }
 
+      // Images — compress and add to file stack
       if(file.type?.startsWith('image/')){
+        const idx=pendingFiles.length;
+        pendingFiles.push({name,type:'image',processing:true,origSize:file.size,dataUrl:null});
+        renderFileStack();updateActionBtn();
         const reader=new FileReader();
-        reader.onload=e=>{
-          pendingFiles.push({name:file.name,dataUrl:e.target.result,type:'image'});
+        reader.onload=async e=>{
+          const raw=e.target.result;
+          // Skip compression for tiny images (<100KB) or GIFs/SVGs
+          if(file.size<102400||ext==='gif'||ext==='svg'||ext==='svg+xml'){
+            pendingFiles[idx]={name,type:'image',dataUrl:raw,origSize:file.size,compSize:file.size,processing:false};
+          } else {
+            const comp=await compressImage(raw,file);
+            pendingFiles[idx]={name,type:'image',dataUrl:comp.dataUrl,origSize:file.size,compSize:comp.compSize,processing:false};
+          }
           renderFileStack();updateActionBtn();
         };
         reader.readAsDataURL(file);
-      } else {
+        return;
+      }
+
+      // PDF — convert to markdown text
+      if(ext==='pdf'||file.type==='application/pdf'){
+        const idx=pendingFiles.length;
+        pendingFiles.push({name,type:'document',processing:true,size:file.size});
+        renderFileStack();updateActionBtn();
+        try{
+          const buf=await file.arrayBuffer();
+          const md=await pdfToMarkdown(buf,name);
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:md};
+          renderFileStack();
+          showToast(`PDF converted: ${name}`,'ok');
+        }catch(err){
+          // Fallback: just note the file
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:`[Could not extract text from ${name}: ${err.message}]`};
+          renderFileStack();
+          showToast(`PDF conversion failed — file attached as-is`,'err');
+        }
+        return;
+      }
+
+      // DOCX — convert to markdown text
+      if(ext==='docx'||file.type==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){
+        const idx=pendingFiles.length;
+        pendingFiles.push({name,type:'document',processing:true,size:file.size});
+        renderFileStack();updateActionBtn();
+        try{
+          const buf=await file.arrayBuffer();
+          const md=await docxToMarkdown(buf,name);
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:md};
+          renderFileStack();
+          showToast(`DOCX converted: ${name}`,'ok');
+        }catch(err){
+          pendingFiles[idx]={name,type:'document',processing:false,size:file.size,text:`[Could not convert ${name}: ${err.message}]`};
+          renderFileStack();
+          showToast(`DOCX conversion failed`,'err');
+        }
+        return;
+      }
+
+      // CSV/TSV — convert to markdown table
+      if(ext==='csv'||ext==='tsv'||file.type==='text/csv'){
         const reader=new FileReader();
         reader.onload=e=>{
-          const txt=e.target.result?.slice(0,8000);
-          $('textIn').value=($('textIn').value+'\n\n--- '+file.name+' ---\n'+txt).trim();
-          $('textIn').dispatchEvent(new Event('input'));
+          const txt=e.target.result?.slice(0,100000);
+          const md=csvToMarkdown(txt,name);
+          pendingFiles.push({name,type:'document',processing:false,size:file.size,text:md});
+          renderFileStack();updateActionBtn();
+          showToast(`Table converted: ${name}`,'ok');
         };
         reader.readAsText(file);
+        return;
       }
+
+      // All other text-based files — read as text document
+      const textExts=['txt','md','js','ts','jsx','tsx','py','rb','go','rs','c','cpp','h','hpp','java','kt','swift','m','css','html','xml','yaml','yml','toml','ini','cfg','env','sh','bash','zsh','sql','r','log','rtf','tex','makefile','dockerfile','gitignore'];
+      if(textExts.includes(ext)||file.type?.startsWith('text/')){
+        const reader=new FileReader();
+        reader.onload=e=>{
+          const txt=e.target.result?.slice(0,100000);
+          appendDocText(name,txt);
+        };
+        reader.readAsText(file);
+        return;
+      }
+
+      // Unknown binary file — add as document placeholder
+      pendingFiles.push({name,type:'document',processing:false,size:file.size,text:`[Binary file: ${name} (${fmtSize(file.size)})]`});
+      renderFileStack();updateActionBtn();
+    }
+
+    function appendDocText(name,txt){
+      pendingFiles.push({name,type:'document',processing:false,size:txt?.length||0,text:txt});
+      renderFileStack();updateActionBtn();
     }
 
     // ── Microphone ─────────────────────────────────────
@@ -3280,11 +4115,17 @@ Rules:
       const video=$('camVideo'),canvas=$('camCanvas');
       canvas.width=video.videoWidth;canvas.height=video.videoHeight;
       canvas.getContext('2d').drawImage(video,0,0);
-      const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+      const rawUrl=canvas.toDataURL('image/jpeg',0.85);
       closeCamera();
       const n=pendingFiles.filter(f=>f.type==='image').length+1;
-      pendingFiles.push({name:`Photo ${n}`,dataUrl,type:'image'});
+      const idx=pendingFiles.length;
+      const origSize=Math.round(rawUrl.length*0.75);
+      pendingFiles.push({name:`Photo ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl});
       renderFileStack();updateActionBtn();
+      compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
+        pendingFiles[idx]={name:`Photo ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false};
+        renderFileStack();
+      });
     });
 
     $('camFlip').addEventListener('click',async()=>{
@@ -3367,7 +4208,11 @@ Rules:
       pinCode:'pinCode',pinRequired:'pinRequired',
       // Animations
       typingAnimation:'typingAnimation',typingSpeed:'typingSpeed',bubbleAnimation:'bubbleAnimation',
-      use24HourTime:'use24HourTime'
+      use24HourTime:'use24HourTime',
+      // Gesture control
+      gestureEnabled:'gestureEnabled',
+      gestureBindings:'gestureBindings',
+      rateLimitPerMin:'rateLimitPerMin'
     };
 
     function importConfig(cfg){
@@ -3476,14 +4321,9 @@ Rules:
 
       // Bot name
       if(k.botName){
-        const logo=document.querySelector('.logo');
-        if(logo){
-          const nodes=[...logo.childNodes];
-          const textIdx=nodes.findIndex(n=>n.nodeType===3&&n.textContent.trim());
-          if(textIdx>=0)nodes[textIdx].textContent='\n      '+k.botName+'\n    ';
-          else{const last=logo.lastChild;if(last)last.textContent=k.botName}
-          document.title=k.botName;
-        }
+        const titleEl=document.querySelector('#convTitleText');
+        if(titleEl)titleEl.textContent=k.botName;
+        document.title=k.botName;
       }
 
       // Bot icon
@@ -3856,7 +4696,15 @@ Rules:
 
     // ── Init ───────────────────────────────────────────
     // Widget/embed mode
-    if(new URLSearchParams(location.search).get('embed')==='true')document.body.classList.add('embed-mode');
+    // ── URL params: embed, share target, shortcuts ────
+    const urlParams=new URLSearchParams(location.search);
+    if(urlParams.get('embed')==='true')document.body.classList.add('embed-mode');
+    // Share Target: text shared from other apps
+    const sharedText=urlParams.get('q');
+    if(sharedText){$('textIn').value=sharedText;history.replaceState(null,'','/');$('textIn').dispatchEvent(new Event('input'))}
+    // Manifest shortcuts
+    if(urlParams.get('action')==='new'){localStorage.removeItem('tc-chat');chatHistory=[];history.replaceState(null,'','/')}
+    if(urlParams.get('action')==='settings'){history.replaceState(null,'','/');setTimeout(()=>{const s=document.querySelector('.sheet');if(s&&typeof openSheet==='function')openSheet()},500)}
 
     importFromHash();
     autoLoadFont();
@@ -3864,6 +4712,44 @@ Rules:
     loadUI();
     // PIN lock on startup
     checkPinLock();
+
+    // ── IndexedDB migration + init ───────────────────
+    (async function initConvDB(){
+      try{
+        await ConvDB.open();
+        // Migrate existing localStorage chat to IndexedDB on first run
+        if(!localStorage.getItem('tc-idb-migrated')){
+          const existing=getChat();
+          const id=genConvId();
+          setActiveConvId(id);
+          const title=existing.find(m=>m.role==='user')?.text?.slice(0,40)||'First Chat';
+          await ConvDB.save(id,existing);
+          await ConvDB.rename(id,title);
+          localStorage.setItem('tc-idb-migrated','1');
+          updateConvTitle(title);
+        } else if(!getActiveConvId()){
+          // No active conversation — create one
+          const all=await ConvDB.list();
+          if(all.length){
+            setActiveConvId(all[0].id);
+            updateConvTitle(all[0].title||'Chat');
+          } else {
+            const id=genConvId();
+            setActiveConvId(id);
+            await ConvDB.save(id,[]);
+            updateConvTitle('New Chat');
+          }
+        } else {
+          // Restore title for active conversation
+          const record=await ConvDB.get(getActiveConvId());
+          if(record)updateConvTitle(record.title||'Chat');
+        }
+      }catch{
+        // IndexedDB unavailable (private browsing) — app works as before
+        if(!getActiveConvId()){setActiveConvId(genConvId())}
+      }
+    })();
+
     // Run onboarding if no keys set and no chat history — show custom greeting if set
     setTimeout(()=>{
       const bk=getK();
@@ -3883,7 +4769,321 @@ Rules:
     // LaTeX — preload if enabled
     if(getK().latexEnabled)loadKaTeX().catch(()=>{});
 
-    if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    // ── Gesture Control (MediaPipe Hands) ────────────
+    let gestureStream=null,gestureHands=null,gestureRAF=null,gestureActive=false;
+    let lastGesture='',gestureHoldStart=0,gestureRecording=false;
+    const GESTURE_HOLD_MS=400; // ms to hold gesture before triggering
+
+    function getGestureBindings(){
+      const k=getK();
+      if(k.gestureBindings){try{return JSON.parse(k.gestureBindings)}catch{}}
+      return[
+        {gesture:'victory',action:'voice_start',label:'Start voice capture'},
+        {gesture:'fist',action:'voice_stop',label:'Stop recording'},
+        {gesture:'open_palm',action:'stop_agent',label:'Stop AI response'},
+        {gesture:'thumbs_up',action:'send_thumbsup',label:'Send thumbs up'}
+      ];
+    }
+
+    async function loadMediaPipeHands(){
+      if(window.Hands)return;
+      // Load MediaPipe Hands via CDN
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js';
+        s.onload=resolve;s.onerror=reject;
+        document.head.appendChild(s);
+      });
+      // Load camera utils
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js';
+        s.onload=resolve;s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    function classifyGesture(landmarks){
+      if(!landmarks||landmarks.length<21)return'unknown';
+      // Landmark indices: 0=wrist, 4=thumb_tip, 8=index_tip, 12=middle_tip, 16=ring_tip, 20=pinky_tip
+      // MCP joints: 5=index_mcp, 9=middle_mcp, 13=ring_mcp, 17=pinky_mcp
+      // PIP joints: 6=index_pip, 10=middle_pip, 14=ring_pip, 18=pinky_pip
+      const tips=[8,12,16,20];
+      const pips=[6,10,14,18];
+      const extended=tips.map((t,i)=>landmarks[t].y<landmarks[pips[i]].y);
+      const thumbOut=landmarks[4].x<landmarks[3].x; // for right hand (simplified)
+      const thumbOutAlt=landmarks[4].x>landmarks[3].x; // for left hand
+      const thumbExtended=thumbOut||thumbOutAlt;
+      const [indexUp,middleUp,ringUp,pinkyUp]=extended;
+
+      // Victory / Peace: index + middle up, ring + pinky down
+      if(indexUp&&middleUp&&!ringUp&&!pinkyUp)return'victory';
+      // Fist: all fingers down
+      if(!indexUp&&!middleUp&&!ringUp&&!pinkyUp&&!thumbExtended)return'fist';
+      // Open palm: all fingers up
+      if(indexUp&&middleUp&&ringUp&&pinkyUp)return'open_palm';
+      // Thumbs up: thumb up, others down (check thumb is above wrist)
+      if(!indexUp&&!middleUp&&!ringUp&&!pinkyUp&&landmarks[4].y<landmarks[3].y)return'thumbs_up';
+      // Thumbs down: thumb below wrist level
+      if(!indexUp&&!middleUp&&!ringUp&&!pinkyUp&&landmarks[4].y>landmarks[2].y)return'thumbs_down';
+      // Pointing up: only index up
+      if(indexUp&&!middleUp&&!ringUp&&!pinkyUp)return'pointing_up';
+      // Number counts (only those not already matched above)
+      if(indexUp&&middleUp&&ringUp&&!pinkyUp)return'three';
+      if(indexUp&&middleUp&&ringUp&&pinkyUp&&!thumbExtended)return'four';
+      if(indexUp&&middleUp&&ringUp&&pinkyUp&&thumbExtended)return'five';
+
+      return'unknown';
+    }
+
+    function executeGestureAction(action){
+      switch(action){
+        case'voice_start':
+          if(!gestureRecording&&typeof initMic==='function'){
+            $('gesturePip').classList.add('recording');
+            // Simulate mic button press (mic listens on mousedown/touchstart)
+            $('micBtn')?.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));
+            gestureRecording=true;
+          }
+          break;
+        case'voice_stop':
+          if(gestureRecording){
+            $('gesturePip').classList.remove('recording');
+            $('micBtn')?.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
+            gestureRecording=false;
+          }
+          break;
+        case'stop_agent':
+          // Abort current streaming response via the active reader
+          if(window._tcActiveReader){try{window._tcActiveReader.cancel()}catch{}}
+          showToast('Stopped','ok');
+          break;
+        case'send_thumbsup':
+          if(typeof handleSend==='function')handleSend('👍');
+          break;
+        case'send_message':
+          if(typeof send==='function')send();
+          break;
+        case'toggle_mute':
+          audioEnabled=!audioEnabled;
+          showToast(audioEnabled?'Audio on':'Audio muted','ok');
+          break;
+        default:
+          // Custom action: treat as a message to send
+          if(action.startsWith('send:')){
+            const msg=action.slice(5);
+            if(typeof handleSend==='function')handleSend(msg);
+          }
+          break;
+      }
+    }
+
+    async function startGestureTracking(){
+      if(gestureActive)return;
+      try{
+        showToast('Loading gesture recognition...','ok');
+        await loadMediaPipeHands();
+
+        gestureStream=await navigator.mediaDevices.getUserMedia({
+          video:{facingMode:'user',width:{ideal:320},height:{ideal:240}},audio:false
+        });
+
+        const video=$('gestureVideo');
+        video.srcObject=gestureStream;
+        await video.play();
+
+        const canvas=$('gestureCanvas');
+        const ctx=canvas.getContext('2d');
+
+        gestureHands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
+        gestureHands.setOptions({
+          maxNumHands:1,
+          modelComplexity:0, // lite model for speed
+          minDetectionConfidence:0.6,
+          minTrackingConfidence:0.5
+        });
+
+        gestureHands.onResults(results=>{
+          canvas.width=video.videoWidth;
+          canvas.height=video.videoHeight;
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+
+          if(results.multiHandLandmarks&&results.multiHandLandmarks.length>0){
+            const lm=results.multiHandLandmarks[0];
+            // Draw hand wireframe
+            ctx.strokeStyle='rgba(13,148,136,0.8)';
+            ctx.lineWidth=2;
+            const connections=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+            connections.forEach(([a,b])=>{
+              ctx.beginPath();
+              ctx.moveTo(lm[a].x*canvas.width,lm[a].y*canvas.height);
+              ctx.lineTo(lm[b].x*canvas.width,lm[b].y*canvas.height);
+              ctx.stroke();
+            });
+            // Draw landmarks
+            lm.forEach(p=>{
+              ctx.beginPath();
+              ctx.arc(p.x*canvas.width,p.y*canvas.height,3,0,2*Math.PI);
+              ctx.fillStyle='#0d9488';
+              ctx.fill();
+            });
+
+            const gesture=classifyGesture(lm);
+            const label=$('gesturePipLabel');
+
+            if(gesture!=='unknown'){
+              label.textContent=gesture.replace(/_/g,' ');
+              $('gesturePip').classList.add('recognized');
+
+              if(gesture===lastGesture){
+                // Held same gesture long enough?
+                if(Date.now()-gestureHoldStart>GESTURE_HOLD_MS){
+                  const bindings=getGestureBindings();
+                  const binding=bindings.find(b=>b.gesture===gesture);
+                  if(binding){
+                    executeGestureAction(binding.action);
+                    haptic('success');
+                    gestureHoldStart=Date.now()+2000; // cooldown: don't re-trigger for 2s
+                  }
+                }
+              } else {
+                lastGesture=gesture;
+                gestureHoldStart=Date.now();
+              }
+            } else {
+              label.textContent='';
+              $('gesturePip').classList.remove('recognized');
+              lastGesture='';
+            }
+          } else {
+            $('gesturePipLabel').textContent='';
+            $('gesturePip').classList.remove('recognized');
+            lastGesture='';
+          }
+        });
+
+        // Use MediaPipe camera utils for frame loop
+        const mpCamera=new window.Camera(video,{
+          onFrame:async()=>{await gestureHands.send({image:video})},
+          width:320,height:240
+        });
+        await mpCamera.start();
+
+        $('gesturePip').classList.add('active');
+        gestureActive=true;
+        showToast('Gesture control active','ok');
+      }catch(err){
+        console.error('[Gesture]',err);
+        showToast('Gesture setup failed: '+err.message,'err');
+        stopGestureTracking();
+      }
+    }
+
+    function stopGestureTracking(){
+      gestureActive=false;
+      $('gesturePip').classList.remove('active','recognized','recording');
+      if(gestureStream){gestureStream.getTracks().forEach(t=>t.stop());gestureStream=null}
+      $('gestureVideo').srcObject=null;
+      lastGesture='';gestureRecording=false;
+    }
+
+    // Pip close button
+    $('gesturePipClose').addEventListener('click',()=>{
+      stopGestureTracking();
+      const k2=getK();k2.gestureEnabled=false;setK(k2);
+      showToast('Gesture control off','ok');
+    });
+
+    // Make pip draggable
+    (function(){
+      const pip=$('gesturePip');
+      let isDragging=false,startX,startY,origX,origY;
+      pip.addEventListener('pointerdown',e=>{
+        if(e.target.classList.contains('gesture-pip-close'))return;
+        isDragging=true;pip.style.cursor='grabbing';
+        startX=e.clientX;startY=e.clientY;
+        const rect=pip.getBoundingClientRect();
+        origX=rect.left;origY=rect.top;
+        pip.setPointerCapture(e.pointerId);
+      });
+      pip.addEventListener('pointermove',e=>{
+        if(!isDragging)return;
+        const dx=e.clientX-startX,dy=e.clientY-startY;
+        pip.style.left=(origX+dx)+'px';pip.style.top=(origY+dy)+'px';
+        pip.style.right='auto';pip.style.bottom='auto';
+      });
+      pip.addEventListener('pointerup',()=>{isDragging=false;pip.style.cursor='grab'});
+    })();
+
+    // Auto-start if enabled
+    if(getK().gestureEnabled)startGestureTracking();
+
+    // ── Service Worker + Update Notification ──────────
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').then(reg=>{
+        reg.addEventListener('updatefound',()=>{
+          const nw=reg.installing;
+          nw.addEventListener('statechange',()=>{
+            if(nw.state==='installed'&&navigator.serviceWorker.controller){
+              showToast('New version available — tap to update','ok',10000);
+              toast.style.cursor='pointer';toast.onclick=()=>location.reload();
+              nw.postMessage('skipWaiting');
+            }
+          });
+        });
+      }).catch(()=>{});
+      setInterval(()=>navigator.serviceWorker.getRegistration().then(r=>r?.update()),3600000);
+    }
+
+    // ── Persistent Storage (protect user keys from eviction) ──
+    if(navigator.storage&&navigator.storage.persist){
+      navigator.storage.persist().then(g=>{if(g)console.log('[TealClaw] Storage persistent')});
+    }
+
+    // ── Keyboard-aware safe area (iOS standalone) ──────
+    if(window.visualViewport){
+      const vv=window.visualViewport;
+      let baseH=vv.height;
+      vv.addEventListener('resize',()=>{
+        const kbOpen=vv.height<baseH-100;
+        document.body.classList.toggle('kb-open',kbOpen);
+        if(!kbOpen)baseH=vv.height;
+      });
+    }
+
+    // ── Auto-detect OS preferences ────────────────────
+    if(!localStorage.getItem('tc-theme')){
+      const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme',prefersDark?'dark':'light');
+    }
+    const motionQ=window.matchMedia('(prefers-reduced-motion: reduce)');
+    if(motionQ.matches&&!getK().reduceMotion&&!localStorage.getItem('tc-motion-override')){
+      document.body.classList.add('reduce-motion');
+    }
+    motionQ.addEventListener('change',e=>{
+      if(!localStorage.getItem('tc-motion-override'))document.body.classList.toggle('reduce-motion',e.matches);
+    });
+
+    // ── Dynamic theme-color for status bar ────────────
+    function updateThemeColor(){
+      const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+      document.querySelector('meta[name="theme-color"]').content=isDark?'#171717':'#ffffff';
+    }
+    updateThemeColor();
+
+    // ── Standalone mode back gesture handling ─────────
+    const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+    if(isStandalone){
+      document.body.classList.add('standalone');
+      history.pushState({page:'main'},'');
+      window.addEventListener('popstate',()=>{
+        const sheet=document.querySelector('.sheet.open');
+        const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.pin-overlay:not(.hidden),.cam-overlay:not(.hidden)');
+        if(sheet){closeSheet()}
+        else if(overlay){overlay.classList.add('hidden')}
+        history.pushState({page:'main'},'');
+      });
+    }
   </script>
 </body>
 </html>

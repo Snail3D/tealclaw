@@ -237,6 +237,25 @@ Use `/profile save name` and `/profile load name` in chat. Profiles save and res
 
 PIN codes protect your TealClaw from unauthorized use on shared or unlocked devices. API keys are never included in QR code exports.
 
+## Gesture Control
+
+Camera-based hand gesture recognition using MediaPipe Hands. Detects hand landmarks from the selfie cam and triggers configurable actions.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| gestureEnabled | boolean | Enable gesture control. Shows a floating pip with camera feed and hand tracking overlay |
+| gestureBindings | string | JSON string of gesture binding array. Each binding: {gesture, action, label}. Gestures: victory, fist, open_palm, thumbs_up, thumbs_down, pointing_up. Actions: voice_start, voice_stop, stop_agent, send_message, toggle_mute, send_thumbsup, send:custom text |
+
+Default bindings: victory=voice_start, fist=voice_stop, open_palm=stop_agent, thumbs_up=send_thumbsup. Agents can override these to build custom gesture-driven workflows.
+
+## Rate Limiting
+
+| Field | Type | Description |
+|-------|------|-------------|
+| rateLimitPerMin | number | Maximum messages per minute. Default: not set (unlimited). Prevents runaway API costs |
+
+Example: `{"rateLimitPerMin": 10}` — allows 10 messages per minute, blocks additional sends with a countdown toast.
+
 ## Advanced
 
 | Field | Type | Description |
