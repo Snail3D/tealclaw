@@ -3505,22 +3505,22 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
       }
 
       // Primary: OpenRouter (Gemini Flash). Fallback: Groq (free).
-      const aiKey=k.aiKey||k.whisperKey;
+      // Respect aiProvider when set explicitly (e.g. user pasted Groq key)
+      const isGroq=k.aiProvider==='groq'||(!k.aiKey&&!!k.whisperKey);
+      const aiKey=isGroq?(k.whisperKey||k.aiKey):(k.aiKey||k.whisperKey);
       if(!aiKey)return '__NO_KEY__';
-
-      const isGroqFallback=!k.aiKey&&!!k.whisperKey;
       const groqVisionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
       const groqChatModel=k.aiModel||'llama-3.3-70b-versatile';
 
-      const url=isGroqFallback
+      const url=isGroq
         ?'https://api.groq.com/openai/v1/chat/completions'
         :'https://openrouter.ai/api/v1/chat/completions';
-      let model=isGroqFallback
+      let model=isGroq
         ?(imageBase64?groqVisionModel:groqChatModel)
         :(k.aiModel||'google/gemini-2.5-flash-preview');
 
-      // Multi-model routing (skip when using Groq fallback — routed models may not be valid Groq models)
-      if(userText&&!isGroqFallback){const routed=routeModel(userText,k);if(routed)model=routed}
+      // Multi-model routing (skip when using Groq — routed models may not be valid Groq models)
+      if(userText&&!isGroq){const routed=routeModel(userText,k);if(routed)model=routed}
 
       const sys=buildSysPrompt(k);
 
@@ -4066,6 +4066,10 @@ Token: openclaw config get gateway.token</code><span style="position:absolute;bo
       // If Groq key and no separate AI key, use Groq as the AI provider too
       if(det.field==='whisperKey'&&!k.aiKey){
         k.aiProvider='groq';
+      }
+      // Switch to direct mode when setting a direct API key (not gateway URL/token)
+      if(det.provider&&det.field!=='gwUrl'&&det.field!=='gwToken'){
+        k.mode='direct';
       }
       if(!k.sysPrompt)k.sysPrompt='You are a helpful voice assistant. Keep responses concise and conversational (1-3 sentences).';
       setK(k);
@@ -5450,18 +5454,19 @@ Rules:
     async function callAIStream(userText,imageBase64,onToken){
       const k=getK();
       if(k.mode==='agent'&&getActiveAgent())return callAgent(userText,imageBase64,onToken);
-      const aiKey=k.aiKey||k.whisperKey;
+      // Respect aiProvider when set explicitly (e.g. user pasted Groq key)
+      const isGroq=k.aiProvider==='groq'||(!k.aiKey&&!!k.whisperKey);
+      const aiKey=isGroq?(k.whisperKey||k.aiKey):(k.aiKey||k.whisperKey);
       if(!aiKey)return {text:'__NO_KEY__',usage:null};
-      const isGroqFallback=!k.aiKey&&!!k.whisperKey;
-      const url=isGroqFallback?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
+      const url=isGroq?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
       let model;
-      if(isGroqFallback){
+      if(isGroq){
         model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.aiModel||'llama-3.3-70b-versatile');
       } else {
         model=imageBase64?(k.visionModel||k.aiModel||'google/gemini-2.5-flash-preview'):(k.aiModel||'google/gemini-2.5-flash-preview');
       }
-      // Multi-model routing (skip when using Groq fallback)
-      if(userText&&!isGroqFallback){const routed=routeModel(userText,k);if(routed)model=routed}
+      // Multi-model routing (skip when using Groq)
+      if(userText&&!isGroq){const routed=routeModel(userText,k);if(routed)model=routed}
       const sys=buildSysPrompt(k);
       const ctxLimit=k.contextMessages||20;
       const histMsgs=chatHistory.slice(-ctxLimit).filter(m=>m.role==='user'||m.role==='ai').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
