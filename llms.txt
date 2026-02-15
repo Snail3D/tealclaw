@@ -33,8 +33,8 @@ Three fields: accent shifts to purple everywhere, header becomes "Orchid",
 new greeting appears. Zero usr effort.
 
 TC scans every AI rsp for a JSON code block whose keys match known cfg
-fields. If found, imports silently with a brief toast. The JSON stays
-visible in chat so the usr sees what changed.
+fields. If found, shows usr a confirmation dialog listing the fields.
+Usr must click Accept to apply. The JSON stays visible in chat.
 
 
 ## First-Time Setup
