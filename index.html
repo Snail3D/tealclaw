@@ -48,7 +48,7 @@
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     html,body{overscroll-behavior:none;overflow:hidden}
-    body{background:var(--bg-root);color:var(--text);font-family:var(--font);min-height:100vh;min-height:100dvh;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding-left:var(--sal);padding-right:var(--sar)}
+    body{background:var(--bg-root);color:var(--text);font-family:var(--font);height:100vh;height:100dvh;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding-left:var(--sal);padding-right:var(--sar)}
 
     /* ── Topbar ────────────────────────────────────────── */
     .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:var(--sat) 16px 0;height:calc(52px + var(--sat));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
@@ -404,13 +404,11 @@
     .code-block-wrap .code-copy-btn.copied{background:var(--ok);color:#fff;border-color:var(--ok)}
 
     /* ── Chat Action Buttons (Share / Obsidian) ───── */
-    .chat-actions{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity 0.2s;z-index:2}
-    .chat-bubble.user .chat-actions{right:auto;left:6px}
-    .chat-bubble:hover .chat-actions,.chat-actions:focus-within{opacity:1}
+    .chat-actions{position:absolute;bottom:100%;right:6px;margin-bottom:2px;display:flex;gap:4px;opacity:0;transition:opacity 0.2s;z-index:2;pointer-events:none}
+    .chat-bubble:hover .chat-actions,.chat-actions:focus-within{opacity:1;pointer-events:auto}
     .chat-action-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;color:var(--text-2);font-size:14px;transition:all 0.15s;padding:0}
     .chat-action-btn:hover{border-color:var(--teal);color:var(--teal)}
     .chat-action-btn svg{width:14px;height:14px}
-    @media(hover:none){.chat-actions{opacity:0.6}}
     .mermaid-block{margin:12px 0;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);overflow-x:auto;text-align:center}
     .mermaid-block svg{max-width:100%;height:auto}
     .mermaid-loading{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-3);font-size:12px;padding:20px 0}
