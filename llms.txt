@@ -156,6 +156,10 @@ Example first-time cfg:
 
 - **CHANNEL SELECTOR** -- Tap the provider pill (top right) to switch between configured channels: OpenClaw agents (WS), Groq, OpenRouter, OpenAI. OpenClaw agents are listed first (preferred). Shows connection status, transport badge (WS/HTTP), and active indicator.
 
+- **MULTI-DEVICE MESH** -- Each TealClaw instance has a unique device ID, name, and location (Settings > Device Identity). Surveillance alerts, Obsidian saves, and WS messages include device tags. Multiple instances can connect to the same OpenClaw agent simultaneously. Cross-device chat sync via WS relay + same-device tab sync via BroadcastChannel.
+
+- **MODEL PICKER** -- Settings > Models: per-purpose model selection (Chat, Vision, Search, Fast, Complex). Live search against Groq and OpenRouter model APIs. Shows model names, costs, capabilities (vision, fast, free tags). Defaults vary by provider.
+
 - **FONTS** -- 6 built-in: System Default, Inter, Georgia, JetBrains Mono, Nunito, Space Grotesk. Set via fontFamily.
 
 - **FILE HANDLING** -- Drag-drop, paste, or attach btn. Client-side processing:
