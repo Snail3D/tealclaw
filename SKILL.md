@@ -62,19 +62,35 @@ webbrowser.open(f"https://tealclaw.ai/#config={payload}")
 
 The user's browser opens, TealClaw loads, config imports, done. No copy-paste needed.
 
-### Encrypted Share Links (Recommended When Keys Are Included)
+### Encrypted Share Links (REQUIRED when keys are included)
 
-When the config contains API keys, use the encrypted format so keys aren't visible in the URL:
+**IMPORTANT:** If the config contains ANY API keys (`aiKey`, `whisperKey`, `ttsKey`,
+`tgToken`, `imageGenKey`, or gateway tokens), you MUST use encrypted links. Never
+send plain base64 links with API keys through any messaging channel.
+
+TealClaw encrypts configs with AES-256-GCM. The encrypted link format:
 
 ```
 https://tealclaw.ai/#config=enc:ENCRYPTED_BLOB
 ```
 
-The `enc:` prefix tells TealClaw the payload is AES-256-GCM encrypted. The user will be prompted for an 8-character alphanumeric passphrase to decrypt.
+The recipient must enter an 8-character alphanumeric passphrase to decrypt.
+The passphrase is NEVER included in the URL — it must be shared separately.
 
-**Users can generate encrypted links** by typing `/share` in TealClaw chat. This auto-generates the passphrase.
+**Easiest approach — tell the user to type `/share` in TealClaw:**
 
-**Agents generating links programmatically:** Use the plain base64 method (above) for configs without sensitive keys. For configs with API keys, tell the user to type `/share` in TealClaw after importing their config, or share the plain link over a secure channel.
+After setting up a user's TealClaw, instruct them to type `/share` in the chat.
+TealClaw will generate the encrypted link + passphrase. Tell them to send the link
+to the recipient, then share the passphrase through a different channel (voice, text, DM).
+
+**For programmatic encryption** (if you have code execution), see the Node.js
+example in the full skill guide at `https://tealclaw.ai/llms.txt` under
+"Encrypted Share Links".
+
+**When sharing via Telegram, Discord, or any platform:**
+1. ALWAYS encrypt the link when keys are present
+2. Send the link and passphrase through DIFFERENT channels
+3. Never put both in the same message
 
 ### If You Can Generate Files
 

@@ -562,23 +562,100 @@ https://tealclaw.ai/#config=eyJhaUtleSI6InNrLW9yLXYxLXh4eCJ9
 
 Build it: "https://tealclaw.ai/#config=" + btoa(JSON.stringify(config))
 
-### Encrypted Share Links
+### Encrypted Share Links (REQUIRED when config contains API keys)
 
-When sharing configs that contain API keys, TealClaw supports AES-256-GCM
-encrypted links. The format is:
+IMPORTANT: If the config you are generating contains ANY API keys (aiKey,
+whisperKey, ttsKey, tgToken, imageGenKey, or gateway tokens), you MUST
+either encrypt the link or instruct the user to use /share. Never send
+plain base64 links containing API keys through Telegram, Discord, email,
+or any messaging platform.
+
+TealClaw supports AES-256-GCM encrypted config links:
 
   https://tealclaw.ai/#config=enc:ENCRYPTED_BLOB
 
-The recipient sees a passphrase prompt on open. Without the 8-character
-alphanumeric passphrase, the config cannot be decrypted.
+The recipient sees a passphrase prompt. Without the 8-character alphanumeric
+passphrase, the config cannot be decrypted.
 
-Users generate encrypted links by typing /share in TealClaw chat.
-This auto-generates the link + passphrase pair. The passphrase should be
-shared via a separate channel (text message, voice, etc.) from the link.
+#### Option A: Tell the user to use /share (simplest)
 
-For agents: use plain base64 links when no sensitive keys are included.
-When keys are present, either tell the user to type /share after importing,
-or share the plain link privately.
+After setting up a user's TealClaw, instruct them:
+
+  "Your TealClaw is set up. To share it with someone else securely:
+   1. Type /share in the TealClaw chat
+   2. Copy the encrypted link and send it to them
+   3. Send the passphrase SEPARATELY (text, voice call, in person)
+   They open the link, enter the passphrase, and they're in."
+
+This is the recommended approach. TealClaw handles encryption client-side.
+
+#### Option B: Generate encrypted links programmatically (Node.js)
+
+If you have shell/code execution, you can generate encrypted links directly:
+
+```javascript
+const crypto = require('crypto');
+
+function generatePassphrase() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const bytes = crypto.randomBytes(8);
+  return Array.from(bytes, b => chars[b % chars.length]).join('');
+}
+
+async function encryptConfig(configJson, passphrase) {
+  const salt = Buffer.from('tealclaw-v1');
+  const key = crypto.pbkdf2Sync(passphrase, salt, 100000, 32, 'sha256');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(configJson, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  const combined = Buffer.concat([iv, encrypted, tag]);
+  return combined.toString('base64');
+}
+
+// Usage:
+const config = {"aiKey":"sk-or-v1-xxx","whisperKey":"gsk_xxx","botName":"MyBot"};
+const passphrase = generatePassphrase();
+const blob = await encryptConfig(JSON.stringify(config), passphrase);
+const url = `https://tealclaw.ai/#config=enc:${blob}`;
+
+// Give the user the URL and passphrase SEPARATELY
+console.log("Link:", url);
+console.log("Passphrase:", passphrase);
+```
+
+#### Option C: Plain base64 (ONLY for configs WITHOUT keys)
+
+If the config contains only visual/persona settings and NO API keys:
+
+  https://tealclaw.ai/#config=BASE64_ENCODED_JSON
+
+Plain base64 links are fine for sharing themes, personas, and layout configs
+that contain no sensitive data.
+
+#### Sharing via Telegram, Discord, or any messaging platform
+
+When a user asks you to share their TealClaw setup with someone via
+Telegram, Discord, SMS, email, or any channel:
+
+1. ALWAYS use encrypted links (Option A or B above)
+2. Send the encrypted link in the message/channel
+3. Send the passphrase through a DIFFERENT channel
+   (e.g., link via Telegram, passphrase via voice/text/DM)
+4. Never send both the link and passphrase in the same message or channel
+
+Example agent response when user says "share my setup with my friend":
+
+  "I've created an encrypted share link for your TealClaw setup.
+
+   Send this link to your friend:
+   https://tealclaw.ai/#config=enc:...
+
+   Then tell them this passphrase separately (voice, text, etc.):
+   Hk7nPx3m
+
+   They open the link, type the passphrase, and they'll have your
+   exact setup including voice and all."
 
 ### Configuring TealClaw on Mobile
 
@@ -966,12 +1043,14 @@ Set it with: {"pinCode": "1234", "pinRequired": true}
 The PIN is stored locally alongside everything else. It is not a security
 fortress -- it is a practical barrier for casual access control.
 
-### Never Expose Keys in Public Places
+### Never Expose Keys in Plain Text
+- Do NOT send plain base64 config links containing API keys through ANY channel
+  (Telegram, Discord, email, SMS, etc.). ALWAYS use encrypted links (/share or
+  programmatic encryption) when keys are included.
 - Do NOT include real API keys in code committed to GitHub or any public repo
 - Do NOT post config JSON with real keys to public forums, Discord, or social media
-- Do NOT share #config= URLs containing real keys in any public channel
 - Do NOT publish skills, scripts, or automation that contain hardcoded keys
-- Config URLs with real keys should only be sent via private/encrypted channels (DM, Signal, etc.)
+- When sharing configs with keys: encrypt the link, share the passphrase separately
 
 ### If Building a TealClaw Skill or Automation
 If you (the agent) are helping a user build a skill, script, or tool that
