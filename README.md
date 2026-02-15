@@ -1,5 +1,7 @@
 # TealClaw
 
+![TealClaw — Private AI Control](og-image.png)
+
 **BYOK voice dashboard PWA at [tealclaw.ai](https://tealclaw.ai)**. Zero server. Total privacy. 95+ configurable fields.
 
 Your API keys never leave your browser. All traffic goes directly from your browser to the AI provider. We see nothing.
