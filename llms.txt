@@ -404,6 +404,12 @@ Only include fields you want to set/change. TC uses partial merge.
 | chatBubbleRadius | string | Bubble border radius |
 | chatBubblePadding | string | Bubble padding |
 | agents | array | OpenClaw gateway agents (replaces entire list) |
+
+> **Gateway + Tailscale config note**: When the OpenClaw gateway uses
+> tailscale serve or funnel, `bind` MUST be `"loopback"` (NOT `"tailnet"`).
+> Tailscale serve/funnel proxies to localhost; `bind: "tailnet"` crashes the
+> gateway. Only use `bind: "tailnet"` for direct tailnet access without
+> serve/funnel. Correct: `{"gateway":{"bind":"loopback","tailscale":{"mode":"serve"}}}`
 | typingAnimation | boolean | Typewriter char-by-char reveal (dflt: true). Md pre-rendered |
 | typingSpeed | "slow"/"medium"/"fast" | slow=45ms, medium=22ms (dflt), fast=8ms |
 | bubbleAnimation | "slide"/"fade"/"scale"/"bounce"/"none" | Bubble entrance (dflt: "slide") |

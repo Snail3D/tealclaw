@@ -196,6 +196,8 @@ Only include fields to set/change. TC uses partial merge.
 
 Agent objects: `{ id, name, url, token, active }` -- see llms.txt for details.
 
+**Gateway + Tailscale**: When using tailscale serve/funnel, gateway `bind` MUST be `"loopback"` (NOT `"tailnet"`). `bind: "tailnet"` crashes the gateway. See llms.txt for full config example.
+
 ## Interactive Components (tc-ui)
 
 AI rsp can include ` ```tc-ui ` blocks to render interactive UI in chat.
