@@ -5881,8 +5881,10 @@ ${agentNote}`);
 <li><code>/telegram</code> -- set up Telegram forwarding</li>
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
 <li><code>/keys</code> -- show what's configured</li>
-<li><code>/clear</code> -- clear current chat</li>
-<li><code>/clear all</code> -- delete all conversations and start fresh</li>
+<li><code>/clear</code> -- clear context window and start fresh</li>
+<li><code>/restart</code> -- same as /clear</li>
+<li><code>/new</code> -- start a new conversation (separate context)</li>
+<li><code>/clear all</code> -- delete all conversations</li>
 <li><code>/voice</code> -- change TTS voice</li>
 <li><code>/template</code> -- browse and apply style templates</li>
 <li><code>/save</code> -- save current chat to Obsidian</li>
@@ -5966,8 +5968,13 @@ ${agentNote}`);
           newConversation();
           showToast('All conversations cleared','ok');return;
         }
-        if(cmd==='/clear'){
-          chatHistory=[];setChat([]);renderChat();showToast('Chat cleared','ok');return;
+        if(cmd==='/clear'||cmd==='/restart'){
+          chatHistory=[];setChat([]);renderChat();
+          sysBubble('<p>Context cleared. Starting fresh.</p>');
+          showToast('Chat cleared','ok');return;
+        }
+        if(cmd==='/new'){
+          newConversation();return;
         }
         if(cmd==='/clear keys'){
           localStorage.removeItem('tc-keys');updateStatus();
