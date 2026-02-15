@@ -2177,14 +2177,14 @@
         </div>
         <div style="margin-bottom:10px">
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Obsidian Auto-Save</div>
-          <div style="display:flex;gap:6px;align-items:center">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
             <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-2);cursor:pointer">
               <input type="checkbox" id="sheetObsidianAutoSave" ${k.obsidianAutoSave?'checked':''} style="accent-color:var(--teal)">
-              Auto-save conversations to folder
+              Auto-save conversations
             </label>
-            <button class="btn btn-teal btn-sm" id="sheetObsidianPickFolder" style="font-size:10px">${k.obsidianAutoSave?'Change Folder':'Pick Folder'}</button>
+            ${typeof window.showDirectoryPicker==='function'?`<button class="btn btn-teal btn-sm" id="sheetObsidianPickFolder" style="font-size:10px">${k.obsidianAutoSave?'Change Folder':'Pick Folder'}</button>`:''}
           </div>
-          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Saves Markdown files via File System Access API (Chrome/Edge)</div>
+          <div style="font-size:9px;color:var(--text-3);margin-top:3px">${typeof window.showDirectoryPicker==='function'?'Desktop: writes directly to vault folder':'Mobile: saves via Obsidian app using vault name above'}</div>
         </div>
         <div style="margin-bottom:10px">
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Quick Replies</div>
@@ -2675,8 +2675,10 @@
       });
       $('sheetBody').querySelector('#sheetObsidianAutoSave')?.addEventListener('change',e=>{
         const k2=getK();k2.obsidianAutoSave=e.target.checked;setK(k2);
-        if(e.target.checked&&!ObsidianSync._handle)ObsidianSync.pickFolder();
-        else showToast(e.target.checked?'Auto-save enabled':'Auto-save disabled','ok');
+        if(e.target.checked){
+          if(ObsidianSync.hasFileAccess&&!ObsidianSync._handle)ObsidianSync.pickFolder();
+          else showToast(ObsidianSync.hasFileAccess?'Auto-save enabled':'Auto-save via Obsidian app enabled','ok');
+        }else{showToast('Auto-save disabled','ok')}
       });
       $('sheetBody').querySelector('#sheetObsidianPickFolder')?.addEventListener('click',()=>ObsidianSync.pickFolder());
       $('sheetBody').querySelector('#sheetQuickRepliesSave')?.addEventListener('click',()=>{
@@ -4785,10 +4787,13 @@ Rules:
       return md;
     }
 
-    // ── Obsidian Auto-Save (File System Access API) ────
+    // ── Obsidian Auto-Save ─────────────────────────────
+    // Desktop (Chrome/Edge): File System Access API — silent background writes
+    // Mobile / other: obsidian:// URI scheme — opens Obsidian app on flush
     const ObsidianSync={
       _handle:null,_timer:null,_lastLen:0,_dbName:'tealclaw-obsidian',
-      // Store/retrieve directory handle from its own IDB
+      get hasFileAccess(){return typeof window.showDirectoryPicker==='function'},
+      // ── IDB handle storage (File System Access only) ──
       async _openHandleDB(){
         return new Promise((res,rej)=>{
           const req=indexedDB.open(this._dbName,1);
@@ -4817,17 +4822,21 @@ Rules:
         }catch{return null}
       },
       async getHandle(){
+        if(!this.hasFileAccess)return null;
         if(this._handle)return this._handle;
         const h=await this.loadHandle();
         if(!h)return null;
-        // Verify we still have permission
         if(await h.queryPermission({mode:'readwrite'})==='granted'){this._handle=h;return h}
-        // Try requesting (needs user gesture context for the first time after reload)
         try{if(await h.requestPermission({mode:'readwrite'})==='granted'){this._handle=h;return h}}catch{}
         return null;
       },
       async pickFolder(){
-        if(!window.showDirectoryPicker){showToast('Browser doesn\'t support folder access — use Chrome or Edge','err');return null}
+        if(!this.hasFileAccess){
+          // Mobile: just enable with URI mode, no folder picker needed
+          const k=getK();k.obsidianAutoSave=true;setK(k);
+          showToast(`Auto-save via Obsidian app (${getObsidianVault()} vault)`,'ok');
+          return true;
+        }
         try{
           const handle=await window.showDirectoryPicker({id:'obsidian-vault',mode:'readwrite',startIn:'documents'});
           this._handle=handle;
@@ -4840,68 +4849,87 @@ Rules:
           return null;
         }
       },
-      async write(convId,messages,title){
+      // ── Build markdown for a conversation ──
+      _buildMd(convId,messages,title){
+        const k=getK(),bot=k.botName||'TealClaw';
+        const created=messages[0]?.time||new Date().toISOString();
+        const updated=new Date().toISOString();
+        let md=`---\ntags:\n  - tealclaw\n  - tc-md\ntc-id: "${convId}"\ntc-title: "${(title||'Chat').replace(/"/g,'\\"')}"\ncreated: ${created}\nupdated: ${updated}\nsource: "[[TealClaw]]"\n---\n\n# ${title||'Chat'}\n\n`;
+        for(const m of messages){
+          const role=m.role==='user'?'You':m.role==='system'?'System':bot;
+          const time=m.time?' ('+m.time+')':'';
+          md+=`### ${role}${time}\n${m.text||''}\n\n`;
+        }
+        md+=`---\n*Auto-saved by TealClaw · ${updated}*\n`;
+        return md;
+      },
+      // ── Write via File System Access (desktop) ──
+      async _writeFSA(convId,messages,title){
         const handle=await this.getHandle();
         if(!handle||!messages.length)return;
         try{
           const tcDir=await handle.getDirectoryHandle('TealClaw',{create:true});
-          const k=getK(),bot=k.botName||'TealClaw';
           const slug=(title||'Chat').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'-').slice(0,40);
           const fileName=`TC-${slug}-${convId}.md`;
-          const created=messages[0]?.time||new Date().toISOString();
-          const updated=new Date().toISOString();
-          // Build full document
-          let md=`---\ntags:\n  - tealclaw\n  - tc-md\ntc-id: "${convId}"\ntc-title: "${(title||'Chat').replace(/"/g,'\\"')}"\ncreated: ${created}\nupdated: ${updated}\nsource: "[[TealClaw]]"\n---\n\n# ${title||'Chat'}\n\n`;
-          for(const m of messages){
-            const role=m.role==='user'?'You':m.role==='system'?'System':bot;
-            const time=m.time?' ('+m.time+')':'';
-            md+=`### ${role}${time}\n${m.text||''}\n\n`;
-          }
-          md+=`---\n*Auto-saved by TealClaw · ${updated}*\n`;
+          const md=this._buildMd(convId,messages,title);
           const file=await tcDir.getFileHandle(fileName,{create:true});
           const wr=await file.createWritable();
           await wr.write(md);
           await wr.close();
         }catch(e){
-          // Silent fail for auto-save — don't disrupt the user
-          console.warn('[ObsidianSync] write failed:',e.message);
+          console.warn('[ObsidianSync] FSA write failed:',e.message);
+        }
+      },
+      // ── Write via obsidian:// URI (mobile / fallback) ──
+      _writeURI(convId,messages,title){
+        if(!messages.length)return;
+        const vault=getObsidianVault();
+        const slug=(title||'Chat').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'-').slice(0,40);
+        const fileName=`TealClaw/TC-${slug}-${convId}`;
+        const md=this._buildMd(convId,messages,title);
+        const uri=obsidianUri('new',{vault,file:fileName,content:md,overwrite:'true'});
+        // Open silently — on mobile this switches to Obsidian briefly
+        window.open(uri,'_self');
+      },
+      async write(convId,messages,title){
+        if(this.hasFileAccess&&await this.getHandle()){
+          await this._writeFSA(convId,messages,title);
+        }else{
+          this._writeURI(convId,messages,title);
         }
       },
       schedule(){
         if(!getK().obsidianAutoSave)return;
         if(this._timer)clearTimeout(this._timer);
-        this._timer=setTimeout(()=>this.flush(),2000);
+        // Desktop: 2s debounce (silent). Mobile: 30s debounce (opens app)
+        const delay=this.hasFileAccess?2000:30000;
+        this._timer=setTimeout(()=>this.flush(),delay);
       },
       async flush(){
         if(!getK().obsidianAutoSave)return;
         const convId=getActiveConvId();
         if(!convId||chatHistory.length===0)return;
-        if(chatHistory.length===this._lastLen)return; // nothing new
+        if(chatHistory.length===this._lastLen)return;
         this._lastLen=chatHistory.length;
         const title=(chatHistory.find(m=>m.role==='user')?.text||'Chat').slice(0,60);
         await this.write(convId,chatHistory,title);
       },
       async listSaved(){
+        if(!this.hasFileAccess)return[];
         const handle=await this.getHandle();
         if(!handle)return[];
         try{
           const tcDir=await handle.getDirectoryHandle('TealClaw');
           const files=[];
           for await(const entry of tcDir.values()){
-            if(entry.kind==='file'&&entry.name.startsWith('TC-')&&entry.name.endsWith('.md')){
-              files.push(entry);
-            }
+            if(entry.kind==='file'&&entry.name.startsWith('TC-')&&entry.name.endsWith('.md'))files.push(entry);
           }
           return files;
         }catch{return[]}
       },
       async readFile(fileHandle){
-        try{
-          const file=await fileHandle.getFile();
-          return await file.text();
-        }catch{return null}
+        try{const file=await fileHandle.getFile();return await file.text()}catch{return null}
       },
-      // Reset saved length when switching conversations
       resetTracking(){this._lastLen=0}
     };
 
