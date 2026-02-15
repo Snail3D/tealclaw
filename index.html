@@ -404,8 +404,8 @@
     .code-block-wrap .code-copy-btn.copied{background:var(--ok);color:#fff;border-color:var(--ok)}
 
     /* ── Chat Action Buttons (Share / Obsidian) ───── */
-    .chat-actions{position:absolute;bottom:100%;right:6px;margin-bottom:2px;display:flex;gap:4px;opacity:0;transition:opacity 0.2s;z-index:2;pointer-events:none}
-    .chat-bubble:hover .chat-actions,.chat-actions:focus-within{opacity:1;pointer-events:auto}
+    .chat-actions{position:absolute;bottom:100%;right:6px;margin-bottom:2px;display:flex;gap:4px;opacity:0;transition:opacity 0.3s;z-index:2;pointer-events:none}
+    .chat-bubble.actions-visible .chat-actions{opacity:1;pointer-events:auto}
     .chat-action-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;color:var(--text-2);font-size:14px;transition:all 0.15s;padding:0}
     .chat-action-btn:hover{border-color:var(--teal);color:var(--teal)}
     .chat-action-btn svg{width:14px;height:14px}
@@ -2182,7 +2182,17 @@
         head.addEventListener('click',()=>head.parentElement.classList.toggle('open'));
       });
 
-      // Wire up share + obsidian action buttons
+      // Wire up share + obsidian action buttons (tap bubble to reveal, auto-hide)
+      s.querySelectorAll('.chat-bubble').forEach(bubble=>{
+        bubble.addEventListener('click',e=>{
+          if(e.target.closest('.chat-action-btn,.tts-play,.code-copy-btn,.config-apply-btn,.tc-ui-btn,.tc-ui-chip,a'))return;
+          // Hide any other visible actions first
+          s.querySelectorAll('.chat-bubble.actions-visible').forEach(b=>{b.classList.remove('actions-visible');clearTimeout(b._actionsTimer)});
+          bubble.classList.add('actions-visible');
+          clearTimeout(bubble._actionsTimer);
+          bubble._actionsTimer=setTimeout(()=>bubble.classList.remove('actions-visible'),3500);
+        });
+      });
       s.querySelectorAll('.share-msg-btn').forEach(b=>b.addEventListener('click',()=>shareMessage(+b.dataset.idx)));
       s.querySelectorAll('.obsidian-save-btn').forEach(b=>b.addEventListener('click',()=>saveMessageToObsidian(+b.dataset.idx)));
 
