@@ -4505,43 +4505,16 @@ ${getOptionalSteps()}`
     // ── GIF Overlay ──────────────────────────────────────
     let gifTimer=null;
     async function searchGif(query){
-      if(!query)return null;
-      const k=getK();
-      // Prefer Tenor when key is available
-      if(k.gifTenorKey){
-        try{
-          const q=encodeURIComponent(query.slice(0,80));
-          const res=await fetch(`https://tenor.googleapis.com/v2/search?q=${q}&key=${k.gifTenorKey}&limit=8&media_filter=gif&contentfilter=medium`);
-          if(res.ok){
-            const d=await res.json();
-            if(d.results?.length){
-              const pick=d.results[Math.floor(Math.random()*d.results.length)];
-              return pick.media_formats?.gif?.url||pick.media_formats?.mediumgif?.url||null;
-            }
-          }
-        }catch{}
-      }
-      // Fallback: use AI with web search to find a GIF URL
-      const isGroq=k.aiProvider==='groq'||(!k.aiKey&&!!k.whisperKey);
-      const aiKey=isGroq?(k.whisperKey||k.aiKey):(k.aiKey||k.whisperKey);
-      if(!aiKey)return null;
+      const tenorKey=getK().gifTenorKey;
+      if(!tenorKey||!query)return null;
       try{
-        const url=isGroq?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
-        const model=isGroq?'groq/compound-mini':(k.aiModel||'google/gemini-2.5-flash-preview');
-        const res=await fetch(url,{
-          method:'POST',
-          headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},
-          body:JSON.stringify({model,max_tokens:150,temperature:0.7,messages:[
-            {role:'system',content:'You are a GIF finder. Return ONLY a single direct URL to a .gif file from tenor.com or giphy.com. No explanation, no markdown, just the raw URL. If you cannot find one, return "none".'},
-            {role:'user',content:`Find a GIF for: ${query.slice(0,60)}`}
-          ]})
-        });
+        const q=encodeURIComponent(query.slice(0,80));
+        const res=await fetch(`https://tenor.googleapis.com/v2/search?q=${q}&key=${tenorKey}&limit=8&media_filter=gif&contentfilter=medium`);
         if(!res.ok)return null;
         const d=await res.json();
-        const text=(d.choices?.[0]?.message?.content||'').trim();
-        if(text==='none'||!text)return null;
-        const urlMatch=text.match(/https?:\/\/[^\s"'<>]+\.gif[^\s"'<>]*/i);
-        return urlMatch?urlMatch[0]:null;
+        if(!d.results?.length)return null;
+        const pick=d.results[Math.floor(Math.random()*d.results.length)];
+        return pick.media_formats?.gif?.url||pick.media_formats?.mediumgif?.url||null;
       }catch{return null}
     }
 
