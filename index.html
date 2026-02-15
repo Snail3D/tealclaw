@@ -3758,7 +3758,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       }
 
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
-      let maxTok=k.maxTokens||400;
+      let maxTok=k.maxTokens||(k.skillContext===false?400:1024);
       if(isGroq&&maxTok>8192)maxTok=8192; // Groq max output limit
       const body={model,messages:msgs,max_tokens:maxTok};
       if(k.temperature!==undefined)body.temperature=Number(k.temperature);
@@ -5635,7 +5635,7 @@ Rules:
       const re=/```tc-action\s*([\s\S]*?)```/g;
       let m;
       while((m=re.exec(text))!==null){
-        try{actions.push(JSON.parse(m[1].trim()))}catch{}
+        try{actions.push(JSON.parse(m[1].trim()))}catch(e){console.warn('tc-action parse failed:',e.message,m[1].trim().slice(0,200))}
       }
       const cleanText=text.replace(/```tc-action\s*[\s\S]*?```/g,'').trim();
       return{cleanText,actions};
@@ -6131,7 +6131,7 @@ Rules:
       const histMsgs=chatHistory.slice(-ctxLimit).filter(m=>m.role==='user'||m.role==='ai').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
       let userContent=imageBase64?[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}]:userText;
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
-      let maxTok=k.maxTokens||400;if(isGroq&&maxTok>8192)maxTok=8192;
+      let maxTok=k.maxTokens||(k.skillContext===false?400:1024);if(isGroq&&maxTok>8192)maxTok=8192;
       const body={model,messages:msgs,max_tokens:maxTok,stream:true};
       if(k.temperature!==undefined)body.temperature=Number(k.temperature);
       const res=await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
