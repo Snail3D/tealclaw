@@ -11,7 +11,7 @@ Your Browser → AI Provider (OpenRouter/Groq/Anthropic) → Your Browser
 Your Browser → Groq Whisper (voice transcription) → Your Browser
 Your Browser → Groq Research (deep reports) → Your Browser
 Your Browser → ElevenLabs (text-to-speech) → Your Browser
-Your Browser → OpenClaw Gateway (via Tailscale) → Your Browser
+Your Browser → OpenClaw Gateway (via Cloudflare Tunnel) → Your Browser
 Your Browser → Telegram Bot API → Your Telegram Chat
 Your Browser → Tenor (GIF reactions) → Your Browser
 ```
@@ -41,7 +41,7 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - **Scheduled Messages** — Timed greetings and reminders
 - **PIN Code Lock** — Optional PIN to prevent unauthorized message sending
 - **Widget/Embed Mode** — `?embed=true` for iframe embedding
-- **Agent Mode** — Route through your OpenClaw gateway via Tailscale
+- **Agent Mode** — Route through your OpenClaw gateway via Cloudflare Tunnel
 - **Telegram** — Forward conversations (including full research context) to Telegram
 - **95+ Config Fields** — Colors, fonts, layout, animations, markdown, buttons, accessibility, and more
 - **Custom Bot Persona** — Name, icon, greeting, system prompt — transform into any chatbot
@@ -66,10 +66,10 @@ That's it. One free key gives you: chat, voice input, vision, and `/research`.
 | AI Key | OpenRouter, Groq, or Anthropic | Chat completions |
 | Whisper Key | Groq | Voice transcription + /research reports |
 | TTS Key | ElevenLabs | Voice responses (optional) |
-| Gateway | OpenClaw via Tailscale | Agent mode with shared context |
+| Gateway | OpenClaw via Cloudflare Tunnel | Agent mode with shared context |
 | Telegram | Bot token + Chat ID | Message forwarding |
 
-All keys stored in browser `localStorage`. Nothing sent to tealclaw.ai.
+All keys stored in browser `localStorage`. Nothing sent to tealclaw.ai. Read the full **[Security Philosophy](SECURITY.md)**.
 
 ## For AI Agents
 
@@ -103,13 +103,26 @@ TealClaw does partial merge — only fields present get updated.
 | `/imagine prompt` | Generate an image |
 | `/export` | Download chat as Markdown |
 | `/profile save/load/list/delete` | Manage config profiles |
-| `/qr` | Generate QR code to share config |
+| `/share` | Create encrypted share link (includes keys, passphrase-protected) |
+| `/qr` | Generate QR code to share config (visual settings only) |
 | `/setup` | Setup wizard |
 | `/keys` | Show current config |
 | `/clear` | Clear chat history |
 | `/template` | Browse and apply style templates |
 | `/telegram` | Telegram setup |
 | `/voice` | Voice settings |
+
+## Security & Privacy
+
+TealClaw is built on one principle: **your data is yours**.
+
+- **Zero server** — tealclaw.ai serves static files only. No backend, no database, no way to see your keys.
+- **Direct API calls** — Your browser talks directly to AI providers. No middleman.
+- **No tracking** — No analytics, no cookies, no fingerprinting, no telemetry.
+- **Encrypted sharing** — `/share` creates AES-256-GCM encrypted config links. Passphrase shared separately.
+- **Fully auditable** — One HTML file. No build step. View Source and read every line.
+
+Read the full **[Security Philosophy](SECURITY.md)** for technical details on encryption, key storage, and what third parties see.
 
 ## Development
 
