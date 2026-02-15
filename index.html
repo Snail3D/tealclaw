@@ -63,10 +63,10 @@
     body{background:var(--bg-root);color:var(--text);font-family:var(--font);height:100vh;height:100dvh;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding-left:var(--sal);padding-right:var(--sar)}
 
     /* ── Topbar ────────────────────────────────────────── */
-    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:var(--sat) 16px 0;height:calc(52px + var(--sat));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
-    .logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);user-select:none;letter-spacing:-0.01em}
+    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:var(--sat) 16px 0;height:calc(52px + var(--sat));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden}
+    .logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);user-select:none;letter-spacing:-0.01em;min-width:0;flex-shrink:1;overflow:hidden}
     .logo svg{width:18px;height:18px}
-    .topbar-r{margin-left:auto;display:flex;align-items:center;gap:6px}
+    .topbar-r{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
     .session-badge{display:flex;align-items:center;padding:3px 8px;border-radius:100px;background:rgba(13,148,136,0.12);color:var(--teal);font-size:9px;font-weight:600;cursor:help;letter-spacing:0.02em}
     .session-badge.hidden{display:none}
     .webhook-badge{display:flex;align-items:center;padding:3px 6px;border-radius:100px;background:rgba(251,146,60,0.15);color:#fb923c;cursor:help;animation:webhook-pulse 2s ease-in-out infinite}
@@ -719,7 +719,9 @@
 
     /* ── Responsive ────────────────────────────────────── */
     @media(max-width:600px){
-      .topbar{padding:0 10px;height:48px;gap:6px} .logo{font-size:14px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
+      .topbar{padding:0 8px;height:48px;gap:4px} .logo{font-size:14px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
+      .topbar-r{gap:1px} .icon-btn{width:34px;height:34px} .icon-btn svg{width:14px;height:14px} .new-chat-btn{width:30px;height:30px;font-size:15px}
+      .conv-title-text{max-width:120px}
       .chat-scroll{padding:12px} .input-bar{padding:8px 10px 12px} .input-row{padding:4px 4px 4px 12px} .page-scroll{padding:10px} .card{padding:12px;border-radius:var(--r-md)}
       .scroll-anchor{bottom:60px;width:36px;height:36px} .scroll-anchor svg{width:16px;height:16px}
       .key-input-row{flex-direction:column}
@@ -1180,6 +1182,11 @@
       html=html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,text,url)=>{
         if(/^(javascript|data|vbscript):/i.test(url.replace(/\s/g,'')))return text;
         return `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
+      });
+
+      // Auto-link bare URLs not already inside <a href="...">
+      html=html.replace(/(^|[\s(|>])(?<!href=")(https?:\/\/[^\s<>")',|]+)/gm,(m,pre,url)=>{
+        return pre+`<a href="${url}" target="_blank" rel="noopener">${url.length>50?url.slice(0,47)+'...':url}</a>`;
       });
 
       // Unordered lists
