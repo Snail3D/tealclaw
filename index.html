@@ -3320,29 +3320,68 @@ Rules:
       return{cleanText,actions};
     }
 
+    // Prompt user to approve a tc-action before execution
+    function confirmTcAction(title,details){
+      return new Promise(resolve=>{
+        const id='tc-cfm-'+Math.random().toString(36).slice(2,8);
+        sysBubble(`<div style="text-align:center">
+          <p style="font-size:10px;color:var(--warn);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Agent Action</p>
+          <h3 style="font-size:14px;margin-bottom:4px">${esc(title)}</h3>
+          <p style="font-size:12px;color:var(--text-2);margin:6px 0">${esc(details)}</p>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:10px">
+            <button class="btn btn-ghost" id="${id}-deny">Deny</button>
+            <button class="btn btn-teal" id="${id}-allow">Allow</button>
+          </div>
+        </div>`);
+        const last=document.querySelector('.chat-bubble:last-child');
+        const disable=()=>{last?.querySelectorAll('.btn').forEach(b=>{b.style.opacity='0.5';b.style.pointerEvents='none'})};
+        last?.querySelector('#'+id+'-deny')?.addEventListener('click',()=>{disable();showToast('Action denied','ok');haptic('light');resolve(false)});
+        last?.querySelector('#'+id+'-allow')?.addEventListener('click',()=>{disable();resolve(true)});
+      });
+    }
+
+    // Strip dangerous HTML from agent bubble content
+    function sanitizeActionHtml(html){
+      const div=document.createElement('div');div.innerHTML=html;
+      div.querySelectorAll('script,iframe,object,embed,form,meta,link,base').forEach(el=>el.remove());
+      div.querySelectorAll('*').forEach(el=>{
+        for(const attr of[...el.attributes]){
+          if(attr.name.startsWith('on')){el.removeAttribute(attr.name);continue}
+          const val=(attr.value||'').trim().toLowerCase();
+          if(val.startsWith('javascript:')||val.startsWith('data:text/html'))el.removeAttribute(attr.name);
+        }
+      });
+      return div.innerHTML;
+    }
+
     async function executeTcActions(actions){
       const results=[];
       for(const action of actions){
         try{
           switch(action.type){
             case 'config':{
-              // Update TealClaw config fields
-              const count=importConfig(action.data||action);
+              const data=action.data||action;
+              const keys=Object.keys(data).filter(k=>k!=='type');
+              const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','webhookUrl','customCSS','pinCode'].some(s=>data[s]);
+              const desc=keys.slice(0,5).join(', ')+(keys.length>5?'...':'')+(hasSensitive?' (includes sensitive keys)':'');
+              const ok=await confirmTcAction('Update '+keys.length+' config setting'+(keys.length===1?'':'s'),desc);
+              if(!ok){results.push({type:'config',ok:false,error:'denied by user'});break}
+              const count=importConfig(data);
               applyVisualConfig();updateStatus();renderAgentSelector();renderQuickReplies();
               results.push({type:'config',ok:true,count});
               break;
             }
             case 'command':{
-              // Trigger a slash command (queued to run after render)
               const cmd=action.command||action.text||'';
               if(cmd.startsWith('/')){
+                const ok=await confirmTcAction('Run command',cmd);
+                if(!ok){results.push({type:'command',ok:false,error:'denied by user'});break}
                 setTimeout(()=>{$('textIn').value=cmd;send()},300);
                 results.push({type:'command',ok:true,command:cmd});
               }
               break;
             }
             case 'save':{
-              // Save content to Obsidian
               const name=action.name||`Agent Note - ${new Date().toISOString().slice(0,10)}`;
               const folder=action.folder||'Daily';
               const tags=action.tags||['tealclaw','agent'];
@@ -3354,7 +3393,6 @@ Rules:
               break;
             }
             case 'research':{
-              // Trigger research pipeline
               const query=action.query||action.text||'';
               if(query){
                 setTimeout(()=>researchPipeline(query,null),300);
@@ -3369,27 +3407,27 @@ Rules:
               break;
             }
             case 'style':{
-              // Live visual update — set CSS custom properties directly
-              const root=document.documentElement;
-              if(action.vars&&typeof action.vars==='object'){
-                Object.entries(action.vars).forEach(([k,v])=>{
-                  if(k.startsWith('--'))root.style.setProperty(k,v);
-                });
+              const vars=action.vars;
+              if(vars&&typeof vars==='object'){
+                const keys=Object.keys(vars).filter(k=>k.startsWith('--'));
+                const ok=await confirmTcAction('Change '+keys.length+' CSS variable'+(keys.length===1?'':'s'),keys.slice(0,5).join(', ')+(keys.length>5?'...':''));
+                if(!ok){results.push({type:'style',ok:false,error:'denied by user'});break}
+                const root=document.documentElement;
+                keys.forEach(k=>root.style.setProperty(k,vars[k]));
               }
               results.push({type:'style',ok:true});
               break;
             }
             case 'navigate':{
-              // Switch conversation, open settings, etc.
               if(action.target==='settings'){openSheet()}
               else if(action.target==='new-chat'){newConversation()}
               results.push({type:'navigate',ok:true});
               break;
             }
             case 'bubble':{
-              // Inject a system bubble with custom HTML
-              const html=action.html||renderMd(action.text||'');
-              setTimeout(()=>sysBubble(html),200);
+              const raw=action.html||renderMd(action.text||'');
+              const safe=action.html?sanitizeActionHtml(raw):raw;
+              setTimeout(()=>sysBubble(safe),200);
               results.push({type:'bubble',ok:true});
               break;
             }
@@ -4015,8 +4053,9 @@ Rules:
             </div>`);
             document.querySelector('.chat-bubble:last-child #sessEndBtn')?.addEventListener('click',()=>{
               setSession(null);updateSessionBadge();
-              const k=getK();delete k.gwUrl;delete k.gwToken;setK(k);
-              updateStatus();showToast('Session ended','ok');haptic('success');
+              const k=getK();delete k.gwUrl;delete k.gwToken;
+              if(k.mode==='agent'){const ag=getAgents();ag.forEach(a=>{delete a.url;delete a.token});setAgents(ag)}
+              setK(k);updateStatus();showToast('Session ended','ok');haptic('success');
             });
             return;
           }
@@ -4024,8 +4063,9 @@ Rules:
             const s=getSession();
             if(!s){showToast('No active session','err');return}
             setSession(null);updateSessionBadge();
-            const k=getK();delete k.gwUrl;delete k.gwToken;setK(k);
-            updateStatus();showToast('Session ended — gateway access removed','ok');haptic('success');
+            const k=getK();delete k.gwUrl;delete k.gwToken;
+            if(k.mode==='agent'){const ag=getAgents();ag.forEach(a=>{delete a.url;delete a.token});setAgents(ag)}
+            setK(k);updateStatus();showToast('Session ended — gateway access removed','ok');haptic('success');
             return;
           }
           if(sArg.startsWith('create ')){

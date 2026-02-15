@@ -86,7 +86,13 @@ TealClaw adds no tracking parameters, no user IDs, and no metadata to any of the
 TealClaw is fully open source and intentionally simple to audit:
 
 - **One HTML file.** All CSS and JavaScript are inline. No bundling, no minification, no build step.
-- **No dependencies at runtime.** Zero npm packages. Zero CDN scripts (except optional QR code library loaded on demand).
+- **No bundled dependencies.** Zero npm packages, no build step. Optional CDN libraries are loaded on demand only when their feature is used:
+  - **QRCode.js** (jsdelivr) — QR code generation via `/qr`
+  - **KaTeX** (jsdelivr) — LaTeX math rendering when `latexEnabled` is on
+  - **Mermaid** (jsdelivr) — diagram rendering when AI responses contain mermaid blocks
+  - **pdf.js** (cdnjs) — PDF file preview when attaching PDFs
+  - **Mammoth** (cdnjs) — Word document preview when attaching .docx files
+  - **MediaPipe Hands** (jsdelivr) — gesture control when camera gesture mode is enabled
 - **View Source works.** Right-click the page and read every line of code that runs on your device.
 
 ## Reporting Security Issues
