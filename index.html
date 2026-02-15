@@ -200,22 +200,22 @@
 
     /* ── Input Bar ─────────────────────────────────────── */
     .input-bar{flex-shrink:0;border-top:none;background:var(--bg-root);padding:12px 20px calc(16px + var(--sab))}
-    .input-row{display:flex;gap:8px;align-items:flex-end;max-width:760px;width:100%;margin:0 auto;background:var(--bg-input);border:1px solid var(--border);border-radius:24px;padding:6px 6px 6px 16px;transition:border var(--t)}
+    .input-row{display:flex;gap:8px;align-items:flex-end;max-width:760px;width:100%;margin:0 auto;background:var(--bg-input);border:1px solid var(--border);border-radius:30px;padding:8px 8px 8px 20px;transition:border var(--t)}
     .input-row:focus-within{border-color:var(--border)}
-    .input-text{flex:1;padding:8px 0;font-size:var(--input-font,16px);font-family:var(--font);color:var(--text);background:transparent;border:none;outline:none;resize:none;min-height:24px;max-height:140px;line-height:1.5;caret-color:var(--teal);caret-shape:block}
+    .input-text{flex:1;padding:10px 0;font-size:var(--input-font,16px);font-family:var(--font);color:var(--text);background:transparent;border:none;outline:none;resize:none;min-height:30px;max-height:160px;line-height:1.5;caret-color:var(--teal)}
     .input-text::placeholder{color:var(--text-3)}
     .input-actions{display:flex;gap:4px}
 
-    .circle-btn{width:var(--btn-size,40px);height:var(--btn-size,40px);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--t);flex-shrink:0}
-    .circle-btn svg{width:calc(var(--btn-size,40px) * 0.45);height:calc(var(--btn-size,40px) * 0.45)}
+    .circle-btn{width:var(--btn-size,50px);height:var(--btn-size,50px);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--t);flex-shrink:0}
+    .circle-btn svg{width:calc(var(--btn-size,50px) * 0.45);height:calc(var(--btn-size,50px) * 0.45)}
     .send-btn{background:var(--teal);color:#fff} .send-btn:hover{background:var(--teal-hover)}
     .send-btn.hidden{display:none}
     .mic-circle{background:var(--text-3);color:var(--bg-root);border:none} .mic-circle:hover{background:var(--text-2)}
     .mic-circle.hidden{display:none}
     .mic-circle.recording{background:var(--err);color:#fff;animation:mic-p 1.5s ease-in-out infinite}
     @keyframes mic-p{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
-    .attach-btn{background:transparent;color:var(--text-3);border:none;width:44px;height:44px} .attach-btn:hover{color:var(--text)}
-    .attach-btn svg{width:18px;height:18px}
+    .attach-btn{background:transparent;color:var(--text-3);border:none;width:50px;height:50px} .attach-btn:hover{color:var(--text)}
+    .attach-btn svg{width:20px;height:20px}
 
     .input-hint{font-size:11px;color:var(--text-3);margin-top:5px;text-align:center}
     .input-hint.active{color:var(--err)} .input-hint.ok{color:var(--ok)}
@@ -328,7 +328,9 @@
     body.kb-open .scroll-anchor{bottom:54px}
     body.compact-mode .sheet-row{padding:8px 10px;margin-bottom:4px}
     *:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+    .input-text:focus,.input-text:focus-visible{outline:none!important;box-shadow:none!important}
     body.focus-visible *:focus-visible{outline:3px solid var(--teal)!important;outline-offset:2px!important}
+    body.focus-visible .input-text:focus-visible{outline:none!important;box-shadow:none!important}
 
     /* ── GIF Overlay ──────────────────────────────────── */
     .gif-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:1;transition:opacity 0.5s;cursor:pointer}
@@ -916,7 +918,7 @@
     <div class="logo">
       <img src="/icon-192.png" alt="TealClaw" style="width:22px;height:22px;object-fit:contain">
       <div class="conv-title" id="convTitle" title="Switch conversation">
-        <span class="conv-title-text" id="convTitleText">TealClaw</span>
+        <span class="conv-title-text" id="convTitleText"><span style="color:var(--teal)">Teal</span><span style="color:#ef4444">Claw</span></span>
         <svg class="conv-title-caret" id="convCaret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
     </div>
@@ -1430,8 +1432,11 @@
 
     function updateConvTitle(title){
       const el=$('convTitleText');
+      if(!el)return;
       const k=getK();
-      if(el)el.textContent=k.botName||title||'TealClaw';
+      const display=k.botName||title;
+      if(display)el.textContent=display;
+      else el.innerHTML='<span style="color:var(--teal)">Teal</span><span style="color:#ef4444">Claw</span>';
     }
 
     // Auto-title from first user message
@@ -7315,13 +7320,24 @@ ${agentNote}`);
 
     // Run onboarding if no keys set and no chat history — show custom greeting if set
     setTimeout(()=>{
-      const bk=getK();
-      if(bk.botGreeting&&chatHistory.length===0&&(bk.aiKey||bk.whisperKey)){
-        sysBubble(`<div class="md-content">${renderMd(bk.botGreeting)}</div>`);
-      } else {
-        runOnboarding();
-      }
+      try{
+        const bk=getK();
+        if(bk.botGreeting&&chatHistory.length===0&&(bk.aiKey||bk.whisperKey)){
+          sysBubble(`<div class="md-content">${renderMd(bk.botGreeting)}</div>`);
+        } else {
+          runOnboarding();
+        }
+      }catch(e){console.warn('Onboarding error:',e);try{runOnboarding()}catch{}}
     },300);
+    // Fallback: if chat area still empty after 1.5s, force onboarding
+    setTimeout(()=>{
+      try{
+        const scroll=$('chatScroll');
+        if(scroll&&!scroll.querySelector('.chat-bubble')&&chatHistory.length===0&&!getK().aiKey&&!getK().whisperKey){
+          runOnboarding();
+        }
+      }catch{}
+    },1500);
     // Quick replies on load
     renderQuickReplies();
 
