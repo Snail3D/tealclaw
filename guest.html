@@ -479,7 +479,7 @@ function connectWS(){
         wsSend({type:'req',id:nextId(),method:'connect',params:{
           minProtocol:3,maxProtocol:3,
           auth:{token:guestData.tk},
-          client:{id:'tealclaw-guest',displayName:`Guest: ${guestData.nm||'Guest'}`,version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
+          client:{id:'webchat',displayName:`Guest: ${guestData.nm||'Guest'}`,version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
         }});
       } else if(frame.event==='tick'){
         resetTick();

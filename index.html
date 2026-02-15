@@ -3810,7 +3810,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
                 this._send({type:'req',id:this._nextId(),method:'connect',params:{
                   minProtocol:3,maxProtocol:3,
                   auth:{token:this.token},
-                  client:{id:'tealclaw-web',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat',device:getDeviceTag()}
+                  client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
                 }});
               } else if(frame.event==='tick'){
                 this._resetTick();
