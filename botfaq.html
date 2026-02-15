@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TealClaw + OpenClaw — Bot FAQ & Troubleshooting</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root { --bg: #171717; --bg2: #212121; --text: #ececec; --text2: #a0a0a0; --teal: #0d9488; --border: #333; --code-bg: #2a2a2a; --err: #ef4444; --ok: #22c55e; --warn: #f59e0b; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 900px; margin: 0 auto; }
+  h1 { color: var(--teal); margin-bottom: 0.5rem; font-size: 1.8rem; }
+  h2 { color: var(--teal); margin: 2rem 0 0.8rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); font-size: 1.3rem; }
+  h3 { color: var(--text); margin: 1.2rem 0 0.5rem; font-size: 1.1rem; }
+  p, li { color: var(--text2); margin-bottom: 0.5rem; }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', 'Fira Code', Menlo, monospace; font-size: 0.9em; color: var(--teal); }
+  pre { background: var(--code-bg); padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.8rem 0; border: 1px solid var(--border); }
+  pre code { padding: 0; background: none; }
+  .error-box { background: rgba(239,68,68,0.1); border: 1px solid var(--err); border-radius: 8px; padding: 1rem; margin: 0.8rem 0; }
+  .error-box code { color: var(--err); }
+  .fix-box { background: rgba(34,197,94,0.1); border: 1px solid var(--ok); border-radius: 8px; padding: 1rem; margin: 0.8rem 0; }
+  .fix-box code { color: var(--ok); }
+  .warn-box { background: rgba(245,158,11,0.1); border: 1px solid var(--warn); border-radius: 8px; padding: 1rem; margin: 0.8rem 0; }
+  .warn-box code { color: var(--warn); }
+  ul { padding-left: 1.5rem; }
+  a { color: var(--teal); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+  .tag-ws { background: rgba(13,148,136,0.2); color: var(--teal); }
+  .tag-config { background: rgba(245,158,11,0.2); color: var(--warn); }
+  .tag-tts { background: rgba(139,92,246,0.2); color: #a78bfa; }
+  .tag-ai { background: rgba(59,130,246,0.2); color: #60a5fa; }
+  .subtitle { color: var(--text2); margin-bottom: 2rem; }
+  .toc { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.5rem; margin: 1.5rem 0; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ul { list-style: none; padding-left: 0; }
+  .toc li { padding: 0.2rem 0; }
+</style>
+</head>
+<body>
+
+<h1>TealClaw + OpenClaw — Bot FAQ</h1>
+<p class="subtitle">Common errors, fixes, and configuration reference for AI agents. No sensitive data in this file.</p>
+
+<div class="toc">
+<h3>Contents</h3>
+<ul>
+<li><a href="#ws-connection">1. WebSocket Connection Issues</a></li>
+<li><a href="#gateway-config">2. Gateway Configuration</a></li>
+<li><a href="#tc-action">3. tc-action Protocol</a></li>
+<li><a href="#ai-providers">4. AI Provider Errors</a></li>
+<li><a href="#tts-voice">5. TTS / Voice Issues</a></li>
+<li><a href="#guest-links">6. Guest Links</a></li>
+<li><a href="#obsidian">7. Obsidian Integration</a></li>
+<li><a href="#pwa-cache">8. PWA / Service Worker / Cache</a></li>
+<li><a href="#tailscale">9. Tailscale + TLS</a></li>
+<li><a href="#telegram">10. Telegram Forwarding</a></li>
+<li><a href="#help-mode">11. Help Mode</a></li>
+<li><a href="#architecture">12. Architecture Reference</a></li>
+</ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="ws-connection">1. WebSocket Connection Issues <span class="tag tag-ws">WebSocket</span></h2>
+
+<h3>Error: "invalid connect params"</h3>
+<div class="error-box">
+<code>REJECTED: {"code":"INVALID_REQUEST","message":"invalid connect params"}</code>
+</div>
+<p><strong>Cause:</strong> The WebSocket <code>connect</code> message has an invalid <code>client.id</code> or contains properties not in the gateway's schema.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong></p>
+<ul>
+<li>Use a valid client ID. Allowed values: <code>webchat</code>, <code>webchat-ui</code>, <code>openclaw-control-ui</code>, <code>cli</code>, <code>gateway-client</code>, <code>openclaw-macos</code>, <code>openclaw-ios</code>, <code>openclaw-android</code>, <code>node-host</code>, <code>test</code>, <code>fingerprint</code>, <code>openclaw-probe</code></li>
+<li>For TealClaw web chat, use <code>id: 'webchat'</code></li>
+<li>Do NOT add extra properties like <code>device</code> — the gateway schema rejects unknown fields</li>
+<li>Valid client modes: <code>webchat</code>, <code>cli</code>, <code>ui</code>, <code>backend</code>, <code>node</code>, <code>probe</code>, <code>test</code></li>
+</ul>
+</div>
+<pre><code>// Correct client object
+client: {
+  id: 'webchat',
+  displayName: 'TealClaw',
+  version: '1.0',
+  platform: navigator.platform || 'web',
+  mode: 'webchat'
+}</code></pre>
+
+<h3>Error: "origin not allowed"</h3>
+<div class="error-box">
+<code>REJECTED: {"code":"INVALID_REQUEST","message":"origin not allowed (open the Control UI from the gateway host or allow it in gateway.controlUi.allowedOrigins)"}</code>
+</div>
+<p><strong>Cause:</strong> Browser WebSocket connections include an <code>Origin</code> header. The gateway checks this against <code>gateway.controlUi.allowedOrigins</code>. If the origin doesn't match, the connection is rejected.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Add TealClaw domains to <code>openclaw.json</code>:</p>
+</div>
+<pre><code>"gateway": {
+  "controlUi": {
+    "allowedOrigins": [
+      "https://tealclaw.ai",
+      "https://www.tealclaw.ai",
+      "https://tealclaw.com",
+      "https://www.tealclaw.com"
+    ]
+  }
+}</code></pre>
+<p>The origin check passes if: (a) origin is in the allowlist, (b) origin host matches request host, or (c) both are loopback. External domains (Cloudflare Pages) need the allowlist.</p>
+
+<h3>Error: "pairing required"</h3>
+<div class="error-box">
+<code>REJECTED: {"code":"PAIRING_REQUIRED","message":"pairing required"}</code>
+</div>
+<p><strong>Cause:</strong> When using Tailscale Serve as a reverse proxy, the gateway sees connections from <code>127.0.0.1</code> instead of the real client IP. If <code>127.0.0.1</code> isn't in <code>trustedProxies</code>, the gateway doesn't read forwarded headers and treats it as an unknown client.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Add trusted proxies to <code>openclaw.json</code>:</p>
+</div>
+<pre><code>"gateway": {
+  "trustedProxies": ["127.0.0.1", "::1"]
+}</code></pre>
+
+<h3>WebSocket Protocol Flow</h3>
+<p>The full handshake sequence:</p>
+<pre><code>1. Client connects to wss://&lt;gateway-host&gt;:&lt;port&gt;
+2. Gateway sends: { type: "connect.challenge" }
+3. Client responds: {
+     type: "connect",
+     token: "&lt;gateway-auth-token&gt;",
+     client: { id: "webchat", ... }
+   }
+4. Gateway validates: client schema + origin + auth token
+5. On success: { type: "hello-ok", ... }
+6. On failure: { type: "connect.rejected", ... }</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="gateway-config">2. Gateway Configuration <span class="tag tag-config">Config</span></h2>
+
+<h3>Error: Gateway crashes on startup</h3>
+<div class="error-box">
+<code>bind: "tailnet" is incompatible with tailscale.mode: "serve"</code>
+</div>
+<p><strong>Cause:</strong> <code>bind: "tailnet"</code> tells the gateway to bind directly to the Tailscale interface, but <code>tailscale.mode: "serve"</code> uses Tailscale Serve as a reverse proxy to localhost. These are mutually exclusive.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Use <code>bind: "loopback"</code> with <code>tailscale.mode: "serve"</code>:</p>
+</div>
+<pre><code>"gateway": {
+  "bind": "loopback",
+  "tailscale": {
+    "mode": "serve"
+  }
+}</code></pre>
+<div class="warn-box">
+<p><strong>Rule:</strong> <code>bind: "loopback"</code> + <code>tailscale.mode: "serve"</code> = correct. Never use <code>bind: "tailnet"</code> with <code>tailscale.mode: "serve"</code>.</p>
+</div>
+
+<h3>Config file location</h3>
+<p>The main config file is <code>~/.openclaw/openclaw.json</code>. It may be symlinked to an Obsidian vault or other location. The bot reads/writes through symlinks transparently.</p>
+<div class="warn-box">
+<p><strong>Warning:</strong> Invalid JSON in <code>openclaw.json</code> will prevent the gateway from starting. Always validate JSON before saving.</p>
+</div>
+
+<h3>Gateway restart</h3>
+<p>After config changes, restart the gateway:</p>
+<ul>
+<li><strong>macOS app:</strong> Quit and reopen the OpenClaw app, or use <code>scripts/restart-mac.sh</code></li>
+<li><strong>CLI:</strong> <code>pkill -f openclaw-gateway</code> then start again</li>
+<li><strong>Verify:</strong> <code>ss -ltnp | rg 18789</code> or <code>lsof -i :18789</code></li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="tc-action">3. tc-action Protocol <span class="tag tag-ai">AI</span></h2>
+
+<h3>Settings changes via tc-action not working</h3>
+<div class="error-box">
+<p>Agent tries to change settings via tc-action but nothing happens. No error visible.</p>
+</div>
+<p><strong>Cause:</strong> The <code>maxTokens</code> setting is too low. tc-action blocks are JSON wrapped in markdown code fences, which can be 200-500+ tokens. If <code>maxTokens</code> is set to 400 or less, the AI response gets truncated mid-JSON and the parser silently fails.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong></p>
+<ul>
+<li>Set <code>maxTokens</code> to at least 1024 (TealClaw now defaults to 1024 when skill context is enabled)</li>
+<li>Check browser console for <code>tc-action parse failed:</code> warnings</li>
+<li>If using a small/fast model (like Groq), ensure the model supports enough output tokens</li>
+</ul>
+</div>
+
+<h3>tc-action block format</h3>
+<pre><code>```tc-action
+{
+  "type": "config",
+  "set": { "settingName": "value" }
+}
+```</code></pre>
+<p>Supported action types: <code>config</code>, <code>command</code>, <code>save</code>, <code>research</code>, <code>toast</code>, <code>style</code>, <code>navigate</code>, <code>bubble</code></p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="ai-providers">4. AI Provider Errors <span class="tag tag-ai">AI</span></h2>
+
+<h3>Error: "__NO_KEY__" displayed in chat</h3>
+<div class="error-box">
+<p>Chat shows the literal text <code>__NO_KEY__</code> instead of an AI response.</p>
+</div>
+<p><strong>Cause:</strong> No API key is configured for the selected provider. The <code>callAI</code> function returns <code>"__NO_KEY__"</code> as a sentinel value when no key is found.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Open Settings and paste an API key for the active provider. Supported providers: OpenRouter, Groq, OpenAI, Anthropic, Google Gemini, xAI Grok, Mistral, Cohere, DeepSeek, Perplexity, Cerebras, Together, SambaNova, HuggingFace.</p>
+</div>
+
+<h3>Error: 401 Unauthorized from provider</h3>
+<p><strong>Cause:</strong> API key is invalid, expired, or has insufficient credits.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Verify the API key on the provider's dashboard. Check for billing/credit issues. Re-paste the key in TealClaw settings.</p>
+</div>
+
+<h3>Error: 429 Rate Limited</h3>
+<p><strong>Cause:</strong> Too many requests to the provider. TealClaw has a built-in rate limiter (<code>rateLimitPerMin</code> setting).</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Wait a moment and retry. Adjust <code>rateLimitPerMin</code> in settings if needed. Consider switching to a provider with higher rate limits.</p>
+</div>
+
+<h3>Error: Model not found / 404</h3>
+<p><strong>Cause:</strong> The selected model ID doesn't exist on the provider.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Check the provider's model list. Model IDs are case-sensitive. Common patterns:</p>
+<ul>
+<li>OpenRouter: <code>provider/model-name</code></li>
+<li>Groq: <code>model-name</code></li>
+<li>OpenAI: <code>gpt-4o</code>, <code>gpt-4o-mini</code>, etc.</li>
+</ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="tts-voice">5. TTS / Voice Issues <span class="tag tag-tts">TTS</span></h2>
+
+<h3>ElevenLabs TTS not speaking</h3>
+<p><strong>Possible causes:</strong></p>
+<ul>
+<li>No ElevenLabs API key set in settings</li>
+<li>Invalid voice ID</li>
+<li>Account out of credits / character quota exceeded</li>
+<li>Audio blob not properly cleaned up (memory leak)</li>
+</ul>
+<div class="fix-box">
+<p><strong>Fix:</strong> Check ElevenLabs dashboard for quota. Verify the voice ID exists. Check browser console for fetch errors to the ElevenLabs API.</p>
+</div>
+
+<h3>Browser TTS (Web Speech API) not working</h3>
+<p><strong>Cause:</strong> Some browsers require user interaction before playing audio. Mobile browsers are stricter.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Tap/click somewhere on the page first, then try TTS. Ensure the browser supports the Web Speech API (<code>window.speechSynthesis</code>).</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="guest-links">6. Guest Links <span class="tag tag-ws">Guest</span></h2>
+
+<h3>Guest link not loading</h3>
+<p><strong>Possible causes:</strong></p>
+<ul>
+<li>Link expired (ephemeral sessions have time limits)</li>
+<li>Encryption key missing or corrupted in URL hash</li>
+<li>Gateway not reachable from guest's network</li>
+</ul>
+
+<h3>Guest messages not forwarded to Telegram</h3>
+<p><strong>Cause:</strong> Guest link payload must include Telegram credentials (<code>tgToken</code> and <code>tgChat</code>) from the owner's config.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Regenerate the guest link. The owner must have Telegram enabled with valid bot token and chat ID. Guest messages are tagged with <code>[Guest: Name]</code> prefix.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="obsidian">7. Obsidian Integration <span class="tag tag-config">Obsidian</span></h2>
+
+<h3>/save command not working</h3>
+<p><strong>Possible causes:</strong></p>
+<ul>
+<li>Obsidian not installed on the device</li>
+<li>Vault name mismatch in settings vs actual vault name</li>
+<li>On mobile: the <code>obsidian://</code> URI scheme may need the app to be open first</li>
+</ul>
+
+<h3>/save idea going to wrong folder</h3>
+<p><strong>Cause:</strong> The default save paths are configurable. <code>/save</code> goes to Daily notes, <code>/save idea</code> goes to Ideas folder.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Check the Obsidian vault setting in TealClaw config. Default vault folders: Projects, Resources, Daily, Ideas, Templates.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="pwa-cache">8. PWA / Service Worker / Cache <span class="tag tag-config">Cache</span></h2>
+
+<h3>Old version still showing after update</h3>
+<p><strong>Cause:</strong> Service worker cache hasn't been invalidated.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong></p>
+<ul>
+<li>Hard refresh: <code>Cmd+Shift+R</code> (Mac) or <code>Ctrl+Shift+R</code> (Windows/Linux)</li>
+<li>Or clear site data: DevTools → Application → Storage → Clear site data</li>
+<li>The service worker cache version is incremented on each deploy (currently tracked as <code>vN</code>)</li>
+</ul>
+</div>
+
+<h3>App not installing as PWA</h3>
+<p><strong>Cause:</strong> PWA install requires HTTPS and a valid <code>manifest.json</code>.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Access via <code>https://tealclaw.ai</code> (not HTTP). Check that <code>/manifest.json</code> loads. On iOS, use "Add to Home Screen" from Safari share menu.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="tailscale">9. Tailscale + TLS <span class="tag tag-ws">Network</span></h2>
+
+<h3>How TealClaw connects to the gateway</h3>
+<pre><code>TealClaw (browser on any device)
+  → wss://&lt;tailscale-hostname&gt;:443  (TLS terminated by Tailscale Serve)
+  → 127.0.0.1:18789                 (forwarded to local gateway)
+  → OpenClaw gateway processes the WebSocket</code></pre>
+
+<h3>Tailscale Serve setup</h3>
+<p>Tailscale Serve provides automatic TLS certificates and proxies HTTPS traffic to a local port.</p>
+<pre><code># Check current Tailscale Serve config
+tailscale serve status
+
+# Typical setup (already configured via openclaw.json):
+# https://&lt;hostname&gt;.ts.net → 127.0.0.1:18789</code></pre>
+
+<h3>Can't connect from outside Tailnet</h3>
+<p><strong>Cause:</strong> Tailscale Serve only works within your Tailnet by default. Devices must be on the same Tailscale network.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Ensure the connecting device is logged into Tailscale and the Tailnet. For public access, consider Tailscale Funnel (exposes to the internet) — but be aware of the security implications.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="telegram">10. Telegram Forwarding <span class="tag tag-config">Telegram</span></h2>
+
+<h3>Messages not appearing in Telegram</h3>
+<p><strong>Checklist:</strong></p>
+<ul>
+<li><code>tgEnabled</code> is <code>true</code> in TealClaw settings</li>
+<li>Bot token is valid (test: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getMe</code>)</li>
+<li>Chat ID is correct (use <code>/start</code> with the bot, then check <code>getUpdates</code>)</li>
+<li>The bot has permission to send messages to that chat</li>
+</ul>
+
+<h3>Identity tags in Telegram</h3>
+<p>Messages forwarded from TealClaw include identity tags:</p>
+<ul>
+<li><strong>Owner devices:</strong> <code>[Device Name] message text</code> — uses <code>deviceName</code> from settings</li>
+<li><strong>Guest links:</strong> <code>[Guest: Name] message text</code> — uses guest name from link</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="help-mode">11. Help Mode <span class="tag tag-ai">Help</span></h2>
+
+<h3>Help Mode shows __NO_KEY__</h3>
+<p><strong>Cause:</strong> Help Mode uses the same AI pipeline. If no API key is set, it returns the sentinel value.</p>
+<div class="fix-box">
+<p><strong>Fix:</strong> Set at least one AI provider API key. Help Mode uses whichever provider is currently active.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2 id="architecture">12. Architecture Reference</h2>
+
+<h3>TealClaw file structure</h3>
+<pre><code>tealclaw/
+├── index.html        # Main app (all CSS/JS inline, ~9000+ LOC)
+├── guest.html        # Guest link chat UI (~700 LOC)
+├── botfaq.html       # This file — troubleshooting reference
+├── llms.txt          # AI agent skill guide
+├── SKILL.md          # Skill definition for agents
+├── manifest.json     # PWA manifest
+├── sw.js             # Service worker (cache)
+├── _headers          # Cloudflare Pages headers (CSP)
+├── docs/             # Sub-documentation files
+└── functions/        # Cloudflare Pages functions (stats API)</code></pre>
+
+<h3>Key settings that affect connectivity</h3>
+<table style="width:100%;border-collapse:collapse;margin:0.8rem 0">
+<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:0.4rem;color:var(--teal)">Setting</th><th style="text-align:left;padding:0.4rem;color:var(--teal)">Where</th><th style="text-align:left;padding:0.4rem;color:var(--teal)">Purpose</th></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.bind</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">Network interface to bind (loopback, tailnet)</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.port</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">Gateway port (default 18789)</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.trustedProxies</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">IPs allowed to forward headers</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.controlUi.allowedOrigins</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">Allowed browser origins for WebSocket</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.tailscale.mode</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">"serve" = reverse proxy, "direct" = bind to tailnet</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.auth.mode</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">"token" = bearer token auth</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>maxTokens</code></td><td style="padding:0.4rem">TealClaw settings</td><td style="padding:0.4rem">Max AI response tokens (min 1024 for tc-action)</td></tr>
+<tr><td style="padding:0.4rem"><code>rateLimitPerMin</code></td><td style="padding:0.4rem">TealClaw settings</td><td style="padding:0.4rem">Client-side rate limiter for AI calls</td></tr>
+</table>
+
+<h3>Common error → fix quick reference</h3>
+<table style="width:100%;border-collapse:collapse;margin:0.8rem 0">
+<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:0.4rem;color:var(--teal)">Error</th><th style="text-align:left;padding:0.4rem;color:var(--teal)">Fix</th></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>invalid connect params</code></td><td style="padding:0.4rem">Use <code>client.id: 'webchat'</code>, remove extra properties</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>origin not allowed</code></td><td style="padding:0.4rem">Add domain to <code>gateway.controlUi.allowedOrigins</code></td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>pairing required</code></td><td style="padding:0.4rem">Add <code>127.0.0.1</code> to <code>gateway.trustedProxies</code></td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">Gateway crash with tailscale</td><td style="padding:0.4rem">Use <code>bind: "loopback"</code> not <code>"tailnet"</code> with <code>tailscale.mode: "serve"</code></td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">tc-action silently fails</td><td style="padding:0.4rem">Increase <code>maxTokens</code> to 1024+</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>__NO_KEY__</code> in chat</td><td style="padding:0.4rem">Set an API key for the active provider</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">401 from AI provider</td><td style="padding:0.4rem">Re-check API key, billing, credits</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">Old version cached</td><td style="padding:0.4rem"><code>Cmd+Shift+R</code> or clear site data</td></tr>
+<tr><td style="padding:0.4rem">Guest Telegram missing</td><td style="padding:0.4rem">Regenerate guest link with Telegram enabled</td></tr>
+</table>
+
+<p style="margin-top:2rem;color:var(--text2);font-size:0.85rem">Last updated: 2026-02-15 &bull; This file contains NO secrets, tokens, or credentials.</p>
+
+</body>
+</html>
