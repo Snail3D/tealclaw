@@ -4328,7 +4328,8 @@ RULES:
         const helpMsg='[Help Mode activated — guide me through TealClaw]';
         addBubble('user',helpMsg);
         const pk=getK();
-        const useStream=pk.streamEnabled!==false;
+        const helpModel=pk.aiModel||((pk.aiProvider==='groq'||(!pk.aiKey&&pk.whisperKey))?'groq/compound-mini':'');
+        const useStream=pk.streamEnabled!==false&&!/compound/i.test(helpModel);
         if(useStream){
           const streamIdx=chatHistory.length;
           addBubble('ai','...');
@@ -5984,7 +5985,9 @@ Rules:
       // LaTeX: always load KaTeX
       if(!katexLoaded)loadKaTeX().catch(()=>{});
 
-      const useStream=pk.streamEnabled!==false&&!imageBase64&&pk.mode!=='agent';
+      const curModel=pk.aiModel||((pk.aiProvider==='groq'||(!pk.aiKey&&pk.whisperKey))?'groq/compound-mini':'');
+      const isCompound=/compound/i.test(curModel);
+      const useStream=pk.streamEnabled!==false&&!imageBase64&&pk.mode!=='agent'&&!isCompound;
 
       if(useStream){
         // Streaming mode: show tokens as they arrive with cursor
