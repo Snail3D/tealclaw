@@ -197,7 +197,15 @@ Example first-time cfg:
 
 - **PROFILES** -- Save/load named cfg profiles. Multiple setups per device.
 
-- **PIN CODE** -- 4-6 digit PIN locks msg sending. Shared devices, kid-safe.
+- **PIN / PASSWORD LOCK** -- 4-8 character PIN (numeric) or password (alphanumeric). Stored as SHA-256 hash, never in cleartext. Numeric-only PINs show numpad unlock screen; alphanumeric shows text input. Minimum 4 characters required.
+
+- **GUEST LINKS** -- Create limited-access encrypted links for others to chat with your bot. Each link has: name, instructions, preset actions, max chars, rate limit, expiry. The guest sees a stripped-down PWA (guest.html) with only presets + text input + responses. No settings access, no config, no commands. Messages are sandwich-wrapped with owner instructions. Created in Settings > Guest Links or via tc-action.
+
+- **SHARE CONFIG WITH AGENT** -- Settings > Agent Tools > "Share Settings with Agent" sends your current config (sanitized -- API keys shown as presence booleans) to the active agent. The agent can then reply with tc-action config blocks to modify settings. Full round-trip: share config -> agent reads it -> agent replies with changes -> auto-applied.
+
+- **INTERACTIVE PROMPTS** -- tc-action type "prompt" shows tappable buttons in chat. The agent can ask yes/no questions or offer multiple choices. The user taps a button, the choice is returned to the agent. Use for confirmations, preference selection, or multi-step workflows.
+
+- **REQUEST CONFIG** -- tc-action type "request-config" returns all current settings to the agent (API keys as presence booleans only). Use before suggesting config changes.
 
 - **TRANSLATION** -- translateTo auto-translates every AI rsp.
 
@@ -251,6 +259,22 @@ Example first-time cfg:
                On detection: haptic alert, toast, snapshot sent to connected agent.
                Uses Chrome FaceDetector API (draws bounding boxes) or motion-diff fallback.
                cooldown = seconds between alerts (default 30). camera = "user" or "environment".
+    guest-link -- {"type":"guest-link","action":"create","name":"Sarah",
+                  "instructions":"Can manage calendar and ask questions",
+                  "presets":["Add to calendar","Check schedule"],
+                  "rateLimit":10,"maxChars":280,"expires":"30d"}
+               Creates encrypted limited-access guest link. Guest sees stripped-down PWA
+               with only presets + text input. No settings, no config, no commands.
+               Messages sandwich-wrapped with owner instructions.
+               Actions: create (returns link+passphrase), list (shows all), revoke (disables by name/id).
+               Expires: 7d, 30d, 90d, 1y, or "never".
+    prompt   -- {"type":"prompt","question":"Would you like dark mode?",
+                "options":["Yes, dark","Yes, light","No thanks"]}
+               Shows interactive buttons in chat. Usr taps a choice, result returned.
+               Use for yes/no, preferences, confirmations, multi-step workflows.
+    request-config -- {"type":"request-config"}
+               Returns all current settings (API keys as presence booleans only).
+               Use before suggesting config changes. No usr approval needed.
 
   Example -- text + actions in one rsp:
     Here is your new purple theme!
@@ -342,7 +366,6 @@ Only include fields you want to set/change. TC uses partial merge.
   "webhookUrl": "",
   "webhookEvents": "message.send,message.receive",
   "scheduledMessages": [],
-  "pinCode": "",
   "pinRequired": false,
   "translateTo": "",
   "activeProfile": "",
@@ -461,7 +484,9 @@ Only include fields you want to set/change. TC uses partial merge.
 | webhookUrl | string | HTTP endpoint for event POSTs |
 | webhookEvents | string | Comma-separated events (dflt: "message.send,message.receive") |
 | scheduledMessages | array | [{time:"HH:MM", text:"md", days:["mon"...]}] |
-| pinCode | string | 4-6 digit PIN |
+| pinHash | string | SHA-256 hash of PIN/password (set via Settings, never in cleartext) |
+| pinIsAlpha | boolean | true if PIN contains letters (shows text input vs numpad) |
+| pinLen | number | Length of PIN (4-8) |
 | pinRequired | boolean | Require PIN before sending (dflt: false) |
 | translateTo | string | Auto-translate AI rsp to this language |
 | activeProfile | string | Current cfg profile name |
@@ -639,7 +664,7 @@ Ready-to-use cfg blocks. Use as starting points, customize per usr.
 | No animations | `{"typingAnimation": false, "bubbleAnimation": "none", "reduceMotion": true}` |
 | Fast typing+scale | `{"typingAnimation": true, "typingSpeed": "fast", "bubbleAnimation": "scale"}` |
 | Custom CSS | `{"customCSS": ".chat-bubble.ai { border-left: 3px solid var(--teal); } .chat-bubble.user { border-right: 3px solid #ec4899; }"}` |
-| PIN lock | `{"pinCode": "1234", "pinRequired": true}` |
+| PIN lock | `{"pinRequired": true}` (usr sets PIN in Settings, 4-8 chars) |
 | Verbose creative | `{"temperature": 1.5, "maxTokens": 2000}` |
 | Gestures on | `{"gestureEnabled": true}` |
 | Scheduled greeting | `{"scheduledMessages": [{"time": "08:00", "text": "Good morning!", "days": ["mon","tue","wed","thu","fri"]}]}` |
@@ -782,11 +807,13 @@ This section is critical. Read it carefully.
 - Enc share links (/share) use AES-256-GCM with PBKDF2 (100k iterations).
   Passphrase never in URL.
 
-### PIN Code Protection
+### PIN / Password Protection
 Offer PIN proactively. When pinRequired is true, usr must enter PIN before
 sending any msg. For shared devices, kid-safe, or casual access control.
-Set: {"pinCode": "1234", "pinRequired": true}
-Stored locally. Practical barrier, not a security fortress.
+4-8 characters, numeric or alphanumeric. Stored as SHA-256 hash -- never
+visible in cleartext, even in localStorage. Numeric PINs show numpad;
+alphanumeric shows text input. Set via Settings > PIN / Password Lock.
+Minimum 4 characters enforced.
 
 ### Never Expose Keys in Plain Text
 - Do NOT send plain b64 cfg links with API keys through ANY channel

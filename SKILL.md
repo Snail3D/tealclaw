@@ -182,7 +182,9 @@ Only include fields to set/change. TC uses partial merge.
 | webhookUrl | string | Webhook endpoint |
 | webhookEvents | string | Webhook events |
 | scheduledMessages | array | Timed greetings [{time, text, days}] |
-| pinCode | string | 4-6 digit PIN |
+| pinHash | string | SHA-256 hash of PIN/password (set via Settings) |
+| pinIsAlpha | boolean | true if PIN contains letters |
+| pinLen | number | PIN length (4-8) |
 | pinRequired | boolean | Require PIN (dflt: false) |
 | translateTo | string | Auto-translate rsp language |
 | typingAnimation | boolean | Typewriter reveal (dflt: true) |
@@ -347,7 +349,7 @@ GQ-powered deep research reports (same k as Whisper).
 | Bouncy chat | `{"typingAnimation": true, "typingSpeed": "fast", "bubbleAnimation": "bounce", "soundEnabled": true}` |
 | No animations | `{"typingAnimation": false, "bubbleAnimation": "none", "reduceMotion": true}` |
 | Power usr | `{"streamEnabled": true, "latexEnabled": true, "contextMessages": 40, "maxTokens": 2000}` |
-| PIN lock | `{"pinCode": "1234", "pinRequired": true}` |
+| PIN lock | `{"pinRequired": true}` (set PIN in Settings, 4-8 chars) |
 
 ### Kid-friendly story bot
 ```json
@@ -368,11 +370,16 @@ One GQ k covers chat + vision + voice. No cost.
 
 ## Security
 
-### PIN Code
-```json
-{"pinCode": "1234", "pinRequired": true}
-```
-Usr must enter PIN before sending. For shared/unlocked devices.
+### PIN / Password Lock
+4-8 characters. Numeric (numpad unlock) or alphanumeric (text input unlock).
+Stored as SHA-256 hash -- never in cleartext, even in localStorage.
+Set via Settings > PIN / Password Lock. Minimum 4 characters enforced.
+
+### Guest Links
+Create encrypted limited-access links for others to chat with your bot.
+Guest sees stripped-down PWA (guest.html): passphrase entry -> presets + text input -> responses.
+No settings, no config, no commands, no tc-actions. Messages sandwich-wrapped with owner instructions.
+Created in Settings > Guest Links or via tc-action type "guest-link".
 
 ### QR Code Safety
 /qr codes do NOT contain API keys -- only visual + persona cfg.
@@ -428,6 +435,9 @@ Agents control TC via ```tc-action blocks in rsp. Parsed, executed, stripped fro
 | `video-grid` | `feeds[], title, cols` | Camera grid (1-4 cols). Each feed: `{url, label, live}` |
 | `gallery` | `images[], title` | Photo collage with lightbox. Each: `{url, caption}` |
 | `surveillance` | `command, camera, cooldown, label` | Camera face/motion detection. start/stop/snap. Alerts agent. |
+| `guest-link` | `action, name, instructions, presets, rateLimit, maxChars, expires` | Create/list/revoke limited guest links. Actions: create, list, revoke. |
+| `prompt` | `question, options[]` | Interactive buttons in chat. Usr taps choice, returned to agent. |
+| `request-config` | (none) | Returns all current settings (keys as presence booleans). |
 
 Multiple blocks per rsp OK -- execute sequentially.
 
@@ -469,6 +479,33 @@ Beautiful responsive grid (auto-layout 1-5+), click opens fullscreen lightbox wi
 ```
 ````
 Starts device camera with face/motion detection. Alerts with snapshots sent to connected OpenClaw agent. Commands: `start` (begin monitoring), `stop` (end), `snap` (capture current frame). Uses Chrome `FaceDetector` API or motion-diff fallback. `cooldown` = seconds between alert notifications.
+
+### Guest Link Example
+````
+```tc-action
+{"type":"guest-link","action":"create","name":"Sarah","instructions":"Can manage calendar and ask questions","presets":["Add to calendar","Check schedule","Message Eric"],"rateLimit":10,"maxChars":280,"expires":"30d"}
+```
+````
+Creates an encrypted guest link. Returns link URL + passphrase in a chat bubble. Guest sees stripped-down PWA with only presets + text input. `action: "list"` shows all links, `action: "revoke"` disables by name/id.
+
+### Interactive Prompt Example
+````
+```tc-action
+{"type":"prompt","question":"Which theme would you like?","options":["Dark mode","Light mode","Purple","Keep current"]}
+```
+````
+Shows tappable buttons in chat. User taps a choice, it's returned to the agent. Use for confirmations, preference selection, or branching workflows.
+
+### Request Config Example
+````
+```tc-action
+{"type":"request-config"}
+```
+````
+Returns all current settings to the agent (API keys shown as presence booleans, e.g. `aiKeySet: true`). No user approval needed. Use before suggesting config changes.
+
+### Share Config Flow
+User clicks "Share Settings with Agent" in Settings > Agent Tools. This sends the current config (sanitized) to the active agent as a chat message, along with a link to the skill docs. The agent reads the config, then replies with tc-action config blocks to modify settings. Full round-trip.
 
 ## Smart Paste
 

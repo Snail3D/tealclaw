@@ -361,6 +361,28 @@
     .pin-key.wide{grid-column:span 1;font-size:13px;font-weight:500}
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
+    /* ── Guest Link Modal ─────────────────────────────── */
+    .guest-modal{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:1;transition:opacity 0.2s}
+    .guest-modal.hidden{opacity:0;pointer-events:none;display:none}
+    .guest-modal-card{background:var(--bg-1);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:85dvh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.5);animation:bubble-scale-in 0.15s ease-out}
+    .guest-modal-card h3{font-size:16px;font-weight:600;margin-bottom:4px}
+    .guest-modal-card .gm-sub{font-size:11px;color:var(--text-2);margin-bottom:16px}
+    .guest-modal-card label{display:block;font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px}
+    .guest-modal-card .gm-field{margin-bottom:12px}
+    .guest-modal-card .gm-input{width:100%;padding:8px 12px;font-size:12px;font-family:var(--font);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);outline:none;transition:border-color 0.2s}
+    .guest-modal-card .gm-input:focus{border-color:var(--teal)}
+    .guest-modal-card textarea.gm-input{resize:vertical;min-height:60px;font-family:var(--font)}
+    .guest-modal-card select.gm-input{cursor:pointer;-webkit-appearance:none;appearance:none}
+    .guest-modal-card .gm-row{display:flex;gap:8px}
+    .guest-modal-card .gm-row>*{flex:1}
+    .gm-create-btn{width:100%;padding:10px;font-size:13px;font-weight:600;font-family:var(--font);border:none;border-radius:var(--r-md);background:var(--teal);color:#fff;cursor:pointer;transition:background 0.2s;margin-top:4px}
+    .gm-create-btn:hover{background:var(--teal-hover)}
+    .gm-cancel-btn{width:100%;padding:8px;font-size:12px;font-weight:500;font-family:var(--font);border:1px solid var(--border);border-radius:var(--r-md);background:transparent;color:var(--text-2);cursor:pointer;margin-top:6px}
+    .guest-passphrase{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-card);border:1.5px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:15px;letter-spacing:2px;color:var(--teal);cursor:pointer;user-select:all;margin-bottom:8px;justify-content:center;font-weight:600}
+    .guest-link-url{display:block;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);color:var(--text-2);word-break:break-all;cursor:pointer;user-select:all;margin-bottom:8px;max-height:60px;overflow-y:auto}
+    .guest-qr{display:flex;justify-content:center;margin:12px 0}
+    .guest-qr canvas{border-radius:8px;background:#fff;padding:8px}
+
     /* ── Decrypt Prompt ────────────────────────────────── */
     .decrypt-overlay{position:fixed;inset:0;z-index:9998;background:var(--bg-root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:1;transition:opacity 0.3s}
     .decrypt-overlay.hidden{opacity:0;pointer-events:none;display:none}
@@ -868,6 +890,10 @@
     <div class="pin-pad" id="pinPad"></div>
   </div>
 
+  <div class="guest-modal hidden" id="guestModal">
+    <div class="guest-modal-card" id="guestModalCard"></div>
+  </div>
+
   <div class="overlay" id="overlay" style="cursor:pointer">
     <button class="overlay-btn" id="enableBtn" style="padding:20px 48px;font-size:16px;border-radius:var(--r-lg)">Enable Audio</button>
     <p class="overlay-hint" style="margin-top:12px;font-size:13px">Tap anywhere to enable voice</p>
@@ -1268,6 +1294,8 @@
     }
     function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
     function setAgents(a){localStorage.setItem('tc-agents',JSON.stringify(a))}
+    function getGuestLinks(){try{return JSON.parse(localStorage.getItem('tc-guest-links')||'[]')}catch{return[]}}
+    function setGuestLinks(l){localStorage.setItem('tc-guest-links',JSON.stringify(l))}
 
     // ── ConvDB (IndexedDB storage layer) ─────────────
     const ConvDB={
@@ -2031,17 +2059,42 @@
         </div>
       </div>`;
 
-      // PIN Code Security
+      // PIN Code Security (4-8 chars, numeric or alphanumeric, hashed)
       const pinOn=!!k.pinRequired;
-      html+=`<div class="sheet-section"><div class="sheet-section-title">PIN Code Lock</div>
+      const hasPin=!!k.pinHash;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">PIN / Password Lock</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
           <button class="mode-btn pin-mode-btn ${pinOn?'active':''}" data-pin="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${pinOn?'var(--teal)':'transparent'};border:none;color:${pinOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
           <button class="mode-btn pin-mode-btn ${!pinOn?'active':''}" data-pin="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!pinOn?'var(--teal)':'transparent'};border:none;color:${!pinOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
         <div style="margin-top:8px">
-          <input type="password" class="sheet-input" id="sheetPinCode" value="${esc(k.pinCode||'')}" placeholder="Enter 4-6 digit PIN" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="font-family:var(--mono);font-size:12px;letter-spacing:4px;text-align:center">
+          <input type="password" class="sheet-input" id="sheetPinCode" value="" placeholder="${hasPin?'PIN set (enter new to change)':'Enter 4-8 char PIN or password'}" maxlength="8" autocomplete="off" style="font-family:var(--mono);font-size:12px;letter-spacing:3px;text-align:center">
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Require PIN to send messages. Protects your TealClaw on shared/unlocked devices.</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">4-8 characters. Numbers only = numpad unlock. Letters + numbers = text input unlock. Stored as SHA-256 hash — never visible in cleartext.</div>
+      </div>`;
+
+      // Guest Links section
+      const gLinks=getGuestLinks();
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Guest Links</div>
+        <div style="font-size:11px;color:var(--text-2);margin-bottom:10px">Create limited-access links for others to chat with your bot</div>
+        <button class="btn btn-teal" id="createGuestLinkBtn" style="width:100%;padding:10px;font-size:12px;font-weight:600;margin-bottom:10px">+ Create Guest Link</button>
+        <div id="guestLinkList">
+        ${gLinks.map(gl=>{
+          const days=gl.expires?Math.max(0,Math.ceil((new Date(gl.expires).getTime()-Date.now())/(86400000))):null;
+          const expLabel=days===null?'Never expires':days<=0?'Expired':`Expires in ${days}d`;
+          const dotClass=gl.enabled&&(days===null||days>0)?'ok':'off';
+          return `<div class="guest-link-row" data-glid="${esc(gl.id)}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:6px">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--${dotClass});flex-shrink:0"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(gl.name)}</div>
+              <div style="font-size:9px;color:var(--text-3)">${expLabel}</div>
+            </div>
+            <button class="gl-copy-btn" data-glid="${esc(gl.id)}" style="padding:4px 8px;font-size:9px;font-weight:600;background:var(--teal-dim);color:var(--teal);border:none;border-radius:6px;cursor:pointer" title="Copy link">Copy</button>
+            <button class="gl-toggle-btn" data-glid="${esc(gl.id)}" style="padding:4px 8px;font-size:9px;font-weight:600;background:${gl.enabled?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.12)'};color:${gl.enabled?'var(--ok)':'var(--err)'};border:none;border-radius:6px;cursor:pointer">${gl.enabled?'On':'Off'}</button>
+            <button class="gl-del-btn" data-glid="${esc(gl.id)}" style="padding:4px 8px;font-size:9px;font-weight:600;background:rgba(239,68,68,0.12);color:var(--err);border:none;border-radius:6px;cursor:pointer">Del</button>
+          </div>`;
+        }).join('')}
+        </div>
       </div>`;
 
       // Appearance section
@@ -2218,6 +2271,17 @@
         <button class="sheet-btn sheet-btn-ghost" id="sheetShareQR">Generate QR Code</button>
       </div>`;
 
+      // Share config with agent
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Agent Tools</div>
+        <div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Send your current settings to the agent so it can read and modify them</div>
+        <button class="sheet-btn" id="shareConfigBtn" style="background:var(--teal-dim);color:var(--teal);border-color:var(--teal);margin-bottom:0">
+          <span style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            Share Settings with Agent
+          </span>
+        </button>
+      </div>`;
+
       // Actions
       html+=`<div class="sheet-section">
         <button class="sheet-btn sheet-btn-ghost" id="sheetClearChat" style="margin-bottom:8px">Clear Chat History</button>
@@ -2290,22 +2354,30 @@
         renderSheetContent();renderChat();
       }));
 
-      // Wire up PIN code
+      // Wire up PIN code (hashed, 4-8 chars)
       $('sheetBody').querySelectorAll('.pin-mode-btn').forEach(b=>b.addEventListener('click',()=>{
         const k2=getK();
         const on=b.dataset.pin==='true';
-        if(on&&!k2.pinCode){showToast('Set a PIN first','err');return}
+        if(on&&!k2.pinHash){showToast('Set a PIN first','err');return}
         k2.pinRequired=on;setK(k2);
         renderSheetContent();
         showToast(on?'PIN lock enabled':'PIN lock disabled','ok');
       }));
-      $('sheetBody').querySelector('#sheetPinCode')?.addEventListener('change',(e)=>{
-        const val=e.target.value.replace(/\D/g,'');
-        if(val&&(val.length<4||val.length>6)){showToast('PIN must be 4-6 digits','err');return}
+      $('sheetBody').querySelector('#sheetPinCode')?.addEventListener('change',async(e)=>{
+        const val=e.target.value;
+        if(val&&(val.length<4||val.length>8)){showToast('Must be 4-8 characters','err');return}
         const k2=getK();
-        if(val){k2.pinCode=val}else{delete k2.pinCode;k2.pinRequired=false}
+        if(val){
+          k2.pinHash=await hashPin(val);
+          k2.pinIsAlpha=/[a-zA-Z]/.test(val);
+          k2.pinLen=val.length;
+          delete k2.pinCode; // remove any legacy plaintext
+        }else{
+          delete k2.pinHash;delete k2.pinIsAlpha;delete k2.pinLen;delete k2.pinCode;
+          k2.pinRequired=false;
+        }
         setK(k2);renderSheetContent();
-        showToast(val?'PIN set':'PIN removed','ok');
+        showToast(val?'PIN/password set (hashed)':'PIN removed','ok');
       });
 
       // Wire up GIF toggle
@@ -2591,6 +2663,368 @@
         updateStatus();chatHistory=[];setChat([]);renderChat();closeSheet();
         setTimeout(()=>runOnboarding(),300);showToast('Reset complete','ok');
       });
+
+      // Wire up guest link management
+      $('sheetBody').querySelector('#createGuestLinkBtn')?.addEventListener('click',()=>openGuestLinkModal());
+      $('sheetBody').querySelectorAll('.gl-copy-btn').forEach(b=>b.addEventListener('click',()=>{
+        const gl=getGuestLinks().find(g=>g.id===b.dataset.glid);
+        if(gl?.encBlob){
+          const url=location.origin+'/guest.html#'+gl.encBlob;
+          navigator.clipboard.writeText(url).then(()=>showToast('Link copied','ok')).catch(()=>showToast('Copy failed','err'));
+        }
+      }));
+      $('sheetBody').querySelectorAll('.gl-toggle-btn').forEach(b=>b.addEventListener('click',()=>{
+        const links=getGuestLinks();
+        const gl=links.find(g=>g.id===b.dataset.glid);
+        if(gl){gl.enabled=!gl.enabled;setGuestLinks(links);renderSheetContent();showToast(gl.enabled?'Link enabled':'Link disabled','ok')}
+      }));
+      $('sheetBody').querySelectorAll('.gl-del-btn').forEach(b=>b.addEventListener('click',()=>{
+        if(!confirm('Delete this guest link?'))return;
+        const links=getGuestLinks().filter(g=>g.id!==b.dataset.glid);
+        setGuestLinks(links);renderSheetContent();showToast('Link deleted','ok');
+      }));
+
+      // Wire up share config button
+      $('sheetBody').querySelector('#shareConfigBtn')?.addEventListener('click',()=>shareConfigWithAgent());
+    }
+
+    // ── Guest Link Modal ─────────────────────────────
+    function openGuestLinkModal(prefill){
+      const modal=$('guestModal');
+      const card=$('guestModalCard');
+      card.innerHTML=`
+        <h3>Create Guest Link</h3>
+        <div class="gm-sub">Create a limited-access link for someone to chat with your bot</div>
+        <div class="gm-field">
+          <label>Name <span style="color:var(--err)">*</span></label>
+          <input class="gm-input" id="gmName" type="text" placeholder="Who is this for? (e.g. Sarah)" value="${esc(prefill?.name||'')}" maxlength="40">
+        </div>
+        <div class="gm-field">
+          <label>Instructions</label>
+          <textarea class="gm-input" id="gmInstructions" placeholder="What can they do? (e.g. Manage calendar, ask questions)" rows="3">${esc(prefill?.instructions||'')}</textarea>
+        </div>
+        <div class="gm-field">
+          <label>Preset Actions (comma-separated)</label>
+          <input class="gm-input" id="gmPresets" type="text" placeholder="Add to calendar, Check schedule, Message Eric" value="${esc(prefill?.presets?.join(', ')||'')}">
+        </div>
+        <div class="gm-row">
+          <div class="gm-field">
+            <label>Max Characters</label>
+            <input class="gm-input" id="gmMaxChars" type="number" value="${prefill?.maxChars||280}" min="0" max="2000">
+          </div>
+          <div class="gm-field">
+            <label>Rate Limit/hr</label>
+            <input class="gm-input" id="gmRateLimit" type="number" value="${prefill?.rateLimit||10}" min="1" max="100">
+          </div>
+        </div>
+        <div class="gm-field">
+          <label>Expires</label>
+          <select class="gm-input" id="gmExpiry">
+            <option value="7d">7 days</option>
+            <option value="30d" selected>30 days</option>
+            <option value="90d">90 days</option>
+            <option value="1y">1 year</option>
+            <option value="never">Never</option>
+          </select>
+        </div>
+        <button class="gm-create-btn" id="gmCreateBtn">Create Link</button>
+        <button class="gm-cancel-btn" id="gmCancelBtn">Cancel</button>
+      `;
+      modal.classList.remove('hidden');
+
+      $('gmCancelBtn').addEventListener('click',()=>closeGuestModal());
+      modal.addEventListener('click',e=>{if(e.target===modal)closeGuestModal()});
+      $('gmCreateBtn').addEventListener('click',()=>createGuestLink());
+      $('gmName').focus();
+    }
+
+    function closeGuestModal(){$('guestModal').classList.add('hidden')}
+
+    async function createGuestLink(){
+      const name=$('gmName').value.trim();
+      if(!name){showToast('Name is required','err');$('gmName').focus();return}
+      const instructions=$('gmInstructions').value.trim();
+      const presetsRaw=$('gmPresets').value.trim();
+      const presets=presetsRaw?presetsRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+      const maxChars=+$('gmMaxChars').value||280;
+      const rateLimit=+$('gmRateLimit').value||10;
+      const expiryVal=$('gmExpiry').value;
+
+      // Calculate expiry timestamp
+      let exp=null;
+      const now=Date.now();
+      if(expiryVal==='7d')exp=now+7*86400000;
+      else if(expiryVal==='30d')exp=now+30*86400000;
+      else if(expiryVal==='90d')exp=now+90*86400000;
+      else if(expiryVal==='1y')exp=now+365*86400000;
+
+      // Build payload — use active agent's gateway info
+      const agent=getAgents().find(a=>a.active)||getAgents()[0];
+      const k=getK();
+      const ownerName=k.deviceName||'Owner';
+
+      const payload={
+        v:1,
+        id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),
+        gw:agent?.url||null,
+        tk:agent?.token||null,
+        ak:(k.mode==='direct'||!agent)?k.aiKey:null,
+        prov:(k.mode==='direct'||!agent)?k.aiProvider:null,
+        nm:name,
+        own:ownerName,
+        ins:instructions||'General assistant — answer questions and help out.',
+        pre:presets,
+        mc:maxChars,
+        rl:rateLimit,
+        exp:exp
+      };
+
+      // Encrypt
+      const passphrase=generatePassphrase();
+      const json=JSON.stringify(payload);
+      const blob=await encryptConfig(json,passphrase);
+
+      // Calculate expiry date string for record
+      const expiresStr=exp?new Date(exp).toISOString().slice(0,10):null;
+
+      // Store owner-side record (passphrase NOT stored)
+      const record={
+        id:payload.id,
+        name:name,
+        encBlob:blob,
+        instructions:instructions,
+        presets:presets,
+        maxChars:maxChars,
+        rateLimit:rateLimit,
+        expires:expiresStr,
+        created:new Date().toISOString().slice(0,10),
+        enabled:true
+      };
+      const links=getGuestLinks();
+      links.push(record);
+      setGuestLinks(links);
+
+      // Show share view
+      const fullUrl=location.origin+'/guest.html#'+blob;
+      showGuestShareView(fullUrl,passphrase,name);
+    }
+
+    function showGuestShareView(url,passphrase,name){
+      const card=$('guestModalCard');
+      card.innerHTML=`
+        <h3>Guest Link Created</h3>
+        <div class="gm-sub">Share this link and passphrase with ${esc(name)}</div>
+        <div class="gm-field">
+          <label>Link (click to copy)</label>
+          <div class="guest-link-url" id="gmLinkUrl">${esc(url)}</div>
+        </div>
+        <div class="gm-field">
+          <label>Passphrase (click to copy)</label>
+          <div class="guest-passphrase" id="gmPassphrase">${esc(passphrase)}</div>
+        </div>
+        <div style="font-size:10px;color:var(--warn);text-align:center;margin:8px 0">Share the passphrase separately from the link for security</div>
+        <div class="guest-qr"><canvas id="gmQrCanvas" width="200" height="200"></canvas></div>
+        <button class="gm-create-btn" id="gmDoneBtn" style="margin-top:12px">Done</button>
+      `;
+
+      // Copy handlers
+      $('gmLinkUrl').addEventListener('click',()=>{
+        navigator.clipboard.writeText(url).then(()=>showToast('Link copied','ok')).catch(()=>showToast('Copy failed','err'));
+      });
+      $('gmPassphrase').addEventListener('click',()=>{
+        navigator.clipboard.writeText(passphrase).then(()=>showToast('Passphrase copied','ok')).catch(()=>showToast('Copy failed','err'));
+      });
+      $('gmDoneBtn').addEventListener('click',()=>{
+        closeGuestModal();
+        renderSheetContent();
+      });
+
+      // Render QR code
+      try{renderQR($('gmQrCanvas'),url)}catch(e){}
+    }
+
+    // ── Minimal QR Code Generator ────────────────────
+    function renderQR(canvas,text){
+      // Simplified QR encoding — uses canvas for display
+      const modules=generateQRModules(text);
+      if(!modules)return;
+      const size=modules.length;
+      const scale=Math.floor(200/size);
+      canvas.width=canvas.height=size*scale+16;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#000000';
+      for(let y=0;y<size;y++){
+        for(let x=0;x<size;x++){
+          if(modules[y][x])ctx.fillRect(x*scale+8,y*scale+8,scale,scale);
+        }
+      }
+    }
+
+    function generateQRModules(data){
+      // QR Code Model 2, Version 1-6 byte mode encoder
+      const ec=1; // L error correction
+      const enc=new TextEncoder().encode(data);
+      const len=enc.length;
+      // Determine version (1-10 for typical URLs)
+      let ver=1;
+      const caps=[0,17,32,53,78,106,134,154,192,230,271]; // byte capacity at L level
+      while(ver<=10&&caps[ver]<len)ver++;
+      if(ver>10)return null; // too long
+
+      const size=ver*4+17;
+      const mods=Array.from({length:size},()=>Array(size).fill(null));
+      const rsrv=Array.from({length:size},()=>Array(size).fill(false));
+
+      // Place finder patterns
+      placeFinder(mods,rsrv,0,0);
+      placeFinder(mods,rsrv,size-7,0);
+      placeFinder(mods,rsrv,0,size-7);
+
+      // Timing patterns
+      for(let i=8;i<size-8;i++){
+        setMod(mods,rsrv,6,i,i%2===0);
+        setMod(mods,rsrv,i,6,i%2===0);
+      }
+
+      // Alignment patterns (version >= 2)
+      if(ver>=2){
+        const alPos=getAlignmentPositions(ver);
+        for(const ay of alPos){
+          for(const ax of alPos){
+            if(rsrv[ay]&&rsrv[ay][ax])continue;
+            if((ay<9&&ax<9)||(ay<9&&ax>size-9)||(ay>size-9&&ax<9))continue;
+            placeAlignment(mods,rsrv,ay,ax);
+          }
+        }
+      }
+
+      // Reserve format/version areas
+      reserveFormatArea(rsrv,size,ver);
+
+      // Encode data
+      const bits=encodeData(enc,ver,ec);
+      // Place data bits
+      placeData(mods,rsrv,bits,size);
+      // Apply best mask
+      applyBestMask(mods,rsrv,size,ver,ec);
+      return mods;
+    }
+
+    function setMod(m,r,row,col,val){if(row>=0&&row<m.length&&col>=0&&col<m.length){m[row][col]=val?1:0;r[row][col]=true}}
+    function placeFinder(m,r,row,col){
+      for(let dy=-1;dy<=7;dy++)for(let dx=-1;dx<=7;dx++){
+        const y=row+dy,x=col+dx;
+        if(y<0||y>=m.length||x<0||x>=m.length)continue;
+        const inOuter=dy===-1||dy===7||dx===-1||dx===7;
+        const inBorder=dy===0||dy===6||dx===0||dx===6;
+        const inInner=dy>=2&&dy<=4&&dx>=2&&dx<=4;
+        setMod(m,r,y,x,!inOuter&&(inBorder||inInner));
+      }
+    }
+    function placeAlignment(m,r,row,col){
+      for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+        const border=Math.abs(dy)===2||Math.abs(dx)===2;
+        const center=dy===0&&dx===0;
+        setMod(m,r,row+dy,col+dx,border||center);
+      }
+    }
+    function getAlignmentPositions(ver){
+      if(ver===1)return[];
+      const tbl=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54]];
+      return tbl[ver]||[];
+    }
+    function reserveFormatArea(r,size,ver){
+      for(let i=0;i<8;i++){r[8][i]=true;r[i][8]=true;r[8][size-1-i]=true;r[size-1-i][8]=true}
+      r[8][8]=true;
+      // Dark module
+      r[size-8][8]=true;
+    }
+    function encodeData(bytes,ver,ec){
+      const totalBits=getDataCapBits(ver,ec);
+      let bits='';
+      // Mode: 0100 = byte
+      bits+='0100';
+      // Char count (ver 1-9: 8 bits)
+      const ccLen=ver<=9?8:16;
+      bits+=bytes.length.toString(2).padStart(ccLen,'0');
+      for(const b of bytes)bits+=b.toString(2).padStart(8,'0');
+      // Terminator
+      const rem=totalBits-bits.length;
+      bits+='0000'.slice(0,Math.min(4,rem));
+      while(bits.length%8!==0)bits+='0';
+      while(bits.length<totalBits){bits+='11101100';if(bits.length<totalBits)bits+='00010001'}
+      return bits.slice(0,totalBits);
+    }
+    function getDataCapBits(ver,ec){
+      // Total data codewords * 8 (L level)
+      const tbl=[0,152,272,440,640,864,1088,1248,1552,1856,2192];
+      return tbl[ver]||152;
+    }
+    function placeData(m,r,bits,size){
+      let idx=0;
+      let upward=true;
+      for(let right=size-1;right>=1;right-=2){
+        if(right===6)right=5; // skip timing column
+        const rows=upward?Array.from({length:size},(_,i)=>size-1-i):Array.from({length:size},(_,i)=>i);
+        for(const row of rows){
+          for(const col of [right,right-1]){
+            if(col<0)continue;
+            if(r[row][col])continue;
+            m[row][col]=idx<bits.length?(bits[idx]==='1'?1:0):0;
+            idx++;
+          }
+        }
+        upward=!upward;
+      }
+    }
+    function applyBestMask(m,r,size,ver,ec){
+      // Use mask 0 for simplicity (alternating checkerboard)
+      const maskFn=(row,col)=>(row+col)%2===0;
+      for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+        if(!r[y][x])m[y][x]=m[y][x]^(maskFn(y,x)?1:0);
+      }
+      // Write format info (mask 0, EC level L)
+      // Format: 01 000 (EC L=01, mask 0=000) → BCH encoded → XOR mask
+      const formatBits='111011111000100'; // Pre-computed for EC L + mask 0
+      for(let i=0;i<6;i++)m[8][i]=+formatBits[i];
+      m[8][7]=+formatBits[6];m[8][8]=+formatBits[7];m[7][8]=+formatBits[8];
+      for(let i=9;i<15;i++)m[14-i][8]=+formatBits[i];
+      for(let i=0;i<8;i++)m[8][size-8+i]=+formatBits[i];
+      m[size-8][8]=1; // dark module
+      for(let i=8;i<15;i++)m[size-15+i][8]=+formatBits[i];
+    }
+
+    // ── Share Config with Agent ─────────────────────
+    function shareConfigWithAgent(){
+      const k=getK();
+      const agents=getAgents();
+      const gLinks=getGuestLinks();
+      // Build sanitized config (keys as presence booleans)
+      const cfg={};
+      const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode','pinHash'];
+      for(const[key,val]of Object.entries(k)){
+        if(val===''||val===null||val===undefined)continue;
+        if(sensitive.includes(key)){cfg[key+'Set']=true;continue}
+        cfg[key]=val;
+      }
+      cfg.agentCount=agents.length;
+      cfg.guestLinkCount=gLinks.length;
+      cfg.activeAgent=agents.find(a=>a.active)?.name||'none';
+
+      const text=`Here are my current TealClaw settings. Read the full skill guide at https://tealclaw.ai/llms.txt
+
+\`\`\`json
+${JSON.stringify(cfg,null,2)}
+\`\`\`
+
+You can update any settings by replying with a \`\`\`tc-action config block. You can also use tc-action to show interactive prompts, create guest links, show toasts, and more. See the skill guide for all available actions.`;
+
+      // Send as a user message
+      closeSheet();
+      $('textIn').value=text;
+      send();
     }
 
     function openKeyEditor(field,info){
@@ -3044,12 +3478,15 @@
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage). config/command/style require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style require user approval.
 Video: \`\`\`tc-action\n{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}\n\`\`\` Supports HLS, MP4, WebM. Auto-PiP on scroll.
 Camera grid: \`\`\`tc-action\n{"type":"video-grid","title":"Security","cols":2,"feeds":[{"url":"...","label":"Front"},{"url":"...","label":"Back"}]}\n\`\`\` 1-4 cols, each feed has url+label+live.
 Photo gallery: \`\`\`tc-action\n{"type":"gallery","title":"Photos","images":[{"url":"...","caption":"Sunset"},{"url":"..."}]}\n\`\`\` Beautiful grid, lightbox on tap, keyboard nav.
 Surveillance: \`\`\`tc-action\n{"type":"surveillance","command":"start","camera":"user","cooldown":30,"label":"Office Cam"}\n\`\`\` Uses device camera + face detection (Chrome FaceDetector API or motion detection fallback). Sends alerts with snapshots to you when faces/motion detected. Commands: start, stop, snap. cooldown=seconds between alerts.
-Example: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":"#8b5cf6"}\n\`\`\`
+Guest links: \`\`\`tc-action\n{"type":"guest-link","action":"create","name":"Sarah","instructions":"Can manage calendar and ask questions","presets":["Add to calendar","Check schedule"],"rateLimit":10,"expires":"30d"}\n\`\`\` Creates encrypted limited-access link. Actions: create, list, revoke.
+Interactive prompts: \`\`\`tc-action\n{"type":"prompt","question":"Would you like me to update your theme?","options":["Yes, dark mode","Yes, light mode","No thanks"]}\n\`\`\` Shows tappable buttons in chat, returns user's choice. Use this to ask yes/no questions or offer choices.
+Request config: \`\`\`tc-action\n{"type":"request-config"}\n\`\`\` Returns all current settings (API keys shown as presence booleans only). Use this to read the user's config before suggesting changes.
+Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":"#8b5cf6"}\n\`\`\` Updates any config field. User approves before applying.
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /imagine /save /session /help`;
 
@@ -4593,7 +5030,7 @@ Rules:
             case 'config':{
               const data=action.data||action;
               const keys=Object.keys(data).filter(k=>k!=='type');
-              const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','webhookUrl','customCSS','pinCode'].some(s=>data[s]);
+              const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','webhookUrl','customCSS','pinHash'].some(s=>data[s]);
               const desc=keys.slice(0,5).join(', ')+(keys.length>5?'...':'')+(hasSensitive?' (includes sensitive keys)':'');
               const ok=await confirmTcAction('Update '+keys.length+' config setting'+(keys.length===1?'':'s'),desc);
               if(!ok){results.push({type:'config',ok:false,error:'denied by user'});break}
@@ -4709,17 +5146,112 @@ Rules:
               }
               break;
             }
+            case 'guest-link':{
+              const glAction=action.action||'list';
+              if(glAction==='create'){
+                const name=action.name;
+                if(!name){results.push({type:'guest-link',ok:false,error:'name required'});break}
+                const instructions=action.instructions||'General assistant';
+                const presets=action.presets||[];
+                const rateLimit=action.rateLimit||10;
+                const maxChars=action.maxChars||280;
+                let exp=null;
+                const expiry=action.expires||'30d';
+                const now=Date.now();
+                if(expiry==='7d')exp=now+7*86400000;
+                else if(expiry==='30d')exp=now+30*86400000;
+                else if(expiry==='90d')exp=now+90*86400000;
+                else if(expiry==='1y')exp=now+365*86400000;
+                const agent=getAgents().find(a=>a.active)||getAgents()[0];
+                const k2=getK();
+                const payload={v:1,id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),gw:agent?.url||null,tk:agent?.token||null,ak:(k2.mode==='direct'||!agent)?k2.aiKey:null,prov:(k2.mode==='direct'||!agent)?k2.aiProvider:null,nm:name,own:k2.deviceName||'Owner',ins:instructions,pre:presets,mc:maxChars,rl:rateLimit,exp};
+                const passphrase=generatePassphrase();
+                const blob=await encryptConfig(JSON.stringify(payload),passphrase);
+                const record={id:payload.id,name,encBlob:blob,instructions,presets,maxChars,rateLimit,expires:exp?new Date(exp).toISOString().slice(0,10):null,created:new Date().toISOString().slice(0,10),enabled:true};
+                const links=getGuestLinks();links.push(record);setGuestLinks(links);
+                const fullUrl=location.origin+'/guest.html#'+blob;
+                setTimeout(()=>sysBubble(`<div style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><div style="margin:8px 0;padding:8px;background:var(--bg-card);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);word-break:break-all;cursor:pointer" onclick="navigator.clipboard.writeText('${fullUrl.replace(/'/g,"\\'")}').then(()=>showToast('Copied','ok'))">${esc(fullUrl.slice(0,80))}...</div><div style="margin:4px 0;padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer" onclick="navigator.clipboard.writeText('${passphrase}').then(()=>showToast('Copied','ok'))">${passphrase}</div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:4px">Tap to copy. Share the passphrase separately from the link.</div></div>`),200);
+                results.push({type:'guest-link',ok:true,action:'create',id:payload.id,url:fullUrl,passphrase});
+              } else if(glAction==='list'){
+                const links=getGuestLinks();
+                const summary=links.map(l=>`${l.enabled?'[ON]':'[OFF]'} ${l.name} (${l.expires||'never'}, ${l.presets?.join(', ')||'no presets'})`).join('\n');
+                results.push({type:'guest-link',ok:true,action:'list',count:links.length,links:summary||'No guest links'});
+              } else if(glAction==='revoke'){
+                const target=action.name||action.id;
+                const links=getGuestLinks();
+                const gl=links.find(g=>g.name===target||g.id===target);
+                if(gl){gl.enabled=false;setGuestLinks(links);showToast(`Guest link "${gl.name}" revoked`,'ok');results.push({type:'guest-link',ok:true,action:'revoke',name:gl.name})}
+                else{results.push({type:'guest-link',ok:false,error:'link not found'})}
+              }
+              break;
+            }
+            case 'prompt':{
+              // Interactive prompt — show buttons in chat, wait for user choice
+              const question=action.question||action.text||'Choose an option:';
+              const options=action.options||['Yes','No'];
+              const promptResult=await showInteractivePrompt(question,options);
+              results.push({type:'prompt',ok:true,answer:promptResult});
+              break;
+            }
+            case 'request-config':{
+              // Agent requests current config
+              const k2=getK();
+              const agents2=getAgents();
+              const cfg={};
+              const sensitive2=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode','pinHash'];
+              for(const[key,val]of Object.entries(k2)){
+                if(val===''||val===null||val===undefined)continue;
+                if(sensitive2.includes(key)){cfg[key+'Set']=true;continue}
+                cfg[key]=val;
+              }
+              cfg.agentCount=agents2.length;
+              cfg.guestLinkCount=getGuestLinks().length;
+              cfg.activeAgent=agents2.find(a=>a.active)?.name||'none';
+              results.push({type:'request-config',ok:true,config:cfg});
+              break;
+            }
           }
         }catch(e){results.push({type:action.type,ok:false,error:e.message})}
       }
       return results;
     }
 
+    // ── Interactive Prompt (tc-action: prompt) ───────
+    function showInteractivePrompt(question,options){
+      return new Promise(resolve=>{
+        const scroll=$('chatScroll');
+        const el=document.createElement('div');
+        el.className='chat-bubble ai';
+        let html=`<div class="md-content" style="margin-bottom:10px">${renderMd(question)}</div>`;
+        html+=`<div style="display:flex;flex-wrap:wrap;gap:6px">`;
+        options.forEach(opt=>{
+          html+=`<button class="prompt-opt-btn" style="padding:8px 16px;font-size:12px;font-weight:500;font-family:var(--font);border:1.5px solid var(--teal);border-radius:10px;background:transparent;color:var(--teal);cursor:pointer;transition:all 0.2s;min-height:44px">${esc(opt)}</button>`;
+        });
+        html+=`</div><div class="chat-meta">${fmtTime()}</div>`;
+        el.innerHTML=html;
+        scroll.appendChild(el);
+        smoothScrollToBottom(scroll,320);
+
+        el.querySelectorAll('.prompt-opt-btn').forEach(btn=>{
+          btn.addEventListener('click',()=>{
+            const answer=btn.textContent;
+            // Disable all buttons, highlight chosen
+            el.querySelectorAll('.prompt-opt-btn').forEach(b=>{
+              b.disabled=true;
+              b.style.opacity=b===btn?'1':'0.3';
+              if(b===btn){b.style.background='var(--teal)';b.style.color='#fff'}
+            });
+            resolve(answer);
+          });
+        });
+      });
+    }
+
     // Badge shown on messages that executed actions
     function renderActionBadge(actions){
       if(!actions.length)return '';
       const types=[...new Set(actions.map(a=>a.type))];
-      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5','video-grid':'\uD83D\uDCF9',gallery:'\uD83D\uDDBC',surveillance:'\uD83D\uDC41'};
+      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5','video-grid':'\uD83D\uDCF9',gallery:'\uD83D\uDDBC',surveillance:'\uD83D\uDC41','guest-link':'\uD83D\uDD17',prompt:'\u2753','request-config':'\uD83D\uDCCB'};
       const labels=types.map(t=>icons[t]||'\u26A1').join(' ');
       return `<div class="tc-action-badge" title="${types.length} action${types.length>1?'s':''} executed: ${types.join(', ')}">${labels} ${types.length} action${types.length>1?'s':''}</div>`;
     }
@@ -6163,7 +6695,7 @@ ${agentNote}`);
       webhookUrl:'webhookUrl',webhookEvents:'webhookEvents',
       scheduledMessages:'scheduledMessages',latexEnabled:'latexEnabled',
       // Security
-      pinCode:'pinCode',pinRequired:'pinRequired',
+      pinHash:'pinHash',pinIsAlpha:'pinIsAlpha',pinLen:'pinLen',pinRequired:'pinRequired',
       // Animations
       typingAnimation:'typingAnimation',typingSpeed:'typingSpeed',bubbleAnimation:'bubbleAnimation',
       use24HourTime:'use24HourTime',
@@ -6509,7 +7041,7 @@ ${agentNote}`);
     }
     function showConfigImportConfirm(cfg){
       const fields=Object.keys(cfg).filter(k=>k!=='agents'&&k!=='_session');
-      const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode'].some(s=>cfg[s]);
+      const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinHash'].some(s=>cfg[s]);
       const hasWebhook=!!cfg.webhookUrl;
       const hasCSS=!!cfg.customCSS;
       const hasSession=!!cfg._session;
@@ -6586,7 +7118,7 @@ ${agentNote}`);
       }
       if(agents.length)out.agents=agents;
       if(!includeSensitive){
-        const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode'];
+        const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinHash','pinCode'];
         sensitive.forEach(s=>{delete out[s]});
         if(out.agents)out.agents=out.agents.map(a=>({...a,token:undefined}));
       }
@@ -6602,55 +7134,110 @@ ${agentNote}`);
       return{url:location.origin+'/#config=enc:'+blob,passphrase};
     }
 
-    // ── PIN Code Lock ─────────────────────────────────
+    // ── PIN Code Lock (4-8 chars, hashed storage) ────
     let pinUnlocked=false;
+
+    async function hashPin(pin){
+      const data=new TextEncoder().encode(pin+'tealclaw-pin-salt');
+      const hash=await crypto.subtle.digest('SHA-256',data);
+      return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    // Migrate plaintext pinCode → pinHash on load
+    (async function migratePinCode(){
+      const k=getK();
+      if(k.pinCode&&!k.pinHash){
+        k.pinHash=await hashPin(k.pinCode);
+        k.pinIsAlpha=/[a-zA-Z]/.test(k.pinCode);
+        k.pinLen=k.pinCode.length;
+        delete k.pinCode;
+        setK(k);
+      }
+    })();
+
     function checkPinLock(){
       const k=getK();
-      if(!k.pinCode||!k.pinRequired)return true;
+      if(!k.pinHash||!k.pinRequired)return true;
       if(pinUnlocked)return true;
       showPinScreen();
       return false;
     }
+
     function showPinScreen(){
       const overlay=$('pinOverlay');
       overlay.classList.remove('hidden');
       const k=getK();
-      const pinLen=(k.pinCode||'').length||4;
+      const isAlpha=!!k.pinIsAlpha;
+      const pinLen=k.pinLen||4;
       let entered='';
       const dotsEl=$('pinDots');
       const padEl=$('pinPad');
-      function renderDots(){
-        dotsEl.innerHTML=Array.from({length:pinLen},(_,i)=>`<div class="pin-dot${i<entered.length?' filled':''}"></div>`).join('');
-      }
-      function renderPad(){
+
+      if(isAlpha){
+        // Show text input for alphanumeric passwords
+        dotsEl.innerHTML='';
         padEl.innerHTML='';
-        [1,2,3,4,5,6,7,8,9].forEach(n=>{
-          const btn=document.createElement('button');btn.className='pin-key';btn.textContent=n;
-          btn.addEventListener('click',()=>enterDigit(String(n)));padEl.appendChild(btn);
-        });
-        const clear=document.createElement('button');clear.className='pin-key wide';clear.textContent='Clear';
-        clear.addEventListener('click',()=>{entered='';renderDots()});padEl.appendChild(clear);
-        const zero=document.createElement('button');zero.className='pin-key';zero.textContent='0';
-        zero.addEventListener('click',()=>enterDigit('0'));padEl.appendChild(zero);
-        const del=document.createElement('button');del.className='pin-key wide';del.innerHTML='&#9003;';
-        del.addEventListener('click',()=>{entered=entered.slice(0,-1);renderDots()});padEl.appendChild(del);
-      }
-      function enterDigit(d){
-        if(entered.length>=pinLen)return;
-        entered+=d;renderDots();
-        if(entered.length===pinLen){
-          if(entered===k.pinCode){
-            pinUnlocked=true;
-            overlay.classList.add('hidden');
-            haptic('success');showToast('Unlocked','ok');
+        const wrap=document.createElement('div');
+        wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:12px;width:100%';
+        const input=document.createElement('input');
+        input.type='password';input.maxLength=8;input.autocomplete='off';input.spellcheck=false;
+        input.style.cssText='width:200px;padding:12px 16px;font-family:var(--mono);font-size:16px;letter-spacing:3px;text-align:center;background:var(--bg-card);border:2px solid var(--border-2);border-radius:10px;color:var(--text);outline:none;caret-shape:block;caret-color:var(--teal)';
+        input.placeholder='Password';
+        const btn=document.createElement('button');
+        btn.className='pin-key';btn.style.cssText='width:auto;padding:10px 32px;border-radius:10px;font-size:14px;height:auto';
+        btn.textContent='Unlock';
+        wrap.appendChild(input);wrap.appendChild(btn);
+        padEl.appendChild(wrap);
+
+        async function tryUnlock(){
+          const val=input.value;
+          if(val.length<4)return;
+          const h=await hashPin(val);
+          if(h===k.pinHash){
+            pinUnlocked=true;overlay.classList.add('hidden');haptic('success');showToast('Unlocked','ok');
           } else {
-            haptic('error');
-            dotsEl.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('wrong'));
-            setTimeout(()=>{entered='';renderDots()},400);
+            haptic('error');input.value='';
+            input.style.borderColor='var(--err)';
+            setTimeout(()=>{input.style.borderColor='var(--border-2)'},400);
           }
         }
+        btn.addEventListener('click',tryUnlock);
+        input.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock()});
+        setTimeout(()=>input.focus(),100);
+      } else {
+        // Numeric PIN pad (up to 8 dots)
+        function renderDots(){
+          dotsEl.innerHTML=Array.from({length:pinLen},(_,i)=>`<div class="pin-dot${i<entered.length?' filled':''}"></div>`).join('');
+        }
+        function renderPad(){
+          padEl.innerHTML='';
+          [1,2,3,4,5,6,7,8,9].forEach(n=>{
+            const btn=document.createElement('button');btn.className='pin-key';btn.textContent=n;
+            btn.addEventListener('click',()=>enterDigit(String(n)));padEl.appendChild(btn);
+          });
+          const clear=document.createElement('button');clear.className='pin-key wide';clear.textContent='Clear';
+          clear.addEventListener('click',()=>{entered='';renderDots()});padEl.appendChild(clear);
+          const zero=document.createElement('button');zero.className='pin-key';zero.textContent='0';
+          zero.addEventListener('click',()=>enterDigit('0'));padEl.appendChild(zero);
+          const del=document.createElement('button');del.className='pin-key wide';del.innerHTML='&#9003;';
+          del.addEventListener('click',()=>{entered=entered.slice(0,-1);renderDots()});padEl.appendChild(del);
+        }
+        async function enterDigit(d){
+          if(entered.length>=pinLen)return;
+          entered+=d;renderDots();
+          if(entered.length===pinLen){
+            const h=await hashPin(entered);
+            if(h===k.pinHash){
+              pinUnlocked=true;overlay.classList.add('hidden');haptic('success');showToast('Unlocked','ok');
+            } else {
+              haptic('error');
+              dotsEl.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('wrong'));
+              setTimeout(()=>{entered='';renderDots()},400);
+            }
+          }
+        }
+        renderDots();renderPad();
       }
-      renderDots();renderPad();
     }
 
     // ── Video Streaming + PiP ─────────────────────────
