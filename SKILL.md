@@ -92,7 +92,9 @@ Only include fields to set/change. TC uses partial merge.
 |-------|------|-------------|
 | aiProvider | "openrouter"/"groq"/"anthropic" | AI provider |
 | aiKey | string | Chat API k (sk-or-v1-*, gsk_*, sk-ant-*) |
-| aiModel | string | Model ID (dflt: google/gemini-2.5-flash-preview) |
+| aiModel | string | Chat model ID (dflt: google/gemini-2.5-flash-preview for OR, llama-3.3-70b-versatile for Groq) |
+| visionModel | string | Vision model for image understanding |
+| searchModel | string | Research/search model |
 | whisperKey | string | GQ k for Whisper voice transcription |
 | ttsKey | string | EL k for TTS |
 | ttsVoice | string | EL voice ID (dflt: ThT5KcBeYPX7keBQBPPD = Rachel) |
@@ -423,6 +425,9 @@ Agents control TC via ```tc-action blocks in rsp. Parsed, executed, stripped fro
 | `navigate` | `target` (settings/new-chat) | Navigate UI |
 | `bubble` | `html` or `text` | Inject system bubble |
 | `video` | `url, title, live, muted` | Embed video stream (HLS/MP4/WebM). Auto-PiP on scroll. |
+| `video-grid` | `feeds[], title, cols` | Camera grid (1-4 cols). Each feed: `{url, label, live}` |
+| `gallery` | `images[], title` | Photo collage with lightbox. Each: `{url, caption}` |
+| `surveillance` | `command, camera, cooldown, label` | Camera face/motion detection. start/stop/snap. Alerts agent. |
 
 Multiple blocks per rsp OK -- execute sequentially.
 
@@ -433,6 +438,37 @@ Multiple blocks per rsp OK -- execute sequentially.
 ```
 ````
 Embeds a live video player in chat. When user scrolls away, video auto-enters a draggable floating PiP mini-player. Controls: mute, PiP, close, back-to-video.
+
+### Camera Grid Example
+````
+```tc-action
+{"type":"video-grid","title":"Security Cameras","cols":2,"feeds":[
+  {"url":"https://cam1.example/feed.m3u8","label":"Front Door","live":true},
+  {"url":"https://cam2.example/feed.m3u8","label":"Backyard","live":true}
+]}
+```
+````
+Responsive grid with live badges, expand/fullscreen per cell, layout toggle.
+
+### Photo Gallery Example
+````
+```tc-action
+{"type":"gallery","title":"Vacation Photos","images":[
+  {"url":"https://example.com/photo1.jpg","caption":"Beach sunset"},
+  {"url":"https://example.com/photo2.jpg","caption":"Mountain view"},
+  {"url":"https://example.com/photo3.jpg"}
+]}
+```
+````
+Beautiful responsive grid (auto-layout 1-5+), click opens fullscreen lightbox with arrow + keyboard nav.
+
+### Surveillance Example
+````
+```tc-action
+{"type":"surveillance","command":"start","camera":"user","cooldown":30,"label":"Office Cam"}
+```
+````
+Starts device camera with face/motion detection. Alerts with snapshots sent to connected OpenClaw agent. Commands: `start` (begin monitoring), `stop` (end), `snap` (capture current frame). Uses Chrome `FaceDetector` API or motion-diff fallback. `cooldown` = seconds between alert notifications.
 
 ## Smart Paste
 

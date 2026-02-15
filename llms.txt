@@ -150,6 +150,12 @@ Example first-time cfg:
 
 - **VIDEO STREAMING** -- Agents stream video feeds into chat via tc-action type "video". Supports HLS (.m3u8), MP4, WebM. Auto-PiP: video floats as draggable mini player when scrolled out of view. Controls: mute/unmute, PiP toggle, close, back-to-video.
 
+- **VIDEO GRID (SECURITY CAMERAS)** -- tc-action type "video-grid" displays 1-16 camera feeds in a responsive grid (1-4 columns). Each cell shows label, live badge, hover controls (expand to fullscreen, native PiP). Layout toggle cycles column count. Agent can add/remove feeds dynamically.
+
+- **PHOTO GALLERY / COLLAGE** -- tc-action type "gallery" displays photos in beautiful responsive layouts (single, side-by-side, hero+2, 2x2, 3-col masonry). Click opens fullscreen lightbox with arrow/keyboard navigation. Supports captions per image.
+
+- **CHANNEL SELECTOR** -- Tap the provider pill (top right) to switch between configured channels: OpenClaw agents (WS), Groq, OpenRouter, OpenAI. OpenClaw agents are listed first (preferred). Shows connection status, transport badge (WS/HTTP), and active indicator.
+
 - **FONTS** -- 6 built-in: System Default, Inter, Georgia, JetBrains Mono, Nunito, Space Grotesk. Set via fontFamily.
 
 - **FILE HANDLING** -- Drag-drop, paste, or attach btn. Client-side processing:
@@ -225,6 +231,22 @@ Example first-time cfg:
                Embeds a video player in chat. Supports HLS (.m3u8), MP4, WebM.
                Auto-enters Picture-in-Picture when user scrolls away.
                PiP is draggable, has mute/close/back-to-video controls.
+    video-grid -- {"type":"video-grid","title":"Security Cameras","cols":2,
+                  "feeds":[{"url":"rtsp://...","label":"Front Door","live":true},
+                           {"url":"...","label":"Backyard"}]}
+               Grid of video feeds (security cameras). 1-4 columns. Each cell has
+               label, live badge, expand (fullscreen), PiP. Layout toggle cycles cols.
+    gallery  -- {"type":"gallery","title":"Photos","images":[
+                  {"url":"https://...","caption":"Sunset"},{"url":"..."}]}
+               Beautiful responsive photo grid with lightbox. Layouts: 1 (full),
+               2 (side-by-side), 3 (hero+2), 4 (2x2), 5+ (3-col masonry).
+               Click opens fullscreen lightbox w/ arrow nav + keyboard support.
+    surveillance -- {"type":"surveillance","command":"start","camera":"user",
+                    "cooldown":30,"sensitivity":0.7,"label":"Office Cam"}
+               Starts device camera with face/motion detection. Commands: start, stop, snap.
+               On detection: haptic alert, toast, snapshot sent to connected agent.
+               Uses Chrome FaceDetector API (draws bounding boxes) or motion-diff fallback.
+               cooldown = seconds between alerts (default 30). camera = "user" or "environment".
 
   Example -- text + actions in one rsp:
     Here is your new purple theme!

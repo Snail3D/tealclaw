@@ -72,9 +72,22 @@
     .webhook-badge{display:flex;align-items:center;padding:3px 6px;border-radius:100px;background:rgba(251,146,60,0.15);color:#fb923c;cursor:help;animation:webhook-pulse 2s ease-in-out infinite}
     .webhook-badge.hidden{display:none}
     @keyframes webhook-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-    .pill{display:flex;align-items:center;gap:4px;padding:3px 10px;font-size:10px;font-weight:500;border-radius:100px}
+    .pill{display:flex;align-items:center;gap:4px;padding:3px 10px;font-size:10px;font-weight:500;border-radius:100px;cursor:pointer;position:relative;user-select:none}
     .pill.ok{background:rgba(34,197,94,0.12);color:var(--ok)} .pill.off{background:rgba(239,68,68,0.12);color:var(--err)}
     .pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+    .pill-caret{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-top:4px solid currentColor;margin-left:2px;opacity:0.6}
+    /* Channel selector dropdown */
+    .channel-dropdown{display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:200px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:800;overflow:hidden;animation:bubble-scale-in 0.15s ease-out}
+    .channel-dropdown.open{display:block}
+    .channel-dropdown-header{padding:8px 12px;font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
+    .channel-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;transition:background 0.15s;font-size:12px;color:var(--text)}
+    .channel-item:hover{background:var(--bg-hover)}
+    .channel-item.active{background:rgba(13,148,136,0.1)}
+    .channel-item .ch-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .channel-item .ch-dot.ok{background:var(--ok)}.channel-item .ch-dot.off{background:var(--err)}.channel-item .ch-dot.idle{background:var(--text-3)}
+    .channel-item .ch-name{flex:1;font-weight:500}
+    .channel-item .ch-badge{font-size:9px;color:var(--text-3);padding:1px 6px;background:var(--bg-2);border-radius:100px}
+    .channel-item .ch-active{font-size:9px;color:var(--teal);font-weight:600}
     .icon-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--r-md);background:transparent;color:var(--text-3);cursor:pointer;transition:all var(--t)}
     .icon-btn:hover{background:var(--bg-hover);color:var(--text)}
     .icon-btn svg{width:16px;height:16px}
@@ -722,10 +735,81 @@
     .tc-pip .tc-pip-bar button{width:20px;height:20px;border:none;background:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:3px;padding:0}
     .tc-pip .tc-pip-bar button:hover{background:rgba(255,255,255,0.15)}
     .tc-pip.dragging{opacity:0.8}
+    /* Video grid layout */
+    .tc-video-grid{display:grid;gap:4px;border-radius:var(--r-md);overflow:hidden;background:#000;margin:6px 0;max-width:100%}
+    .tc-video-grid.cols-1{grid-template-columns:1fr}
+    .tc-video-grid.cols-2{grid-template-columns:1fr 1fr}
+    .tc-video-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+    .tc-video-grid.cols-4{grid-template-columns:1fr 1fr 1fr 1fr}
+    .tc-grid-cell{position:relative;aspect-ratio:16/9;overflow:hidden;background:#111}
+    .tc-grid-cell video{width:100%;height:100%;object-fit:cover}
+    .tc-grid-cell .tc-grid-label{position:absolute;top:4px;left:6px;font-size:9px;font-weight:600;color:#fff;background:rgba(0,0,0,0.6);padding:1px 6px;border-radius:100px;z-index:1}
+    .tc-grid-cell .tc-grid-live{position:absolute;top:4px;right:6px;font-size:8px;font-weight:700;color:#ef4444;display:flex;align-items:center;gap:2px;z-index:1}
+    .tc-grid-cell .tc-grid-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#ef4444;animation:live-blink 1.2s ease-in-out infinite}
+    .tc-grid-cell:hover .tc-grid-overlay{opacity:1}
+    .tc-grid-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity 0.2s;z-index:2}
+    .tc-grid-overlay button{width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,0.2);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .tc-grid-overlay button:hover{background:rgba(255,255,255,0.35)}
+    .tc-grid-bar{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg-2);border-top:1px solid var(--border)}
+    .tc-grid-bar .tc-grid-title{flex:1;font-size:11px;font-weight:600;color:var(--text)}
+    .tc-grid-bar button{padding:3px 8px;font-size:9px;font-family:var(--font);border:1px solid var(--border);background:var(--bg-card);color:var(--text-2);cursor:pointer;border-radius:var(--r-sm)}
+    .tc-grid-bar button:hover{border-color:var(--teal);color:var(--teal)}
+    /* Photo gallery */
+    .tc-gallery{display:grid;gap:3px;border-radius:var(--r-md);overflow:hidden;margin:6px 0}
+    .tc-gallery.layout-2{grid-template-columns:1fr 1fr}
+    .tc-gallery.layout-3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+    .tc-gallery.layout-3 .tc-gallery-item:first-child{grid-row:1/3}
+    .tc-gallery.layout-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+    .tc-gallery.layout-many{grid-template-columns:repeat(3,1fr)}
+    .tc-gallery-item{position:relative;overflow:hidden;cursor:pointer;aspect-ratio:1;background:var(--bg-2)}
+    .tc-gallery.layout-3 .tc-gallery-item:first-child{aspect-ratio:auto}
+    .tc-gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform 0.3s}
+    .tc-gallery-item:hover img{transform:scale(1.04)}
+    .tc-gallery-item .tc-gallery-caption{position:absolute;bottom:0;left:0;right:0;padding:4px 8px;font-size:10px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,0.7));opacity:0;transition:opacity 0.2s}
+    .tc-gallery-item:hover .tc-gallery-caption{opacity:1}
+    /* Lightbox */
+    .tc-lightbox{position:fixed;inset:0;z-index:950;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;animation:fade-in 0.2s}
+    .tc-lightbox img{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:var(--r-sm)}
+    .tc-lightbox .tc-lb-close{position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .tc-lightbox .tc-lb-close:hover{background:rgba(255,255,255,0.2)}
+    .tc-lightbox .tc-lb-caption{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-size:13px;color:#fff;background:rgba(0,0,0,0.6);padding:6px 16px;border-radius:100px;max-width:80vw;text-align:center}
+    .tc-lightbox .tc-lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .tc-lightbox .tc-lb-nav:hover{background:rgba(255,255,255,0.2)}
+    .tc-lightbox .tc-lb-prev{left:16px}.tc-lightbox .tc-lb-next{right:16px}
+    @keyframes fade-in{from{opacity:0}to{opacity:1}}
     /* Media search toggle */
     .search-bar .search-mode{display:flex;gap:2px;margin-right:4px}
     .search-bar .search-mode button{padding:3px 8px;font-size:10px;font-family:var(--font);border:1px solid var(--border);background:var(--bg-card);color:var(--text-3);cursor:pointer;border-radius:var(--r-sm);transition:all 0.15s}
     .search-bar .search-mode button.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+    /* Surveillance / CV */
+    .tc-surv-badge{position:fixed;top:var(--sat,0);right:60px;z-index:850;display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:0 0 var(--r-md) var(--r-md);font-size:10px;font-weight:600;color:#ef4444;cursor:pointer;transition:all 0.2s}
+    .tc-surv-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:#ef4444;animation:live-blink 1.2s ease-in-out infinite}
+    .tc-surv-badge:hover{background:rgba(239,68,68,0.25)}
+    .tc-surv-preview{position:fixed;bottom:80px;left:16px;width:200px;z-index:850;border-radius:var(--r-md);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:2px solid rgba(239,68,68,0.5);background:#000}
+    .tc-surv-preview video{width:100%;display:block}
+    .tc-surv-preview canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+    .tc-surv-preview .tc-surv-controls{display:flex;gap:4px;padding:3px 6px;background:rgba(0,0,0,0.8)}
+    .tc-surv-preview .tc-surv-controls button{flex:1;padding:3px;font-size:9px;font-family:var(--font);border:none;background:rgba(255,255,255,0.1);color:#fff;cursor:pointer;border-radius:3px}
+    .tc-surv-preview .tc-surv-controls button:hover{background:rgba(255,255,255,0.2)}
+    .tc-surv-preview .tc-surv-controls button.danger{color:#ef4444}
+    /* Model picker */
+    .model-picker{position:relative}
+    .model-picker-input{display:flex;gap:4px;align-items:center}
+    .model-picker-input input{flex:1}
+    .model-picker-results{position:absolute;top:100%;left:0;right:0;max-height:220px;overflow-y:auto;background:var(--bg-1);border:1px solid var(--border);border-radius:0 0 var(--r-md) var(--r-md);z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:none}
+    .model-picker-results.open{display:block}
+    .model-result{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;transition:background 0.1s;border-bottom:1px solid var(--border)}
+    .model-result:last-child{border-bottom:none}
+    .model-result:hover{background:var(--bg-hover)}
+    .model-result .mr-name{flex:1;font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .model-result .mr-provider{font-size:9px;color:var(--text-3);padding:1px 5px;background:var(--bg-2);border-radius:100px}
+    .model-result .mr-cost{font-size:9px;color:var(--teal);white-space:nowrap}
+    .model-result .mr-tag{font-size:8px;padding:1px 4px;border-radius:3px;font-weight:600;text-transform:uppercase}
+    .model-result .mr-tag.vision{background:rgba(139,92,246,0.15);color:#8b5cf6}
+    .model-result .mr-tag.fast{background:rgba(34,197,94,0.15);color:var(--ok)}
+    .model-result .mr-tag.free{background:rgba(13,148,136,0.15);color:var(--teal)}
+    .model-picker-loading{padding:12px;text-align:center;font-size:10px;color:var(--text-3)}
+    .model-picker-empty{padding:12px;text-align:center;font-size:11px;color:var(--text-3)}
   </style>
 </head>
 <body>
@@ -842,7 +926,9 @@
       <div class="webhook-badge hidden" id="webhookBadge" title="Webhook active — messages are forwarded externally">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </div>
-      <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span></div>
+      <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span><span class="pill-caret"></span>
+        <div class="channel-dropdown" id="channelDropdown"></div>
+      </div>
       <button class="icon-btn" id="searchBtn" title="Search (Ctrl+F)" aria-label="Search messages">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
@@ -1500,6 +1586,15 @@
       }
     }
 
+    function getProviderLabel(k){
+      if(!k)k=getK();
+      if(k.aiProvider==='openrouter')return 'OpenRouter';
+      if(k.aiProvider==='openai')return 'OpenAI';
+      if(k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey))return 'Groq';
+      if(k.aiKey)return 'Ready';
+      return 'Setup';
+    }
+
     function updateStatus(){
       const k=getK();
       const pill=$('pill');
@@ -1513,7 +1608,7 @@
         const badge=transport==='ws'?'WS':'HTTP';
         $('pillLabel').innerHTML=`${esc(label)} <span class="pill-transport">${badge}</span>`;
       } else if(k.aiKey||k.whisperKey){
-        pill.className='pill ok';$('pillLabel').textContent=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)?'Groq':'Ready';
+        pill.className='pill ok';$('pillLabel').textContent=getProviderLabel(k);
       } else {
         pill.className='pill off';$('pillLabel').textContent='Setup';
       }
@@ -1521,6 +1616,110 @@
       const wb=$('webhookBadge');
       if(wb){k.webhookUrl?wb.classList.remove('hidden'):wb.classList.add('hidden')}
     }
+
+    // ── Channel Selector ────────────────────────────────
+    function getAvailableChannels(){
+      const k=getK();
+      const channels=[];
+      // Agents first (OpenClaw preferred)
+      const agents=getAgents();
+      agents.forEach(ag=>{
+        const conn=agentConnections.get(ag.id);
+        const transport=getAgentTransport(ag);
+        channels.push({
+          type:'agent',id:ag.id,name:ag.name||'Agent',
+          status:conn?.connected?'ok':conn?.state==='connecting'?'connecting':'off',
+          badge:transport==='ws'?'WS':'HTTP',
+          active:k.mode==='agent'&&ag.active
+        });
+      });
+      // Direct providers
+      if(k.whisperKey||k.aiProvider==='groq'){
+        channels.push({type:'direct',id:'groq',name:'Groq',status:'ok',badge:'Free',active:k.mode!=='agent'&&(k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey))});
+      }
+      if(k.aiKey&&k.aiProvider==='openrouter'){
+        channels.push({type:'direct',id:'openrouter',name:'OpenRouter',status:'ok',badge:'',active:k.mode!=='agent'&&k.aiProvider==='openrouter'});
+      }
+      if(k.aiKey&&k.aiProvider==='openai'){
+        channels.push({type:'direct',id:'openai',name:'OpenAI',status:'ok',badge:'',active:k.mode!=='agent'&&k.aiProvider==='openai'});
+      }
+      // If they have an AI key but we didn't match above
+      if(k.aiKey&&!['groq','openrouter','openai'].includes(k.aiProvider)){
+        channels.push({type:'direct',id:'custom',name:'Custom',status:'ok',badge:'',active:k.mode!=='agent'});
+      }
+      return channels;
+    }
+
+    function renderChannelDropdown(){
+      const dd=$('channelDropdown');
+      const channels=getAvailableChannels();
+      if(channels.length<=1){dd.innerHTML='';return}
+      let html='<div class="channel-dropdown-header">Switch Channel</div>';
+      channels.forEach(ch=>{
+        const dot=ch.status==='ok'?'ok':ch.status==='connecting'?'idle':'off';
+        html+=`<div class="channel-item${ch.active?' active':''}" data-ch-type="${ch.type}" data-ch-id="${ch.id}">`;
+        html+=`<span class="ch-dot ${dot}"></span>`;
+        html+=`<span class="ch-name">${esc(ch.name)}</span>`;
+        if(ch.badge)html+=`<span class="ch-badge">${esc(ch.badge)}</span>`;
+        if(ch.active)html+=`<span class="ch-active">Active</span>`;
+        html+=`</div>`;
+      });
+      dd.innerHTML=html;
+      // Wire clicks
+      dd.querySelectorAll('.channel-item').forEach(item=>{
+        item.addEventListener('click',e=>{
+          e.stopPropagation();
+          const type=item.dataset.chType;
+          const id=item.dataset.chId;
+          switchChannel(type,id);
+          dd.classList.remove('open');
+        });
+      });
+    }
+
+    function switchChannel(type,id){
+      const k=getK();
+      if(type==='agent'){
+        k.mode='agent';
+        const agents=getAgents();
+        agents.forEach(a=>a.active=(a.id===id));
+        setAgents(agents);
+        const ag=agents.find(a=>a.id===id);
+        if(ag?.url&&ag?.token)ensureAgentConnection(ag);
+        setK(k);
+      } else {
+        // Switch to direct mode with specific provider
+        k.mode='direct';
+        if(id==='groq'){
+          k.aiProvider='groq';
+        } else if(id==='openrouter'){
+          k.aiProvider='openrouter';
+        } else if(id==='openai'){
+          k.aiProvider='openai';
+        }
+        // Disconnect any agent WS
+        for(const [aid] of agentConnections)disconnectAgent(aid);
+        setK(k);
+      }
+      updateStatus();
+      renderAgentSelector();
+      showToast(`Switched to ${type==='agent'?getAgents().find(a=>a.id===id)?.name||'Agent':id.charAt(0).toUpperCase()+id.slice(1)}`,'ok');
+    }
+
+    // Pill click toggles channel dropdown
+    $('pill').addEventListener('click',e=>{
+      e.stopPropagation();
+      const dd=$('channelDropdown');
+      if(dd.classList.contains('open')){dd.classList.remove('open');return}
+      renderChannelDropdown();
+      const channels=getAvailableChannels();
+      if(channels.length<=1)return; // Nothing to switch to
+      dd.classList.add('open');
+    });
+    // Close channel dropdown on outside click
+    document.addEventListener('click',e=>{
+      if(!e.target.closest('#pill'))$('channelDropdown').classList.remove('open');
+    });
 
     // ── Theme ──────────────────────────────────────────
     document.documentElement.setAttribute('data-theme',localStorage.getItem('tc-theme')||'dark');
@@ -1706,34 +1905,39 @@
           <textarea class="sheet-textarea" id="sheetSysPrompt" placeholder="Custom instructions for the AI...">${esc(k.sysPrompt||'')}</textarea>
           <div style="display:flex;gap:5px;margin-top:4px"><button class="btn btn-teal btn-sm" id="sheetSysPromptSave">Save</button>${k.sysPrompt?'<button class="btn btn-ghost btn-sm" id="sheetSysPromptClear">Clear</button>':''}</div>
         </div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">AI Model</div>
-          <div style="display:flex;gap:5px">
-            <input type="text" class="sheet-input" id="sheetAiModel" value="${esc(k.aiModel||'google/gemini-2.5-flash-preview')}" placeholder="model/name" style="font-family:var(--mono);font-size:10px">
-            <button class="btn btn-teal btn-sm" id="sheetAiModelSave">Set</button>
-          </div>
-          <div class="sheet-chip-row">
-            ${['google/gemini-2.5-flash-preview','anthropic/claude-sonnet-4','openai/gpt-4.1-mini','meta-llama/llama-4-maverick'].map(m=>`<button class="sheet-chip model-preset ${(k.aiModel||'google/gemini-2.5-flash-preview')===m?'active':''}" data-model="${m}">${m.split('/')[1]}</button>`).join('')}
-          </div>
-        </div>
       </div>`;
 
-      // Model Routing
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Model Routing</div>
-        <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Route short queries to a fast model and complex queries to a powerful one.</div>
-        <div style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Fast Model (short queries)</div>
-          <input type="text" class="sheet-input" id="sheetFastModel" value="${esc(k.fastModel||'')}" placeholder="e.g. meta-llama/llama-3.1-8b-instant" style="font-family:var(--mono);font-size:10px">
-        </div>
-        <div style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Complex Model (long queries)</div>
-          <input type="text" class="sheet-input" id="sheetComplexModel" value="${esc(k.complexModel||'')}" placeholder="e.g. google/gemini-2.5-flash-preview" style="font-family:var(--mono);font-size:10px">
-        </div>
+      // Models
+      const isGroq=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey);
+      const chatDefault=isGroq?'llama-3.3-70b-versatile':'google/gemini-2.5-flash-preview';
+      const visionDefault=isGroq?'meta-llama/llama-4-maverick-17b-128e-instruct':'google/gemini-2.5-flash-preview';
+      const searchDefault=isGroq?'llama-3.3-70b-versatile':'google/gemini-2.5-flash-preview';
+      const fastDefault=isGroq?'llama-3.1-8b-instant':'meta-llama/llama-3.1-8b-instant';
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Models ${isGroq?'<span style="font-size:9px;color:var(--teal);font-weight:400">(Groq)</span>':'<span style="font-size:9px;color:var(--text-3);font-weight:400">('+esc(getProviderLabel(k))+')</span>'}</div>
+        <div style="font-size:10px;color:var(--text-3);margin-bottom:10px">Type to search live models. Click to select. Each purpose uses its own model.</div>
+        ${[
+          {id:'chat',label:'Chat Model',key:'aiModel',def:chatDefault,desc:'General conversation'},
+          {id:'vision',label:'Vision Model',key:'visionModel',def:visionDefault,desc:'Image understanding'},
+          {id:'search',label:'Search / Research Model',key:'searchModel',def:searchDefault,desc:'Deep research queries'},
+          {id:'fast',label:'Fast Model (short queries)',key:'fastModel',def:fastDefault,desc:'Quick responses under routing threshold'},
+          {id:'complex',label:'Complex Model (long queries)',key:'complexModel',def:'',desc:'Detailed analysis, optional'}
+        ].map(m=>`
+          <div style="margin-bottom:10px" class="model-picker" data-model-key="${m.key}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <div style="font-size:11px;font-weight:500;color:var(--text-2)">${m.label}</div>
+              <div style="font-size:9px;color:var(--text-3)">${m.desc}</div>
+            </div>
+            <div class="model-picker-input">
+              <input type="text" class="sheet-input model-search-input" data-model-key="${m.key}" value="${esc(k[m.key]||m.def)}" placeholder="Search models..." style="font-family:var(--mono);font-size:10px" autocomplete="off">
+              <button class="btn btn-teal btn-sm model-save-btn" data-model-key="${m.key}">Set</button>
+            </div>
+            <div class="model-picker-results" data-model-key="${m.key}"></div>
+          </div>`).join('')}
         <div>
           <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Routing Threshold (chars)</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="routeThreshVal">${k.routingThreshold||80}</span></div>
           <input type="range" id="sheetRouteThresh" min="20" max="500" step="10" value="${k.routingThreshold||80}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
+          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Queries shorter than this use Fast model; longer use Complex model</div>
         </div>
-        <button class="btn btn-teal btn-sm" id="sheetRoutingSave" style="margin-top:8px">Save Routing</button>
       </div>`;
 
       // Integrations
@@ -2139,26 +2343,35 @@
       $('sheetBody').querySelector('#sheetSysPromptClear')?.addEventListener('click',()=>{
         const k2=getK();delete k2.sysPrompt;setK(k2);renderSheetContent();showToast('System prompt cleared','ok');
       });
-      $('sheetBody').querySelector('#sheetAiModelSave')?.addEventListener('click',()=>{
-        const val=$('sheetBody').querySelector('#sheetAiModel').value.trim();
-        if(!val)return;const k2=getK();k2.aiModel=val;setK(k2);renderSheetContent();showToast(`Model: ${val}`,'ok');
+      // Wire up model pickers (search + save for each purpose)
+      $('sheetBody').querySelectorAll('.model-save-btn').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const key=btn.dataset.modelKey;
+          const input=btn.closest('.model-picker').querySelector('.model-search-input');
+          const val=input?.value.trim();if(!val)return;
+          const k2=getK();k2[key]=val;setK(k2);showToast(`${key}: ${val}`,'ok');
+        });
       });
-      $('sheetBody').querySelectorAll('.model-preset').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.aiModel=b.dataset.model;setK(k2);renderSheetContent();showToast(`Model: ${b.textContent}`,'ok');
-      }));
+      $('sheetBody').querySelectorAll('.model-search-input').forEach(input=>{
+        let debounce=null;
+        input.addEventListener('input',()=>{
+          clearTimeout(debounce);
+          debounce=setTimeout(()=>searchModels(input),300);
+        });
+        input.addEventListener('focus',()=>{
+          clearTimeout(debounce);
+          debounce=setTimeout(()=>searchModels(input),200);
+        });
+      });
+      // Close model results on outside click
+      $('sheetBody').addEventListener('click',e=>{
+        if(!e.target.closest('.model-picker'))$('sheetBody').querySelectorAll('.model-picker-results').forEach(r=>r.classList.remove('open'));
+      });
 
-      // Wire up model routing
+      // Wire up routing threshold
       $('sheetBody').querySelector('#sheetRouteThresh')?.addEventListener('input',e=>{
         const el=$('sheetBody').querySelector('#routeThreshVal');if(el)el.textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetRoutingSave')?.addEventListener('click',()=>{
-        const k2=getK();
-        const fast=$('sheetBody').querySelector('#sheetFastModel').value.trim();
-        const complex=$('sheetBody').querySelector('#sheetComplexModel').value.trim();
-        const thresh=+($('sheetBody').querySelector('#sheetRouteThresh').value||80);
-        if(fast)k2.fastModel=fast;else delete k2.fastModel;
-        if(complex)k2.complexModel=complex;else delete k2.complexModel;
-        k2.routingThreshold=thresh;setK(k2);showToast('Routing saved','ok');
+        const k2=getK();k2.routingThreshold=+e.target.value;setK(k2);
       });
 
       // Wire up integrations
@@ -2781,8 +2994,11 @@
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream video feed). config/command/style require user approval.
-Stream a video: \`\`\`tc-action\n{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}\n\`\`\` Supports HLS (.m3u8), MP4, WebM. The video floats as PiP when user scrolls.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage). config/command/style require user approval.
+Video: \`\`\`tc-action\n{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}\n\`\`\` Supports HLS, MP4, WebM. Auto-PiP on scroll.
+Camera grid: \`\`\`tc-action\n{"type":"video-grid","title":"Security","cols":2,"feeds":[{"url":"...","label":"Front"},{"url":"...","label":"Back"}]}\n\`\`\` 1-4 cols, each feed has url+label+live.
+Photo gallery: \`\`\`tc-action\n{"type":"gallery","title":"Photos","images":[{"url":"...","caption":"Sunset"},{"url":"..."}]}\n\`\`\` Beautiful grid, lightbox on tap, keyboard nav.
+Surveillance: \`\`\`tc-action\n{"type":"surveillance","command":"start","camera":"user","cooldown":30,"label":"Office Cam"}\n\`\`\` Uses device camera + face detection (Chrome FaceDetector API or motion detection fallback). Sends alerts with snapshots to you when faces/motion detected. Commands: start, stop, snap. cooldown=seconds between alerts.
 Example: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":"#8b5cf6"}\n\`\`\`
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /imagine /save /session /help`;
 
@@ -2805,8 +3021,8 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
       if(!aiKey)return '__NO_KEY__';
 
       const isGroqFallback=!k.aiKey&&!!k.whisperKey;
-      const groqVisionModel='meta-llama/llama-4-maverick-17b-128e-instruct';
-      const groqChatModel='llama-3.3-70b-versatile';
+      const groqVisionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
+      const groqChatModel=k.aiModel||'llama-3.3-70b-versatile';
 
       const url=isGroqFallback
         ?'https://api.groq.com/openai/v1/chat/completions'
@@ -3257,13 +3473,17 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
 <p>If you run <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a>, TealClaw can be your front-end UI with full tool access.</p>
 <p style="font-size:12px"><strong>Step 1:</strong> Paste this into your OpenClaw agent's system prompt so it knows about TealClaw:</p>
 <pre class="onboard-copy-block" style="background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:10px 10px 28px;font-size:11px;overflow-x:auto;position:relative;white-space:pre-wrap;word-break:break-word;line-height:1.5;cursor:pointer" title="Click to copy"><code>You have a TealClaw web UI connected via WebSocket.
-TealClaw location: https://tealclaw.ai
-Docs: https://tealclaw.ai/llms.txt
+TealClaw location: https://tealclaw.ai | Docs: https://tealclaw.ai/llms.txt
 Config: Settings gear (top right) or paste JSON in chat.
-Key features: voice I/O, streaming, Obsidian save (/save), sessions (/session), vision, GIFs, tc-action blocks.
-tc-action blocks let you control TealClaw directly — config, toast, navigate, style, research, save.
-Example: \`\`\`tc-action {"type":"config","set":{"botName":"MyClaw"}} \`\`\`
-Video streams: \`\`\`tc-action {"type":"video","url":"https://...","title":"Feed"} \`\`\`
+Key features: voice I/O, streaming, Obsidian save (/save), sessions, vision, GIFs, tc-action blocks.
+tc-action blocks let you control TealClaw directly:
+- config, toast, navigate, style, research, save, bubble
+- video: stream a feed (HLS/MP4/WebM), auto-PiP on scroll
+- video-grid: security camera grid (1-4 cols), each feed has url+label
+- gallery: photo collage with lightbox, captions, keyboard nav
+Examples:
+\`\`\`tc-action {"type":"video-grid","title":"Cameras","cols":2,"feeds":[{"url":"...","label":"Front Door"},{"url":"...","label":"Backyard"}]} \`\`\`
+\`\`\`tc-action {"type":"gallery","title":"Photos","images":[{"url":"...","caption":"View"}]} \`\`\`
 Gateway: wss:// via Tailscale Serve or ws://localhost:18789.
 Token: openclaw config get gateway.token</code><span style="position:absolute;bottom:4px;right:8px;font-size:10px;color:var(--text-3)">click to copy</span></pre>
 <p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> In TealClaw Settings → Agent Mode, add your gateway:</p>
@@ -3727,7 +3947,7 @@ Rules:
           userContent=`Research the following topic thoroughly: ${query}`;
         }
 
-        const model=imageBase64?'meta-llama/llama-4-maverick-17b-128e-instruct':'llama-3.3-70b-versatile';
+        const model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.searchModel||'llama-3.3-70b-versatile');
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
           headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
@@ -4347,6 +4567,43 @@ Rules:
               results.push({type:'video',ok:true,url,title});
               break;
             }
+            case 'video-grid':{
+              const feeds=action.feeds||action.cameras||[];
+              if(!feeds.length){results.push({type:'video-grid',ok:false,error:'no feeds'});break}
+              const title=action.title||'Camera Grid';
+              const cols=action.cols||Math.min(feeds.length,3);
+              setTimeout(()=>embedVideoGrid(feeds,title,cols),200);
+              results.push({type:'video-grid',ok:true,count:feeds.length});
+              break;
+            }
+            case 'gallery':{
+              const images=action.images||action.photos||[];
+              if(!images.length){results.push({type:'gallery',ok:false,error:'no images'});break}
+              setTimeout(()=>embedGallery(images,action.title),200);
+              results.push({type:'gallery',ok:true,count:images.length});
+              break;
+            }
+            case 'surveillance':{
+              const cmd=action.command||'start';
+              if(cmd==='start'){
+                const ok=await confirmTcAction('Start Camera Surveillance',`Face/person detection on ${action.camera||'default'} camera. Alerts sent to agent.`);
+                if(!ok){results.push({type:'surveillance',ok:false,error:'denied'});break}
+                setTimeout(()=>startSurveillance({
+                  camera:action.camera||'user',
+                  cooldown:action.cooldown||30,
+                  sensitivity:action.sensitivity||0.7,
+                  label:action.label||'Surveillance'
+                }),200);
+                results.push({type:'surveillance',ok:true,status:'started'});
+              } else if(cmd==='stop'){
+                stopSurveillance();
+                results.push({type:'surveillance',ok:true,status:'stopped'});
+              } else if(cmd==='snap'){
+                const snap=await survSnap();
+                results.push({type:'surveillance',ok:!!snap,snap});
+              }
+              break;
+            }
           }
         }catch(e){results.push({type:action.type,ok:false,error:e.message})}
       }
@@ -4357,7 +4614,7 @@ Rules:
     function renderActionBadge(actions){
       if(!actions.length)return '';
       const types=[...new Set(actions.map(a=>a.type))];
-      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5'};
+      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5','video-grid':'\uD83D\uDCF9',gallery:'\uD83D\uDDBC',surveillance:'\uD83D\uDC41'};
       const labels=types.map(t=>icons[t]||'\u26A1').join(' ');
       return `<div class="tc-action-badge" title="${types.length} action${types.length>1?'s':''} executed: ${types.join(', ')}">${labels} ${types.length} action${types.length>1?'s':''}</div>`;
     }
@@ -4383,6 +4640,116 @@ Rules:
         }
       }
       if(found)showConfigImportConfirm(merged);
+    }
+
+    // ── Model Search API ──────────────────────────────
+    let _modelCache={groq:null,openrouter:null,ts:0};
+    async function fetchModelList(){
+      const now=Date.now();
+      if(_modelCache.ts&&now-_modelCache.ts<300000)return _modelCache; // 5min cache
+      const k=getK();
+      const results={groq:null,openrouter:null,ts:now};
+      // Groq models
+      if(k.whisperKey||(k.aiProvider==='groq'&&k.aiKey)){
+        const gKey=k.whisperKey||k.aiKey;
+        try{
+          const res=await fetch('https://api.groq.com/openai/v1/models',{headers:{'Authorization':'Bearer '+gKey}});
+          if(res.ok){const j=await res.json();results.groq=(j.data||[]).map(m=>({id:m.id,name:m.id,provider:'Groq',owned:m.owned_by||'',free:true}))}
+        }catch{}
+      }
+      // OpenRouter models
+      if(k.aiKey&&k.aiProvider==='openrouter'){
+        try{
+          const res=await fetch('https://openrouter.ai/api/v1/models',{headers:{'Authorization':'Bearer '+k.aiKey}});
+          if(res.ok){
+            const j=await res.json();
+            results.openrouter=(j.data||[]).map(m=>{
+              const cost=m.pricing?.prompt?('$'+((+m.pricing.prompt)*1000000).toFixed(2)+'/M'):null;
+              const tags=[];
+              if(m.architecture?.modality?.includes('image'))tags.push('vision');
+              if(m.pricing?.prompt==='0')tags.push('free');
+              if(m.id?.includes('mini')||m.id?.includes('8b')||m.id?.includes('instant'))tags.push('fast');
+              return{id:m.id,name:m.name||m.id,provider:'OpenRouter',cost,tags,ctx:m.context_length};
+            });
+          }
+        }catch{}
+      }
+      // Also fetch Groq if no Groq key (just for display — won't work without key)
+      if(!results.groq){
+        results.groq=[
+          {id:'llama-3.3-70b-versatile',name:'LLaMA 3.3 70B',provider:'Groq',free:true,tags:[]},
+          {id:'llama-3.1-8b-instant',name:'LLaMA 3.1 8B Instant',provider:'Groq',free:true,tags:['fast']},
+          {id:'meta-llama/llama-4-maverick-17b-128e-instruct',name:'LLaMA 4 Maverick',provider:'Groq',free:true,tags:['vision']},
+          {id:'mixtral-8x7b-32768',name:'Mixtral 8x7B',provider:'Groq',free:true,tags:[]},
+          {id:'gemma2-9b-it',name:'Gemma 2 9B',provider:'Groq',free:true,tags:['fast']},
+          {id:'whisper-large-v3-turbo',name:'Whisper Large V3 Turbo',provider:'Groq',free:true,tags:[]},
+        ];
+      }
+      _modelCache=results;
+      return results;
+    }
+
+    async function searchModels(input){
+      const query=input.value.trim().toLowerCase();
+      const key=input.dataset.modelKey;
+      const results=input.closest('.model-picker').querySelector('.model-picker-results');
+      if(!results)return;
+
+      results.innerHTML='<div class="model-picker-loading">Loading models...</div>';
+      results.classList.add('open');
+
+      const cache=await fetchModelList();
+      const all=[];
+      if(cache.groq)all.push(...cache.groq);
+      if(cache.openrouter)all.push(...cache.openrouter);
+
+      // Filter
+      let filtered=all;
+      if(query){
+        filtered=all.filter(m=>{
+          const searchable=(m.id+' '+m.name+(m.owned||'')).toLowerCase();
+          return searchable.includes(query);
+        });
+      }
+      // Sort: exact matches first, then by provider (Groq first = free), then alphabetical
+      filtered.sort((a,b)=>{
+        const aExact=a.id.toLowerCase()===query?0:1;
+        const bExact=b.id.toLowerCase()===query?0:1;
+        if(aExact!==bExact)return aExact-bExact;
+        if(a.provider==='Groq'&&b.provider!=='Groq')return -1;
+        if(b.provider==='Groq'&&a.provider!=='Groq')return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Limit to top 12
+      filtered=filtered.slice(0,12);
+
+      if(!filtered.length){
+        results.innerHTML='<div class="model-picker-empty">No models found</div>';
+        return;
+      }
+
+      results.innerHTML=filtered.map(m=>{
+        const tags=(m.tags||[]).map(t=>`<span class="mr-tag ${t}">${t}</span>`).join('');
+        const free=m.free?'<span class="mr-tag free">free</span>':'';
+        const cost=m.cost?`<span class="mr-cost">${m.cost}</span>`:'';
+        return `<div class="model-result" data-model-id="${esc(m.id)}">
+          <span class="mr-name" title="${esc(m.id)}">${esc(m.name)}</span>
+          ${tags}${free}${cost}
+          <span class="mr-provider">${esc(m.provider)}</span>
+        </div>`;
+      }).join('');
+
+      results.querySelectorAll('.model-result').forEach(r=>{
+        r.addEventListener('click',()=>{
+          const modelId=r.dataset.modelId;
+          input.value=modelId;
+          results.classList.remove('open');
+          // Auto-save
+          const k2=getK();k2[key]=modelId;setK(k2);
+          showToast(`${key}: ${modelId}`,'ok');
+        });
+      });
     }
 
     // ── LaTeX Rendering (KaTeX) ─────────────────────────
@@ -4450,7 +4817,12 @@ Rules:
       if(!aiKey)return {text:'__NO_KEY__',usage:null};
       const isGroqFallback=!k.aiKey&&!!k.whisperKey;
       const url=isGroqFallback?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
-      let model=isGroqFallback?(imageBase64?'meta-llama/llama-4-maverick-17b-128e-instruct':'llama-3.3-70b-versatile'):(k.aiModel||'google/gemini-2.5-flash-preview');
+      let model;
+      if(isGroqFallback){
+        model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.aiModel||'llama-3.3-70b-versatile');
+      } else {
+        model=imageBase64?(k.visionModel||k.aiModel||'google/gemini-2.5-flash-preview'):(k.aiModel||'google/gemini-2.5-flash-preview');
+      }
       // Multi-model routing (skip when using Groq fallback)
       if(userText&&!isGroqFallback){const routed=routeModel(userText,k);if(routed)model=routed}
       const sys=buildSysPrompt(k);
@@ -5677,6 +6049,7 @@ ${agentNote}`);
       streamEnabled:'streamEnabled',
       // Input rules, translate, routing
       maxInputLength:'maxInputLength',inputPrefix:'inputPrefix',translateTo:'translateTo',
+      visionModel:'visionModel',searchModel:'searchModel',
       fastModel:'fastModel',complexModel:'complexModel',routingThreshold:'routingThreshold',
       // Profiles, widget, QR
       activeProfile:'activeProfile',
@@ -6337,6 +6710,360 @@ ${agentNote}`);
       });
       pip.addEventListener('pointerup',()=>{dragging=false;pip.classList.remove('dragging')});
     })();
+
+    // ── Camera Surveillance + Face Detection ──────────
+    let _survState=null; // {stream, video, canvas, ctx, detector, interval, badge, preview, opts, lastAlert}
+
+    async function startSurveillance(opts){
+      if(_survState)stopSurveillance();
+      try{
+        const facingMode=opts.camera==='environment'?'environment':'user';
+        const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode,width:{ideal:640},height:{ideal:480}},audio:false});
+
+        // Create preview
+        const preview=document.createElement('div');
+        preview.className='tc-surv-preview';
+        preview.id='tcSurvPreview';
+        const video=document.createElement('video');
+        video.playsinline=true;video.autoplay=true;video.muted=true;
+        video.setAttribute('playsinline','');
+        video.srcObject=stream;
+        preview.appendChild(video);
+        const canvas=document.createElement('canvas');
+        preview.appendChild(canvas);
+        const controls=document.createElement('div');
+        controls.className='tc-surv-controls';
+        controls.innerHTML='<button id="survSnap">Snap</button><button id="survToggleCam">Flip</button><button class="danger" id="survStop">Stop</button>';
+        preview.appendChild(controls);
+        document.body.appendChild(preview);
+
+        // Badge
+        const badge=document.createElement('div');
+        badge.className='tc-surv-badge';badge.id='tcSurvBadge';
+        badge.textContent=opts.label||'Surveillance';
+        badge.addEventListener('click',()=>{
+          preview.style.display=preview.style.display==='none'?'':'none';
+        });
+        document.body.appendChild(badge);
+
+        await video.play();
+        canvas.width=video.videoWidth||640;
+        canvas.height=video.videoHeight||480;
+        const ctx=canvas.getContext('2d');
+
+        // Initialize face detector
+        let detector=null;
+        if(window.FaceDetector){
+          // Chrome Shape Detection API
+          try{detector=new FaceDetector({fastMode:true,maxDetectedFaces:5})}catch{}
+        }
+        if(!detector){
+          // Fallback: simple motion detection via pixel diff
+          detector='motion';
+        }
+
+        _survState={stream,video,canvas,ctx,detector,interval:null,badge,preview,opts,lastAlert:0,prevFrame:null};
+
+        // Start detection loop
+        _survState.interval=setInterval(()=>survDetect(),1000); // 1 FPS for efficiency
+
+        // Wire controls
+        controls.querySelector('#survSnap')?.addEventListener('click',async()=>{
+          const snap=await survSnap();
+          if(snap)showToast('Snapshot captured','ok');
+        });
+        controls.querySelector('#survToggleCam')?.addEventListener('click',async()=>{
+          const newFacing=opts.camera==='environment'?'user':'environment';
+          stopSurveillance();
+          startSurveillance({...opts,camera:newFacing});
+        });
+        controls.querySelector('#survStop')?.addEventListener('click',()=>{
+          stopSurveillance();
+          showToast('Surveillance stopped','ok');
+        });
+
+        showToast('Surveillance active — face detection running','ok');
+      }catch(e){
+        showToast('Camera access denied: '+e.message,'err');
+      }
+    }
+
+    async function survDetect(){
+      if(!_survState)return;
+      const{video,canvas,ctx,detector,opts}=_survState;
+      if(video.readyState<2)return;
+
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+      let detected=false;
+      let detectionData=null;
+
+      if(detector==='motion'){
+        // Simple motion detection via frame diff
+        const frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+        if(_survState.prevFrame){
+          let diffPixels=0;
+          const len=frame.data.length;
+          for(let i=0;i<len;i+=16){ // Sample every 4th pixel for speed
+            const diff=Math.abs(frame.data[i]-_survState.prevFrame.data[i])+
+                       Math.abs(frame.data[i+1]-_survState.prevFrame.data[i+1])+
+                       Math.abs(frame.data[i+2]-_survState.prevFrame.data[i+2]);
+            if(diff>60)diffPixels++;
+          }
+          const ratio=diffPixels/(len/16);
+          if(ratio>0.05){detected=true;detectionData={type:'motion',ratio:Math.round(ratio*100)+'%'}}
+        }
+        _survState.prevFrame=frame;
+      } else if(detector&&detector.detect){
+        // Chrome FaceDetector API
+        try{
+          const faces=await detector.detect(video);
+          if(faces.length>0){
+            detected=true;
+            detectionData={type:'face',count:faces.length};
+            // Draw face boxes
+            ctx.strokeStyle='#ef4444';ctx.lineWidth=2;
+            faces.forEach(f=>{
+              const b=f.boundingBox;
+              ctx.strokeRect(b.x,b.y,b.width,b.height);
+            });
+          }
+        }catch{}
+      }
+
+      if(detected){
+        const now=Date.now();
+        const cooldownMs=(opts.cooldown||30)*1000;
+        if(now-_survState.lastAlert>cooldownMs){
+          _survState.lastAlert=now;
+          survAlert(detectionData);
+        }
+      }
+    }
+
+    async function survAlert(data){
+      haptic('heavy');
+      const typeLabel=data.type==='face'?`${data.count} face${data.count>1?'s':''} detected`:'Motion detected ('+data.ratio+' change)';
+      showToast(typeLabel,'err');
+
+      // Send alert to connected agent
+      const k=getK();
+      if(k.mode==='agent'){
+        const agent=getActiveAgent();
+        const conn=agent?agentConnections.get(agent.id):null;
+        if(conn?.connected){
+          // Capture a snapshot
+          const snap=await survSnap();
+          const alertMsg=`[Surveillance Alert] ${typeLabel} at ${new Date().toLocaleTimeString()}. ${snap?'Snapshot attached.':''}`;
+          if(snap){
+            conn.chatSend(alertMsg,[{type:'image',data:snap}]).catch(()=>{});
+          } else {
+            conn.request('chat.inject',{sessionKey:conn.sessionKey,message:alertMsg,label:'surveillance-alert'}).catch(()=>{});
+          }
+        }
+      }
+
+      // Also add to chat
+      const bubble=sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">\uD83D\uDC41</span><div><strong style="color:#ef4444">${typeLabel}</strong><div style="font-size:10px;color:var(--text-3)">${new Date().toLocaleTimeString()} — ${_survState?.opts?.label||'Camera'}</div></div></div>`);
+    }
+
+    async function survSnap(){
+      if(!_survState)return null;
+      const{video,canvas,ctx}=_survState;
+      if(video.readyState<2)return null;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      return canvas.toDataURL('image/jpeg',0.8);
+    }
+
+    function stopSurveillance(){
+      if(!_survState)return;
+      clearInterval(_survState.interval);
+      _survState.stream.getTracks().forEach(t=>t.stop());
+      _survState.preview?.remove();
+      _survState.badge?.remove();
+      _survState=null;
+    }
+
+    // ── Video Grid (Security Cameras) ─────────────────
+    const videoGrids=new Map(); // gridId → {cells:Map, cols, title, el}
+
+    function embedVideoGrid(feeds,title,cols){
+      const id='grid-'+Math.random().toString(36).slice(2,8);
+      cols=cols||Math.min(feeds.length,3);
+      if(cols>4)cols=4;
+      const scroll=$('chatScroll');
+      const bubble=document.createElement('div');
+      bubble.className='chat-bubble ai';
+      const grid=document.createElement('div');
+      grid.className=`tc-video-grid cols-${cols}`;
+      grid.dataset.gridId=id;
+
+      const cells=new Map();
+      feeds.forEach((feed,i)=>{
+        const cell=document.createElement('div');
+        cell.className='tc-grid-cell';
+        cell.dataset.feedIdx=i;
+        // Label
+        const label=document.createElement('span');
+        label.className='tc-grid-label';
+        label.textContent=feed.label||`Cam ${i+1}`;
+        cell.appendChild(label);
+        // Live badge
+        if(feed.live!==false){
+          const live=document.createElement('span');
+          live.className='tc-grid-live';live.textContent='LIVE';
+          cell.appendChild(live);
+        }
+        // Video
+        const video=document.createElement('video');
+        video.playsinline=true;video.autoplay=true;video.muted=true;
+        video.setAttribute('playsinline','');
+        cell.appendChild(video);
+        // Hover overlay
+        const overlay=document.createElement('div');
+        overlay.className='tc-grid-overlay';
+        overlay.innerHTML=`<button class="tc-grid-expand" title="Expand"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button><button class="tc-grid-pip" title="PiP"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="11" y="10" width="9" height="6" rx="1"/></svg></button>`;
+        cell.appendChild(overlay);
+        grid.appendChild(cell);
+
+        const entry={video,cell,feed,hlsInstance:null};
+        cells.set(i,entry);
+
+        // Load source
+        if(feed.url?.includes('.m3u8')){
+          loadHLS(video,feed.url,entry);
+        } else if(feed.url){
+          video.src=feed.url;
+          video.play().catch(()=>{});
+        }
+
+        // Expand button — fullscreen single cam
+        overlay.querySelector('.tc-grid-expand')?.addEventListener('click',()=>{
+          if(document.fullscreenElement){document.exitFullscreen();return}
+          cell.requestFullscreen?.().catch(()=>{});
+        });
+        // PiP button — pop out to floating player
+        overlay.querySelector('.tc-grid-pip')?.addEventListener('click',()=>{
+          // Use browser native PiP if available
+          if(video.requestPictureInPicture){
+            video.requestPictureInPicture().catch(()=>{});
+          }
+        });
+      });
+
+      // Control bar
+      const bar=document.createElement('div');
+      bar.className='tc-grid-bar';
+      bar.innerHTML=`<span class="tc-grid-title">${esc(title||'Camera Grid')}</span><button class="tc-grid-layout" title="Change layout">Layout</button><button class="tc-grid-close" title="Close grid">&times;</button>`;
+      grid.appendChild(bar);
+
+      // Layout toggle
+      bar.querySelector('.tc-grid-layout')?.addEventListener('click',()=>{
+        const gridEntry=videoGrids.get(id);if(!gridEntry)return;
+        const nextCols=gridEntry.cols>=4?1:(gridEntry.cols+1);
+        gridEntry.cols=nextCols;
+        grid.className=`tc-video-grid cols-${nextCols}`;
+      });
+      bar.querySelector('.tc-grid-close')?.addEventListener('click',()=>removeVideoGrid(id));
+
+      bubble.appendChild(grid);
+      bubble.innerHTML+=`<div class="chat-meta">${fmtTime()}</div>`;
+      scroll.appendChild(bubble);
+      smoothScrollToBottom(scroll,320);
+
+      videoGrids.set(id,{cells,cols,title:title||'Camera Grid',el:grid});
+      return id;
+    }
+
+    function removeVideoGrid(id){
+      const entry=videoGrids.get(id);
+      if(!entry)return;
+      for(const[,cell] of entry.cells){
+        cell.video.pause();
+        if(cell.hlsInstance)cell.hlsInstance.destroy();
+      }
+      entry.el.closest('.chat-bubble')?.remove();
+      videoGrids.delete(id);
+    }
+
+    // ── Photo Gallery / Collage ────────────────────────
+    function embedGallery(images,title){
+      const scroll=$('chatScroll');
+      const bubble=document.createElement('div');
+      bubble.className='chat-bubble ai';
+      if(title){
+        const h=document.createElement('div');
+        h.className='md-content';
+        h.innerHTML=`<strong>${esc(title)}</strong>`;
+        bubble.appendChild(h);
+      }
+      const count=images.length;
+      const layoutClass=count===1?'':count===2?'layout-2':count===3?'layout-3':count===4?'layout-4':'layout-many';
+      const gallery=document.createElement('div');
+      gallery.className=`tc-gallery ${layoutClass}`;
+
+      images.forEach((img,i)=>{
+        const item=document.createElement('div');
+        item.className='tc-gallery-item';
+        item.dataset.idx=i;
+        const imgEl=document.createElement('img');
+        imgEl.src=img.url||img.src||img;
+        imgEl.alt=img.caption||img.alt||`Photo ${i+1}`;
+        imgEl.loading='lazy';
+        item.appendChild(imgEl);
+        if(img.caption){
+          const cap=document.createElement('div');
+          cap.className='tc-gallery-caption';
+          cap.textContent=img.caption;
+          item.appendChild(cap);
+        }
+        item.addEventListener('click',()=>openLightbox(images,i));
+        gallery.appendChild(item);
+      });
+
+      bubble.appendChild(gallery);
+      bubble.innerHTML+=`<div class="chat-meta">${fmtTime()}</div>`;
+      scroll.appendChild(bubble);
+      smoothScrollToBottom(scroll,320);
+    }
+
+    function openLightbox(images,startIdx){
+      let idx=startIdx;
+      const lb=document.createElement('div');
+      lb.className='tc-lightbox';
+      const img=document.createElement('img');
+      const caption=document.createElement('div');
+      caption.className='tc-lb-caption';
+      lb.appendChild(img);
+      lb.appendChild(caption);
+      lb.innerHTML+=`<button class="tc-lb-close">&times;</button>`;
+      if(images.length>1){
+        lb.innerHTML+=`<button class="tc-lb-nav tc-lb-prev">&lsaquo;</button><button class="tc-lb-nav tc-lb-next">&rsaquo;</button>`;
+      }
+      document.body.appendChild(lb);
+
+      function show(i){
+        idx=i;
+        const src=images[i];
+        img.src=src.url||src.src||src;
+        const cap=src.caption||src.alt||'';
+        caption.textContent=cap;
+        caption.style.display=cap?'':'none';
+      }
+      show(idx);
+
+      lb.querySelector('.tc-lb-close')?.addEventListener('click',()=>lb.remove());
+      lb.querySelector('.tc-lb-prev')?.addEventListener('click',e=>{e.stopPropagation();show((idx-1+images.length)%images.length)});
+      lb.querySelector('.tc-lb-next')?.addEventListener('click',e=>{e.stopPropagation();show((idx+1)%images.length)});
+      lb.addEventListener('click',e=>{if(e.target===lb)lb.remove()});
+      // Keyboard nav
+      const onKey=e=>{
+        if(e.key==='Escape'){lb.remove();document.removeEventListener('keydown',onKey)}
+        if(e.key==='ArrowLeft')show((idx-1+images.length)%images.length);
+        if(e.key==='ArrowRight')show((idx+1)%images.length);
+      };
+      document.addEventListener('keydown',onKey);
+    }
 
     // ── Message Search ──────────────────────────────────
     let searchHits=[],searchIdx=-1,searchMode='text';
