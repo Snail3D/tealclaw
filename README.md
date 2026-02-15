@@ -33,6 +33,7 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - **GIF Reactions** — Fullscreen Tenor GIF overlay on AI responses (AI can tag with `[gif:search term]`)
 - **Image Generation** — `/imagine` command with configurable provider
 - **LaTeX/Math** — KaTeX rendering for $inline$ and $$block$$ math
+- **Mermaid Diagrams** — Interactive SVG diagram rendering from ```mermaid code blocks
 - **Quick Replies** — Configurable chip buttons for common prompts
 - **Multi-Model Routing** — Auto-select fast or capable model based on query complexity
 - **Style Templates** — Pre-built visual themes and bot configurations via `/template`
@@ -42,7 +43,9 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - **Webhooks** — POST events to external endpoints
 - **Scheduled Messages** — Timed greetings and reminders
 - **PIN Code Lock** — Optional PIN to prevent unauthorized message sending
-- **Widget/Embed Mode** — `?embed=true` for iframe embedding
+- **Gesture Control** — MediaPipe hand recognition for hands-free voice and UI control
+- **Obsidian Integration** — /save command with YAML frontmatter for notes and ideas
+- **Ephemeral Sessions** — /session create with time-limited, encrypted share links
 - **Agent Mode** — Route through your OpenClaw gateway via Cloudflare Tunnel
 - **Telegram** — Forward conversations (including full research context) to Telegram
 - **95+ Config Fields** — Colors, fonts, layout, animations, markdown, buttons, accessibility, and more
@@ -80,18 +83,7 @@ TealClaw is designed to be configured by AI agents. The full skill guide lives a
 - **[tealclaw.ai/llms.txt](https://tealclaw.ai/llms.txt)** — Complete agent skill (raw text)
 - **[tealclaw.ai/llms.html](https://tealclaw.ai/llms.html)** — Human-readable with copy button
 
-### Topic Guides
-
-| Guide | URL |
-|-------|-----|
-| Config Reference | [/docs/config-reference.txt](https://tealclaw.ai/docs/config-reference.txt) |
-| Recipes | [/docs/recipes.txt](https://tealclaw.ai/docs/recipes.txt) |
-| /research Command | [/docs/research.txt](https://tealclaw.ai/docs/research.txt) |
-| Visual Customization | [/docs/visual-customization.txt](https://tealclaw.ai/docs/visual-customization.txt) |
-| Accessibility | [/docs/accessibility.txt](https://tealclaw.ai/docs/accessibility.txt) |
-| PWA Guide | [/docs/pwa-guide.txt](https://tealclaw.ai/docs/pwa-guide.txt) |
-| Chat Commands | [/docs/commands.txt](https://tealclaw.ai/docs/commands.txt) |
-| Free Setup | [/docs/free-setup.txt](https://tealclaw.ai/docs/free-setup.txt) |
+See [llms.txt](https://tealclaw.ai/llms.txt) for the full agent skill guide and [SKILL.md](SKILL.md) for tc-action protocol docs.
 
 Agents generate a JSON config and deliver it via URL hash, file drop, or chat paste.
 TealClaw does partial merge — only fields present get updated.
@@ -110,6 +102,11 @@ TealClaw does partial merge — only fields present get updated.
 | `/setup` | Setup wizard |
 | `/keys` | Show current config |
 | `/clear` | Clear chat history |
+| `/clear all` | Delete all conversations |
+| `/clear keys` | Remove all API keys |
+| `/save` | Save chat to Obsidian |
+| `/save idea` | Quick-capture idea to Obsidian |
+| `/session create\|info\|end` | Manage time-limited ephemeral sessions |
 | `/template` | Browse and apply style templates |
 | `/telegram` | Telegram setup |
 | `/voice` | Voice settings |

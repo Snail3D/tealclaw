@@ -190,6 +190,9 @@ Only include fields to set/change. TC uses partial merge.
 | rateLimitPerMin | number | Max msgs/min (dflt: unlimited) |
 | obsidianVault | string | Obsidian vault for /save (dflt: "ObsidianVault") |
 | agents | array | OpenClaw gateway agents (replaces list) |
+| skillContext | boolean | Append TC capability context to system prompt (dflt: true) |
+| use24HourTime | boolean | Use 24-hour time format for timestamps (dflt: false) |
+| cameraEnabled | boolean | Show camera btn in input bar (dflt: true) |
 
 Agent objects: `{ id, name, url, token, active }` -- see llms.txt for details.
 

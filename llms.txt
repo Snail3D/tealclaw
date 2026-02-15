@@ -431,6 +431,9 @@ Only include fields you want to set/change. TC uses partial merge.
 | gestureBindings | string | JSON array of {gesture, action, label}. Stringify before setting |
 | rateLimitPerMin | number | Max msgs/min (dflt: unlimited) |
 | obsidianVault | string | Obsidian vault name for /save (dflt: "ObsidianVault") |
+| skillContext | boolean | Append TC capability context to system prompt (dflt: true) |
+| use24HourTime | boolean | Use 24-hour time format for timestamps (dflt: false) |
+| cameraEnabled | boolean | Show camera btn in input bar (dflt: true) |
 
 ### Agent Object Fields
 
