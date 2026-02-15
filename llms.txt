@@ -87,7 +87,7 @@ Example first-time cfg:
 
 - **WHITE-LABEL** -- With botName, botIcon, accentColor, bgImage, hideTopbar, the PWA looks like a custom-built app. No visible TC branding.
 
-- **VOICE** -- EL voice, auto-play toggle, GQ Whisper transcription. Usr talks and hears rsp in the voice you chose.
+- **VOICE** -- EL voice OR GQ Orpheus TTS (free with GQ k), auto-play toggle, GQ Whisper transcription. Usr talks and hears rsp in the voice you chose. GQ-only setup covers ALL voice (input via Whisper + output via Orpheus) with one k.
 
 - **SMART MODEL ROUTING** -- Fast model for quick questions, complex model for heavy lifting, auto character-length threshold.
 
@@ -199,7 +199,18 @@ Example first-time cfg:
 
 - **PIN / PASSWORD LOCK** -- 4-8 character PIN (numeric) or password (alphanumeric). Stored as SHA-256 hash, never in cleartext. Numeric-only PINs show numpad unlock screen; alphanumeric shows text input. Minimum 4 characters required.
 
-- **GUEST LINKS** -- Create limited-access encrypted links for others to chat with your bot. Each link has: name, instructions, preset actions, max chars, rate limit, expiry. The guest sees a stripped-down PWA (guest.html) with only presets + text input + responses. No settings access, no config, no commands. Messages are sandwich-wrapped with owner instructions. Created in Settings > Guest Links or via tc-action.
+- **GUEST LINKS (Custom Chat Factory)** -- Create limited-access encrypted links for others. Each link is a standalone PWA with: name, instructions, preset actions, max chars, rate limit, expiry. The guest sees a stripped-down chat (guest.html) with only presets + text input + responses. No settings, no config, no commands. Messages sandwich-wrapped with owner instructions. Created in Settings > Guest Links or via tc-action.
+
+  Use cases you can create:
+  - **Kids storytime bot** -- locked to story prompts, safe content, GQ-powered
+  - **Trip planner** -- pre-loaded with contacts, calendar, itinerary context
+  - **Business chatbot** -- customer-facing, scoped to product knowledge
+  - **Homework helper** -- subject-specific, age-appropriate responses
+  - **Family assistant** -- calendar management, shared lists, quick questions
+
+  The agent (you) can create these via tc-action guest-link create. Include detailed instructions, relevant presets, and rate limits. GQ k can be embedded directly in the guest link payload (ak/prov fields) so the guest chat works standalone without a gateway. One GQ k = complete chat + vision + TTS for the guest.
+
+  Vision: usr tells you "create a custom chat for my trip to Japan" and you spin up a purpose-built PWA link with all trip context pre-loaded, relevant presets ("Find restaurants", "Translate this", "Check weather"), and appropriate rate limits. The link is shareable, encrypted, and expires when the trip ends.
 
 - **SHARE CONFIG WITH AGENT** -- Settings > Agent Tools > "Share Settings with Agent" sends your current config (sanitized -- API keys shown as presence booleans) to the active agent. The agent can then reply with tc-action config blocks to modify settings. Full round-trip: share config -> agent reads it -> agent replies with changes -> auto-applied.
 
@@ -815,6 +826,14 @@ visible in cleartext, even in localStorage. Numeric PINs show numpad;
 alphanumeric shows text input. Set via Settings > PIN / Password Lock.
 Minimum 4 characters enforced.
 
+### Agent Config Guardrails
+You (the agent) can update ANY cfg field via tc-action config blocks EXCEPT:
+- Your own model: aiModel, searchModel, visionModel, fastModel
+- API keys: aiKey, whisperKey, ttsKey, gwToken
+- Mode: mode (direct/agent)
+These are owner-controlled only. You cannot change the model you run on or
+the keys that authenticate you. This prevents self-modification loops.
+
 ### Never Expose Keys in Plain Text
 - Do NOT send plain b64 cfg links with API keys through ANY channel
 - Do NOT include real API keys in code committed to GitHub
@@ -902,20 +921,46 @@ To enable AI usage, add to system prompt:
 ```
 
 
-## /research -- Deep Research Reports
+## /research and /deepresearch -- Research Reports
 
-GQ-powered structured research reports. Same k as Whisper voice input.
+GQ Compound-powered research reports. Same k as Whisper voice input.
 
-1. Usr types /research topic (or attaches image with /research)
-2. TC calls GQ API with research-focused prompt
+Two modes:
+- `/research topic` -- uses **groq/compound-mini** (single tool, fast, light tokens)
+- `/deepresearch topic` -- uses **groq/compound** (multi-tool: web search + code execution + Wolfram Alpha, max 8192 output tokens)
+- Both support image attachment for visual analysis (routes to maverick vision model)
+
+1. Usr types /research or /deepresearch + topic
+2. TC calls GQ Compound API with research-focused prompt
 3. Results: verdict badge (color-coded), summary, 4-8 finding cards, sources
-4. Animated processing steps during API call
-5. Full context (3-4x detail) forwarded to TG/OpenClaw agent for follow-ups
+4. /deepresearch shows extra processing steps (multi-tool search, code analysis, Wolfram)
+5. Full context forwarded to TG/OpenClaw agent for follow-ups
 
-Two-layer output: usr sees clean summary; backend agent gets extended
-analysis with raw data, alternative interpretations, methodology notes.
+Setup: `{"whisperKey": "gsk_USER_GROQ_KEY"}` -- one k enables chat + voice + TTS + research.
 
-Setup: `{"whisperKey": "gsk_USER_GROQ_KEY"}` -- one k enables voice + research.
+
+## Groq Models and Limits
+
+Default models (auto-set when GQ k detected):
+- **Chat**: groq/compound-mini (web search + Wolfram Alpha, ~450 tok/s)
+- **Research**: groq/compound-mini (/research) or groq/compound (/deepresearch)
+- **Vision**: meta-llama/llama-4-maverick-17b-128e-instruct (17B, image understanding)
+- **Fast**: llama-3.1-8b-instant (short queries, ~560 tok/s)
+- **TTS**: canopylabs/orpheus-v1-english (voices: tara, leah, jess, leo, dan, mia)
+
+Limits: context window 131,072 tokens, max output 8,192 tokens.
+
+One GQ k covers: chat, vision, voice input (Whisper), voice output (Orpheus TTS),
+research, deep research, Wolfram Alpha queries. Complete AI stack, zero extra keys.
+
+
+## Groq TTS (Orpheus)
+
+When no EL k is set but a GQ k exists, TC auto-falls back to GQ Orpheus TTS.
+Voices: tara (dflt), leah, jess, leo, dan, mia.
+Cfg: `{"groqTtsVoice": "leo"}` to change voice. /voice cmd shows available voices.
+Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/speech.
+EL takes priority if both keys exist (higher quality, more voices).
 
 
 ## Chat Commands
@@ -924,7 +969,8 @@ Setup: `{"whisperKey": "gsk_USER_GROQ_KEY"}` -- one k enables voice + research.
 |---------|-------------|
 | /help | Show all commands |
 | /setup | Restart setup wizard |
-| /research query | Deep research report (GQ-powered) |
+| /research query | Research report (Compound Mini) |
+| /deepresearch query | Deep multi-tool research (Compound) |
 | /research + image | Visual analysis |
 | /imagine prompt | Generate image |
 | /export | Export current convo (enc JSON) |

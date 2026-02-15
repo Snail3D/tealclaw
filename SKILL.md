@@ -317,15 +317,32 @@ Camera-based recognition via MediaPipe Hands. Agent-configurable.
 - Actions: voice_start, voice_stop, stop_agent, send_message, toggle_mute, send_thumbsup, `send:custom text`
 - Floating draggable pip with hand wireframe. 400ms hold to trigger.
 
-## /research Command
+## /research and /deepresearch Commands
 
-GQ-powered deep research reports (same k as Whisper).
+GQ Compound-powered research reports (same k as Whisper).
 
-- `/research topic` -- text research
-- `/research` + image -- visual analysis
+- `/research topic` -- uses **groq/compound-mini** (single tool, fast, light tokens)
+- `/deepresearch topic` -- uses **groq/compound** (multi-tool: web search + code + Wolfram Alpha, max 8192 tokens)
+- Both support image attachment for visual analysis (maverick vision model)
 - Segmented report: verdict badge, findings, sources
-- Full context (3-4x) forwarded to TG/OpenClaw agent
+- Full context forwarded to TG/OpenClaw agent
 - Setup: `{"whisperKey": "gsk_KEY"}`
+
+## Groq Models
+
+| Purpose | Model ID | Notes |
+|---------|----------|-------|
+| Chat (default) | groq/compound-mini | Web search + Wolfram Alpha, ~450 tok/s |
+| Deep research | groq/compound | Multi-tool, higher token budget |
+| Vision | meta-llama/llama-4-maverick-17b-128e-instruct | 17B, image understanding |
+| Fast | llama-3.1-8b-instant | Short queries, ~560 tok/s |
+| Tool use | meta-llama/llama-4-scout-17b-16e-instruct | Native function calling |
+| TTS | canopylabs/orpheus-v1-english | Voices: tara, leah, jess, leo, dan, mia |
+
+Max output: 8,192 tokens. Context: 131,072 tokens.
+One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete stack.
+
+**Agent guardrail**: You may NOT change: aiModel, searchModel, visionModel, fastModel, aiKey, whisperKey, ttsKey, gwToken, mode. These are owner-controlled.
 
 ## Common Recipes
 
@@ -364,9 +381,9 @@ GQ-powered deep research reports (same k as Whisper).
 
 ### Free chatbot (zero cost)
 ```json
-{"whisperKey": "gsk_KEY", "aiProvider": "groq", "ttsAutoPlay": false}
+{"whisperKey": "gsk_KEY", "aiProvider": "groq", "groqTtsVoice": "tara"}
 ```
-One GQ k covers chat + vision + voice. No cost.
+One GQ k covers chat (Compound) + vision (Maverick) + voice input (Whisper) + voice output (Orpheus TTS) + research + Wolfram Alpha. Complete AI stack, zero extra keys.
 
 ## Security
 
@@ -375,11 +392,20 @@ One GQ k covers chat + vision + voice. No cost.
 Stored as SHA-256 hash -- never in cleartext, even in localStorage.
 Set via Settings > PIN / Password Lock. Minimum 4 characters enforced.
 
-### Guest Links
-Create encrypted limited-access links for others to chat with your bot.
-Guest sees stripped-down PWA (guest.html): passphrase entry -> presets + text input -> responses.
-No settings, no config, no commands, no tc-actions. Messages sandwich-wrapped with owner instructions.
-Created in Settings > Guest Links or via tc-action type "guest-link".
+### Guest Links (Custom Chat Factory)
+Create purpose-built encrypted chat links for anyone. Each is a standalone PWA.
+Guest sees: passphrase entry -> presets + text input -> streaming responses. No settings, no config, no commands.
+
+**Use cases you can spin up:**
+- Kids storytime bot (safe content, story prompts only)
+- Trip planner (pre-loaded itinerary, restaurant finder, translator)
+- Business chatbot (product knowledge, customer-facing)
+- Family assistant (calendar, shared lists, quick questions)
+- Homework helper (subject-specific, age-appropriate)
+
+A GQ k embedded in the guest link gives the guest chat + vision + TTS -- complete experience, one key.
+Created in Settings > Guest Links or via tc-action "guest-link" create.
+The agent (you) can create these on command: "create a custom chat for my trip to Japan".
 
 ### QR Code Safety
 /qr codes do NOT contain API keys -- only visual + persona cfg.
@@ -395,7 +421,8 @@ Created in Settings > Guest Links or via tc-action type "guest-link".
 | Command | What It Does |
 |---------|-------------|
 | `/help` | Show all commands |
-| `/research query` | Deep research report |
+| `/research query` | Research report (Compound Mini) |
+| `/deepresearch query` | Deep multi-tool research (Compound) |
 | `/imagine prompt` | Generate image |
 | `/export` / `all` / `md` | Export convo(s) |
 | `/profile save/load/list/delete name` | Manage cfg profiles |

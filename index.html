@@ -50,13 +50,13 @@
       --user-bg: #2a2a2a; --ai-bg: transparent;
     }
     [data-theme="light"] {
-      --bg-root: #ffffff; --bg-1: #f9f9f9; --bg-card: #ffffff;
-      --bg-hover: #f4f4f4; --bg-input: #f4f4f4; --bg-overlay: rgba(255,255,255,0.92);
-      --border: #e5e5e5; --border-2: #d4d4d4;
-      --text: #1a1a1a; --text-2: #6b6b6b; --text-3: #767676;
+      --bg-root: #f0f0f0; --bg-1: #e8e8e8; --bg-card: #f5f5f5;
+      --bg-hover: #e3e3e3; --bg-input: #eaeaea; --bg-overlay: rgba(240,240,240,0.95);
+      --border: #d5d5d5; --border-2: #c4c4c4;
+      --text: #1a1a1a; --text-2: #5a5a5a; --text-3: #6b6b6b;
       --ok: #16a34a; --err: #dc2626; --warn: #d97706;
-      --shadow: 0 1px 2px rgba(0,0,0,0.05);
-      --user-bg: #f4f4f4; --ai-bg: transparent;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --user-bg: #e6e6e6; --ai-bg: transparent;
     }
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     html,body{overscroll-behavior:none;overflow:hidden}
@@ -298,6 +298,26 @@
     /* ── Toast ──────────────────────────────────────────── */
     .toast{position:fixed;bottom:16px;right:16px;padding:8px 14px;font-size:11px;font-weight:500;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:200;opacity:0;transform:translateY(6px);transition:all 0.3s;pointer-events:none}
     .toast.show{opacity:1;transform:translateY(0)} .toast.ok{border-color:var(--ok);color:var(--ok)} .toast.err{border-color:var(--err);color:var(--err)}
+    .tc-notify{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.95);z-index:700;opacity:0;pointer-events:none;transition:opacity 0.4s ease,transform 0.4s ease}
+    .tc-notify.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+    .tc-notify.hide{opacity:0;transform:translate(-50%,-50%) scale(0.97)}
+    .tc-notify-card{background:rgba(235,235,235,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:16px;padding:20px 24px;min-width:260px;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.15);color:#333}
+    @media(prefers-color-scheme:dark){.tc-notify-card{background:rgba(55,55,55,0.95);color:#ddd}}
+    [data-theme="dark"] .tc-notify-card{background:rgba(55,55,55,0.95);color:#ddd}
+    [data-theme="light"] .tc-notify-card{background:rgba(235,235,235,0.95);color:#333}
+    .tc-notify-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:10px}
+    .tc-notify-items{display:flex;flex-direction:column;gap:8px}
+    .tc-notify-item{display:flex;align-items:center;gap:10px;font-size:13px;font-family:var(--mono);line-height:1.4}
+    .tc-notify-item .ni-label{font-weight:600;color:inherit;font-family:var(--sans);min-width:70px}
+    .tc-notify-item .ni-value{color:#888;font-size:11px;letter-spacing:0.5px}
+    .tc-notify-item .ni-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600;font-family:var(--sans);text-transform:uppercase;letter-spacing:0.3px}
+    .tc-notify-item .ni-badge.new{background:rgba(13,148,136,0.15);color:var(--teal)}
+    .tc-notify-item .ni-badge.updated{background:rgba(59,130,246,0.15);color:#3b82f6}
+    .tc-notify-bar{height:2px;background:rgba(0,0,0,0.06);border-radius:1px;margin-top:14px;overflow:hidden}
+    .tc-notify-bar-fill{height:100%;background:var(--teal);border-radius:1px;transition:width linear}
+    [data-theme="dark"] .tc-notify-bar{background:rgba(255,255,255,0.06)}
+    .tc-theme-fade{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:0;transition:opacity 1.5s ease}
+    .tc-theme-fade.in{opacity:1} .tc-theme-fade.out{opacity:0}
 
     /* ── Overlay ───────────────────────────────────────── */
     .overlay{position:fixed;inset:0;background:var(--bg-overlay);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(8px);cursor:pointer}
@@ -904,6 +924,7 @@
     <div class="gif-attr">Powered by Tenor</div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="tc-notify" id="tcNotify"><div class="tc-notify-card" id="tcNotifyCard"></div></div>
 
   <!-- ═══ About Modal ═══ -->
   <div class="about-overlay hidden" id="aboutOverlay">
@@ -1090,6 +1111,29 @@
     let audioEnabled=false, chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
 
     function showToast(m,t='',dur=3000){toast.textContent=m;toast.style.cursor='';toast.onclick=null;toast.className='toast show '+t;if(t==='ok')haptic('success');if(t==='err')haptic('error');setTimeout(()=>toast.className='toast',dur)}
+
+    // Elegant center-screen notification card for key/config changes
+    let _notifyTimer=null;
+    function showNotification(title,items,dur=5000){
+      // items: [{label:'Groq Key',value:'gsk_abc1...ef4z',badge:'new'|'updated'}]
+      const el=$('tcNotify'),card=$('tcNotifyCard');
+      clearTimeout(_notifyTimer);
+      let html=`<div class="tc-notify-title">${esc(title)}</div><div class="tc-notify-items">`;
+      items.forEach(it=>{
+        const badge=it.badge?`<span class="ni-badge ${it.badge}">${it.badge}</span>`:'';
+        const value=it.value?`<span class="ni-value">${esc(it.value)}</span>`:'';
+        html+=`<div class="tc-notify-item">${badge}<span class="ni-label">${esc(it.label)}</span>${value}</div>`;
+      });
+      html+=`</div><div class="tc-notify-bar"><div class="tc-notify-bar-fill" id="tcNotifyBar"></div></div>`;
+      card.innerHTML=html;
+      el.classList.remove('hide');el.classList.add('show');
+      // Animate progress bar
+      requestAnimationFrame(()=>{
+        const bar=$('tcNotifyBar');
+        if(bar){bar.style.width='100%';requestAnimationFrame(()=>{bar.style.transitionDuration=dur+'ms';bar.style.width='0%'})}
+      });
+      _notifyTimer=setTimeout(()=>{el.classList.add('hide');setTimeout(()=>el.classList.remove('show','hide'),400)},dur);
+    }
     function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
     // ── Markdown Renderer ───────────────────────────────
@@ -1771,9 +1815,19 @@
     // ── Theme ──────────────────────────────────────────
     document.documentElement.setAttribute('data-theme',localStorage.getItem('tc-theme')||'dark');
     $('themeBtn').addEventListener('click',()=>{
-      const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
-      document.documentElement.setAttribute('data-theme',n);localStorage.setItem('tc-theme',n);
-      if(typeof updateThemeColor==='function')updateThemeColor();
+      const cur=document.documentElement.getAttribute('data-theme');
+      const n=cur==='dark'?'light':'dark';
+      // Smooth crossfade: overlay fades in with midpoint color, theme swaps, overlay fades out
+      const overlay=document.createElement('div');
+      overlay.className='tc-theme-fade';
+      overlay.style.background=n==='dark'?'#1a1a1a':'#e0e0e0';
+      document.body.appendChild(overlay);
+      requestAnimationFrame(()=>{overlay.classList.add('in');});
+      setTimeout(()=>{
+        document.documentElement.setAttribute('data-theme',n);localStorage.setItem('tc-theme',n);
+        if(typeof updateThemeColor==='function')updateThemeColor();
+        setTimeout(()=>{overlay.classList.remove('in');overlay.classList.add('out');setTimeout(()=>overlay.remove(),1600)},200);
+      },1500);
       // Re-init mermaid theme on toggle
       if(mermaidLoaded&&window.mermaid){
         window.mermaid.initialize({startOnLoad:false,theme:n==='dark'?'dark':'default',securityLevel:'strict'});
@@ -1956,9 +2010,9 @@
 
       // Models
       const isGroq=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey);
-      const chatDefault=isGroq?'llama-3.3-70b-versatile':'google/gemini-2.5-flash-preview';
+      const chatDefault=isGroq?'groq/compound-mini':'google/gemini-2.5-flash-preview';
       const visionDefault=isGroq?'meta-llama/llama-4-maverick-17b-128e-instruct':'google/gemini-2.5-flash-preview';
-      const searchDefault=isGroq?'llama-3.3-70b-versatile':'google/gemini-2.5-flash-preview';
+      const searchDefault=isGroq?'groq/compound-mini':'google/gemini-2.5-flash-preview';
       const fastDefault=isGroq?'llama-3.1-8b-instant':'meta-llama/llama-3.1-8b-instant';
       html+=`<div class="sheet-section"><div class="sheet-section-title">Models ${isGroq?'<span style="font-size:9px;color:var(--teal);font-weight:400">(Groq)</span>':'<span style="font-size:9px;color:var(--text-3);font-weight:400">('+esc(getProviderLabel(k))+')</span>'}</div>
         <div style="font-size:10px;color:var(--text-3);margin-bottom:10px">Type to search live models. Click to select. Each purpose uses its own model.</div>
@@ -3201,7 +3255,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       }catch(e){
         // Fallback to <audio> element if Web Audio fails
         console.warn('Web Audio fallback:',e);
-        const blob=new Blob([arrayBuffer],{type:'audio/mpeg'});
+        const blob=ttsBlob(arrayBuffer);
         const blobUrl=URL.createObjectURL(blob);
         audio.src=blobUrl;
         audio.onended=()=>URL.revokeObjectURL(blobUrl);
@@ -3407,7 +3461,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
           b.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Playing...';
           const ttsData=await speak(m.text);
           if(ttsData){
-            const blob=new Blob([ttsData],{type:'audio/mpeg'});
+            const blob=ttsBlob(ttsData);
             const url=URL.createObjectURL(blob);
             chatHistory[idx].audioUrl=url;
             setChat(chatHistory);
@@ -3488,7 +3542,9 @@ Interactive prompts: \`\`\`tc-action\n{"type":"prompt","question":"Would you lik
 Request config: \`\`\`tc-action\n{"type":"request-config"}\n\`\`\` Returns all current settings (API keys shown as presence booleans only). Use this to read the user's config before suggesting changes.
 Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":"#8b5cf6"}\n\`\`\` Updates any config field. User approves before applying.
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
-User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /imagine /save /session /help`;
+User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help
+Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via canopylabs/orpheus-v1-english (voices: tara, leah, jess, leo, dan, mia).
+IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey, ttsKey), or mode. Those are owner-controlled only.`;
 
     function buildSysPrompt(k){
       const base=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
@@ -3510,7 +3566,7 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
       const aiKey=isGroq?(k.whisperKey||k.aiKey):(k.aiKey||k.whisperKey);
       if(!aiKey)return '__NO_KEY__';
       const groqVisionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
-      const groqChatModel=k.aiModel||'llama-3.3-70b-versatile';
+      const groqChatModel=k.aiModel||'groq/compound-mini';
 
       const url=isGroq
         ?'https://api.groq.com/openai/v1/chat/completions'
@@ -3538,7 +3594,9 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
       }
 
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
-      const body={model,messages:msgs,max_tokens:k.maxTokens||400};
+      let maxTok=k.maxTokens||400;
+      if(isGroq&&maxTok>8192)maxTok=8192; // Groq max output limit
+      const body={model,messages:msgs,max_tokens:maxTok};
       if(k.temperature!==undefined)body.temperature=Number(k.temperature);
       const res=await fetch(url,{
         method:'POST',
@@ -3961,13 +4019,35 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
 
     // ── TTS ────────────────────────────────────────────
     async function speak(text){
-      const k=getK();if(!k.ttsKey)return null;
+      const k=getK();
+      // Groq TTS fallback: use Orpheus when no ElevenLabs key but Groq key exists
+      const useGroqTTS=!k.ttsKey&&(k.whisperKey||k.aiProvider==='groq');
+      if(!k.ttsKey&&!useGroqTTS)return null;
+      if(useGroqTTS){
+        const groqKey=k.whisperKey||k.aiKey;
+        if(!groqKey)return null;
+        const voice=k.groqTtsVoice||'tara';
+        const model=k.groqTtsModel||'canopylabs/orpheus-v1-english';
+        const res=await fetch('https://api.groq.com/openai/v1/audio/speech',{
+          method:'POST',headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify({model,input:text,voice,response_format:'wav'})
+        });
+        if(!res.ok)return null;
+        return await res.arrayBuffer();
+      }
       const vid=k.ttsVoice||'ThT5KcBeYPX7keBQBPPD';
       const res=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`,{
         method:'POST',headers:{'Accept':'audio/mpeg','Content-Type':'application/json','xi-api-key':k.ttsKey},
         body:JSON.stringify({text,voice_settings:{stability:k.ttsStability!==undefined?k.ttsStability:0.3,similarity_boost:k.ttsSimilarityBoost!==undefined?k.ttsSimilarityBoost:1.0}})
       });
       if(!res.ok)return null;return await res.arrayBuffer();
+    }
+
+    function hasTTS(k){if(!k)k=getK();return !!(k.ttsKey||k.whisperKey||k.aiProvider==='groq')}
+    function ttsBlob(data){
+      const k=getK();
+      const mime=(!k.ttsKey&&(k.whisperKey||k.aiProvider==='groq'))?'audio/wav':'audio/mpeg';
+      return new Blob([data],{type:mime});
     }
 
     // ── Chat-Based Onboarding ─────────────────────────
@@ -3996,7 +4076,7 @@ User slash cmds: /setup /clear /voice /export /profile /share /qr /template /res
 <tr style="border-bottom:1px solid var(--border)">
 <td style="padding:6px 8px"><strong><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a></strong></td>
 <td style="padding:6px 4px"><code>gsk_...</code></td>
-<td style="padding:6px 4px;color:var(--teal)"><strong>Free!</strong> Chat + vision + voice</td>
+<td style="padding:6px 4px;color:var(--teal)"><strong>Free!</strong> Chat + vision + voice + TTS</td>
 </tr>
 <tr style="border-bottom:1px solid var(--border)">
 <td style="padding:6px 8px"><strong><a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a></strong></td>
@@ -4061,6 +4141,7 @@ Token: openclaw config get gateway.token</code><span style="position:absolute;bo
       if(!det)return false;
 
       const k=getK();
+      const hadPrevious=!!k[det.field];
       k[det.field]=val;
       if(det.provider)k.aiProvider=det.provider;
       // If Groq key and no separate AI key, use Groq as the AI provider too
@@ -4077,7 +4158,8 @@ Token: openclaw config get gateway.token</code><span style="position:absolute;bo
 
       // Show masked key in user bubble
       const masked=val.slice(0,8)+'...' +val.slice(-4);
-      addBubble('user',masked);
+      const keyAction=hadPrevious?'Updated':'New';
+      addBubble('user',`${keyAction}: ${masked}`);
 
       // Respond based on what was just set
       const responses={
@@ -4121,13 +4203,16 @@ ${getOptionalSteps()}`
 
       const respFn=responses[det.field];
       if(respFn){
-        const html=typeof respFn==='function'?respFn():respFn;
+        let html=typeof respFn==='function'?respFn():respFn;
+        if(hadPrevious)html=html.replace(/Connected!|Saved/i,'Updated');
         sysBubble(html);
       } else {
-        sysBubble(`<p><strong>${det.label}</strong> saved!</p>${getOptionalSteps()}`);
+        sysBubble(`<p><strong>${det.label}</strong> ${hadPrevious?'updated':'saved'}!</p>${getOptionalSteps()}`);
       }
 
-      showToast(det.label+' saved','ok');
+      showNotification(hadPrevious?'Key Updated':'Key Set',[
+        {label:det.label,value:masked,badge:hadPrevious?'updated':'new'}
+      ]);
       return true;
     }
 
@@ -4138,7 +4223,7 @@ ${getOptionalSteps()}`
 <p>You're using <strong>${provider}</strong>. `;
 
       if(k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)){
-        html+=`One key covers chat, vision, and voice input. You're all set!</p>`;
+        html+=`One key covers chat (Compound), vision, voice input, and voice output (TTS). You're all set!</p>`;
       } else {
         html+=`Gemini Flash is ready. Start chatting!</p>`;
       }
@@ -4448,7 +4533,7 @@ Rules:
       saveToObsidian(title,content,'Daily');
     }
 
-    async function researchPipeline(query,imageBase64){
+    async function researchPipeline(query,imageBase64,deep=false){
       const k=getK();
       const groqKey=k.whisperKey||(k.aiProvider==='groq'?k.aiKey:'');
       if(!groqKey){
@@ -4457,12 +4542,15 @@ Rules:
       }
 
       // Show user message
-      addBubble('user',query?`/research ${query}`:'/research [Image]',imageBase64?{image:imageBase64}:{});
+      const cmdLabel=deep?'/deepresearch':'/research';
+      addBubble('user',query?`${cmdLabel} ${query}`:`${cmdLabel} [Image]`,imageBase64?{image:imageBase64}:{});
       playSendSound();
 
       // Show processing steps
       const procId='research-'+Date.now();
-      const steps=['Analyzing query','Searching knowledge base','Cross-referencing sources','Compiling report','Generating insights'];
+      const steps=deep
+        ?['Analyzing query','Running multi-tool search','Executing code analysis','Querying Wolfram Alpha','Cross-referencing sources','Compiling deep report','Generating insights']
+        :['Analyzing query','Searching knowledge base','Cross-referencing sources','Compiling report','Generating insights'];
       let procHtml='<div class="research-processing" id="'+procId+'">';
       steps.forEach((s,i)=>procHtml+=`<div class="research-step" data-idx="${i}"><span class="spinner step-icon"></span><span>${s}...</span></div>`);
       procHtml+='</div>';
@@ -4493,7 +4581,8 @@ Rules:
           userContent=`Research the following topic thoroughly: ${query}`;
         }
 
-        const model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.searchModel||'llama-3.3-70b-versatile');
+        const defaultSearch=deep?'groq/compound':(k.searchModel||'groq/compound-mini');
+        const model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):defaultSearch;
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
           headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
@@ -4503,7 +4592,7 @@ Rules:
               {role:'system',content:RESEARCH_SYSTEM},
               {role:'user',content:userContent}
             ],
-            max_tokens:4000,
+            max_tokens:deep?8192:4000,
             temperature:0.3
           })
         });
@@ -5318,11 +5407,12 @@ Rules:
       // Also fetch Groq if no Groq key (just for display — won't work without key)
       if(!results.groq){
         results.groq=[
+          {id:'groq/compound-mini',name:'Compound Mini (web+code+wolfram)',provider:'Groq',free:true,tags:[]},
+          {id:'groq/compound',name:'Compound (multi-tool, deep)',provider:'Groq',free:true,tags:[]},
+          {id:'meta-llama/llama-4-maverick-17b-128e-instruct',name:'LLaMA 4 Maverick 17B',provider:'Groq',free:true,tags:['vision']},
+          {id:'meta-llama/llama-4-scout-17b-16e-instruct',name:'LLaMA 4 Scout 17B (tool use)',provider:'Groq',free:true,tags:['vision']},
           {id:'llama-3.3-70b-versatile',name:'LLaMA 3.3 70B',provider:'Groq',free:true,tags:[]},
           {id:'llama-3.1-8b-instant',name:'LLaMA 3.1 8B Instant',provider:'Groq',free:true,tags:['fast']},
-          {id:'meta-llama/llama-4-maverick-17b-128e-instruct',name:'LLaMA 4 Maverick',provider:'Groq',free:true,tags:['vision']},
-          {id:'mixtral-8x7b-32768',name:'Mixtral 8x7B',provider:'Groq',free:true,tags:[]},
-          {id:'gemma2-9b-it',name:'Gemma 2 9B',provider:'Groq',free:true,tags:['fast']},
           {id:'whisper-large-v3-turbo',name:'Whisper Large V3 Turbo',provider:'Groq',free:true,tags:[]},
         ];
       }
@@ -5461,7 +5551,7 @@ Rules:
       const url=isGroq?'https://api.groq.com/openai/v1/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
       let model;
       if(isGroq){
-        model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.aiModel||'llama-3.3-70b-versatile');
+        model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.aiModel||'groq/compound-mini');
       } else {
         model=imageBase64?(k.visionModel||k.aiModel||'google/gemini-2.5-flash-preview'):(k.aiModel||'google/gemini-2.5-flash-preview');
       }
@@ -5472,7 +5562,8 @@ Rules:
       const histMsgs=chatHistory.slice(-ctxLimit).filter(m=>m.role==='user'||m.role==='ai').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
       let userContent=imageBase64?[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}]:userText;
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
-      const body={model,messages:msgs,max_tokens:k.maxTokens||400,stream:true};
+      let maxTok=k.maxTokens||400;if(isGroq&&maxTok>8192)maxTok=8192;
+      const body={model,messages:msgs,max_tokens:maxTok,stream:true};
       if(k.temperature!==undefined)body.temperature=Number(k.temperature);
       const res=await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},body:JSON.stringify(body)});
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`API error: ${res.status}`)}
@@ -5601,9 +5692,9 @@ Rules:
           sendTelegram(`AI: ${displayText}`);
           fireWebhook('message.receive',{text:displayText});
           // TTS
-          if(audioEnabled&&pk.ttsKey&&pk.ttsAutoPlay!==false){
+          if(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false){
             const ttsData=await speak(displayText);
-            if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
+            if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
           playReceiveSound();haptic('receive');renderQuickReplies();
         }catch(e){
@@ -5644,7 +5735,7 @@ Rules:
 
           // TTS (start in parallel with typing animation)
           let audioUrl=null;
-          const ttsPromise=(audioEnabled&&pk.ttsKey&&pk.ttsAutoPlay!==false)?speak(displayText):Promise.resolve(null);
+          const ttsPromise=(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false)?speak(displayText):Promise.resolve(null);
 
           // Typing animation: reveal character by character
           if(pk.typingAnimation!==false){
@@ -5662,12 +5753,12 @@ Rules:
             }
             chatHistory[bubbleIdx].text=displayText;
             const ttsData=await ttsPromise;
-            if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});audioUrl=URL.createObjectURL(blob);chatHistory[bubbleIdx].audioUrl=audioUrl;playAudioBuffer(ttsData)}
+            if(ttsData){const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);chatHistory[bubbleIdx].audioUrl=audioUrl;playAudioBuffer(ttsData)}
             setChat(chatHistory);renderChat();
           } else {
             // No typing animation: instant display
             const ttsData=await ttsPromise;
-            if(ttsData){const blob=new Blob([ttsData],{type:'audio/mpeg'});audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData)}
+            if(ttsData){const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData)}
             const extra=audioUrl?{audioUrl}:{};
             if(aiUsage)extra.usage=aiUsage;
             addBubble('ai',displayText,extra);
@@ -5765,7 +5856,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/imagine','/telegram','/help','/save','/session'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/deepresearch','/imagine','/telegram','/help','/save','/session'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -5779,7 +5870,8 @@ ${agentNote}`);
           const helpHtml=`<h3>TealClaw Commands</h3>
 <ul>
 <li><code>/setup</code> -- restart the setup wizard</li>
-<li><code>/research query</code> -- deep research report (GROQ-powered)</li>
+<li><code>/research query</code> -- research report (Compound Mini)</li>
+<li><code>/deepresearch query</code> -- deep multi-tool research (Compound)</li>
 <li><code>/imagine prompt</code> -- generate an image</li>
 <li><code>/export</code> -- export current chat (encrypted JSON, re-importable)</li>
 <li><code>/export all</code> -- export all conversations (encrypted JSON)</li>
@@ -5886,9 +5978,18 @@ ${agentNote}`);
         if(cmd==='/voice'){
           const k=getK();
           if(!k.ttsKey){sysBubble('<p>Set an ElevenLabs key first. Get one at <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">elevenlabs.io</a> and paste the <code>sk_</code> key here.</p>');return}
-          sysBubble(`<h3>Voice Settings</h3>
+          const useGroq=!k.ttsKey&&(k.whisperKey||k.aiProvider==='groq');
+          if(useGroq){
+            sysBubble(`<h3>Voice Settings (Groq TTS)</h3>
+<p>Current voice: <code>${esc(k.groqTtsVoice||'tara')}</code></p>
+<p><strong>Available voices:</strong> tara, leah, jess, leo, dan, mia</p>
+<p>To change: <code>{"groqTtsVoice": "leo"}</code></p>
+<p style="font-size:11px;color:var(--text-2)">Using Orpheus TTS via your Groq key — no extra key needed!</p>`);
+          } else {
+            sysBubble(`<h3>Voice Settings</h3>
 <p>Current voice: <code>${k.ttsVoice||'ThT5KcBeYPX7keBQBPPD'}</code> (Rachel default)</p>
 <p>To change, visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a>, copy a voice ID, and paste it in the chat.</p>`);
+          }
           return;
         }
         if(text.startsWith('/save')){
@@ -5928,19 +6029,32 @@ ${agentNote}`);
           saveToObsidian(name,md,'Daily');
           return;
         }
+        if(text.startsWith('/deepresearch')){
+          const rQuery=text.slice(13).trim();
+          const rImage=images[0]||null;
+          if(!rQuery&&!rImage){
+            sysBubble(`<h3>Deep Research</h3>
+<p>Multi-tool research powered by <strong>Groq Compound</strong> (web search + code execution + Wolfram Alpha).</p>
+<p><strong>Usage:</strong> <code>/deepresearch your topic here</code></p>
+<p>Uses more tokens than <code>/research</code> but leverages multiple tools for comprehensive analysis.</p>`);
+            return;
+          }
+          researchPipeline(rQuery,rImage,true);
+          return;
+        }
         if(text.startsWith('/research')){
           const rQuery=text.slice(9).trim();
           const rImage=images[0]||null;
           if(!rQuery&&!rImage){
             sysBubble(`<h3>Research</h3>
-<p>Deep research reports powered by Groq AI.</p>
+<p>Research reports powered by <strong>Groq Compound Mini</strong> (web search + Wolfram Alpha).</p>
 <p><strong>Usage:</strong></p>
 <ul>
-<li><code>/research your topic here</code> -- text research</li>
+<li><code>/research your topic here</code> -- quick research (Compound Mini)</li>
+<li><code>/deepresearch your topic</code> -- deep multi-tool research (Compound)</li>
 <li>Attach an image + <code>/research</code> -- visual analysis</li>
-<li><code>/research what is quantum computing</code></li>
 </ul>
-<p>Results show a segmented report with verdict, findings, and sources. Full context is forwarded to your OpenClaw agent for follow-up.</p>`);
+<p>Results show a segmented report with verdict, findings, and sources.</p>`);
             return;
           }
           researchPipeline(rQuery,rImage);
@@ -6656,7 +6770,7 @@ ${agentNote}`);
     // ── Config Import (shared by hash, file drop, paste) ──
     const CONFIG_KEYS={
       aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
-      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',
+      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
@@ -7080,7 +7194,14 @@ ${agentNote}`);
         const clean={...cfg};delete clean._session;
         const count=importConfig(clean);
         applyVisualConfig();
-        showToast(hasSession?`Session active — ${formatTimeLeft(cfg._session.expiresAt-Date.now())} left`:`Imported ${count} settings`,'ok');
+        const nItems=fields.slice(0,6).map(f=>{
+          let v=cfg[f];
+          if(typeof v==='string'&&v.length>20)v=v.slice(0,16)+'...';
+          if(['aiKey','whisperKey','ttsKey','tgToken','gwToken','pinHash'].includes(f))v=typeof cfg[f]==='string'?(cfg[f].slice(0,8)+'...'):String(cfg[f]);
+          return{label:f,value:String(v||''),badge:'updated'};
+        });
+        if(fields.length>6)nItems.push({label:`+${fields.length-6} more`,value:'',badge:''});
+        showNotification(hasSession?'Session Active':`${count} Settings Applied`,nItems);
         haptic('success');
         if(cfg.botGreeting){
           setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
