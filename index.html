@@ -55,6 +55,8 @@
     .logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);user-select:none;letter-spacing:-0.01em}
     .logo svg{width:18px;height:18px}
     .topbar-r{margin-left:auto;display:flex;align-items:center;gap:6px}
+    .session-badge{display:flex;align-items:center;padding:3px 8px;border-radius:100px;background:rgba(13,148,136,0.12);color:var(--teal);font-size:9px;font-weight:600;cursor:help;letter-spacing:0.02em}
+    .session-badge.hidden{display:none}
     .webhook-badge{display:flex;align-items:center;padding:3px 6px;border-radius:100px;background:rgba(251,146,60,0.15);color:#fb923c;cursor:help;animation:webhook-pulse 2s ease-in-out infinite}
     .webhook-badge.hidden{display:none}
     @keyframes webhook-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
@@ -720,6 +722,7 @@
     </div>
     <button class="new-chat-btn" id="newChatBtn" title="New chat">+</button>
     <div class="topbar-r">
+      <div class="session-badge hidden" id="sessionBadge" title="Time-limited session active">Session</div>
       <div class="webhook-badge hidden" id="webhookBadge" title="Webhook active — messages are forwarded externally">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </div>
@@ -3076,6 +3079,103 @@ Rules:
     }
 
     // ── Encrypted Share Link ─────────────────────────────
+    // ── Ephemeral Sessions (Time-Fused Links) ──────────
+    function getSession(){try{return JSON.parse(localStorage.getItem('tc-session'))}catch{return null}}
+    function setSession(s){if(s)localStorage.setItem('tc-session',JSON.stringify(s));else localStorage.removeItem('tc-session')}
+
+    function parseDuration(str){
+      const m=str.match(/^(\d+)(m|h|d|w)$/i);
+      if(!m)return null;
+      const n=parseInt(m[1]);
+      const unit=m[2].toLowerCase();
+      const mult={m:60000,h:3600000,d:86400000,w:604800000};
+      return n*(mult[unit]||86400000);
+    }
+
+    function formatTimeLeft(ms){
+      if(ms<=0)return 'expired';
+      const mins=Math.floor(ms/60000);
+      if(mins<60)return `${mins}m`;
+      const hrs=Math.floor(mins/60);
+      if(hrs<24)return `${hrs}h ${mins%60}m`;
+      const days=Math.floor(hrs/24);
+      return `${days}d ${hrs%24}h`;
+    }
+
+    function checkSessionExpiry(){
+      const s=getSession();
+      if(!s||!s.expiresAt)return;
+      if(Date.now()>=s.expiresAt){
+        // Session expired — wipe gateway creds
+        const k=getK();
+        delete k.gwUrl;delete k.gwToken;
+        if(k.mode==='agent'){
+          const agents=getAgents();
+          agents.forEach(a=>{delete a.url;delete a.token});
+          setAgents(agents);
+        }
+        setK(k);setSession(null);
+        updateStatus();updateSessionBadge();
+        showToast('Session expired — gateway access removed','err');
+        haptic('error');
+      }
+    }
+
+    function updateSessionBadge(){
+      const badge=document.getElementById('sessionBadge');
+      if(!badge)return;
+      const s=getSession();
+      if(!s||!s.expiresAt){badge.classList.add('hidden');return}
+      const left=s.expiresAt-Date.now();
+      if(left<=0){checkSessionExpiry();return}
+      badge.classList.remove('hidden');
+      badge.textContent=`Session \u00b7 ${formatTimeLeft(left)}`;
+      badge.title=`Session from ${s.createdBy||'unknown'}\nExpires: ${new Date(s.expiresAt).toLocaleString()}${s.label?'\nLabel: '+s.label:''}`;
+    }
+
+    // Check session every 60s
+    setInterval(()=>{checkSessionExpiry();updateSessionBadge()},60000);
+
+    async function createSessionLink(durationStr,label){
+      const ms=parseDuration(durationStr);
+      if(!ms){showToast('Invalid duration. Use: 1h, 7d, 2w, 30d','err');return}
+      sysBubble('<p style="color:var(--text-3)">Creating session link...</p>');
+      try{
+        const k=getK();
+        const passphrase=generatePassphrase();
+        // Build the config payload with session metadata
+        const payload=JSON.parse(buildConfigPayload(true));
+        payload._session={
+          id:Math.random().toString(36).slice(2,8),
+          expiresAt:Date.now()+ms,
+          createdBy:k.botName||'TealClaw',
+          label:label||''
+        };
+        const json=JSON.stringify(payload);
+        const blob=await encryptConfig(json,passphrase);
+        const url=location.origin+'/#config=enc:'+blob;
+        removeLast();
+        const expDate=new Date(Date.now()+ms);
+        sysBubble(`<div style="text-align:center">
+          <h3 style="margin-bottom:12px">Session Link Created</h3>
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:6px">Expires: <strong>${expDate.toLocaleDateString()} ${expDate.toLocaleTimeString()}</strong> (${formatTimeLeft(ms)})</p>
+          ${label?`<p style="font-size:11px;color:var(--text-3);margin-bottom:12px">Label: ${esc(label)}</p>`:''}
+          <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);padding:10px;margin-bottom:12px;word-break:break-all;font-family:var(--mono);font-size:9px;max-height:80px;overflow:auto;text-align:left">${esc(url)}</div>
+          <button class="btn btn-teal" id="sessCopyLink" style="margin-bottom:16px;width:100%">Copy Session Link</button>
+          <div style="margin-bottom:8px;font-size:11px;color:var(--text-3)">Passphrase (share separately):</div>
+          <div style="font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:0.12em;color:var(--teal);margin-bottom:12px;user-select:all">${esc(passphrase)}</div>
+          <button class="btn btn-ghost" id="sessCopyPass">Copy Passphrase</button>
+          <p style="font-size:10px;color:var(--text-3);margin-top:16px">After expiry, the recipient's gateway access is automatically removed. Your actual tokens stay safe.</p>
+        </div>`);
+        const last=document.querySelector('.chat-bubble:last-child');
+        last?.querySelector('#sessCopyLink')?.addEventListener('click',()=>{navigator.clipboard?.writeText(url);showToast('Session link copied','ok');haptic('success')});
+        last?.querySelector('#sessCopyPass')?.addEventListener('click',()=>{navigator.clipboard?.writeText(passphrase);showToast('Passphrase copied','ok');haptic('success')});
+      }catch(e){
+        removeLast();
+        sysBubble(`<p style="color:var(--err)">Session creation failed: ${esc(String(e))}</p>`);
+      }
+    }
+
     async function generateEncryptedLink(){
       sysBubble('<p style="color:var(--text-3)">Encrypting config...</p>');
       try{
@@ -3609,7 +3709,7 @@ Rules:
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/imagine','/telegram','/help'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/imagine','/telegram','/help','/save','/session'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -3640,6 +3740,9 @@ Rules:
 <li><code>/template</code> -- browse and apply style templates</li>
 <li><code>/save</code> -- save current chat to Obsidian</li>
 <li><code>/save idea your thought</code> -- quick capture idea to Obsidian</li>
+<li><code>/session create 7d</code> -- create a time-limited share link</li>
+<li><code>/session info</code> -- show current session status</li>
+<li><code>/session end</code> -- end session early</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -3798,6 +3901,59 @@ Rules:
         }
         if(text.startsWith('/qr')){
           generateQR();return;
+        }
+        if(text.startsWith('/session')){
+          const sArg=text.slice(8).trim();
+          if(!sArg||sArg==='help'){
+            sysBubble(`<h3>Ephemeral Sessions</h3>
+<p>Share time-limited access to your gateway. After expiry, the recipient's access is automatically removed.</p>
+<ul>
+<li><code>/session create 7d</code> — create a 7-day session link</li>
+<li><code>/session create 1h For Jake</code> — with label</li>
+<li><code>/session info</code> — show current session status</li>
+<li><code>/session end</code> — end session early (wipes gateway creds)</li>
+</ul>
+<p style="font-size:11px;color:var(--text-2)">Durations: <code>30m</code>, <code>12h</code>, <code>7d</code>, <code>2w</code></p>`);
+            return;
+          }
+          if(sArg==='info'){
+            const s=getSession();
+            if(!s){sysBubble('<p>No active session. You have full access.</p>');return}
+            const left=s.expiresAt-Date.now();
+            sysBubble(`<div style="text-align:center">
+              <h3>Active Session</h3>
+              <p style="font-size:12px;color:var(--text-2)">From: <strong>${esc(s.createdBy||'unknown')}</strong></p>
+              ${s.label?`<p style="font-size:11px;color:var(--text-3)">Label: ${esc(s.label)}</p>`:''}
+              <p style="font-size:14px;font-weight:700;color:${left>0?'var(--teal)':'var(--err)'}">
+                ${left>0?formatTimeLeft(left)+' remaining':'Expired'}
+              </p>
+              <p style="font-size:11px;color:var(--text-3)">Expires: ${new Date(s.expiresAt).toLocaleString()}</p>
+              <button class="btn btn-ghost" id="sessEndBtn" style="margin-top:12px">End Session Early</button>
+            </div>`);
+            document.querySelector('.chat-bubble:last-child #sessEndBtn')?.addEventListener('click',()=>{
+              setSession(null);updateSessionBadge();
+              const k=getK();delete k.gwUrl;delete k.gwToken;setK(k);
+              updateStatus();showToast('Session ended','ok');haptic('success');
+            });
+            return;
+          }
+          if(sArg==='end'){
+            const s=getSession();
+            if(!s){showToast('No active session','err');return}
+            setSession(null);updateSessionBadge();
+            const k=getK();delete k.gwUrl;delete k.gwToken;setK(k);
+            updateStatus();showToast('Session ended — gateway access removed','ok');haptic('success');
+            return;
+          }
+          if(sArg.startsWith('create ')){
+            const parts=sArg.slice(7).trim().split(/\s+/);
+            const duration=parts[0];
+            const label=parts.slice(1).join(' ');
+            createSessionLink(duration,label);
+            return;
+          }
+          showToast('Unknown: try /session help','err');
+          return;
         }
         if(text.startsWith('/share')){
           generateEncryptedLink();return;
@@ -4802,24 +4958,26 @@ Rules:
       setTimeout(()=>input.focus(),100);
     }
     function showConfigImportConfirm(cfg){
-      const fields=Object.keys(cfg).filter(k=>k!=='agents');
+      const fields=Object.keys(cfg).filter(k=>k!=='agents'&&k!=='_session');
       const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode'].some(s=>cfg[s]);
       const hasWebhook=!!cfg.webhookUrl;
       const hasCSS=!!cfg.customCSS;
+      const hasSession=!!cfg._session;
       const warns=[];
       if(hasSensitive)warns.push('API keys');
       if(hasWebhook)warns.push('webhook URL (messages will be forwarded)');
       if(hasCSS)warns.push('custom CSS');
       if(cfg.agents)warns.push(`${cfg.agents.length} agent(s)`);
+      const sessionHtml=hasSession?`<p style="font-size:11px;color:var(--teal);margin:8px 0">Session from <strong>${esc(cfg._session.createdBy||'unknown')}</strong> — expires ${new Date(cfg._session.expiresAt).toLocaleDateString()}${cfg._session.label?' ('+esc(cfg._session.label)+')':''}</p>`:'';
       const warnHtml=warns.length?`<p style="color:var(--err);font-size:11px;margin:8px 0">Includes: ${esc(warns.join(', '))}</p>`:'';
       sysBubble(`<div style="text-align:center">
-        <h3>Import Configuration?</h3>
-        <p style="font-size:12px;color:var(--text-2);margin:8px 0">A shared config wants to apply <strong>${fields.length}</strong> setting${fields.length===1?'':'s'}.</p>
-        ${warnHtml}
+        <h3>${hasSession?'Session Invitation':'Import Configuration?'}</h3>
+        <p style="font-size:12px;color:var(--text-2);margin:8px 0">${hasSession?'Someone shared a time-limited session with you.':'A shared config wants to apply'} <strong>${fields.length}</strong> setting${fields.length===1?'':'s'}.</p>
+        ${sessionHtml}${warnHtml}
         <div style="font-size:11px;color:var(--text-2);max-height:120px;overflow-y:auto;text-align:left;background:var(--bg-input);border-radius:var(--r-sm);padding:8px;margin:8px 0;font-family:var(--mono)">${fields.map(f=>esc(f)).join(', ')}</div>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
           <button class="btn btn-ghost" id="cfgImportCancel">Cancel</button>
-          <button class="btn btn-teal" id="cfgImportAccept">Apply ${fields.length} Settings</button>
+          <button class="btn btn-teal" id="cfgImportAccept">${hasSession?'Join Session':'Apply '+fields.length+' Settings'}</button>
         </div>
       </div>`);
       const last=document.querySelector('.chat-bubble:last-child');
@@ -4827,9 +4985,16 @@ Rules:
         showToast('Import cancelled','ok');haptic('light');
       });
       last?.querySelector('#cfgImportAccept')?.addEventListener('click',()=>{
-        const count=importConfig(cfg);
+        // Store session metadata if present
+        if(cfg._session){
+          setSession(cfg._session);
+          updateSessionBadge();
+        }
+        const clean={...cfg};delete clean._session;
+        const count=importConfig(clean);
         applyVisualConfig();
-        showToast(`Imported ${count} settings`,'ok');haptic('success');
+        showToast(hasSession?`Session active — ${formatTimeLeft(cfg._session.expiresAt-Date.now())} left`:`Imported ${count} settings`,'ok');
+        haptic('success');
         if(cfg.botGreeting){
           setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
         }
@@ -5015,6 +5180,9 @@ Rules:
     loadUI();
     // PIN lock on startup
     checkPinLock();
+    // Session expiry check + badge
+    checkSessionExpiry();
+    updateSessionBadge();
 
     // ── IndexedDB migration + init ───────────────────
     (async function initConvDB(){

@@ -33,6 +33,10 @@
 | `/save` | Save current chat to Obsidian vault |
 | `/save idea text` | Quick-capture idea to Obsidian Ideas folder |
 | `/save setup` | Show Obsidian integration help |
+| `/session create 7d` | Create a time-limited session link (1h, 7d, 2w, etc.) |
+| `/session create 1h For Jake` | Session link with a label |
+| `/session info` | Show current session status and expiry |
+| `/session end` | End session early, wipe gateway credentials |
 
 ## Command Details
 
