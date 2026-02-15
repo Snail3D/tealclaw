@@ -383,6 +383,18 @@ Example -- agent responds with text AND actions in one message:
 The user sees: "Here is your new purple theme!" plus a badge "3 actions executed".
 The config updates live, a toast appears, and a note saves to Obsidian.
 
+EPHEMERAL SESSIONS -- Create time-limited session links that grant
+temporary access to your TealClaw gateway. Type /session create 7d to
+generate an encrypted share link with an embedded expiry. The recipient
+opens the link, enters the passphrase, and gets gateway access for the
+specified duration (30m, 1h, 7d, 2w, etc.). When the session expires,
+gateway credentials (gwUrl, gwToken) are automatically wiped from
+localStorage. A topbar badge shows the remaining time. Use /session info
+to check status, /session end to revoke early. Sessions are stored in
+localStorage as _session metadata with createdAt, expiresAt, and an
+optional label. Perfect for giving friends, clients, or collaborators
+temporary access without sharing permanent credentials.
+
 CUSTOM CSS -- The ultimate escape hatch. Inject arbitrary CSS rules for
 anything the built-in fields do not cover.
 
@@ -1368,6 +1380,10 @@ Users can type these directly in the TealClaw chat:
 | /save | Save current chat to Obsidian vault |
 | /save idea text | Quick-capture idea to Obsidian Ideas folder |
 | /save setup | Show Obsidian integration help |
+| /session create 7d | Create a time-limited session link (1h, 7d, 2w, etc.) |
+| /session create 1h Label | Session link with a custom label |
+| /session info | Show current session status and expiry |
+| /session end | End session early, wipe gateway credentials |
 
 Users can also:
 - Paste a bare API key (auto-detected by prefix)
