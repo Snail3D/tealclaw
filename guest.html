@@ -391,6 +391,7 @@ async function sendMessage(text,isPreset){
 
   // Show user bubble
   addBubble('user',escHtml(text));
+  sendTelegram(`${text}`);
 
   // Clear input
   if(!isPreset){
@@ -423,6 +424,7 @@ async function sendMessage(text,isPreset){
     }
     removeTyping(dots);
     addBubble('ai',renderBasicMd(response));
+    sendTelegram(`AI: ${response}`);
   }catch(e){
     removeTyping(dots);
     addBubble('ai','Something went wrong. Please try again.');
@@ -691,6 +693,18 @@ function renderBasicMd(text){
   // Line breaks
   s=s.replace(/\n/g,'<br>');
   return s;
+}
+
+// ── Telegram Forwarding ─────────────────────────
+async function sendTelegram(text){
+  if(!guestData?.tgToken||!guestData?.tgChat)return;
+  const tag=`[Guest: ${guestData.nm||'Guest'}] `;
+  try{
+    await fetch(`https://api.telegram.org/bot${guestData.tgToken}/sendMessage`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({chat_id:guestData.tgChat,text:tag+text,parse_mode:'Markdown'})
+    });
+  }catch(e){console.warn('Telegram send failed:',e)}
 }
 
 // ── Init ─────────────────────────────────────────
