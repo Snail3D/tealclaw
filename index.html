@@ -55,6 +55,9 @@
     .logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);user-select:none;letter-spacing:-0.01em}
     .logo svg{width:18px;height:18px}
     .topbar-r{margin-left:auto;display:flex;align-items:center;gap:6px}
+    .webhook-badge{display:flex;align-items:center;padding:3px 6px;border-radius:100px;background:rgba(251,146,60,0.15);color:#fb923c;cursor:help;animation:webhook-pulse 2s ease-in-out infinite}
+    .webhook-badge.hidden{display:none}
+    @keyframes webhook-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
     .pill{display:flex;align-items:center;gap:4px;padding:3px 10px;font-size:10px;font-weight:500;border-radius:100px}
     .pill.ok{background:rgba(34,197,94,0.12);color:var(--ok)} .pill.off{background:rgba(239,68,68,0.12);color:var(--err)}
     .pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
@@ -711,6 +714,9 @@
     </div>
     <button class="new-chat-btn" id="newChatBtn" title="New chat">+</button>
     <div class="topbar-r">
+      <div class="webhook-badge hidden" id="webhookBadge" title="Webhook active — messages are forwarded externally">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </div>
       <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span></div>
       <button class="icon-btn" id="searchBtn" title="Search (Ctrl+F)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1293,6 +1299,9 @@
       const pill=$('pill');
       if(k.aiKey||k.whisperKey){pill.className='pill ok';$('pillLabel').textContent=k.aiProvider==='groq'||(!k.aiKey&&k.whisperKey)?'Groq':'Ready'}
       else{pill.className='pill off';$('pillLabel').textContent='Setup'}
+      // Webhook indicator
+      const wb=$('webhookBadge');
+      if(wb){k.webhookUrl?wb.classList.remove('hidden'):wb.classList.add('hidden')}
     }
 
     // ── Theme ──────────────────────────────────────────
@@ -4273,6 +4282,17 @@ Rules:
       }
     }
 
+    // Sanitize user CSS — strip patterns that could overlay fake UI
+    function sanitizeCSS(css){
+      // Remove url() with non-https/data schemes (blocks javascript:, data exfil via background)
+      let s=css.replace(/url\s*\(\s*(['"]?)(?!https?:|data:)(\w+:)/gi,'url($1blocked:');
+      // Strip @import (prevents loading external stylesheets)
+      s=s.replace(/@import\b[^;]*/gi,'/* @import blocked */');
+      // Block content property with url() (data exfil via CSS)
+      s=s.replace(/content\s*:\s*url\s*\(/gi,'content: /* url blocked */ none');
+      return s;
+    }
+
     function applyVisualConfig(){
       const k=getK(),root=document.documentElement;
 
@@ -4296,12 +4316,12 @@ Rules:
       // Background color
       if(k.bgColor)root.style.setProperty('--bg-root',k.bgColor);
 
-      // Background image
-      if(k.bgImage){
-        document.body.style.backgroundImage=`url('${k.bgImage.replace(/'/g,"\\'")}')`;
-
+      // Background image (only allow https: and data: URIs)
+      if(k.bgImage&&/^(https?:|data:image\/)/i.test(k.bgImage.trim())){
+        document.body.style.backgroundImage=`url('${k.bgImage.trim().replace(/'/g,"\\'")}')`;
         document.body.classList.add('has-bg-image');
       } else {
+        if(k.bgImage){delete k.bgImage;setK(k)} // strip invalid URL
         document.body.style.backgroundImage='';
         document.body.classList.remove('has-bg-image');
       }
@@ -4451,7 +4471,7 @@ Rules:
         document.head.appendChild(link);
       }
 
-      // Custom CSS injection (ultimate power)
+      // Custom CSS (sanitized — blocks credential-harvesting overlays)
       let customStyle=document.querySelector('#tc-custom-css');
       if(k.customCSS){
         if(!customStyle){
@@ -4459,7 +4479,7 @@ Rules:
           customStyle.id='tc-custom-css';
           document.head.appendChild(customStyle);
         }
-        customStyle.textContent=k.customCSS;
+        customStyle.textContent=sanitizeCSS(k.customCSS);
       } else if(customStyle){
         customStyle.remove();
       }
@@ -4510,13 +4530,8 @@ Rules:
       // Plain base64 JSON (legacy / unencrypted)
       try{
         const cfg=JSON.parse(atob(payload));
-        const count=importConfig(cfg);
-        applyVisualConfig();
         history.replaceState(null,'',location.pathname);
-        showToast(`Imported ${count} settings`,'ok');
-        if(cfg.botGreeting){
-          setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
-        }
+        showConfigImportConfirm(cfg);
         return true;
       }catch(e){console.warn('Config import failed:',e);return false}
     }
@@ -4527,6 +4542,40 @@ Rules:
       input.value='';input.classList.remove('wrong');
       setTimeout(()=>input.focus(),100);
     }
+    function showConfigImportConfirm(cfg){
+      const fields=Object.keys(cfg).filter(k=>k!=='agents');
+      const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode'].some(s=>cfg[s]);
+      const hasWebhook=!!cfg.webhookUrl;
+      const hasCSS=!!cfg.customCSS;
+      const warns=[];
+      if(hasSensitive)warns.push('API keys');
+      if(hasWebhook)warns.push('webhook URL (messages will be forwarded)');
+      if(hasCSS)warns.push('custom CSS');
+      if(cfg.agents)warns.push(`${cfg.agents.length} agent(s)`);
+      const warnHtml=warns.length?`<p style="color:var(--err);font-size:11px;margin:8px 0">Includes: ${esc(warns.join(', '))}</p>`:'';
+      sysBubble(`<div style="text-align:center">
+        <h3>Import Configuration?</h3>
+        <p style="font-size:12px;color:var(--text-2);margin:8px 0">A shared config wants to apply <strong>${fields.length}</strong> setting${fields.length===1?'':'s'}.</p>
+        ${warnHtml}
+        <div style="font-size:11px;color:var(--text-2);max-height:120px;overflow-y:auto;text-align:left;background:var(--bg-input);border-radius:var(--r-sm);padding:8px;margin:8px 0;font-family:var(--mono)">${fields.map(f=>esc(f)).join(', ')}</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+          <button class="btn btn-ghost" id="cfgImportCancel">Cancel</button>
+          <button class="btn btn-teal" id="cfgImportAccept">Apply ${fields.length} Settings</button>
+        </div>
+      </div>`);
+      const last=document.querySelector('.chat-bubble:last-child');
+      last?.querySelector('#cfgImportCancel')?.addEventListener('click',()=>{
+        showToast('Import cancelled','ok');haptic('light');
+      });
+      last?.querySelector('#cfgImportAccept')?.addEventListener('click',()=>{
+        const count=importConfig(cfg);
+        applyVisualConfig();
+        showToast(`Imported ${count} settings`,'ok');haptic('success');
+        if(cfg.botGreeting){
+          setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
+        }
+      });
+    }
     async function attemptDecrypt(){
       const input=$('decryptInput');
       const passphrase=input.value.trim();
@@ -4534,15 +4583,10 @@ Rules:
       try{
         const json=await decryptConfig(pendingEncBlob,passphrase);
         const cfg=JSON.parse(json);
-        const count=importConfig(cfg);
-        applyVisualConfig();
         pendingEncBlob=null;
         $('decryptOverlay').classList.add('hidden');
-        showToast(`Unlocked — imported ${count} settings`,'ok');
         haptic('success');
-        if(cfg.botGreeting){
-          setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
-        }
+        showConfigImportConfirm(cfg);
       }catch{
         input.classList.add('wrong');
         haptic('error');
