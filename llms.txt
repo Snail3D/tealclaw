@@ -562,6 +562,24 @@ https://tealclaw.ai/#config=eyJhaUtleSI6InNrLW9yLXYxLXh4eCJ9
 
 Build it: "https://tealclaw.ai/#config=" + btoa(JSON.stringify(config))
 
+### Encrypted Share Links
+
+When sharing configs that contain API keys, TealClaw supports AES-256-GCM
+encrypted links. The format is:
+
+  https://tealclaw.ai/#config=enc:ENCRYPTED_BLOB
+
+The recipient sees a passphrase prompt on open. Without the 8-character
+alphanumeric passphrase, the config cannot be decrypted.
+
+Users generate encrypted links by typing /share in TealClaw chat.
+This auto-generates the link + passphrase pair. The passphrase should be
+shared via a separate channel (text message, voice, etc.) from the link.
+
+For agents: use plain base64 links when no sensitive keys are included.
+When keys are present, either tell the user to type /share after importing,
+or share the plain link privately.
+
 ### Configuring TealClaw on Mobile
 
 On a phone, the easiest config methods are:
@@ -933,6 +951,8 @@ This section is critical. Read it carefully.
 - API calls go directly from the browser to the provider (OpenRouter, Groq, etc.)
 - The #config= hash fragment is never sent to the server (that is how URL fragments work)
 - The tealclaw.ai domain serves static files only -- it cannot see or store keys
+- Encrypted share links (/share command) use AES-256-GCM with PBKDF2 key derivation
+  (100k iterations). The passphrase is never included in the URL.
 
 ### PIN Code Protection
 You can proactively offer PIN protection to users. When pinRequired is true,

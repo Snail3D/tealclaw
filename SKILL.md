@@ -62,6 +62,20 @@ webbrowser.open(f"https://tealclaw.ai/#config={payload}")
 
 The user's browser opens, TealClaw loads, config imports, done. No copy-paste needed.
 
+### Encrypted Share Links (Recommended When Keys Are Included)
+
+When the config contains API keys, use the encrypted format so keys aren't visible in the URL:
+
+```
+https://tealclaw.ai/#config=enc:ENCRYPTED_BLOB
+```
+
+The `enc:` prefix tells TealClaw the payload is AES-256-GCM encrypted. The user will be prompted for an 8-character alphanumeric passphrase to decrypt.
+
+**Users can generate encrypted links** by typing `/share` in TealClaw chat. This auto-generates the passphrase.
+
+**Agents generating links programmatically:** Use the plain base64 method (above) for configs without sensitive keys. For configs with API keys, tell the user to type `/share` in TealClaw after importing their config, or share the plain link over a secure channel.
+
 ### If You Can Generate Files
 
 Write a `.json` file and tell the user to drag it into the TealClaw chat window.

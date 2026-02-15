@@ -250,6 +250,18 @@
     .pin-key.wide{grid-column:span 1;font-size:13px;font-weight:500}
     @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
+    /* ── Decrypt Prompt ────────────────────────────────── */
+    .decrypt-overlay{position:fixed;inset:0;z-index:9998;background:var(--bg-root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:1;transition:opacity 0.3s}
+    .decrypt-overlay.hidden{opacity:0;pointer-events:none;display:none}
+    .decrypt-overlay h2{font-size:18px;font-weight:700;color:var(--teal)}
+    .decrypt-overlay p{font-size:12px;color:var(--text-2);max-width:300px;text-align:center}
+    .decrypt-input{width:220px;padding:14px 18px;font-size:20px;font-weight:600;font-family:var(--mono);letter-spacing:0.15em;text-align:center;color:var(--text);background:var(--bg-card);border:2px solid var(--border-2);border-radius:var(--r-lg);outline:none;transition:border 0.2s;text-transform:uppercase}
+    .decrypt-input:focus{border-color:var(--teal)}
+    .decrypt-input.wrong{border-color:var(--err);animation:shake 0.3s}
+    .decrypt-btn{padding:12px 32px;font-size:14px;font-weight:600;font-family:var(--font);color:#fff;background:var(--teal);border:none;border-radius:var(--r-md);cursor:pointer;transition:background 0.2s}
+    .decrypt-btn:hover{background:var(--teal-hover)}
+    .decrypt-hint{font-size:10px;color:var(--text-3)}
+
     /* ── Typing Animation ──────────────────────────────── */
     .typing-cursor{display:inline-block;width:2px;height:1.1em;background:var(--teal);margin-left:1px;vertical-align:text-bottom;border-radius:1px;animation:cursor-blink 0.7s step-end infinite}
     @keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
@@ -568,6 +580,14 @@
     </ul>
   </div>
   <script>document.getElementById('staticContent').style.display='none'</script>
+
+  <div class="decrypt-overlay hidden" id="decryptOverlay">
+    <h2>Encrypted Config</h2>
+    <p>This link is protected. Enter the 8-character passphrase to unlock.</p>
+    <input class="decrypt-input" id="decryptInput" type="text" maxlength="8" placeholder="A1b2C3d4" autocomplete="off" spellcheck="false">
+    <button class="decrypt-btn" id="decryptBtn">Unlock</button>
+    <div class="decrypt-hint">Ask the person who sent you this link for the passphrase</div>
+  </div>
 
   <div class="pin-overlay hidden" id="pinOverlay">
     <h2 id="pinTitle">Enter PIN</h2>
@@ -2427,6 +2447,31 @@ Rules:
       showToast('QR code ready','ok');haptic('success');
     }
 
+    // ── Encrypted Share Link ─────────────────────────────
+    async function generateEncryptedLink(){
+      sysBubble('<p style="color:var(--text-3)">Encrypting config...</p>');
+      try{
+        const{url,passphrase}=await exportEncryptedUrl(true);
+        removeLast();
+        sysBubble(`<div style="text-align:center">
+          <h3 style="margin-bottom:12px">Encrypted Share Link</h3>
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:16px">Your config is AES-256 encrypted. Share the link and passphrase <strong>separately</strong>.</p>
+          <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);padding:10px;margin-bottom:12px;word-break:break-all;font-family:var(--mono);font-size:9px;max-height:80px;overflow:auto;text-align:left">${esc(url)}</div>
+          <button class="btn btn-teal" id="encCopyLink" style="margin-bottom:16px;width:100%">Copy Encrypted Link</button>
+          <div style="margin-bottom:8px;font-size:11px;color:var(--text-3)">Passphrase (share separately):</div>
+          <div style="font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:0.12em;color:var(--teal);margin-bottom:12px;user-select:all">${esc(passphrase)}</div>
+          <button class="btn btn-ghost" id="encCopyPass">Copy Passphrase</button>
+          <p style="font-size:10px;color:var(--text-3);margin-top:16px">The recipient opens the link and enters the passphrase to unlock. API keys and all settings are included.</p>
+        </div>`);
+        const last=document.querySelector('.chat-bubble:last-child');
+        last?.querySelector('#encCopyLink')?.addEventListener('click',()=>{navigator.clipboard?.writeText(url);showToast('Encrypted link copied','ok');haptic('success')});
+        last?.querySelector('#encCopyPass')?.addEventListener('click',()=>{navigator.clipboard?.writeText(passphrase);showToast('Passphrase copied','ok');haptic('success')});
+      }catch(e){
+        removeLast();
+        sysBubble(`<p style="color:var(--err)">Encryption failed: ${esc(String(e))}</p>`);
+      }
+    }
+
     // ── Webhooks ────────────────────────────────────────
     async function fireWebhook(event,data){
       const k=getK();if(!k.webhookUrl)return;
@@ -2768,7 +2813,8 @@ Rules:
 <li><code>/imagine prompt</code> -- generate an image</li>
 <li><code>/export</code> -- download chat as markdown file</li>
 <li><code>/profile save|load|list|delete name</code> -- manage config profiles</li>
-<li><code>/qr</code> -- generate QR code to share your config</li>
+<li><code>/share</code> -- create an encrypted share link (includes API keys, protected by passphrase)</li>
+<li><code>/qr</code> -- generate QR code to share your config (visual settings only, no keys)</li>
 <li><code>/telegram</code> -- set up Telegram forwarding</li>
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
 <li><code>/keys</code> -- show what's configured</li>
@@ -2882,6 +2928,9 @@ Rules:
         }
         if(text.startsWith('/qr')){
           generateQR();return;
+        }
+        if(text.startsWith('/share')){
+          generateEncryptedLink();return;
         }
         if(cmd==='/template'||cmd==='/templates'){
           showTemplateGallery();return;
@@ -3500,32 +3549,101 @@ Rules:
       }
     }
 
+    // ── AES-GCM Encryption (Web Crypto API) ────────────
+    async function deriveKey(passphrase){
+      const enc=new TextEncoder();
+      const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(passphrase),'PBKDF2',false,['deriveKey']);
+      return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('tealclaw-v1'),iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+    }
+    async function encryptConfig(json,passphrase){
+      const key=await deriveKey(passphrase);
+      const iv=crypto.getRandomValues(new Uint8Array(12));
+      const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(json));
+      // Combine iv + ciphertext, encode as base64
+      const buf=new Uint8Array(iv.length+ct.byteLength);
+      buf.set(iv);buf.set(new Uint8Array(ct),iv.length);
+      return btoa(String.fromCharCode(...buf));
+    }
+    async function decryptConfig(blob,passphrase){
+      const raw=Uint8Array.from(atob(blob),c=>c.charCodeAt(0));
+      const iv=raw.slice(0,12);
+      const ct=raw.slice(12);
+      const key=await deriveKey(passphrase);
+      const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+      return new TextDecoder().decode(pt);
+    }
+    function generatePassphrase(){
+      const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      return Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>chars[b%chars.length]).join('');
+    }
+
     // URL hash fragment (#config=BASE64) never leaves the browser.
+    // Supports both plain base64 JSON and encrypted (enc: prefix) configs.
+    let pendingEncBlob=null;
     function importFromHash(){
       const h=location.hash;
       if(!h.startsWith('#config='))return false;
+      const payload=h.slice(8);
+      // Encrypted config: starts with enc: prefix
+      if(payload.startsWith('enc:')){
+        pendingEncBlob=payload.slice(4);
+        history.replaceState(null,'',location.pathname);
+        showDecryptPrompt();
+        return true;
+      }
+      // Plain base64 JSON (legacy / unencrypted)
       try{
-        const cfg=JSON.parse(atob(h.slice(8)));
+        const cfg=JSON.parse(atob(payload));
         const count=importConfig(cfg);
         applyVisualConfig();
         history.replaceState(null,'',location.pathname);
         showToast(`Imported ${count} settings`,'ok');
-        // Show custom greeting if provided
         if(cfg.botGreeting){
           setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
         }
         return true;
       }catch(e){console.warn('Config import failed:',e);return false}
     }
+    function showDecryptPrompt(){
+      const overlay=$('decryptOverlay');
+      const input=$('decryptInput');
+      overlay.classList.remove('hidden');
+      input.value='';input.classList.remove('wrong');
+      setTimeout(()=>input.focus(),100);
+    }
+    async function attemptDecrypt(){
+      const input=$('decryptInput');
+      const passphrase=input.value.trim();
+      if(passphrase.length<1)return;
+      try{
+        const json=await decryptConfig(pendingEncBlob,passphrase);
+        const cfg=JSON.parse(json);
+        const count=importConfig(cfg);
+        applyVisualConfig();
+        pendingEncBlob=null;
+        $('decryptOverlay').classList.add('hidden');
+        showToast(`Unlocked — imported ${count} settings`,'ok');
+        haptic('success');
+        if(cfg.botGreeting){
+          setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
+        }
+      }catch{
+        input.classList.add('wrong');
+        haptic('error');
+        setTimeout(()=>input.classList.remove('wrong'),400);
+        input.value='';input.focus();
+      }
+    }
+    $('decryptBtn').addEventListener('click',attemptDecrypt);
+    $('decryptInput').addEventListener('keydown',e=>{if(e.key==='Enter')attemptDecrypt()});
 
-    // Export config as copyable hash URL (strips sensitive keys for sharing)
+    // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
     const CONFIG_DEFAULTS={ttsAutoPlay:true,gifEnabled:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,hideBmc:false};
 
-    function exportConfigUrl(includeSensitive=false){
+    function buildConfigPayload(includeSensitive=false){
       const k=getK();
       const agents=getAgents();
-      // Only include non-default, non-empty values to keep QR codes small
       const out={};
       for(const[key,val]of Object.entries(k)){
         if(val===''||val===null||val===undefined)continue;
@@ -3538,8 +3656,16 @@ Rules:
         sensitive.forEach(s=>{delete out[s]});
         if(out.agents)out.agents=out.agents.map(a=>({...a,token:undefined}));
       }
-      const json=JSON.stringify(out);
-      return location.origin+'/#config='+btoa(json);
+      return JSON.stringify(out);
+    }
+    function exportConfigUrl(includeSensitive=false){
+      return location.origin+'/#config='+btoa(buildConfigPayload(includeSensitive));
+    }
+    async function exportEncryptedUrl(includeSensitive=true){
+      const passphrase=generatePassphrase();
+      const json=buildConfigPayload(includeSensitive);
+      const blob=await encryptConfig(json,passphrase);
+      return{url:location.origin+'/#config=enc:'+blob,passphrase};
     }
 
     // ── PIN Code Lock ─────────────────────────────────
