@@ -2651,6 +2651,51 @@ Rules:
       return h;
     }
 
+    // ── Obsidian Integration ──────────────────────────────
+    function getObsidianVault(){return getK().obsidianVault||'ObsidianVault'}
+    function obsidianUri(action,params){
+      const q=new URLSearchParams(params).toString();
+      return `obsidian://${action}?${q}`;
+    }
+    function saveToObsidian(name,content,folder){
+      const vault=getObsidianVault();
+      const path=folder?`${folder}/${name}`:name;
+      const uri=obsidianUri('new',{vault,file:path,content,overwrite:'true'});
+      window.open(uri,'_self');
+      showToast('Saved to Obsidian','ok');haptic('success');
+    }
+    function chatToMarkdown(messages,title){
+      const k=getK();
+      const bot=k.botName||'TealClaw';
+      const now=new Date().toISOString();
+      let md=`---\ntags: [tealclaw, chat]\ncreated: ${now}\nsource: "[[TealClaw]]"\n---\n\n# ${title||'Chat'}\n\n`;
+      (messages||chatHistory).forEach(m=>{
+        const role=m.role==='user'?'You':bot;
+        const time=m.time||'';
+        md+=`### ${role}${time?' ('+time+')':''}\n${m.text||''}\n\n`;
+      });
+      return md;
+    }
+    function researchToMarkdown(query,data){
+      const now=new Date().toISOString();
+      let md=`---\ntags: [tealclaw, research]\ncreated: ${now}\nquery: "${(query||'').replace(/"/g,'\\"')}"\nsource: "[[TealClaw]]"\n---\n\n# Research: ${query||'Analysis'}\n\n`;
+      if(data.verdict)md+=`**Verdict:** ${data.verdict.label||'Complete'}\n\n`;
+      if(data.summary)md+=`> ${data.summary}\n\n`;
+      if(data.sections?.length){
+        data.sections.forEach(s=>{
+          md+=`## ${s.title||'Finding'}\n`;
+          if(s.content)md+=`${s.content}\n\n`;
+          if(s.bullets?.length)s.bullets.forEach(b=>md+=`- ${b}\n`);
+          md+='\n';
+        });
+      }
+      if(data.sources?.length){
+        md+='## Sources\n';
+        data.sources.forEach(s=>md+=`- ${s}\n`);
+      }
+      return md;
+    }
+
     async function researchPipeline(query,imageBase64){
       const k=getK();
       const groqKey=k.whisperKey||(k.aiProvider==='groq'?k.aiKey:'');
@@ -2739,7 +2784,19 @@ Rules:
 
         // Remove processing bubble and show formatted results
         removeLast();
-        const resultHtml=renderResearchHTML(data);
+        let resultHtml=renderResearchHTML(data);
+        // Obsidian save button
+        if(getK().obsidianVault){
+          const rId='research-save-'+Date.now();
+          resultHtml+=`<button class="btn btn-ghost" id="${rId}" style="margin-top:8px;font-size:11px;display:inline-flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7-7 7 7"/></svg> Save to Obsidian</button>`;
+          setTimeout(()=>{
+            document.getElementById(rId)?.addEventListener('click',()=>{
+              const slug=(query||'research').replace(/[^a-zA-Z0-9 ]/g,'').slice(0,50).trim().replace(/\s+/g,'-');
+              const name=`Research - ${slug} ${new Date().toISOString().slice(0,10)}`;
+              saveToObsidian(name,researchToMarkdown(query,data),'Resources');
+            });
+          },100);
+        }
         addBubble('ai',resultHtml,{raw:true});
         playReceiveSound();haptic('success');
 
@@ -3468,6 +3525,8 @@ Rules:
 <li><code>/clear all</code> -- delete all conversations and start fresh</li>
 <li><code>/voice</code> -- change TTS voice</li>
 <li><code>/template</code> -- browse and apply style templates</li>
+<li><code>/save</code> -- save current chat to Obsidian</li>
+<li><code>/save idea your thought</code> -- quick capture idea to Obsidian</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -3551,6 +3610,43 @@ Rules:
           sysBubble(`<h3>Voice Settings</h3>
 <p>Current voice: <code>${k.ttsVoice||'ThT5KcBeYPX7keBQBPPD'}</code> (Rachel default)</p>
 <p>To change, visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a>, copy a voice ID, and paste it in the chat.</p>`);
+          return;
+        }
+        if(text.startsWith('/save')){
+          const saveArg=text.slice(5).trim();
+          if(saveArg==='setup'||saveArg==='help'){
+            sysBubble(`<h3>Obsidian Integration</h3>
+<p>Save chats, ideas, and research to your Obsidian vault.</p>
+<p><strong>Commands:</strong></p>
+<ul>
+<li><code>/save</code> — save current chat</li>
+<li><code>/save idea your thought</code> — quick capture</li>
+<li><code>/save any text here</code> — save as note</li>
+</ul>
+<p><strong>Vault:</strong> <code>${esc(getObsidianVault())}</code>${getK().obsidianVault?'':' (default)'}</p>
+<p style="font-size:11px;color:var(--text-2)">To change: <code>{"obsidianVault": "YourVaultName"}</code></p>`);
+            return;
+          }
+          if(saveArg.startsWith('idea ')){
+            const idea=saveArg.slice(5).trim();
+            if(!idea){showToast('Usage: /save idea your thought here','err');return}
+            const now=new Date();
+            const name=`Idea - ${now.toISOString().slice(0,10)} ${now.toTimeString().slice(0,5).replace(':','')}`;
+            const md=`---\ntags: [tealclaw, idea]\ncreated: ${now.toISOString()}\nsource: "[[TealClaw]]"\n---\n\n# Idea\n\n${idea}\n`;
+            saveToObsidian(name,md,'Ideas');
+            return;
+          }
+          if(saveArg==='chat'||!saveArg){
+            const title=(chatHistory.find(m=>m.role==='user')?.text||'Chat').slice(0,40);
+            const slug=title.replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'-');
+            const name=`Chat - ${slug} ${new Date().toISOString().slice(0,10)}`;
+            saveToObsidian(name,chatToMarkdown(chatHistory,title),'Daily');
+            return;
+          }
+          // /save <custom text> — save as a quick note
+          const name=`Note - ${new Date().toISOString().slice(0,10)} ${new Date().toTimeString().slice(0,5).replace(':','')}`;
+          const md=`---\ntags: [tealclaw, note]\ncreated: ${new Date().toISOString()}\nsource: "[[TealClaw]]"\n---\n\n${saveArg}\n`;
+          saveToObsidian(name,md,'Daily');
           return;
         }
         if(text.startsWith('/research')){
@@ -4269,7 +4365,9 @@ Rules:
       // Gesture control
       gestureEnabled:'gestureEnabled',
       gestureBindings:'gestureBindings',
-      rateLimitPerMin:'rateLimitPerMin'
+      rateLimitPerMin:'rateLimitPerMin',
+      // Obsidian integration
+      obsidianVault:'obsidianVault'
     };
 
     function importConfig(cfg){

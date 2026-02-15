@@ -331,6 +331,17 @@ JSON files for cross-device sync via iCloud, Dropbox, AirDrop, etc.
 RATE LIMITER -- Set rateLimitPerMin to cap messages per minute and
 prevent runaway API costs. Shows a countdown toast when the limit is hit.
 
+OBSIDIAN INTEGRATION -- Save chats, research reports, and quick ideas
+directly to your Obsidian vault via the obsidian:// URI protocol. Works
+on macOS and iOS. Set obsidianVault to your vault folder name (defaults
+to "ObsidianVault"). Use /save, /save idea, or the button on research
+reports. Notes include YAML frontmatter with tags and backlinks.
+
+MERMAID DIAGRAMS -- AI responses containing ```mermaid code blocks
+render as interactive SVG diagrams (flowcharts, sequence diagrams, pie
+charts, mindmaps, etc). Lazy-loads Mermaid.js v11 on first encounter.
+Theme syncs with dark/light mode.
+
 CUSTOM CSS -- The ultimate escape hatch. Inject arbitrary CSS rules for
 anything the built-in fields do not cover.
 
@@ -527,6 +538,7 @@ TealClaw uses partial merge -- only what you include gets written.
 | gestureEnabled | boolean | Enable camera-based hand gesture control (MediaPipe Hands). Shows a floating pip with selfie cam and hand tracking |
 | gestureBindings | string | JSON array of gesture binding objects. Each has gesture (name), action (what to do), and label (display name). Stringify the array before setting |
 | rateLimitPerMin | number | Max messages per minute. Default: not set (unlimited). Prevents runaway API costs |
+| obsidianVault | string | Obsidian vault folder name for /save integration. Default: "ObsidianVault". Uses obsidian:// URI |
 
 ### Agent Object Fields
 
@@ -1312,6 +1324,9 @@ Users can type these directly in the TealClaw chat:
 | /telegram off | Disable Telegram message forwarding |
 | /template | Browse and apply style templates (12 built-in themes) |
 | /voice | Show voice settings and current voice ID |
+| /save | Save current chat to Obsidian vault |
+| /save idea text | Quick-capture idea to Obsidian Ideas folder |
+| /save setup | Show Obsidian integration help |
 
 Users can also:
 - Paste a bare API key (auto-detected by prefix)

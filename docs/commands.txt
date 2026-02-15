@@ -30,6 +30,9 @@
 | `/telegram off` | Disable Telegram message forwarding |
 | `/template` | Browse and apply pre-built style templates |
 | `/voice` | Show voice settings and current voice ID |
+| `/save` | Save current chat to Obsidian vault |
+| `/save idea text` | Quick-capture idea to Obsidian Ideas folder |
+| `/save setup` | Show Obsidian integration help |
 
 ## Command Details
 
