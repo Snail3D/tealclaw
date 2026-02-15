@@ -1808,11 +1808,14 @@
     // Pill click toggles channel dropdown
     $('pill').addEventListener('click',e=>{
       e.stopPropagation();
+      const k=getK();
+      const hasAI=!!(k.aiKey||k.whisperKey||(k.mode==='agent'&&getAgents().some(a=>a.url)));
+      if(!hasAI){openSheet();return}
       const dd=$('channelDropdown');
       if(dd.classList.contains('open')){dd.classList.remove('open');return}
       renderChannelDropdown();
       const channels=getAvailableChannels();
-      if(channels.length<=1)return; // Nothing to switch to
+      if(channels.length<=1)return;
       dd.classList.add('open');
     });
     // Close channel dropdown on outside click
