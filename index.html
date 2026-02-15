@@ -158,6 +158,8 @@
     .chat-bubble .chat-meta{font-size:10px;color:var(--text-3);margin-top:6px;font-family:var(--mono);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .chat-meta .token-info{opacity:0.7;cursor:help}
     .chat-bubble .chat-img{max-width:100%;max-height:200px;border-radius:var(--r-sm);margin-bottom:6px;display:block}
+    .tts-stop-btn{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:600;display:flex;align-items:center;gap:6px;padding:10px 24px;background:var(--err);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:opacity 0.2s}
+    .tts-stop-btn.hidden{display:none}
     .chat-bubble .tts-play{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px auto 2px;padding:10px 24px;font-size:13px;font-weight:600;color:#fff;background:var(--teal);border:2px solid transparent;border-radius:100px;cursor:pointer;font-family:var(--font);transition:all 0.25s;min-height:44px}
     .chat-bubble .tts-play:hover{background:var(--teal-hover)}
     .chat-bubble .tts-play svg{width:16px;height:16px;flex-shrink:0}
@@ -262,6 +264,18 @@
     .drag-overlay-text{font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px}
     .drag-overlay-hint{font-size:12px;color:var(--text-2)}
 
+    /* ── Voice-Only Chat Mode ───────────────────────── */
+    .voice-mode-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;transition:opacity 0.3s}
+    .voice-mode-overlay.hidden{display:none}
+    .voice-mode-close{position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+    .voice-mode-close:hover{background:rgba(255,255,255,0.2)}
+    .voice-ptt-btn{width:120px;height:120px;border-radius:50%;border:3px solid var(--teal);background:rgba(13,148,136,0.15);color:var(--teal);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative;-webkit-user-select:none;user-select:none;touch-action:none}
+    .voice-ptt-btn:active,.voice-ptt-btn.recording{background:var(--err);border-color:var(--err);color:#fff;transform:scale(1.08)}
+    .voice-ptt-btn.recording::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--err);animation:voice-pulse 1.5s ease-in-out infinite}
+    @keyframes voice-pulse{0%,100%{transform:scale(1);opacity:0.6}50%{transform:scale(1.15);opacity:0}}
+    .voice-mode-status{font-size:14px;color:rgba(255,255,255,0.6);font-family:var(--font);font-weight:500;text-align:center;min-height:20px}
+    .voice-mode-subtitle{max-width:80%;min-height:60px;font-size:16px;color:#fff;font-family:var(--font);line-height:1.6;text-align:center;overflow-y:auto;max-height:40vh;padding:0 16px}
+    .voice-mode-subtitle .typing-cursor{display:inline-block;width:2px;height:1em;background:var(--teal);margin-left:2px;animation:blink 0.8s infinite}
     /* ── Gesture Pip (Hand Tracking Camera) ────────────── */
     .gesture-pip{position:fixed;bottom:calc(140px + var(--sab,0px));right:16px;width:120px;height:160px;border-radius:var(--r-lg);overflow:hidden;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:2px solid var(--border);background:#000;display:none;cursor:grab;touch-action:none;transition:border-color 0.3s,box-shadow 0.3s}
     .gesture-pip.active{display:block}
@@ -1088,6 +1102,9 @@
         <button class="circle-btn attach-btn" id="cameraBtn" title="Take photo" aria-label="Take photo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
+        <button class="circle-btn attach-btn" id="voiceChatBtn" title="Voice chat mode" aria-label="Voice chat mode">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><circle cx="12" cy="12" r="10" stroke-dasharray="4 3"/></svg>
+        </button>
         <textarea class="input-text" id="textIn" placeholder="Message..." rows="1" aria-label="Chat message"></textarea>
         <button class="circle-btn mic-circle" id="micBtn" title="Hold to speak" aria-label="Hold to speak">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -1121,6 +1138,16 @@
     <div class="sheet-body" id="sheetBody"></div>
   </div>
 
+  <!-- ═══ Voice-Only Chat Mode ═══ -->
+  <div class="voice-mode-overlay hidden" id="voiceMode">
+    <button class="voice-mode-close" id="voiceModeClose" aria-label="Exit voice mode">&times;</button>
+    <div class="voice-mode-status" id="voiceModeStatus">Tap and hold to speak</div>
+    <button class="voice-ptt-btn" id="voicePttBtn" aria-label="Push to talk">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <div class="voice-mode-subtitle" id="voiceModeSubtitle"></div>
+  </div>
+
   <!-- Gesture Pip (hand tracking camera) -->
   <div class="gesture-pip" id="gesturePip">
     <video id="gestureVideo" autoplay playsinline muted></video>
@@ -1147,6 +1174,9 @@
   </div>
 
   <audio id="audio" style="display:none"></audio>
+  <button id="ttsStop" class="tts-stop-btn hidden" aria-label="Stop voice playback">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop
+  </button>
   <input type="file" id="fileIn" accept="image/*,.pdf,.txt,.json,.js,.ts,.py,.md,.csv,.tsv,.log,.xml,.html,.htm,.css,.yaml,.yml,.toml,.ini,.cfg,.env,.sh,.bash,.zsh,.sql,.r,.rb,.go,.rs,.c,.cpp,.h,.hpp,.java,.kt,.swift,.m,.docx,.doc,.rtf,.xlsx,.xls,.pptx,.ppt" multiple style="display:none">
   <canvas id="camCanvas" style="display:none"></canvas>
 
@@ -2041,16 +2071,49 @@
         <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${mode==='direct'?'Gemini Flash via OpenRouter -- fast, no agent memory':'Routes through your OpenClaw gateway -- shared context across all channels'}</div>
       </div>`;
 
-      // Voice output toggle (only show when TTS key is set)
-      if(k.ttsKey){
+      // Voice output (show when any TTS provider is available)
+      if(hasTTS(k)){
+        const ttsProv=k.ttsProvider||'groq';
         const autoPlay=k.ttsAutoPlay!==false;
+        const groqVoice=k.groqTtsVoice||'troy';
+        const groqExpr=k.groqTtsExpression||'';
         html+=`<div class="sheet-section"><div class="sheet-section-title">Voice Output</div>
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Provider</div>
+          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px">
+            <button class="mode-btn tts-prov-btn ${ttsProv==='groq'?'active':''}" data-ttsprov="groq" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${ttsProv==='groq'?'var(--teal)':'transparent'};border:none;color:${ttsProv==='groq'?'#fff':'var(--text-3)'};cursor:pointer">Groq Orpheus</button>
+            <button class="mode-btn tts-prov-btn ${ttsProv==='elevenlabs'?'active':''}" data-ttsprov="elevenlabs" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${ttsProv==='elevenlabs'?'var(--teal)':'transparent'};border:none;color:${ttsProv==='elevenlabs'?'#fff':'var(--text-3)'};cursor:pointer">ElevenLabs</button>
+          </div>
           <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
             <button class="mode-btn tts-mode-btn ${autoPlay?'active':''}" data-tts="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${autoPlay?'var(--teal)':'transparent'};border:none;color:${autoPlay?'#fff':'var(--text-3)'};cursor:pointer">Auto-play</button>
             <button class="mode-btn tts-mode-btn ${!autoPlay?'active':''}" data-tts="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!autoPlay?'var(--teal)':'transparent'};border:none;color:${!autoPlay?'#fff':'var(--text-3)'};cursor:pointer">On Demand</button>
           </div>
-          <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${autoPlay?'ElevenLabs is called on every AI response automatically.':'ElevenLabs is only called when you tap Play -- saves credits.'}</div>
-          <div style="margin-top:10px">
+          <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${autoPlay?(ttsProv==='groq'?'Groq TTS plays on every AI response automatically.':'ElevenLabs is called on every AI response automatically.'):(ttsProv==='groq'?'Groq TTS only plays when you tap the speaker icon.':'ElevenLabs is only called when you tap Play -- saves credits.')}</div>`;
+
+        if(ttsProv==='groq'){
+          // Groq voice chips
+          const groqVoices=['autumn','diana','hannah','austin','daniel','troy'];
+          html+=`<div style="margin-top:10px">
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Voice</div>
+            <div class="sheet-chip-row" id="sheetGroqVoicePresets">
+              ${groqVoices.map(v=>`<button class="sheet-chip groq-voice-chip ${groqVoice===v?'active':''}" data-gv="${v}">${v.charAt(0).toUpperCase()+v.slice(1)}</button>`).join('')}
+            </div>
+          </div>`;
+          // Expression preset chips
+          const exprPresets=[{v:'',n:'Natural'},{v:'cheerful',n:'Cheerful'},{v:'warm',n:'Warm'},{v:'whisper',n:'Whisper'},{v:'dramatic',n:'Dramatic'},{v:'sarcastic',n:'Sarcastic'},{v:'excited',n:'Excited'},{v:'professional',n:'Professional'}];
+          html+=`<div style="margin-top:10px">
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Expression</div>
+            <div class="sheet-chip-row" id="sheetExprPresets">
+              ${exprPresets.map(e=>`<button class="sheet-chip expr-chip ${groqExpr===e.v?'active':''}" data-expr="${e.v}">${e.n}</button>`).join('')}
+            </div>
+            <div style="display:flex;gap:5px;margin-top:6px">
+              <input type="text" class="sheet-input" id="sheetCustomExpr" value="${esc(groqExpr)}" placeholder="Custom expression (e.g. gravelly whisper)" style="font-size:11px;flex:1">
+              <button class="btn btn-teal btn-sm" id="sheetCustomExprSave">Set</button>
+            </div>
+            <div style="font-size:9px;color:var(--text-3);margin-top:3px">Prepends [tag] to set vocal direction. Leave empty for natural speech.</div>
+          </div>`;
+        } else {
+          // ElevenLabs voice settings
+          html+=`<div style="margin-top:10px">
             <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Voice</div>
             <div style="display:flex;gap:5px">
               <input type="text" class="sheet-input" id="sheetTtsVoice" value="${esc(k.ttsVoice||'ThT5KcBeYPX7keBQBPPD')}" placeholder="Voice ID" style="font-family:var(--mono);font-size:10px;flex:1">
@@ -2067,45 +2130,29 @@
           <div style="margin-top:8px">
             <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Similarity Boost</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="ttsSimilVal">${k.ttsSimilarityBoost!==undefined?k.ttsSimilarityBoost:1.0}</span></div>
             <input type="range" id="sheetTtsSimilarity" min="0" max="1" step="0.05" value="${k.ttsSimilarityBoost!==undefined?k.ttsSimilarityBoost:1.0}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
-          </div>
-          <div style="margin-top:8px">
+          </div>`;
+        }
+
+        // Shared volume slider
+        html+=`<div style="margin-top:8px">
             <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Playback Volume</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="audioVolVal">${k.audioVolume!==undefined?k.audioVolume:0.8}</span></div>
             <input type="range" id="sheetAudioVolume" min="0" max="1" step="0.05" value="${k.audioVolume!==undefined?k.audioVolume:0.8}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
           </div>
         </div>`;
       }
 
-      // Gesture Control
-      const gestureOn=!!k.gestureEnabled;
-      const defaultBindings=[
-        {gesture:'victory',action:'voice_start',label:'Start voice capture'},
-        {gesture:'fist',action:'voice_stop',label:'Stop recording'},
-        {gesture:'open_palm',action:'stop_agent',label:'Stop AI response'},
-        {gesture:'thumbs_up',action:'send_thumbsup',label:'Send thumbs up'}
-      ];
-      const bindings=k.gestureBindings?JSON.parse(k.gestureBindings):defaultBindings;
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Gesture Control</div>
+      // Gesture Control — The Claw
+      const gestureOn=k.gestureEnabled!==false;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">The Claw Gesture</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
           <button class="mode-btn gesture-mode-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
           <button class="mode-btn gesture-mode-btn ${!gestureOn?'active':''}" data-gesture="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gestureOn?'var(--teal)':'transparent'};border:none;color:${!gestureOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Uses your camera to detect hand gestures. V-sign starts voice, fist stops.</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show The Claw to start voice capture. Lower your hand to send. No camera preview — detection runs in background.</div>
         ${gestureOn?`<div style="margin-top:10px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Gesture Bindings</div>
-          ${bindings.map((b,i)=>{
-            const gestures=['victory','fist','open_palm','thumbs_up','thumbs_down','pointing_up','one','two','three','four','five'];
-            const actions=['voice_start','voice_stop','stop_agent','send_message','toggle_mute','send_thumbsup'];
-            return `<div class="gesture-binding-row">
-              <select class="gesture-sel" data-idx="${i}" data-field="gesture">${gestures.map(g=>`<option value="${g}" ${b.gesture===g?'selected':''}>${g.replace(/_/g,' ')}</option>`).join('')}</select>
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="var(--text-3)" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              <select class="gesture-sel" data-idx="${i}" data-field="action">${actions.map(a=>`<option value="${a}" ${b.action===a?'selected':''}>${a.replace(/_/g,' ')}</option>`).join('')}</select>
-            </div>`;
-          }).join('')}
-          <div style="margin-top:10px">
-            <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="gestConfVal">${k.gestureConfidence||0.6}</span></div>
-            <input type="range" id="sheetGestureConf" min="0.3" max="0.95" step="0.05" value="${k.gestureConfidence||0.6}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
-            <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive, higher = more precise</div>
-          </div>
+          <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="gestConfVal">${k.gestureConfidence||0.6}</span></div>
+          <input type="range" id="sheetGestureConf" min="0.3" max="0.95" step="0.05" value="${k.gestureConfidence||0.6}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
+          <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive, higher = more precise</div>
         </div>`:''}
       </div>`;
 
@@ -2182,7 +2229,7 @@
         <div style="margin-bottom:10px">
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Obsidian Vault Name</div>
           <div style="display:flex;gap:5px">
-            <input type="text" class="sheet-input" id="sheetObsidianVault" value="${esc(k.obsidianVault||'ObsidianVault')}" placeholder="ObsidianVault" style="font-family:var(--font);font-size:11px">
+            <input type="text" class="sheet-input" id="sheetObsidianVault" value="${esc(k.obsidianVault||'Snail Vault')}" placeholder="Snail Vault" style="font-family:var(--font);font-size:11px">
             <button class="btn btn-teal btn-sm" id="sheetObsidianSave">Set</button>
           </div>
           <div style="font-size:9px;color:var(--text-3);margin-top:3px">Used by /save command for obsidian:// links</div>
@@ -2541,11 +2588,31 @@
         renderSheetContent();renderAgentSelector();updateStatus();
       }));
 
+      // Wire up TTS provider toggle
+      $('sheetBody').querySelectorAll('.tts-prov-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.ttsProvider=b.dataset.ttsprov;setK(k2);
+        renderSheetContent();showToast(`TTS: ${b.dataset.ttsprov==='groq'?'Groq Orpheus':'ElevenLabs'}`,'ok');
+      }));
       // Wire up TTS auto-play toggle
       $('sheetBody').querySelectorAll('.tts-mode-btn').forEach(b=>b.addEventListener('click',()=>{
         const k2=getK();k2.ttsAutoPlay=b.dataset.tts==='true';setK(k2);
         renderSheetContent();renderChat();
       }));
+      // Wire up Groq voice chips
+      $('sheetBody').querySelectorAll('.groq-voice-chip').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.groqTtsVoice=b.dataset.gv;setK(k2);renderSheetContent();showToast(`Groq voice: ${b.dataset.gv}`,'ok');
+      }));
+      // Wire up expression preset chips
+      $('sheetBody').querySelectorAll('.expr-chip').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.groqTtsExpression=b.dataset.expr;setK(k2);renderSheetContent();
+        showToast(b.dataset.expr?`Expression: ${b.dataset.expr}`:'Expression: natural','ok');
+      }));
+      // Wire up custom expression save
+      $('sheetBody').querySelector('#sheetCustomExprSave')?.addEventListener('click',()=>{
+        const val=$('sheetBody').querySelector('#sheetCustomExpr').value.trim();
+        const k2=getK();k2.groqTtsExpression=val;setK(k2);renderSheetContent();
+        showToast(val?`Expression: ${val}`:'Expression: natural','ok');
+      });
 
       // Wire up PIN code (hashed, 4-8 chars)
       $('sheetBody').querySelectorAll('.pin-mode-btn').forEach(b=>b.addEventListener('click',()=>{
@@ -2592,14 +2659,6 @@
         const k2=getK();k2.gestureEnabled=enabled;setK(k2);
         renderSheetContent();
         if(enabled)startGestureTracking();else stopGestureTracking();
-      }));
-      // Wire up gesture binding selects
-      $('sheetBody').querySelectorAll('.gesture-sel').forEach(sel=>sel.addEventListener('change',()=>{
-        const k2=getK();
-        const defBindings=[{gesture:'victory',action:'voice_start',label:'Start voice capture'},{gesture:'fist',action:'voice_stop',label:'Stop recording'},{gesture:'open_palm',action:'stop_agent',label:'Stop AI response'},{gesture:'thumbs_up',action:'send_thumbsup',label:'Send thumbs up'}];
-        const cur=k2.gestureBindings?JSON.parse(k2.gestureBindings):defBindings;
-        const idx=+sel.dataset.idx;if(cur[idx])cur[idx][sel.dataset.field]=sel.value;
-        k2.gestureBindings=JSON.stringify(cur);setK(k2);
       }));
       // Gesture confidence slider
       $('sheetBody').querySelector('#sheetGestureConf')?.addEventListener('input',e=>{
@@ -2683,7 +2742,7 @@
       });
       $('sheetBody').querySelector('#sheetObsidianSave')?.addEventListener('click',()=>{
         const val=$('sheetBody').querySelector('#sheetObsidianVault').value.trim();
-        const k2=getK();if(val){k2.obsidianVault=val}else{delete k2.obsidianVault}setK(k2);showToast(`Vault: ${val||'ObsidianVault'}`,'ok');
+        const k2=getK();if(val){k2.obsidianVault=val}else{delete k2.obsidianVault}setK(k2);showToast(`Vault: ${val||'Snail Vault'}`,'ok');
       });
       $('sheetBody').querySelector('#sheetObsidianAutoSave')?.addEventListener('change',e=>{
         const k2=getK();k2.obsidianAutoSave=e.target.checked;setK(k2);
@@ -3390,6 +3449,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     }
 
     // Play audio buffer reliably on all platforms
+    let activeTTSSource=null;
     async function playAudioBuffer(arrayBuffer){
       const ctx=ensureAudioCtx();
       try{
@@ -3397,6 +3457,9 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const source=ctx.createBufferSource();
         source.buffer=decoded;
         source.connect(ctx.destination);
+        source.onended=()=>{hideStopTTS();activeTTSSource=null};
+        activeTTSSource=source;
+        showStopTTS();
         source.start(0);
         return source;
       }catch(e){
@@ -3405,11 +3468,27 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const blob=ttsBlob(arrayBuffer);
         const blobUrl=URL.createObjectURL(blob);
         audio.src=blobUrl;
-        audio.onended=()=>URL.revokeObjectURL(blobUrl);
+        audio.onended=()=>{URL.revokeObjectURL(blobUrl);hideStopTTS();activeTTSSource=null};
+        audio.onpause=()=>{hideStopTTS();activeTTSSource=null};
+        showStopTTS();
         audio.play().catch(()=>{});
         return null;
       }
     }
+
+    function showStopTTS(){$('ttsStop').classList.remove('hidden')}
+    function hideStopTTS(){$('ttsStop').classList.add('hidden')}
+    function stopTTSPlayback(){
+      if(activeTTSSource){try{activeTTSSource.stop()}catch{};activeTTSSource=null}
+      audio.pause();audio.currentTime=0;
+      hideStopTTS();
+      stopTypeReveal();
+      // Update voice mode subtitle if active
+      if($('voiceMode')&&!$('voiceMode').classList.contains('hidden')){
+        $('voiceModeStatus').textContent='Tap and hold to speak';
+      }
+    }
+    $('ttsStop').addEventListener('click',stopTTSPlayback);
 
     function enableAudio(){
       if(audioEnabled)return;
@@ -3694,6 +3773,39 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     }
     function stopTypeReveal(){if(typeRevealAbort){typeRevealAbort.abort=true;typeRevealAbort=null}}
 
+    // Subtitle-synced typing: reveal text matched to audio duration
+    function typeRevealSynced(fullText,targetEl,durationSec){
+      if(typeRevealAbort)typeRevealAbort.abort=true;
+      const ctrl={abort:false};typeRevealAbort=ctrl;
+      let msPerChar=(durationSec*1000)/fullText.length;
+      msPerChar=Math.max(5,Math.min(80,msPerChar));
+      return new Promise(resolve=>{
+        let pos=0;const len=fullText.length;
+        function tick(){
+          if(ctrl.abort){
+            targetEl.innerHTML=renderLatex(renderMd(fullText));
+            resolve();return;
+          }
+          const ch=fullText[pos]||'';
+          const step=ch===' '||ch==='\n'?Math.min(3,len-pos):ch===','||ch==='.'?2:1;
+          pos=Math.min(pos+step,len);
+          const partial=fullText.slice(0,pos);
+          let rendered=renderMd(partial);
+          rendered=renderLatex(rendered);
+          targetEl.innerHTML=rendered+'<span class="typing-cursor"></span>';
+          if(pos>=len){
+            setTimeout(()=>{
+              if(!ctrl.abort){targetEl.innerHTML=renderLatex(renderMd(fullText))}
+              resolve();
+            },350);
+            return;
+          }
+          setTimeout(tick,msPerChar);
+        }
+        tick();
+      });
+    }
+
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
 Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style require user approval.
@@ -3707,7 +3819,7 @@ Request config: \`\`\`tc-action\n{"type":"request-config"}\n\`\`\` Returns all c
 Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":"#8b5cf6"}\n\`\`\` Updates any config field. User approves before applying.
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help
-Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via canopylabs/orpheus-v1-english (voices: tara, leah, jess, leo, dan, mia).
+Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Expression tags: prepend [cheerful], [whisper], [dramatic], etc. to text for vocal direction. Config: ttsProvider (groq|elevenlabs, default groq), groqTtsVoice, groqTtsExpression.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey, ttsKey), or mode. Those are owner-controlled only.`;
 
     function buildSysPrompt(k){
@@ -4183,23 +4295,95 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     }
 
     // ── TTS ────────────────────────────────────────────
-    async function speak(text){
-      const k=getK();
-      // Groq TTS fallback: use Orpheus when no ElevenLabs key but Groq key exists
-      const useGroqTTS=!k.ttsKey&&(k.whisperKey||k.aiProvider==='groq');
-      if(!k.ttsKey&&!useGroqTTS)return null;
-      if(useGroqTTS){
-        const groqKey=k.whisperKey||k.aiKey;
-        if(!groqKey)return null;
-        const voice=k.groqTtsVoice||'tara';
-        const model=k.groqTtsModel||'canopylabs/orpheus-v1-english';
-        const res=await fetch('https://api.groq.com/openai/v1/audio/speech',{
-          method:'POST',headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
-          body:JSON.stringify({model,input:text,voice,response_format:'wav'})
-        });
-        if(!res.ok)return null;
-        return await res.arrayBuffer();
+    function chunkTextForTTS(text,maxLen=200){
+      const chunks=[];
+      // Split into sentences
+      const sentences=text.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[text];
+      for(const raw of sentences){
+        const s=raw.trim();
+        if(!s)continue;
+        if(s.length<=maxLen){chunks.push(s);continue}
+        // Split long sentences at commas/semicolons/colons/dashes
+        const parts=s.match(/[^,;:\u2014]+[,;:\u2014]?/g)||[s];
+        let buf='';
+        for(const p of parts){
+          const pt=p.trim();
+          if(!pt)continue;
+          if(buf&&(buf+' '+pt).length>maxLen){chunks.push(buf);buf=pt}
+          else{buf=buf?(buf+' '+pt):pt}
+        }
+        if(buf){
+          // If a single fragment is still too long, hard-split at last space before maxLen
+          while(buf.length>maxLen){
+            let cut=buf.lastIndexOf(' ',maxLen);
+            if(cut<=0)cut=maxLen;
+            chunks.push(buf.slice(0,cut));
+            buf=buf.slice(cut).trimStart();
+          }
+          if(buf)chunks.push(buf);
+        }
       }
+      return chunks.length?chunks:[text.slice(0,maxLen)];
+    }
+
+    function stitchWavBuffers(buffers){
+      if(buffers.length===0)return new ArrayBuffer(0);
+      if(buffers.length===1)return buffers[0];
+      const first=new DataView(buffers[0]);
+      // Read WAV format from first buffer header
+      const numChannels=first.getUint16(22,true);
+      const sampleRate=first.getUint32(24,true);
+      const bitsPerSample=first.getUint16(34,true);
+      // Extract PCM data from each buffer (skip 44-byte header)
+      const pcmParts=buffers.map(b=>new Uint8Array(b).slice(44));
+      const totalPcmLen=pcmParts.reduce((sum,p)=>sum+p.length,0);
+      // Build new WAV
+      const wavLen=44+totalPcmLen;
+      const out=new ArrayBuffer(wavLen);
+      const view=new DataView(out);
+      const write4=(off,str)=>{for(let i=0;i<4;i++)view.setUint8(off+i,str.charCodeAt(i))};
+      write4(0,'RIFF');
+      view.setUint32(4,wavLen-8,true);
+      write4(8,'WAVE');
+      write4(12,'fmt ');
+      view.setUint32(16,16,true); // PCM subchunk size
+      view.setUint16(20,1,true);  // PCM format
+      view.setUint16(22,numChannels,true);
+      view.setUint32(24,sampleRate,true);
+      view.setUint32(28,sampleRate*numChannels*(bitsPerSample/8),true);
+      view.setUint16(32,numChannels*(bitsPerSample/8),true);
+      view.setUint16(34,bitsPerSample,true);
+      write4(36,'data');
+      view.setUint32(40,totalPcmLen,true);
+      // Copy PCM data
+      const outBytes=new Uint8Array(out);
+      let offset=44;
+      for(const part of pcmParts){outBytes.set(part,offset);offset+=part.length}
+      return out;
+    }
+
+    async function speakGroq(text,k){
+      const groqKey=k.whisperKey||k.aiKey;
+      if(!groqKey)return null;
+      const voice=k.groqTtsVoice||'troy';
+      const model=k.groqTtsModel||'playai/playht-tts-v3';
+      const expr=k.groqTtsExpression||'';
+      const chunks=chunkTextForTTS(text,200);
+      // Prepend expression tag to first chunk only
+      if(expr&&chunks.length)chunks[0]=`[${expr}] ${chunks[0]}`;
+      const fetches=chunks.map(chunk=>
+        fetch('https://api.groq.com/openai/v1/audio/speech',{
+          method:'POST',headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify({model,input:chunk,voice,response_format:'wav'})
+        }).then(r=>r.ok?r.arrayBuffer():null)
+      );
+      const results=await Promise.all(fetches);
+      const bufs=results.filter(Boolean);
+      if(!bufs.length)return null;
+      return bufs.length===1?bufs[0]:stitchWavBuffers(bufs);
+    }
+
+    async function speakElevenLabs(text,k){
       const vid=k.ttsVoice||'ThT5KcBeYPX7keBQBPPD';
       const res=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`,{
         method:'POST',headers:{'Accept':'audio/mpeg','Content-Type':'application/json','xi-api-key':k.ttsKey},
@@ -4208,10 +4392,23 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       if(!res.ok)return null;return await res.arrayBuffer();
     }
 
-    function hasTTS(k){if(!k)k=getK();return !!(k.ttsKey||k.whisperKey||k.aiProvider==='groq')}
+    async function speak(text){
+      const k=getK();
+      const provider=k.ttsProvider||'groq';
+      if(provider==='elevenlabs') return k.ttsKey?speakElevenLabs(text,k):null;
+      // groq (default)
+      return speakGroq(text,k);
+    }
+
+    function hasTTS(k){
+      if(!k)k=getK();
+      const p=k.ttsProvider||'groq';
+      if(p==='elevenlabs')return !!k.ttsKey;
+      return !!(k.whisperKey||k.aiKey||k.aiProvider==='groq');
+    }
     function ttsBlob(data){
       const k=getK();
-      const mime=(!k.ttsKey&&(k.whisperKey||k.aiProvider==='groq'))?'audio/wav':'audio/mpeg';
+      const mime=(k.ttsProvider||'groq')==='groq'?'audio/wav':'audio/mpeg';
       return new Blob([data],{type:mime});
     }
 
@@ -4353,7 +4550,7 @@ CONFIG FIELDS YOU CAN SET:
 Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, sendBtnColor, micBtnColor, lineHeight, letterSpacing, borderRadius
 Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
 Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
-Voice: ttsVoice, ttsAutoPlay, groqTtsVoice(tara/leah/jess/leo/dan/mia), audioVolume
+Voice: ttsProvider(groq/elevenlabs), ttsVoice, ttsAutoPlay, groqTtsVoice(autumn/diana/hannah/austin/daniel/troy), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
 Features: streamEnabled, gifEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
 Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
 Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
@@ -4744,7 +4941,7 @@ Rules:
     }
 
     // ── Obsidian Integration ──────────────────────────────
-    function getObsidianVault(){return getK().obsidianVault||'ObsidianVault'}
+    function getObsidianVault(){return getK().obsidianVault||'Snail Vault'}
     function obsidianUri(action,params){
       // Use encodeURIComponent (spaces=%20) not URLSearchParams (spaces=+)
       // because Obsidian reads + as literal plus signs
@@ -6304,27 +6501,47 @@ Rules:
           sendTelegram(`AI: ${displayText}`);
           fireWebhook('message.receive',{text:displayText});
 
-          // TTS (start in parallel with typing animation)
+          // TTS (fetch audio while preparing UI)
           let audioUrl=null;
-          const ttsPromise=(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false)?speak(displayText):Promise.resolve(null);
+          const wantTTS=audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false;
+          const ttsPromise=wantTTS?speak(displayText):Promise.resolve(null);
 
-          // Typing animation: reveal character by character
+          // Typing animation: reveal character by character, synced to audio if available
           if(pk.typingAnimation!==false){
             const bubbleIdx=chatHistory.length;
             addBubble('ai','',aiUsage?{usage:aiUsage}:{});
             const scroll=$('chatScroll');
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const lastBubble=bubbles[bubbles.length-1];
+            const ttsData=await ttsPromise;
             if(lastBubble){
               lastBubble.classList.add('typing-active');
               const mdEl=lastBubble.querySelector('.md-content')||lastBubble;
               playBubbleSound();
-              await typeReveal(displayText,mdEl,pk);
+              if(ttsData){
+                // Subtitle-synced: decode to get duration, start audio + typing together
+                const ctx=ensureAudioCtx();
+                try{
+                  const decoded=await ctx.decodeAudioData(ttsData.slice(0));
+                  const dur=decoded.duration;
+                  const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);
+                  chatHistory[bubbleIdx].audioUrl=audioUrl;
+                  // Start audio and synced typing simultaneously
+                  playAudioBuffer(ttsData);
+                  await typeRevealSynced(displayText,mdEl,dur);
+                }catch{
+                  // Fallback: play audio normally + regular typing
+                  playAudioBuffer(ttsData);
+                  const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);
+                  chatHistory[bubbleIdx].audioUrl=audioUrl;
+                  await typeReveal(displayText,mdEl,pk);
+                }
+              } else {
+                await typeReveal(displayText,mdEl,pk);
+              }
               lastBubble.classList.remove('typing-active');
             }
             chatHistory[bubbleIdx].text=displayText;
-            const ttsData=await ttsPromise;
-            if(ttsData){const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);chatHistory[bubbleIdx].audioUrl=audioUrl;playAudioBuffer(ttsData)}
             setChat(chatHistory);renderChat();
           } else {
             // No typing animation: instant display
@@ -6462,6 +6679,7 @@ ${agentNote}`);
 <li><code>/new</code> -- start a new conversation (separate context)</li>
 <li><code>/clear all</code> -- delete all conversations</li>
 <li><code>/voice</code> -- change TTS voice</li>
+<li><code>/voice-chat</code> -- enter voice-only mode (push-to-talk)</li>
 <li><code>/template</code> -- browse and apply style templates</li>
 <li><code>/save</code> -- save current chat to Obsidian</li>
 <li><code>/save idea your thought</code> -- quick capture idea to Obsidian</li>
@@ -6557,24 +6775,35 @@ ${agentNote}`);
           sysBubble('<p>All keys cleared. Type <code>/setup</code> to reconfigure.</p>');
           showToast('Keys cleared','ok');return;
         }
+        if(cmd==='/voice-chat'||cmd==='/vc'){
+          enterVoiceMode();
+          return;
+        }
         if(cmd==='/voice'){
           const k=getK();
-          const useGroq=!k.ttsKey&&(k.whisperKey||k.aiProvider==='groq');
-          if(useGroq){
-            sysBubble(`<h3>Voice Settings (Groq TTS)</h3>
-<p>Current voice: <code>${esc(k.groqTtsVoice||'tara')}</code></p>
-<p><strong>Available voices:</strong> tara, leah, jess, leo, dan, mia</p>
-<p>To change: <code>{"groqTtsVoice": "leo"}</code></p>
-<p style="font-size:11px;color:var(--text-2)">Using Orpheus TTS via your Groq key — no extra key needed!</p>`);
+          const prov=k.ttsProvider||'groq';
+          if(prov==='groq'){
+            const expr=k.groqTtsExpression;
+            sysBubble(`<h3>Voice Settings (Groq Orpheus)</h3>
+<p><strong>Provider:</strong> Groq Orpheus (default)</p>
+<p><strong>Current voice:</strong> <code>${esc(k.groqTtsVoice||'troy')}</code></p>
+<p><strong>Available voices:</strong> autumn, diana, hannah, austin, daniel, troy</p>
+${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><strong>Expression:</strong> natural (none)</p>'}
+<p>To change voice: <code>{"groqTtsVoice": "troy"}</code></p>
+<p>To set expression: <code>{"groqTtsExpression": "cheerful"}</code></p>
+<p>To switch provider: <code>{"ttsProvider": "elevenlabs"}</code></p>
+<p style="font-size:11px;color:var(--text-2)">Free TTS via your Groq key. Long text is auto-chunked at 200 chars and stitched.</p>`);
           } else if(k.ttsKey){
-            sysBubble(`<h3>Voice Settings</h3>
-<p>Current voice: <code>${k.ttsVoice||'ThT5KcBeYPX7keBQBPPD'}</code> (Rachel default)</p>
-<p>To change, visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a>, copy a voice ID, and paste it in the chat.</p>`);
+            sysBubble(`<h3>Voice Settings (ElevenLabs)</h3>
+<p><strong>Provider:</strong> ElevenLabs</p>
+<p><strong>Current voice:</strong> <code>${k.ttsVoice||'ThT5KcBeYPX7keBQBPPD'}</code> (Rachel default)</p>
+<p>To change, visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a>, copy a voice ID, and paste it in the chat.</p>
+<p>To switch provider: <code>{"ttsProvider": "groq"}</code></p>`);
           } else {
             sysBubble(`<h3>Voice Settings</h3>
-<p>No TTS configured yet. You have two options:</p>
-<ul><li><strong>Free:</strong> Paste a <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> key (<code>gsk_...</code>) — includes Orpheus TTS</li>
-<li><strong>Premium:</strong> Paste an <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs</a> key (<code>sk_...</code>) — 30+ voices</li></ul>`);
+<p><strong>Provider:</strong> ElevenLabs (no key set)</p>
+<p>Paste an <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs</a> key (<code>sk_...</code>), or switch to Groq:</p>
+<p><code>{"ttsProvider": "groq"}</code></p>`);
           }
           return;
         }
@@ -7393,10 +7622,13 @@ ${agentNote}`);
               const text=await transcribe(blob);
               if(text){
                 hint.textContent=`"${text.slice(0,40)}..."`;hint.className='input-hint ok';
-                // If files are pending, put text in input box instead of auto-sending
-                if(pendingFiles.length>0){
-                  $('textIn').value=($('textIn').value+' '+text).trim();
+                const inputVal=$('textIn').value.trim();
+                if(pendingFiles.length>0||inputVal){
+                  // Append voice text to existing input (e.g. /research + voice context)
+                  $('textIn').value=(inputVal+' '+text).trim();
                   $('textIn').dispatchEvent(new Event('input'));
+                  // Auto-send if input has a /command prefix
+                  if(inputVal.startsWith('/'))send();
                 } else {
                   pipeline(text);
                 }
@@ -7512,6 +7744,7 @@ ${agentNote}`);
     let camStream=null,facingMode='environment',torchOn=false;
 
     $('cameraBtn').addEventListener('click',openCamera);
+    $('voiceChatBtn').addEventListener('click',enterVoiceMode);
 
     async function openCamera(){
       if(getK().cameraEnabled===false){showToast('Camera disabled','err');haptic('error');return}
@@ -7577,7 +7810,7 @@ ${agentNote}`);
     // ── Config Import (shared by hash, file drop, paste) ──
     const CONFIG_KEYS={
       aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
-      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',
+      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',ttsProvider:'ttsProvider',groqTtsExpression:'groqTtsExpression',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
@@ -7627,7 +7860,7 @@ ${agentNote}`);
       use24HourTime:'use24HourTime',
       // Gesture control
       gestureEnabled:'gestureEnabled',
-      gestureBindings:'gestureBindings',
+      // gestureBindings removed — The Claw is the only gesture now
       rateLimitPerMin:'rateLimitPerMin',
       // Obsidian integration
       obsidianVault:'obsidianVault',
@@ -8869,20 +9102,124 @@ ${agentNote}`);
     // LaTeX — preload if enabled
     loadKaTeX().catch(()=>{});
 
+    // ── Voice-Only Chat Mode ─────────────────────────
+    let voiceModeActive=false,voiceModeRecording=false,voiceModeStream=null,voiceModeRecorder=null,voiceModeChunks=[];
+
+    function enterVoiceMode(){
+      voiceModeActive=true;
+      $('voiceMode').classList.remove('hidden');
+      $('voiceModeStatus').textContent='Tap and hold to speak';
+      $('voiceModeSubtitle').innerHTML='';
+    }
+
+    function exitVoiceMode(){
+      voiceModeActive=false;
+      $('voiceMode').classList.add('hidden');
+      if(voiceModeRecording)stopVoiceModeRec();
+    }
+
+    async function initVoiceModeMic(){
+      if(voiceModeStream)return true;
+      try{
+        voiceModeStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+        return true;
+      }catch{return false}
+    }
+
+    async function startVoiceModeRec(){
+      if(voiceModeRecording)return;
+      if(!await initVoiceModeMic()){$('voiceModeStatus').textContent='Mic access denied';return}
+      voiceModeChunks=[];
+      voiceModeRecorder=new MediaRecorder(voiceModeStream,{mimeType:'audio/webm;codecs=opus'});
+      voiceModeRecorder.ondataavailable=e=>{if(e.data.size>0)voiceModeChunks.push(e.data)};
+      voiceModeRecorder.onstop=async()=>{
+        if(voiceModeChunks.length===0)return;
+        $('voiceModeStatus').textContent='Transcribing...';
+        const blob=new Blob(voiceModeChunks,{type:'audio/webm'});
+        try{
+          const text=await transcribe(blob);
+          if(!text){$('voiceModeStatus').textContent='No speech detected';return}
+          $('voiceModeStatus').textContent='Thinking...';
+          $('voiceModeSubtitle').innerHTML='';
+          // Auto-detect /command prefixes from speech
+          let finalText=text;
+          const lower=text.toLowerCase().trim();
+          if(lower.startsWith('research ')||lower.startsWith('deep research '))finalText='/'+text;
+          else if(lower.startsWith('imagine '))finalText='/'+text;
+          // Send to AI
+          const pk=getK();
+          const imageBase64=null;
+          try{
+            const aiResult=await callAI(finalText,imageBase64);
+            const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+            if(!aiText||aiText==='__NO_KEY__'){$('voiceModeStatus').textContent='No response';return}
+            // Parse agent actions
+            let displayText=aiText;
+            const{cleanText:ac,actions:tca}=parseTcActions(displayText);
+            if(tca.length){displayText=ac;executeTcActions(tca).catch(()=>{})}
+            // Add to chat history
+            addBubble('user',finalText);addBubble('ai',displayText);
+            sendTelegram(`AI: ${displayText}`);
+            // TTS with subtitle sync
+            if(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false){
+              $('voiceModeStatus').textContent='Speaking...';
+              const ttsData=await speak(displayText);
+              if(ttsData){
+                const ctx=ensureAudioCtx();
+                try{
+                  const decoded=await ctx.decodeAudioData(ttsData.slice(0));
+                  const dur=decoded.duration;
+                  playAudioBuffer(ttsData);
+                  await typeRevealSynced(displayText,$('voiceModeSubtitle'),dur);
+                }catch{
+                  playAudioBuffer(ttsData);
+                  $('voiceModeSubtitle').textContent=displayText;
+                }
+              } else {
+                $('voiceModeSubtitle').textContent=displayText;
+              }
+            } else {
+              $('voiceModeSubtitle').textContent=displayText;
+            }
+            $('voiceModeStatus').textContent='Tap and hold to speak';
+          }catch(e){
+            $('voiceModeStatus').textContent='Error: '+e.message;
+            $('voiceModeSubtitle').textContent='';
+          }
+        }catch{$('voiceModeStatus').textContent='Transcription failed'}
+      };
+      voiceModeRecorder.start();
+      voiceModeRecording=true;
+      $('voicePttBtn').classList.add('recording');
+      $('voiceModeStatus').textContent='Listening...';
+      haptic('medium');
+    }
+
+    function stopVoiceModeRec(){
+      if(!voiceModeRecording||!voiceModeRecorder)return;
+      voiceModeRecorder.stop();
+      voiceModeRecording=false;
+      $('voicePttBtn').classList.remove('recording');
+      haptic('light');
+    }
+
+    // Voice mode event wiring
+    $('voiceModeClose').addEventListener('click',exitVoiceMode);
+    const pttBtn=$('voicePttBtn');
+    pttBtn.addEventListener('mousedown',e=>{e.preventDefault();startVoiceModeRec()});
+    pttBtn.addEventListener('mouseup',e=>{e.preventDefault();stopVoiceModeRec()});
+    pttBtn.addEventListener('mouseleave',()=>{if(voiceModeRecording)stopVoiceModeRec()});
+    pttBtn.addEventListener('touchstart',e=>{e.preventDefault();startVoiceModeRec()});
+    pttBtn.addEventListener('touchend',e=>{e.preventDefault();stopVoiceModeRec()});
+
     // ── Gesture Control (MediaPipe Hands) ────────────
     let gestureStream=null,gestureHands=null,gestureRAF=null,gestureActive=false;
-    let lastGesture='',gestureHoldStart=0,gestureRecording=false;
-    const GESTURE_HOLD_MS=400; // ms to hold gesture before triggering
+    let lastGesture='',gestureGoneTime=0,gestureRecording=false;
+    const GESTURE_GONE_MS=500; // ms after The Claw is gone before stopping recording
 
     function getGestureBindings(){
-      const k=getK();
-      if(k.gestureBindings){try{return JSON.parse(k.gestureBindings)}catch{}}
-      return[
-        {gesture:'victory',action:'voice_start',label:'Start voice capture'},
-        {gesture:'fist',action:'voice_stop',label:'Stop recording'},
-        {gesture:'open_palm',action:'stop_agent',label:'Stop AI response'},
-        {gesture:'thumbs_up',action:'send_thumbsup',label:'Send thumbs up'}
-      ];
+      // The Claw is the only gesture - hardcoded
+      return[{gesture:'the_claw',action:'voice_toggle',label:'The Claw: voice capture'}];
     }
 
     async function loadMediaPipeHands(){
@@ -8905,83 +9242,52 @@ ${agentNote}`);
 
     function classifyGesture(landmarks){
       if(!landmarks||landmarks.length<21)return'unknown';
+      // The Claw detection: index+middle together, ring+pinky together, gap between middle and ring
+      // Works in any hand orientation (vertical, horizontal, etc.)
       // Landmark indices: 0=wrist, 4=thumb_tip, 8=index_tip, 12=middle_tip, 16=ring_tip, 20=pinky_tip
-      // MCP joints: 5=index_mcp, 9=middle_mcp, 13=ring_mcp, 17=pinky_mcp
       // PIP joints: 6=index_pip, 10=middle_pip, 14=ring_pip, 18=pinky_pip
+      const dist=(a,b)=>Math.hypot(landmarks[a].x-landmarks[b].x,landmarks[a].y-landmarks[b].y,landmarks[a].z-landmarks[b].z);
+      // Finger extension: tip further from wrist than PIP (orientation-independent)
+      const wristDist=(i)=>dist(i,0);
       const tips=[8,12,16,20];
       const pips=[6,10,14,18];
-      const extended=tips.map((t,i)=>landmarks[t].y<landmarks[pips[i]].y);
-      const thumbOut=landmarks[4].x<landmarks[3].x; // for right hand (simplified)
-      const thumbOutAlt=landmarks[4].x>landmarks[3].x; // for left hand
-      const thumbExtended=thumbOut||thumbOutAlt;
+      const extended=tips.map((t,i)=>wristDist(t)>wristDist(pips[i]));
       const [indexUp,middleUp,ringUp,pinkyUp]=extended;
-
-      // Victory / Peace: index + middle up, ring + pinky down
-      if(indexUp&&middleUp&&!ringUp&&!pinkyUp)return'victory';
-      // Fist: all fingers down
-      if(!indexUp&&!middleUp&&!ringUp&&!pinkyUp&&!thumbExtended)return'fist';
-      // Open palm: all fingers up
-      if(indexUp&&middleUp&&ringUp&&pinkyUp)return'open_palm';
-      // Thumbs up: thumb up, others down (check thumb is above wrist)
-      if(!indexUp&&!middleUp&&!ringUp&&!pinkyUp&&landmarks[4].y<landmarks[3].y)return'thumbs_up';
-      // Thumbs down: thumb below wrist level
-      if(!indexUp&&!middleUp&&!ringUp&&!pinkyUp&&landmarks[4].y>landmarks[2].y)return'thumbs_down';
-      // Pointing up: only index up
-      if(indexUp&&!middleUp&&!ringUp&&!pinkyUp)return'pointing_up';
-      // Number counts (only those not already matched above)
-      if(indexUp&&middleUp&&ringUp&&!pinkyUp)return'three';
-      if(indexUp&&middleUp&&ringUp&&pinkyUp&&!thumbExtended)return'four';
-      if(indexUp&&middleUp&&ringUp&&pinkyUp&&thumbExtended)return'five';
-
+      // All four fingers must be extended
+      if(!indexUp||!middleUp||!ringUp||!pinkyUp)return'unknown';
+      // Index+middle tips close together
+      const imDist=dist(8,12);
+      // Ring+pinky tips close together
+      const rpDist=dist(16,20);
+      // Gap between middle and ring tips
+      const mrGap=dist(12,16);
+      // Palm size for relative thresholds (wrist to middle MCP)
+      const palmSize=dist(0,9);
+      const closeThresh=palmSize*0.55;
+      const gapThresh=palmSize*0.3;
+      if(imDist<closeThresh&&rpDist<closeThresh&&mrGap>gapThresh)return'the_claw';
       return'unknown';
     }
 
     function executeGestureAction(action){
-      switch(action){
-        case'voice_start':
-          if(!gestureRecording&&typeof initMic==='function'){
-            $('gesturePip').classList.add('recording');
-            // Simulate mic button press (mic listens on mousedown/touchstart)
-            $('micBtn')?.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));
-            gestureRecording=true;
-          }
-          break;
-        case'voice_stop':
-          if(gestureRecording){
-            $('gesturePip').classList.remove('recording');
-            $('micBtn')?.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
-            gestureRecording=false;
-          }
-          break;
-        case'stop_agent':
-          // Abort current streaming response via the active reader
-          if(window._tcActiveReader){try{window._tcActiveReader.cancel()}catch{}}
-          showToast('Stopped','ok');
-          break;
-        case'send_thumbsup':
-          if(typeof handleSend==='function')handleSend('👍');
-          break;
-        case'send_message':
-          if(typeof send==='function')send();
-          break;
-        case'toggle_mute':
-          audioEnabled=!audioEnabled;
-          showToast(audioEnabled?'Audio on':'Audio muted','ok');
-          break;
-        default:
-          // Custom action: treat as a message to send
-          if(action.startsWith('send:')){
-            const msg=action.slice(5);
-            if(typeof handleSend==='function')handleSend(msg);
-          }
-          break;
+      if(action==='voice_toggle'){
+        if(!gestureRecording){
+          // Start recording
+          $('micBtn')?.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));
+          gestureRecording=true;
+          showToast('The Claw: recording...','ok');
+        } else {
+          // Stop recording + auto-send
+          $('micBtn')?.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
+          gestureRecording=false;
+        }
       }
     }
 
     async function startGestureTracking(){
       if(gestureActive)return;
       try{
-        showToast('Loading gesture recognition...','ok');
+        showToast('Loading The Claw gesture recognition...','ok');
         await loadMediaPipeHands();
 
         gestureStream=await navigator.mediaDevices.getUserMedia({
@@ -8992,73 +9298,46 @@ ${agentNote}`);
         video.srcObject=gestureStream;
         await video.play();
 
-        const canvas=$('gestureCanvas');
-        const ctx=canvas.getContext('2d');
-
+        const conf=getK().gestureConfidence||0.6;
         gestureHands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
         gestureHands.setOptions({
           maxNumHands:1,
-          modelComplexity:0, // lite model for speed
-          minDetectionConfidence:0.6,
+          modelComplexity:0,
+          minDetectionConfidence:conf,
           minTrackingConfidence:0.5
         });
 
-        gestureHands.onResults(results=>{
-          canvas.width=video.videoWidth;
-          canvas.height=video.videoHeight;
-          ctx.clearRect(0,0,canvas.width,canvas.height);
+        // No PIP preview - hide the gesture pip element
+        $('gesturePip').style.display='none';
 
+        gestureHands.onResults(results=>{
           if(results.multiHandLandmarks&&results.multiHandLandmarks.length>0){
             const lm=results.multiHandLandmarks[0];
-            // Draw hand wireframe
-            ctx.strokeStyle='rgba(13,148,136,0.8)';
-            ctx.lineWidth=2;
-            const connections=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-            connections.forEach(([a,b])=>{
-              ctx.beginPath();
-              ctx.moveTo(lm[a].x*canvas.width,lm[a].y*canvas.height);
-              ctx.lineTo(lm[b].x*canvas.width,lm[b].y*canvas.height);
-              ctx.stroke();
-            });
-            // Draw landmarks
-            lm.forEach(p=>{
-              ctx.beginPath();
-              ctx.arc(p.x*canvas.width,p.y*canvas.height,3,0,2*Math.PI);
-              ctx.fillStyle='#0d9488';
-              ctx.fill();
-            });
-
             const gesture=classifyGesture(lm);
-            const label=$('gesturePipLabel');
 
-            if(gesture!=='unknown'){
-              label.textContent=gesture.replace(/_/g,' ');
-              $('gesturePip').classList.add('recognized');
-
-              if(gesture===lastGesture){
-                // Held same gesture long enough?
-                if(Date.now()-gestureHoldStart>GESTURE_HOLD_MS){
-                  const bindings=getGestureBindings();
-                  const binding=bindings.find(b=>b.gesture===gesture);
-                  if(binding){
-                    executeGestureAction(binding.action);
-                    haptic('success');
-                    gestureHoldStart=Date.now()+2000; // cooldown: don't re-trigger for 2s
-                  }
-                }
-              } else {
-                lastGesture=gesture;
-                gestureHoldStart=Date.now();
+            if(gesture==='the_claw'){
+              gestureGoneTime=0;
+              if(!gestureRecording){
+                // The Claw detected — start recording immediately
+                executeGestureAction('voice_toggle');
+                haptic('success');
               }
             } else {
-              label.textContent='';
-              $('gesturePip').classList.remove('recognized');
-              lastGesture='';
+              // The Claw gone — start counting
+              if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
+              if(gestureRecording&&gestureGoneTime&&Date.now()-gestureGoneTime>GESTURE_GONE_MS){
+                // Hand lowered for 500ms — stop + send
+                executeGestureAction('voice_toggle');
+                gestureGoneTime=0;
+              }
             }
           } else {
-            $('gesturePipLabel').textContent='';
-            $('gesturePip').classList.remove('recognized');
-            lastGesture='';
+            // No hand detected at all
+            if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
+            if(gestureRecording&&gestureGoneTime&&Date.now()-gestureGoneTime>GESTURE_GONE_MS){
+              executeGestureAction('voice_toggle');
+              gestureGoneTime=0;
+            }
           }
         });
 
@@ -9071,7 +9350,7 @@ ${agentNote}`);
 
         $('gesturePip').classList.add('active');
         gestureActive=true;
-        showToast('Gesture control active','ok');
+        showToast('The Claw gesture active - show The Claw to start voice capture','ok');
       }catch(err){
         console.error('[Gesture]',err);
         showToast('Gesture setup failed: '+err.message,'err');
@@ -9081,42 +9360,22 @@ ${agentNote}`);
 
     function stopGestureTracking(){
       gestureActive=false;
-      $('gesturePip').classList.remove('active','recognized','recording');
+      $('gesturePip').style.display='none';
       if(gestureStream){gestureStream.getTracks().forEach(t=>t.stop());gestureStream=null}
       $('gestureVideo').srcObject=null;
-      lastGesture='';gestureRecording=false;
+      lastGesture='';gestureRecording=false;gestureGoneTime=0;
     }
 
-    // Pip close button
+    // Pip close button (kept for safety but PIP is hidden)
     $('gesturePipClose').addEventListener('click',()=>{
       stopGestureTracking();
       const k2=getK();k2.gestureEnabled=false;setK(k2);
-      showToast('Gesture control off','ok');
+      showToast('The Claw gesture control off','ok');
     });
 
-    // Make pip draggable
-    (function(){
-      const pip=$('gesturePip');
-      let isDragging=false,startX,startY,origX,origY;
-      pip.addEventListener('pointerdown',e=>{
-        if(e.target.classList.contains('gesture-pip-close'))return;
-        isDragging=true;pip.style.cursor='grabbing';
-        startX=e.clientX;startY=e.clientY;
-        const rect=pip.getBoundingClientRect();
-        origX=rect.left;origY=rect.top;
-        pip.setPointerCapture(e.pointerId);
-      });
-      pip.addEventListener('pointermove',e=>{
-        if(!isDragging)return;
-        const dx=e.clientX-startX,dy=e.clientY-startY;
-        pip.style.left=(origX+dx)+'px';pip.style.top=(origY+dy)+'px';
-        pip.style.right='auto';pip.style.bottom='auto';
-      });
-      pip.addEventListener('pointerup',()=>{isDragging=false;pip.style.cursor='grab'});
-    })();
-
     // Auto-start if enabled
-    if(getK().gestureEnabled)startGestureTracking();
+    // The Claw defaults to on
+    if(getK().gestureEnabled!==false)startGestureTracking();
 
     // ── Service Worker + Update Notification ──────────
     if('serviceWorker' in navigator){
