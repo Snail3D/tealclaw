@@ -1206,6 +1206,18 @@
         <div class="sheet-row-action">Open</div>
       </div></div>`;
 
+      // Sharing
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Share</div>
+        <button class="sheet-btn" id="sheetShareEncrypted" style="margin-bottom:8px;background:var(--teal);color:#fff;border-color:var(--teal)">
+          <span style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Encrypted Share Link
+          </span>
+        </button>
+        <div style="font-size:10px;color:var(--text-3);text-align:center;margin-bottom:10px">Creates an AES-256 encrypted link with a passphrase. Includes all keys.</div>
+        <button class="sheet-btn sheet-btn-ghost" id="sheetShareQR">Generate QR Code</button>
+      </div>`;
+
       // Actions
       html+=`<div class="sheet-section">
         <button class="sheet-btn sheet-btn-ghost" id="sheetClearChat" style="margin-bottom:8px">Clear Chat History</button>
@@ -1409,6 +1421,12 @@
       // Wire up actions
       $('sheetBody').querySelector('#sheetClearChat')?.addEventListener('click',()=>{
         chatHistory=[];setChat([]);renderChat();closeSheet();showToast('Chat cleared','ok');
+      });
+      $('sheetBody').querySelector('#sheetShareEncrypted')?.addEventListener('click',()=>{
+        closeSheet();generateEncryptedLink();
+      });
+      $('sheetBody').querySelector('#sheetShareQR')?.addEventListener('click',()=>{
+        closeSheet();generateQR();
       });
       $('sheetBody').querySelector('#sheetWipeKeys')?.addEventListener('click',()=>{
         if(!confirm('Clear all keys and reset?'))return;
