@@ -3453,27 +3453,20 @@ Rules:
         /(?:^|\n)(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})(?:\n|$)/g  // bare JSON objects
       ];
       const recognized=Object.keys(CONFIG_KEYS);
-      let applied=0;
+      // Merge all detected config blocks into one object for a single confirmation
+      let merged={};
+      let found=false;
       for(const pat of patterns){
         let match;
         while((match=pat.exec(text))!==null){
           try{
             const cfg=JSON.parse(match[1]);
             const hasConfig=recognized.some(ck=>cfg[ck]!==undefined)||cfg.agents;
-            if(hasConfig){
-              const count=importConfig(cfg);
-              applied+=count;
-              applyVisualConfig();updateStatus();renderAgentSelector();
-            }
+            if(hasConfig){Object.assign(merged,cfg);found=true}
           }catch{}
         }
       }
-      if(applied>0){
-        showToast(`Auto-applied ${applied} settings from AI response`,'ok');
-        haptic('success');
-        renderQuickReplies();
-      }
-      return applied;
+      if(found)showConfigImportConfirm(merged);
     }
 
     // ── LaTeX Rendering (KaTeX) ─────────────────────────

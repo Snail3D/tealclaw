@@ -93,6 +93,7 @@ TealClaw is fully open source and intentionally simple to audit:
   - **pdf.js** (cdnjs) — PDF file preview when attaching PDFs
   - **Mammoth** (cdnjs) — Word document preview when attaching .docx files
   - **MediaPipe Hands** (jsdelivr) — gesture control when camera gesture mode is enabled
+  - **Chart.js** (jsdelivr) — usage statistics charts in `stats.html`
 - **View Source works.** Right-click the page and read every line of code that runs on your device.
 
 ## Reporting Security Issues
