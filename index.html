@@ -2440,60 +2440,73 @@ Rules:
 
     // ── QR Code Config Sharing ──────────────────────────
     async function generateQR(){
-      const url=exportConfigUrl();
-      // Warn if URL is too long for QR (>2500 chars gets unreliable)
-      if(url.length>2500){
-        sysBubble(`<h3>Config Too Large for QR</h3>
-<p>Your configuration has too many custom settings for a single QR code (${url.length} chars).</p>
-<p><strong>Options:</strong></p>
-<ul>
-<li><strong>Copy the link</strong> and share it directly (works at any size)</li>
-<li><strong>Export as JSON</strong> — type <code>/export</code> or save settings with <code>/profile save</code></li>
-</ul>
-<p style="word-break:break-all;font-family:var(--mono);font-size:9px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);max-height:60px;overflow:auto">${esc(url)}</p>
-<button class="btn btn-teal" style="margin-top:8px" onclick="navigator.clipboard?.writeText('${url.replace(/'/g,"\\'")}');showToast('Link copied','ok')">Copy Link</button>`);
-        return;
-      }
-      sysBubble('<p style="color:var(--text-3)">Generating QR code...</p>');
+      sysBubble('<p style="color:var(--text-3)">Generating encrypted QR code...</p>');
       try{
-        await loadScript('https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js');
-      }catch{
-        removeLast();
-        sysBubble(`<h3>Share Config</h3>
-<p>Copy this link and open it on any device to apply your configuration:</p>
-<p style="word-break:break-all;font-family:var(--mono);font-size:10px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md)">${esc(url)}</p>
+        // Always encrypt with all keys included
+        const{url,passphrase}=await exportEncryptedUrl(true);
+        // QR codes get unreliable above ~2500 chars
+        if(url.length>2500){
+          removeLast();
+          sysBubble(`<h3>Config Too Large for QR</h3>
+<p>Your encrypted configuration is too long for a QR code (${url.length} chars).</p>
+<p>Use <code>/share</code> instead — it creates a copyable encrypted link.</p>
+<button class="btn btn-teal" style="margin-top:8px" id="qrFallbackShare">Generate Encrypted Link Instead</button>`);
+          document.querySelector('#qrFallbackShare')?.addEventListener('click',()=>{removeLast();generateEncryptedLink()});
+          return;
+        }
+        try{
+          await loadScript('https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js');
+        }catch{
+          removeLast();
+          sysBubble(`<h3>Share Config</h3>
+<p>Copy this encrypted link and open it on any device:</p>
+<p style="word-break:break-all;font-family:var(--mono);font-size:9px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);max-height:60px;overflow:auto">${esc(url)}</p>
+<div style="margin:12px 0;text-align:center">
+  <div style="font-size:11px;color:var(--text-3)">Passphrase (share separately):</div>
+  <div style="font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:0.12em;color:var(--teal);margin-top:4px;user-select:all">${esc(passphrase)}</div>
+</div>
 <p style="font-size:10px;color:var(--text-3)">QR library couldn't load. Share the link instead.</p>`);
-        return;
+          return;
+        }
+        removeLast();
+        const bubble=sysBubble(`<div class="qr-container">
+          <h3>Scan to Configure</h3>
+          <div id="qrTarget"></div>
+          <p style="font-size:11px;color:var(--text-2);max-width:280px;text-align:center">Scan this QR code to apply your full TealClaw configuration — encrypted with AES-256.</p>
+          <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin:8px 0;text-align:center;max-width:280px;width:100%">
+            <div style="font-size:10px;color:var(--text-3);margin-bottom:4px">Passphrase (share separately)</div>
+            <div style="font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:0.12em;color:var(--teal);user-select:all">${esc(passphrase)}</div>
+          </div>
+          <p style="font-size:10px;color:var(--text-3);max-width:280px;text-align:center">The recipient scans the QR, then enters this passphrase to unlock. All keys and settings are included.</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
+            <button class="btn btn-teal" id="qrCopy">Copy Link</button>
+            <button class="btn btn-ghost" id="qrCopyPass">Copy Passphrase</button>
+            <button class="btn btn-ghost" id="qrDownload">Download QR</button>
+          </div>
+        </div>`);
+        const tgt=bubble.querySelector('#qrTarget');
+        if(tgt){
+          const accent=getK().accentColor||'#0d9488';
+          new QRCode(tgt,{text:url,width:200,height:200,colorDark:accent,colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+        }
+        bubble.querySelector('#qrCopy')?.addEventListener('click',()=>{
+          navigator.clipboard?.writeText(url);showToast('Encrypted link copied','ok');haptic('success');
+        });
+        bubble.querySelector('#qrCopyPass')?.addEventListener('click',()=>{
+          navigator.clipboard?.writeText(passphrase);showToast('Passphrase copied','ok');haptic('success');
+        });
+        bubble.querySelector('#qrDownload')?.addEventListener('click',()=>{
+          const canvas=bubble.querySelector('#qrTarget canvas');
+          if(!canvas)return;
+          const a=document.createElement('a');a.href=canvas.toDataURL('image/png');
+          a.download='tealclaw-config-qr.png';a.click();
+          showToast('QR saved','ok');haptic('success');
+        });
+        showToast('QR code ready','ok');haptic('success');
+      }catch(e){
+        removeLast();
+        sysBubble(`<p style="color:var(--err)">QR generation failed: ${esc(String(e))}</p>`);
       }
-      removeLast();
-      const hasKeys=!!(getK().aiKey||getK().whisperKey||getK().ttsKey||getK().tgToken);
-      const bubble=sysBubble(`<div class="qr-container">
-        <h3>Scan to Configure</h3>
-        <div id="qrTarget"></div>
-        <p style="font-size:11px;color:var(--text-2);max-width:280px;text-align:center">Scan this QR code with your phone camera to instantly apply your TealClaw configuration.</p>
-        <p style="font-size:10px;color:var(--text-3);max-width:280px;text-align:center"><strong>Note:</strong> API keys are <em>not</em> included in QR codes for security. You'll need to add keys on the new device separately.</p>
-        ${hasKeys?'<p style="font-size:10px;color:var(--warn);max-width:280px;text-align:center">&#9888; Your visual settings, persona, and preferences will transfer. API keys must be entered manually on the new device.</p>':''}
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-teal" id="qrCopy">Copy Link</button>
-          <button class="btn btn-ghost" id="qrDownload">Download QR</button>
-        </div>
-      </div>`);
-      const tgt=bubble.querySelector('#qrTarget');
-      if(tgt){
-        const accent=getK().accentColor||'#0d9488';
-        new QRCode(tgt,{text:url,width:200,height:200,colorDark:accent,colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
-      }
-      bubble.querySelector('#qrCopy')?.addEventListener('click',()=>{
-        navigator.clipboard?.writeText(url);showToast('Config link copied','ok');haptic('success');
-      });
-      bubble.querySelector('#qrDownload')?.addEventListener('click',()=>{
-        const canvas=bubble.querySelector('#qrTarget canvas');
-        if(!canvas)return;
-        const a=document.createElement('a');a.href=canvas.toDataURL('image/png');
-        a.download='tealclaw-config-qr.png';a.click();
-        showToast('QR saved','ok');haptic('success');
-      });
-      showToast('QR code ready','ok');haptic('success');
     }
 
     // ── Encrypted Share Link ─────────────────────────────
