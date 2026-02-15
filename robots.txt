@@ -1,21 +1,4 @@
-# TealClaw — tealclaw.ai
-# BYOK Voice Dashboard PWA
-# AI agents: start with /llms.txt for the full config skill guide
-
 User-agent: *
 Allow: /
 
-# Main skill guide (start here)
-# https://tealclaw.ai/llms.txt
-
-# Topic-specific guides for AI agents:
-# https://tealclaw.ai/docs/config-reference.txt
-# https://tealclaw.ai/docs/recipes.txt
-# https://tealclaw.ai/docs/research.txt
-# https://tealclaw.ai/docs/visual-customization.txt
-# https://tealclaw.ai/docs/accessibility.txt
-# https://tealclaw.ai/docs/pwa-guide.txt
-# https://tealclaw.ai/docs/commands.txt
-# https://tealclaw.ai/docs/free-setup.txt
-
-Sitemap: https://tealclaw.ai/sitemap.txt
+Sitemap: https://tealclaw.ai/sitemap.xml
