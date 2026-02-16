@@ -3460,7 +3460,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       } else {
         html+=`<div class="sheet-divider"></div><div class="sheet-section-title">Add Agent</div>
           <div class="sheet-input-group"><div class="sheet-input-label">Name</div><input type="text" class="sheet-input" id="sheetAgentName" placeholder="Home, Work, Pi..."></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">Gateway URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" placeholder="https://machine.tail12345.ts.net"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">Gateway URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" placeholder="https://gw.yourdomain.com"></div>
           <div class="sheet-input-group"><div class="sheet-input-label">Token</div><input type="text" class="sheet-input" id="sheetAgentToken" placeholder="Gateway token"></div>
           <button class="sheet-btn sheet-btn-teal" id="sheetAgentAdd" style="margin-bottom:8px">Add Agent</button>`;
       }
@@ -4022,6 +4022,8 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
               if(frame.event==='connect.challenge'){
                 this._send({type:'req',id:this._nextId(),method:'connect',params:{
                   minProtocol:3,maxProtocol:3,
+                  role:'operator',
+                  scopes:['operator.admin'],
                   auth:{token:this.token},
                   client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
                 }});
@@ -4286,7 +4288,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       return conn?.connected?'ws':'http';
     }
 
-    // ── Agent Call (Tailscale) ──────────────────────────
+    // ── Agent Call (Gateway) ────────────────────────────
     function getActiveAgent(){
       const agents=getAgents();
       const sel=$('agentChatSelect').value;
@@ -4363,10 +4365,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
         });
       }catch(e){
         const host=new URL(url).hostname;
-        const isTailscale=host.includes('.ts.net')||host.includes('.tail');
-        const hint=isTailscale
-          ?'This is a Tailscale URL — make sure Tailscale is running on this device and you are signed into the same tailnet. For OpenClaw gateways, WebSocket transport is recommended.'
-          :'Check that the gateway is running and the URL is reachable from this device.';
+        const hint='Check that the gateway is running and the URL is reachable from this device.';
         throw new Error(`Cannot reach gateway "${agent.name}" at ${url}. ${hint}`);
       }
       if(!res.ok) throw new Error(`Gateway "${agent.name}" returned ${res.status}. Check the gateway logs.`);
@@ -4576,11 +4575,11 @@ tc-action blocks let you control TealClaw directly:
 Examples:
 \`\`\`tc-action {"type":"video-grid","title":"Cameras","cols":2,"feeds":[{"url":"...","label":"Front Door"},{"url":"...","label":"Backyard"}]} \`\`\`
 \`\`\`tc-action {"type":"gallery","title":"Photos","images":[{"url":"...","caption":"View"}]} \`\`\`
-Gateway: wss:// via Tailscale Serve or ws://localhost:18789.
+Gateway: wss:// via Cloudflare Tunnel or ws://localhost:18789.
 Token: openclaw config get gateway.token</code><span style="position:absolute;bottom:4px;right:8px;font-size:10px;color:var(--text-3)">click to copy</span></pre>
 <p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> In TealClaw Settings → Agent Mode, add your gateway:</p>
 <ul style="font-size:12px;margin:4px 0">
-<li><strong>URL:</strong> <code>wss://your-machine.ts.net</code> (Tailscale) or <code>ws://localhost:18789</code> (local)</li>
+<li><strong>URL:</strong> <code>https://gw.yourdomain.com</code> (Cloudflare Tunnel) or <code>ws://localhost:18789</code> (local)</li>
 <li><strong>Token:</strong> run <code>openclaw config get gateway.token</code> and paste it</li>
 </ul>
 <hr>
