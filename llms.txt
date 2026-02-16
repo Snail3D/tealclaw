@@ -187,7 +187,7 @@ Example first-time cfg:
 
 - **TG BRIDGE** -- Forward msgs to a TG bot/group for remote monitoring/response.
 
-- **IMAGE GEN** -- /imagine command for AI-generated images in chat.
+- **IMAGE GEN** -- /imagine command powered by Google Gemini (Nano Banana). Supports text-to-image and image-to-image (attach a reference photo). Generated images are sent to connected agents with metadata. Groq Maverick provides visual commentary when no agent is connected. Keys: Google AI (AIza...) or OpenRouter (sk-or-v1-...). Voice-friendly: "imagine a sunset" works without the /.
 
 - **DEEP RESEARCH** -- /research uses GQ for structured reports with verdicts, findings, sources. Same free GQ k that enables voice.
 
@@ -410,10 +410,10 @@ Only include fields you want to set/change. TC uses partial merge.
 | tgToken | string | TG bot token from @BotFather |
 | tgChatId | string | TG chat/group ID |
 | tgEnabled | boolean | TG forwarding on/off |
-| imageGenUrl | string | Image gen API endpoint |
-| imageGenKey | string | Image gen API k (falls back to aiKey) |
-| imageGenModel | string | Image gen model name |
-| imageGenSize | string | e.g. "1024x1024" |
+| imageGenUrl | string | Image gen API endpoint (custom/OpenAI-compat fallback) |
+| imageGenKey | string | Image gen key — Google AI (AIza...) for Nano Banana, or OpenRouter (sk-or-v1-...) |
+| imageGenModel | string | Image gen model (dflt: gemini-2.5-flash-image) |
+| imageGenSize | string | e.g. "1024x1024" (OpenRouter/custom only) |
 | gifEnabled | boolean | Fullscreen GIF overlay on AI rsp (dflt: true). AI uses [gif:term] |
 | gifTenorKey | string | Tenor/Google API k (AIza*). Free at console.cloud.google.com |
 | accentColor | string | Hex UI accent (dflt: #0d9488 teal). Cascades everywhere |
@@ -657,7 +657,9 @@ Ready-to-use cfg blocks. Use as starting points, customize per usr.
 | Switch to AP | `{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}` |
 | Enable TG | `{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}` |
 | Switch to Agent mode | `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home Server", "url": "https://gw.example.com", "token": "abc123", "active": true}]}` |
-| Image gen | `{"imageGenUrl": "https://api.together.xyz/v1/images/generations", "imageGenModel": "black-forest-labs/FLUX.1-schnell", "imageGenSize": "1024x1024"}` |
+| Image gen (Nano Banana) | `{"imageGenKey": "AIza..."}` -- Google AI key, defaults to gemini-2.5-flash-image |
+| Image gen (OpenRouter) | `{"imageGenKey": "sk-or-v1-..."}` -- OpenRouter key, set imageGenModel for specific model |
+| Image gen (custom) | `{"imageGenUrl": "https://api.example.com/v1/images/generations", "imageGenKey": "sk-...", "imageGenModel": "model-name"}` |
 | Save EL credits | `{"ttsAutoPlay": false}` |
 | Custom prompt | `{"sysPrompt": "You are a pirate who speaks in nautical metaphors."}` |
 | Disable GIFs | `{"gifEnabled": false}` |
@@ -969,10 +971,11 @@ EL takes priority if both keys exist (higher quality, more voices).
 |---------|-------------|
 | /help | Show all commands |
 | /setup | Restart setup wizard |
-| /research query | Research report (Compound Mini) |
-| /deepresearch query | Deep multi-tool research (Compound) |
+| /research query | Research report (Compound Mini). Voice: "research query" |
+| /deepresearch query | Deep multi-tool research (Compound). Voice: "deepresearch query" |
 | /research + image | Visual analysis |
-| /imagine prompt | Generate image |
+| /imagine prompt | Generate image (Nano Banana). Attach image for edit/remix. Voice: "imagine prompt" |
+| /imagine + image | Image-to-image: edit/remix attached photo with prompt |
 | /export | Export current convo (enc JSON) |
 | /export all | Export all convos (enc JSON) |
 | /export md | Download chat as md |

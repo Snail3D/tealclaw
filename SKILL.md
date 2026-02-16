@@ -104,10 +104,10 @@ Only include fields to set/change. TC uses partial merge.
 | tgToken | string | TG bot token |
 | tgChatId | string | TG chat/group ID |
 | tgEnabled | boolean | TG forwarding on/off |
-| imageGenUrl | string | Image gen endpoint |
-| imageGenKey | string | Image gen API k (falls back to aiKey) |
-| imageGenModel | string | Image gen model |
-| imageGenSize | string | e.g. "1024x1024" |
+| imageGenUrl | string | Image gen endpoint (custom/OpenAI-compat fallback) |
+| imageGenKey | string | Google AI (AIza...) for Nano Banana, or OpenRouter (sk-or-v1-...) |
+| imageGenModel | string | Image gen model (dflt: gemini-2.5-flash-image) |
+| imageGenSize | string | e.g. "1024x1024" (OpenRouter/custom only) |
 | gifEnabled | boolean | GIF overlay on AI rsp (dflt: true) |
 | gifTenorKey | string | Tenor/Google API k (AIza*) |
 | accentColor | string | Hex UI accent (dflt: #0d9488). Cascades everywhere |
@@ -421,9 +421,9 @@ The agent (you) can create these on command: "create a custom chat for my trip t
 | Command | What It Does |
 |---------|-------------|
 | `/help` | Show all commands |
-| `/research query` | Research report (Compound Mini) |
-| `/deepresearch query` | Deep multi-tool research (Compound) |
-| `/imagine prompt` | Generate image |
+| `/research query` | Research report (Compound Mini). Voice: "research query" |
+| `/deepresearch query` | Deep multi-tool research (Compound). Voice: "deepresearch query" |
+| `/imagine prompt` | Generate image (Nano Banana). Attach image for edit/remix. Voice: "imagine prompt" |
 | `/export` / `all` / `md` | Export convo(s) |
 | `/profile save/load/list/delete name` | Manage cfg profiles |
 | `/qr` | Share cfg QR code |

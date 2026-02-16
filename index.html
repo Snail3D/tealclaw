@@ -3677,7 +3677,8 @@ Interactive prompts: \`\`\`tc-action\n{"type":"prompt","question":"Would you lik
 Request config: \`\`\`tc-action\n{"type":"request-config"}\n\`\`\` Returns all current settings (API keys shown as presence booleans only). Use this to read the user's config before suggesting changes.
 Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":"#8b5cf6"}\n\`\`\` Updates any config field. User approves before applying.
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
-User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help
+User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help (also work without / for voice: "imagine a cat", "research quantum physics")
+Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Expression tags: prepend [cheerful], [whisper], [dramatic], etc. to text for vocal direction. Config: ttsProvider (groq|elevenlabs, default groq), groqTtsVoice, groqTtsExpression.
 GIF reactions: when the mood fits, append a [gif:search query] tag at the end of your message (e.g. [gif:thumbs up], [gif:mind blown], [gif:happy dance]). TealClaw will fetch and display a matching GIF overlay. Use sparingly — great for celebrations, jokes, greetings, and emotional moments. Don't use for serious/technical answers.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey, ttsKey), or mode. Those are owner-controlled only.`;
@@ -4367,7 +4368,8 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
 <pre class="onboard-copy-block" style="background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:10px 10px 28px;font-size:11px;overflow-x:auto;position:relative;white-space:pre-wrap;word-break:break-word;line-height:1.5;cursor:pointer" title="Click to copy"><code>You have a TealClaw web UI connected via WebSocket.
 TealClaw location: https://tealclaw.ai | Docs: https://tealclaw.ai/llms.txt
 Config: Settings gear (top right) or paste JSON in chat.
-Key features: voice I/O, streaming, Obsidian save (/save), sessions, vision, GIFs, tc-action blocks.
+Key features: voice I/O, streaming, Obsidian save (/save), sessions, vision, GIFs, image gen (/imagine with Nano Banana), tc-action blocks.
+Image gen: users can /imagine [prompt] to generate images (Gemini). Attach a reference image for edits/remixes. Generated images are sent to you as attachments with metadata. Groq Maverick also gives visual commentary.
 tc-action blocks let you control TealClaw directly:
 - config, toast, navigate, style, research, save, bubble
 - video: stream a feed (HLS/MP4/WebM), auto-PiP on scroll
@@ -7780,9 +7782,9 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           }).catch(()=>{});
         }
 
-        // Send to Groq vision (Maverick) for commentary
+        // Send to Groq vision (Maverick) for commentary — only when no agent is connected
         const groqKey=k.whisperKey||k.aiKey;
-        if(groqKey&&imgUrl.startsWith('data:')){
+        if(groqKey&&imgUrl.startsWith('data:')&&!(k.mode==='agent'&&getActiveAgent())){
           const visionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
           fetch('https://api.groq.com/openai/v1/chat/completions',{
             method:'POST',
