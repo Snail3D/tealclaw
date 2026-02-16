@@ -3405,6 +3405,10 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       return `<span class="token-info" title="${esc(title)}">${parts.join(' / ')}</span>`;
     }
 
+    // Strip TTS expression tags from display text (e.g. [cheerful], [whisper])
+    const EXPR_TAG_RE=/^\s*\[(cheerful|warm|whisper|dramatic|sarcastic|excited|professional|sad|angry|calm|gentle|energetic|serious|playful|confident|nervous|empathetic)\]\s*/i;
+    function stripExprTags(text){return text.replace(EXPR_TAG_RE,'').replace(/\[(cheerful|warm|whisper|dramatic|sarcastic|excited|professional|sad|angry|calm|gentle|energetic|serious|playful|confident|nervous|empathetic)\]/gi,'').trim()}
+
     // ── Chat Rendering ─────────────────────────────────
     function renderChat(){
       const s=$('chatScroll');
@@ -3418,7 +3422,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
           if(m.raw)content+=m.text;
           else{
             // Parse tc-ui component blocks before rendering markdown
-            const{cleanText,components}=parseTcComponents(m.text);
+            const{cleanText:tcClean,components}=parseTcComponents(m.text);
+            const cleanText=stripExprTags(tcClean);
             let rendered=renderMd(cleanText);rendered=renderLatex(rendered);
             content+=`<div class="md-content">${rendered}</div>`;
             // Render interactive components
@@ -3690,7 +3695,7 @@ Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help (also work without / for voice: "imagine a cat", "research quantum physics")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
-Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Expression tags: prepend [cheerful], [whisper], [dramatic], etc. to text for vocal direction. Config: ttsProvider (groq|elevenlabs, default groq), groqTtsVoice, groqTtsExpression.
+Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: ttsProvider (groq|elevenlabs, default groq), groqTtsVoice.
 GIF reactions: when the mood fits, append a [gif:search query] tag at the end of your message (e.g. [gif:thumbs up], [gif:mind blown], [gif:happy dance]). TealClaw will fetch and display a matching GIF overlay. Use sparingly — great for celebrations, jokes, greetings, and emotional moments. Don't use for serious/technical answers.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey, ttsKey), or mode. Those are owner-controlled only.`;
 
@@ -4318,10 +4323,8 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       if(!groqKey)return null;
       const voice=k.groqTtsVoice||'troy';
       const model=k.groqTtsModel||'canopylabs/orpheus-v1-english';
-      const expr=k.groqTtsExpression||'';
+      // Expression tags are now handled by ttsPreprocess — text already has [tone] prefix
       const chunks=chunkTextForTTS(text,200);
-      // Prepend expression tag to first chunk only
-      if(expr&&chunks.length)chunks[0]=`[${expr}] ${chunks[0]}`;
       const fetches=chunks.map(chunk=>
         fetch('https://api.groq.com/openai/v1/audio/speech',{
           method:'POST',headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
@@ -4343,12 +4346,19 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       if(!res.ok)return null;return await res.arrayBuffer();
     }
 
-    // TTS script preprocessor: convert AI text into speech-friendly format
+    // TTS script preprocessor: convert AI text into speech-friendly format with tone direction
     async function ttsPreprocess(text,k){
       const groqKey=k.whisperKey||k.aiKey;
-      if(!groqKey)return text;
-      // Short text doesn't need preprocessing
-      if(text.length<80)return text.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').trim()||text;
+      // Strip any expression tags the AI included in the text
+      const cleaned=stripExprTags(text);
+      if(!groqKey)return cleaned;
+      // User-set expression override takes priority
+      const userExpr=k.groqTtsExpression||'';
+      // Short text: regex cleanup + user expression tag
+      if(cleaned.length<80){
+        const simple=cleaned.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').trim()||cleaned;
+        return userExpr?`[${userExpr}] ${simple}`:simple;
+      }
       try{
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
@@ -4365,8 +4375,9 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
 - Keep the conversational tone of the original
 - Maximum 3-4 sentences for long responses
 - Never say "here is" or "the following" — just speak naturally
-- Output ONLY the spoken script, nothing else`},
-              {role:'user',content:text}
+${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- Start the script with a tone tag in brackets that matches the mood. Pick ONE from: [cheerful], [warm], [whisper], [dramatic], [sarcastic], [excited], [professional], [calm], [gentle], [playful], [confident], [empathetic]. Match the emotion of the content.`}
+- Output ONLY the spoken script (with the tone tag at the start), nothing else`},
+              {role:'user',content:cleaned}
             ],
             max_tokens:300,
             temperature:0.3
@@ -4376,8 +4387,9 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
         const script=d.choices?.[0]?.message?.content?.trim();
         if(script&&script.length>10)return script;
       }catch(e){console.warn('TTS preprocess failed:',e)}
-      // Fallback: basic cleanup
-      return text.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/https?:\/\/\S+/g,'').trim()||text;
+      // Fallback: basic cleanup + user expression
+      const fallback=cleaned.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/https?:\/\/\S+/g,'').trim()||cleaned;
+      return userExpr?`[${userExpr}] ${fallback}`:fallback;
     }
 
     async function speak(text){
@@ -6392,7 +6404,7 @@ Rules:
         try{
           const aiResult=await callAgent(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
-            const visiblePartial=partial.replace(/\[gif:[^\]]*\]?$/i,'').trim();
+            const visiblePartial=stripExprTags(partial.replace(/\[gif:[^\]]*\]?$/i,'').trim());
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
@@ -6438,7 +6450,7 @@ Rules:
         try{
           const aiResult=await callAIStream(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
-            const visiblePartial=partial.replace(/\[gif:[^\]]*\]?$/i,'').trim();
+            const visiblePartial=stripExprTags(partial.replace(/\[gif:[^\]]*\]?$/i,'').trim());
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
