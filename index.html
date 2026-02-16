@@ -4248,6 +4248,8 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     const builderRuns=new Map(); // runId → {label,lines[],state,startedAt,sessionKey,agentId}
     let activeBuilderRun=null;
     let builderPanelExpanded=false;
+    let builderLastActivity=0;
+    let builderInactiveTimer=null;
 
     function handleAgentEvent(payload,conn){
       if(!payload||!payload.runId)return;
@@ -4268,6 +4270,16 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       // Append log line
       const text=data?.text||data?.message||data?.tool||data?.event||(typeof data==='string'?data:JSON.stringify(data));
       run.lines.push({stream:stream||'stdout',text:text||'',ts});
+      builderLastActivity=Date.now();
+      clearTimeout(builderInactiveTimer);
+      builderInactiveTimer=setTimeout(()=>{
+        // Auto-close done runs after 5 min inactivity
+        const stale=[];
+        builderRuns.forEach((r,id)=>{if(r.state==='done')stale.push(id)});
+        stale.forEach(id=>{builderRuns.delete(id);if(activeBuilderRun===id)activeBuilderRun=builderRuns.keys().next().value||null});
+        if(builderRuns.size===0)builderPanelExpanded=false;
+        renderBuilderTabs();renderBuilderPanel();
+      },300000);
       renderBuilderTabs();renderBuilderPanel();
     }
 
