@@ -3990,6 +3990,40 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     // ── OpenClaw WebSocket Transport ─────────────────────
     const agentConnections=new Map(); // agentId → OpenClawWS
 
+    // ── Device Identity (Ed25519) ─────────────────────
+    const _b64url=(buf)=>{const b=btoa(String.fromCharCode(...new Uint8Array(buf)));return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'')};
+    const _hexFromBuf=(buf)=>[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+    const TC_DEVICE_KEY='tc-device-identity';
+    async function getOrCreateDeviceIdentity(){
+      const stored=localStorage.getItem(TC_DEVICE_KEY);
+      if(stored){try{
+        const d=JSON.parse(stored);
+        const priv=await crypto.subtle.importKey('jwk',d.privateJwk,{name:'Ed25519'},false,['sign']);
+        const pub=await crypto.subtle.importKey('jwk',d.publicJwk,{name:'Ed25519'},true,['verify']);
+        const raw=await crypto.subtle.exportKey('raw',pub);
+        const id=_hexFromBuf(await crypto.subtle.digest('SHA-256',raw));
+        return {deviceId:id,privateKey:priv,publicKey:pub,publicKeyB64:_b64url(raw)};
+      }catch{localStorage.removeItem(TC_DEVICE_KEY)}}
+      const kp=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']);
+      const privJwk=await crypto.subtle.exportKey('jwk',kp.privateKey);
+      const pubJwk=await crypto.subtle.exportKey('jwk',kp.publicKey);
+      localStorage.setItem(TC_DEVICE_KEY,JSON.stringify({privateJwk:privJwk,publicJwk:pubJwk}));
+      const raw=await crypto.subtle.exportKey('raw',kp.publicKey);
+      const id=_hexFromBuf(await crypto.subtle.digest('SHA-256',raw));
+      return {deviceId:id,privateKey:kp.privateKey,publicKey:kp.publicKey,publicKeyB64:_b64url(raw)};
+    }
+    async function signDeviceAuth(identity,params){
+      const payload=['v2',identity.deviceId,params.clientId,params.clientMode,params.role,
+        params.scopes.join(','),String(params.signedAtMs),params.token||'',params.nonce||''].join('|');
+      const sig=await crypto.subtle.sign({name:'Ed25519'},identity.privateKey,new TextEncoder().encode(payload));
+      return _b64url(sig);
+    }
+    let _deviceIdentityCache=null;
+    async function ensureDeviceIdentity(){
+      if(!_deviceIdentityCache)_deviceIdentityCache=await getOrCreateDeviceIdentity();
+      return _deviceIdentityCache;
+    }
+
     class OpenClawWS {
       constructor(url,token,agentId){
         this.url=url;this.token=token;this.agentId=agentId;
@@ -4020,13 +4054,8 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
             if(frame.type==='event'){
               // Challenge → respond with connect
               if(frame.event==='connect.challenge'){
-                this._send({type:'req',id:this._nextId(),method:'connect',params:{
-                  minProtocol:3,maxProtocol:3,
-                  role:'operator',
-                  scopes:['operator.admin'],
-                  auth:{token:this.token},
-                  client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
-                }});
+                const nonce=frame.payload?.nonce||'';
+                this._sendConnect(nonce);
               } else if(frame.event==='tick'){
                 this._resetTick();
               } else {
@@ -4065,6 +4094,23 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
 
       _send(obj){if(this.ws?.readyState===1)this.ws.send(JSON.stringify(obj))}
       _nextId(){return `tc-${++this._reqId}-${Date.now().toString(36)}`}
+
+      async _sendConnect(nonce){
+        const identity=await ensureDeviceIdentity();
+        const signedAtMs=Date.now();
+        const role='operator';const scopes=['operator.admin'];
+        const sig=await signDeviceAuth(identity,{
+          clientId:'webchat',clientMode:'webchat',role,scopes,
+          signedAtMs,token:this.token,nonce
+        });
+        this._send({type:'req',id:this._nextId(),method:'connect',params:{
+          minProtocol:3,maxProtocol:3,
+          role,scopes,
+          auth:{token:this.token},
+          client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'},
+          device:{id:identity.deviceId,publicKey:identity.publicKeyB64,signature:sig,signedAt:signedAtMs,nonce}
+        }});
+      }
 
       request(method,params){
         return new Promise((resolve,reject)=>{
