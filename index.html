@@ -4516,15 +4516,16 @@ ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- S
       // Preprocess text into speech-friendly script
       const script=await ttsPreprocess(text,k);
       const provider=k.ttsProvider||'groq';
-      if(provider==='elevenlabs') return k.ttsKey?speakElevenLabs(script,k):null;
-      // groq (default)
+      // ElevenLabs if key exists, otherwise fall back to Groq
+      if(provider==='elevenlabs'&&k.ttsKey) return speakElevenLabs(script,k);
+      // Groq TTS (default, also fallback when ElevenLabs key missing)
       return speakGroq(script,k);
     }
 
     function hasTTS(k){
       if(!k)k=getK();
-      const p=k.ttsProvider||'groq';
-      if(p==='elevenlabs')return !!k.ttsKey;
+      // TTS is available if we have ElevenLabs key OR Groq key (whisper/ai)
+      if(k.ttsKey)return true;
       return !!(k.whisperKey||k.aiKey);
     }
     function ttsBlob(data){
