@@ -926,7 +926,7 @@
     <h2>Features</h2>
     <ul>
       <li>Multi-turn chat with streaming and typing animations</li>
-      <li>Voice input (Groq Whisper) and output (Groq Orpheus TTS or ElevenLabs)</li>
+      <li>Voice input (Groq Whisper) and output (Groq Orpheus TTS)</li>
       <li>Image generation (/imagine) and vision (camera, drag-drop, paste)</li>
       <li>Deep research reports (/research) with segmented results</li>
       <li>12 built-in style templates (/template)</li>
@@ -1781,7 +1781,7 @@
     function detectKey(val){
       val=val.trim();
       if(val.startsWith('gsk_'))return{field:'whisperKey',provider:'groq',label:'Groq Key (chat + vision + voice)'};
-      if(/^sk_[a-f0-9]{40,}$/i.test(val))return{field:'ttsKey',label:'ElevenLabs TTS Key'};
+
       if(/^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(val))return{field:'tgToken',label:'Telegram Bot Token'};
       if(/^-?\d{6,}$/.test(val))return{field:'tgChatId',label:'Telegram Chat ID'};
       if(/^https?:\/\/.+:\d{4,5}$/.test(val))return{field:'gwUrl',label:'Gateway URL'};
@@ -2084,7 +2084,7 @@
       const k=getK();
       const keys=[
         {label:'Groq Key',desc:'Chat + vision + voice + TTS (free)',field:'whisperKey',val:k.whisperKey,link:'https://console.groq.com/keys',linkText:'Get key',prefix:'gsk_'},
-        {label:'ElevenLabs Key',desc:'Voice output (TTS)',field:'ttsKey',val:k.ttsKey,link:'https://elevenlabs.io/app/settings/api-keys',linkText:'Get key',prefix:'sk_'},
+
         {label:'Image Gen Key',desc:'Google AI or OpenRouter — /imagine',field:'imageGenKey',val:k.imageGenKey,link:'https://aistudio.google.com/apikey',linkText:'Get key',prefix:'AIza'},
         {label:'Telegram Bot Token',desc:k.tgToken&&k.tgEnabled?'Active':'Forward messages to Telegram',field:'tgToken',val:k.tgToken,link:'https://t.me/BotFather',linkText:'Create bot'},
         {label:'Telegram Chat ID',desc:'Your user or group ID',field:'tgChatId',val:k.tgChatId,link:'https://t.me/userinfobot',linkText:'Get ID'}
@@ -2094,7 +2094,7 @@
       const svcs=[
         {name:'AI Chat',active:!!(k.whisperKey||getAgents().length)},
         {name:'Voice In',active:!!k.whisperKey},
-        {name:'Voice Out',active:!!k.ttsKey},
+        {name:'Voice Out',active:hasTTS()},
         {name:'Image Gen',active:!!(k.imageGenKey||k.imageGenUrl)},
         {name:'Telegram',active:!!(k.tgToken&&k.tgEnabled)},
         {name:'GIF',active:k.gifEnabled!==false},
@@ -2145,15 +2145,9 @@
 
       // Voice output (show when any TTS provider is available)
       if(hasTTS(k)){
-        const ttsProv=k.ttsProvider||'groq';
         const curTtsMode=k.ttsMode||(hasTTS(k)?'auto':'off');
         const groqVoice=k.groqTtsVoice||'troy';
         html+=`<div class="sheet-section"><div class="sheet-section-title">Voice Output</div>
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Provider</div>
-          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px">
-            <button class="mode-btn tts-prov-btn ${ttsProv==='groq'?'active':''}" data-ttsprov="groq" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${ttsProv==='groq'?'var(--teal)':'transparent'};border:none;color:${ttsProv==='groq'?'#fff':'var(--text-3)'};cursor:pointer">Groq Orpheus</button>
-            <button class="mode-btn tts-prov-btn ${ttsProv==='elevenlabs'?'active':''}" data-ttsprov="elevenlabs" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${ttsProv==='elevenlabs'?'var(--teal)':'transparent'};border:none;color:${ttsProv==='elevenlabs'?'#fff':'var(--text-3)'};cursor:pointer">ElevenLabs</button>
-          </div>
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Mode</div>
           <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
             <button class="mode-btn tts-mode-btn ${curTtsMode==='auto'?'active':''}" data-ttsmode="auto" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${curTtsMode==='auto'?'var(--teal)':'transparent'};border:none;color:${curTtsMode==='auto'?'#fff':'var(--text-3)'};cursor:pointer">Auto</button>
@@ -2162,8 +2156,7 @@
           </div>
           <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${curTtsMode==='auto'?'Speaks every AI response automatically.':(curTtsMode==='on'?'Shows a Listen button on responses — only calls TTS when tapped (saves money).':'Voice output disabled. No TTS calls made.')}</div>`;
 
-        if(ttsProv==='groq'){
-          // Groq voice chips
+        // Groq voice chips
           const groqVoices=['autumn','diana','hannah','austin','daniel','troy'];
           html+=`<div style="margin-top:10px">
             <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Voice</div>
@@ -2172,27 +2165,6 @@
             </div>
           </div>`;
           html+=`<div style="font-size:9px;color:var(--text-3);margin-top:8px">Tone is set automatically based on the response content.</div>`;
-        } else {
-          // ElevenLabs voice settings
-          html+=`<div style="margin-top:10px">
-            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Voice</div>
-            <div style="display:flex;gap:5px">
-              <input type="text" class="sheet-input" id="sheetTtsVoice" value="${esc(k.ttsVoice||'ThT5KcBeYPX7keBQBPPD')}" placeholder="Voice ID" style="font-family:var(--mono);font-size:10px;flex:1">
-              <button class="btn btn-teal btn-sm" id="sheetTtsVoiceSave">Set</button>
-            </div>
-            <div class="sheet-chip-row" id="sheetVoicePresets">
-              ${[{id:'ThT5KcBeYPX7keBQBPPD',n:'Rachel'},{id:'EXAVITQu4vr4xnSDxMaL',n:'Bella'},{id:'pNInz6obpgDQGcFmaJgB',n:'Adam'},{id:'4YYIPFl9wE5c4L2eu2Gb',n:'Burt'},{id:'21m00Tcm4TlvDq8ikWAM',n:'Rachel (OG)'},{id:'yoZ06aMxZJJ28mfd3POQ',n:'Sam'}].map(v=>`<button class="sheet-chip voice-preset ${(k.ttsVoice||'ThT5KcBeYPX7keBQBPPD')===v.id?'active':''}" data-vid="${v.id}">${v.n}</button>`).join('')}
-            </div>
-          </div>
-          <div style="margin-top:10px">
-            <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Stability</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="ttsStabVal">${k.ttsStability!==undefined?k.ttsStability:0.3}</span></div>
-            <input type="range" id="sheetTtsStability" min="0" max="1" step="0.05" value="${k.ttsStability!==undefined?k.ttsStability:0.3}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
-          </div>
-          <div style="margin-top:8px">
-            <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Similarity Boost</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="ttsSimilVal">${k.ttsSimilarityBoost!==undefined?k.ttsSimilarityBoost:1.0}</span></div>
-            <input type="range" id="sheetTtsSimilarity" min="0" max="1" step="0.05" value="${k.ttsSimilarityBoost!==undefined?k.ttsSimilarityBoost:1.0}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
-          </div>`;
-        }
 
         // Shared volume slider
         html+=`<div style="margin-top:8px">
@@ -2546,11 +2518,6 @@
         renderSheetContent();renderAgentSelector();updateStatus();
       }));
 
-      // Wire up TTS provider toggle
-      $('sheetBody').querySelectorAll('.tts-prov-btn').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.ttsProvider=b.dataset.ttsprov;setK(k2);
-        renderSheetContent();showToast(`TTS: ${b.dataset.ttsprov==='groq'?'Groq Orpheus':'ElevenLabs'}`,'ok');
-      }));
       // Wire up TTS mode toggle (auto/on/off)
       $('sheetBody').querySelectorAll('.tts-mode-btn').forEach(b=>b.addEventListener('click',()=>{
         ttsMode=b.dataset.ttsmode;
@@ -2610,26 +2577,6 @@
         const k2=getK();k2.gestureConfidence=+e.target.value;setK(k2);showToast(`Gesture confidence: ${e.target.value}`,'ok');
       });
 
-      // Wire up voice settings
-      $('sheetBody').querySelector('#sheetTtsVoiceSave')?.addEventListener('click',()=>{
-        const val=$('sheetBody').querySelector('#sheetTtsVoice').value.trim();
-        if(!val)return;const k2=getK();k2.ttsVoice=val;setK(k2);renderSheetContent();showToast('Voice set','ok');
-      });
-      $('sheetBody').querySelectorAll('.voice-preset').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.ttsVoice=b.dataset.vid;setK(k2);renderSheetContent();showToast(`Voice: ${b.textContent}`,'ok');
-      }));
-      $('sheetBody').querySelector('#sheetTtsStability')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#ttsStabVal');if(el)el.textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetTtsStability')?.addEventListener('change',e=>{
-        const k2=getK();k2.ttsStability=+e.target.value;setK(k2);
-      });
-      $('sheetBody').querySelector('#sheetTtsSimilarity')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#ttsSimilVal');if(el)el.textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetTtsSimilarity')?.addEventListener('change',e=>{
-        const k2=getK();k2.ttsSimilarityBoost=+e.target.value;setK(k2);
-      });
       $('sheetBody').querySelector('#sheetAudioVolume')?.addEventListener('input',e=>{
         const el=$('sheetBody').querySelector('#audioVolVal');if(el)el.textContent=e.target.value;
         audio.volume=+e.target.value;
@@ -3118,7 +3065,7 @@
       const gLinks=getGuestLinks();
       // Build sanitized config (keys as presence booleans)
       const cfg={};
-      const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode','pinHash'];
+      const sensitive=['aiKey','whisperKey','tgToken','imageGenKey','pinCode','pinHash'];
       for(const[key,val]of Object.entries(k)){
         if(val===''||val===null||val===undefined)continue;
         if(sensitive.includes(key)){cfg[key+'Set']=true;continue}
@@ -3719,9 +3666,9 @@ Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help (also work without / for voice: "imagine a cat", "research quantum physics")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
-Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: ttsProvider (groq|elevenlabs, default groq), groqTtsVoice.
+Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
 GIF reactions: when the mood fits, append a [gif:search query] tag at the end of your message (e.g. [gif:thumbs up], [gif:mind blown], [gif:happy dance]). TealClaw will fetch and display a matching GIF overlay. Use sparingly — great for celebrations, jokes, greetings, and emotional moments. Don't use for serious/technical answers.
-IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey, ttsKey), or mode. Those are owner-controlled only.`;
+IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey), or mode. Those are owner-controlled only.`;
 
     function buildSysPrompt(k){
       const base=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
@@ -4422,14 +4369,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       return bufs.length===1?bufs[0]:stitchWavBuffers(bufs);
     }
 
-    async function speakElevenLabs(text,k){
-      const vid=k.ttsVoice||'ThT5KcBeYPX7keBQBPPD';
-      const res=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}`,{
-        method:'POST',headers:{'Accept':'audio/mpeg','Content-Type':'application/json','xi-api-key':k.ttsKey},
-        body:JSON.stringify({text,voice_settings:{stability:k.ttsStability!==undefined?k.ttsStability:0.3,similarity_boost:k.ttsSimilarityBoost!==undefined?k.ttsSimilarityBoost:1.0}})
-      });
-      if(!res.ok)return null;return await res.arrayBuffer();
-    }
+
 
     // TTS script preprocessor: convert AI text into speech-friendly format with tone direction
     // ── TTS text cleanup helpers ──
@@ -4513,25 +4453,16 @@ ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- S
 
     async function speak(text){
       const k=getK();
-      // Preprocess text into speech-friendly script
       const script=await ttsPreprocess(text,k);
-      const provider=k.ttsProvider||'groq';
-      // ElevenLabs if key exists, otherwise fall back to Groq
-      if(provider==='elevenlabs'&&k.ttsKey) return speakElevenLabs(script,k);
-      // Groq TTS (default, also fallback when ElevenLabs key missing)
       return speakGroq(script,k);
     }
 
     function hasTTS(k){
       if(!k)k=getK();
-      // TTS is available if we have ElevenLabs key OR Groq key (whisper/ai)
-      if(k.ttsKey)return true;
       return !!(k.whisperKey||k.aiKey);
     }
     function ttsBlob(data){
-      const k=getK();
-      const mime=(k.ttsProvider||'groq')==='groq'?'audio/wav':'audio/mpeg';
-      return new Blob([data],{type:mime});
+      return new Blob([data],{type:'audio/wav'});
     }
 
     // ── Chat-Based Onboarding ─────────────────────────
@@ -4675,7 +4606,7 @@ CONFIG FIELDS YOU CAN SET:
 Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, sendBtnColor, micBtnColor, lineHeight, letterSpacing, borderRadius
 Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
 Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
-Voice: ttsProvider(groq/elevenlabs), ttsVoice, ttsAutoPlay, groqTtsVoice(autumn/diana/hannah/austin/daniel/troy), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
+Voice: ttsAutoPlay, groqTtsVoice(autumn/diana/hannah/austin/daniel/troy), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
 Features: streamEnabled, gifEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
 Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
 Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
@@ -4685,7 +4616,7 @@ STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue 
 SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /help
 
 RULES:
-- You CANNOT change: aiKey, whisperKey, ttsKey, gwToken, mode
+- You CANNOT change: aiKey, whisperKey, gwToken, mode
 - ALWAYS include a tc-action block when the user asks to change something — do not just describe the change
 - Be proactive: suggest improvements, offer templates, configure features
 - Keep your text responses brief — let the actions speak`;
@@ -4841,9 +4772,6 @@ RULES:
 <p>Voice input (Whisper) is now active -- hold the mic button to speak.</p>
 ${getOptionalSteps()}`;
         },
-        ttsKey:()=>`<h3>ElevenLabs Connected</h3>
-<p>Voice responses are now active. I'll speak my replies out loud.</p>
-${getOptionalSteps()}`,
         tgToken:()=>`<h3>Telegram Bot Token Saved</h3>
 <p>Now I need your <strong>Chat ID</strong>. To find it:</p>
 <ol>
@@ -4893,10 +4821,6 @@ ${getOptionalSteps()}`
 
       html+=`<hr><p><strong>Optional upgrades</strong> (paste a key anytime, or skip):</p><ul>`;
 
-      if(!k.ttsKey){
-        html+=`<li><strong>Voice Output</strong> -- <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs key</a> (<code>sk_...</code>) to hear AI speak</li>`;
-      }
-
       html+=`<li><strong>Image Gen</strong> -- <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI key</a> (<code>AIza...</code>) for <code>/imagine</code> (Nano Banana)</li>`;
       html+=`<li><strong>Agent Mode</strong> -- connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full tool access</li>`;
       html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to forward conversations</li>`;
@@ -4909,7 +4833,7 @@ ${getOptionalSteps()}`
       const k=getK();
       const missing=[];
       if(!k.whisperKey)missing.push('Groq key for chat + voice (<code>gsk_</code>)');
-      if(!k.ttsKey)missing.push('ElevenLabs key for voice output (<code>sk_</code>)');
+
       if(!missing.length)return '<p>All set! Type <code>/help</code> to see available commands.</p>';
       return `<p>You can also add: ${missing.join(', ')}. Just paste anytime.</p>`;
     }
@@ -6037,7 +5961,7 @@ Rules:
                 }
               }
               const keys=Object.keys(data).filter(k=>k!=='type');
-              const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','webhookUrl','customCSS','pinHash'].some(s=>data[s]);
+              const hasSensitive=['aiKey','whisperKey','tgToken','webhookUrl','customCSS','pinHash'].some(s=>data[s]);
               const desc=keys.slice(0,5).join(', ')+(keys.length>5?'...':'')+(hasSensitive?' (includes sensitive keys)':'');
               const ok=await confirmTcAction('Update '+keys.length+' config setting'+(keys.length===1?'':'s'),desc);
               if(!ok){results.push({type:'config',ok:false,error:'denied by user'});break}
@@ -6210,7 +6134,7 @@ Rules:
               const k2=getK();
               const agents2=getAgents();
               const cfg={};
-              const sensitive2=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinCode','pinHash'];
+              const sensitive2=['aiKey','whisperKey','tgToken','imageGenKey','pinCode','pinHash'];
               for(const[key,val]of Object.entries(k2)){
                 if(val===''||val===null||val===undefined)continue;
                 if(sensitive2.includes(key)){cfg[key+'Set']=true;continue}
@@ -6802,7 +6726,6 @@ Rules:
             if(cfg.agents?.length)parts.push(`${cfg.agents.length} agent(s)`);
             if(cfg.aiKey)parts.push('AI key');
             if(cfg.whisperKey)parts.push('Groq/Whisper');
-            if(cfg.ttsKey)parts.push('ElevenLabs TTS');
             if(cfg.tgToken)parts.push('Telegram');
             if(cfg.gifEnabled!==undefined)parts.push('GIF reactions');
             if(cfg.mode)parts.push(`mode: ${cfg.mode}`);
@@ -6913,7 +6836,6 @@ ${agentNote}`);
 <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free chat + vision + voice)</li>
 <li>Or connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings &rarr; Agent</li>
 </ul>
-<p><strong>Voice Output</strong> (optional): <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs key</a> -- <code>sk_...</code></p>
 <p><strong>Telegram</strong>: Type <code>/telegram</code> for setup instructions.</p>`);
           return;
         }
@@ -6957,7 +6879,7 @@ ${agentNote}`);
           lines.push(k.whisperKey?`AI: <strong>Groq</strong> (${k.whisperKey.slice(0,8)}...)`:'AI: <strong>not set</strong>');
           if(mode==='direct')lines.push(`Model: <code>${k.aiModel||'groq/compound-mini'}</code>`);
           lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>');
-          lines.push(k.ttsKey?'Voice Out: <strong>ElevenLabs</strong> (set)':'Voice Out: <strong>not set</strong> (text-only)');
+          lines.push(hasTTS(k)?'Voice Out: <strong>Groq Orpheus</strong> ('+(k.groqTtsVoice||'troy')+')':'Voice Out: <strong>not set</strong> (text-only)');
           lines.push(k.tgToken&&k.tgChatId?`Telegram: <strong>${k.tgEnabled?'active':'configured (off)'}</strong>`:'Telegram: <strong>not set</strong>');
           lines.push((k.imageGenKey||k.imageGenUrl)?`Image Gen: <strong>${k.imageGenKey?(k.imageGenKey.startsWith('AIza')?'Google AI':'OpenRouter'):'custom endpoint'}</strong>`:'Image Gen: <strong>not set</strong>');
           sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
@@ -6990,30 +6912,15 @@ ${agentNote}`);
         }
         if(cmd==='/voice'){
           const k=getK();
-          const prov=k.ttsProvider||'groq';
-          if(prov==='groq'){
-            const expr=k.groqTtsExpression;
-            sysBubble(`<h3>Voice Settings (Groq Orpheus)</h3>
-<p><strong>Provider:</strong> Groq Orpheus (default)</p>
+          const expr=k.groqTtsExpression;
+          sysBubble(`<h3>Voice Settings (Groq Orpheus)</h3>
+<p><strong>Provider:</strong> Groq Orpheus</p>
 <p><strong>Current voice:</strong> <code>${esc(k.groqTtsVoice||'troy')}</code></p>
 <p><strong>Available voices:</strong> autumn, diana, hannah, austin, daniel, troy</p>
 ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><strong>Expression:</strong> natural (none)</p>'}
 <p>To change voice: <code>{"groqTtsVoice": "troy"}</code></p>
 <p>To set expression: <code>{"groqTtsExpression": "cheerful"}</code></p>
-<p>To switch provider: <code>{"ttsProvider": "elevenlabs"}</code></p>
 <p style="font-size:11px;color:var(--text-2)">Free TTS via your Groq key. Long text is auto-chunked at 200 chars and stitched.</p>`);
-          } else if(k.ttsKey){
-            sysBubble(`<h3>Voice Settings (ElevenLabs)</h3>
-<p><strong>Provider:</strong> ElevenLabs</p>
-<p><strong>Current voice:</strong> <code>${k.ttsVoice||'ThT5KcBeYPX7keBQBPPD'}</code> (Rachel default)</p>
-<p>To change, visit <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener">ElevenLabs Voice Lab</a>, copy a voice ID, and paste it in the chat.</p>
-<p>To switch provider: <code>{"ttsProvider": "groq"}</code></p>`);
-          } else {
-            sysBubble(`<h3>Voice Settings</h3>
-<p><strong>Provider:</strong> ElevenLabs (no key set)</p>
-<p>Paste an <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs</a> key (<code>sk_...</code>), or switch to Groq:</p>
-<p><code>{"ttsProvider": "groq"}</code></p>`);
-          }
           return;
         }
         if(text.startsWith('/save')){
@@ -7625,8 +7532,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
               else if(cfg.gwUrl)parts.push('gateway');
               if(cfg.aiKey)parts.push('AI key');
               if(cfg.whisperKey)parts.push('Groq/Whisper');
-              if(cfg.ttsKey)parts.push('ElevenLabs TTS');
-              if(cfg.ttsVoice)parts.push('voice');
               if(cfg.tgToken)parts.push('Telegram');
               if(cfg.accentColor)parts.push('accent color');
               if(cfg.bgImage)parts.push('background image');
@@ -8116,7 +8021,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     // ── Config Import (shared by hash, file drop, paste) ──
     const CONFIG_KEYS={
       aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
-      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',ttsMode:'ttsMode',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',ttsProvider:'ttsProvider',groqTtsExpression:'groqTtsExpression',
+      whisperKey:'whisperKey',ttsAutoPlay:'ttsAutoPlay',ttsMode:'ttsMode',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',groqTtsExpression:'groqTtsExpression',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
@@ -8173,7 +8078,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       // Skill context injection
       skillContext:'skillContext',
       // Voice tuning
-      ttsStability:'ttsStability',ttsSimilarityBoost:'ttsSimilarityBoost',audioVolume:'audioVolume',
+      audioVolume:'audioVolume',
       // Gesture tuning
       gestureConfidence:'gestureConfidence'
     };
@@ -8502,7 +8407,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     }
     function showConfigImportConfirm(cfg){
       const fields=Object.keys(cfg).filter(k=>k!=='agents'&&k!=='_session');
-      const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinHash'].some(s=>cfg[s]);
+      const hasSensitive=['aiKey','whisperKey','tgToken','imageGenKey','pinHash'].some(s=>cfg[s]);
       const hasWebhook=!!cfg.webhookUrl;
       const hasCSS=!!cfg.customCSS;
       const hasSession=!!cfg._session;
@@ -8539,7 +8444,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         const nItems=fields.slice(0,6).map(f=>{
           let v=cfg[f];
           if(typeof v==='string'&&v.length>20)v=v.slice(0,16)+'...';
-          if(['aiKey','whisperKey','ttsKey','tgToken','gwToken','pinHash'].includes(f))v=typeof cfg[f]==='string'?(cfg[f].slice(0,8)+'...'):String(cfg[f]);
+          if(['aiKey','whisperKey','tgToken','gwToken','pinHash'].includes(f))v=typeof cfg[f]==='string'?(cfg[f].slice(0,8)+'...'):String(cfg[f]);
           return{label:f,value:String(v||''),badge:'updated'};
         });
         if(fields.length>6)nItems.push({label:`+${fields.length-6} more`,value:'',badge:''});
@@ -8586,7 +8491,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       }
       if(agents.length)out.agents=agents;
       if(!includeSensitive){
-        const sensitive=['aiKey','whisperKey','ttsKey','tgToken','imageGenKey','pinHash','pinCode'];
+        const sensitive=['aiKey','whisperKey','tgToken','imageGenKey','pinHash','pinCode'];
         sensitive.forEach(s=>{delete out[s]});
         if(out.agents)out.agents=out.agents.map(a=>({...a,token:undefined}));
       }

@@ -2,7 +2,7 @@
 
 === LEGEND (decode before reading) ===
 TC=TealClaw  cfg=config  k=key  LS=localStorage  SW=service worker
-OR=OpenRouter  GQ=Groq  EL=ElevenLabs  TG=Telegram  AP=Anthropic
+OR=OpenRouter  GQ=Groq  TG=Telegram  AP=Anthropic
 b64=base64  enc=encrypted  md=Markdown  JS=JavaScript
 bg=background  btn=button  msg=message  rsp=response  usr=user
 req=required  opt=optional  dflt=default  fn=function
@@ -60,8 +60,7 @@ Example first-time cfg:
 {
   "aiKey": "sk-or-v1-USER_KEY",
   "whisperKey": "gsk_USER_KEY",
-  "ttsKey": "sk_USER_KEY",
-  "ttsVoice": "ThT5KcBeYPX7keBQBPPD",
+  "groqTtsVoice": "tara",
   "botName": "Atlas",
   "botGreeting": "# Welcome aboard.\nI'm **Atlas** -- your research partner, sounding board, and general-purpose thinking tool. Ask me anything, or tap one of the quick options below to get started.",
   "sysPrompt": "You are Atlas, a sharp and thoughtful AI assistant. You explain things clearly, ask good follow-up questions, and adapt your depth to the user's expertise. Be concise by default but go deep when asked.",
@@ -87,7 +86,7 @@ Example first-time cfg:
 
 - **WHITE-LABEL** -- With botName, botIcon, accentColor, bgImage, hideTopbar, the PWA looks like a custom-built app. No visible TC branding.
 
-- **VOICE** -- EL voice OR GQ Orpheus TTS (free with GQ k), auto-play toggle, GQ Whisper transcription. Usr talks and hears rsp in the voice you chose. GQ-only setup covers ALL voice (input via Whisper + output via Orpheus) with one k.
+- **VOICE** -- GQ Orpheus TTS (free with GQ k), auto-play toggle, GQ Whisper transcription. Usr talks and hears rsp in the voice you chose. One GQ k covers ALL voice (input via Whisper + output via Orpheus).
 
 - **SMART MODEL ROUTING** -- Fast model for quick questions, complex model for heavy lifting, auto character-length threshold.
 
@@ -316,8 +315,7 @@ Only include fields you want to set/change. TC uses partial merge.
   "aiKey": "sk-or-v1-...",
   "aiModel": "google/gemini-2.5-flash-preview",
   "whisperKey": "gsk_...",
-  "ttsKey": "sk_...",
-  "ttsVoice": "ThT5KcBeYPX7keBQBPPD",
+  "groqTtsVoice": "tara",
   "ttsAutoPlay": true,
   "sysPrompt": "You are a helpful assistant.",
   "mode": "direct",
@@ -401,10 +399,9 @@ Only include fields you want to set/change. TC uses partial merge.
 | aiProvider | "openrouter"/"groq"/"anthropic" | AI provider |
 | aiKey | string | Chat API k (OR: sk-or-v1-*, GQ: gsk_*, AP: sk-ant-*) |
 | aiModel | string | Model ID (dflt: google/gemini-2.5-flash-preview) |
-| whisperKey | string | GQ API k for Whisper voice transcription (gsk_*) |
-| ttsKey | string | EL API k for TTS (sk_*) |
-| ttsVoice | string | EL voice ID (dflt: ThT5KcBeYPX7keBQBPPD = Rachel) |
-| ttsAutoPlay | boolean | true=auto-speak; false=on tap only (saves credits). Dflt: true |
+| whisperKey | string | GQ API k for Whisper transcription AND Orpheus TTS (gsk_*) |
+| groqTtsVoice | string | GQ Orpheus voice name (tara, leah, jess, leo, dan, mia). Dflt: tara |
+| ttsAutoPlay | boolean | true=auto-speak; false=on tap only. Dflt: true |
 | sysPrompt | string | System prompt sent to AI |
 | mode | "direct"/"agent" | Direct=call provider; Agent=route through OpenClaw gateway |
 | tgToken | string | TG bot token from @BotFather |
@@ -537,14 +534,14 @@ TC reads #config= on load, imports, clears hash. Hash fragment never
 leaves the browser.
 
 ```bash
-CONFIG=$(echo -n '{"aiKey":"sk-or-v1-xxx","whisperKey":"gsk_xxx","ttsKey":"sk_xxx"}' | base64)
+CONFIG=$(echo -n '{"aiKey":"sk-or-v1-xxx","whisperKey":"gsk_xxx"}' | base64)
 open "https://tealclaw.ai/#config=$CONFIG"          # macOS
 xdg-open "https://tealclaw.ai/#config=$CONFIG"      # Linux
 start "https://tealclaw.ai/#config=$CONFIG"          # Windows
 ```
 
 ```javascript
-const config = { aiKey: "sk-or-v1-xxx", whisperKey: "gsk_xxx", ttsKey: "sk_xxx" };
+const config = { aiKey: "sk-or-v1-xxx", whisperKey: "gsk_xxx" };
 const url = "https://tealclaw.ai/#config=" + btoa(JSON.stringify(config));
 window.open(url);        // from browser console
 // page.goto(url);       // Playwright / Puppeteer
@@ -552,7 +549,7 @@ window.open(url);        // from browser console
 
 ```python
 import json, base64, webbrowser
-config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx", "ttsKey": "sk_xxx"}
+config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx"}
 payload = base64.b64encode(json.dumps(config).encode()).decode()
 webbrowser.open(f"https://tealclaw.ai/#config={payload}")
 ```
@@ -579,7 +576,7 @@ Build: "https://tealclaw.ai/#config=" + btoa(JSON.stringify(config))
 
 ### Encrypted Share Links (REQUIRED when cfg contains API keys)
 
-If cfg contains ANY API keys (aiKey, whisperKey, ttsKey, tgToken,
+If cfg contains ANY API keys (aiKey, whisperKey, tgToken,
 imageGenKey, gateway tokens), you MUST encrypt or instruct usr to use
 /share. Never send plain b64 links with API keys through any channel.
 
@@ -651,15 +648,15 @@ Ready-to-use cfg blocks. Use as starting points, customize per usr.
 
 | Recipe | JSON |
 |--------|------|
-| Full key setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","ttsKey":"sk_KEY","ttsVoice":"ThT5KcBeYPX7keBQBPPD"}` |
-| Change voice | `{"ttsVoice": "NEW_VOICE_ID"}` |
+| Full key setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"tara"}` |
+| Change voice | `{"groqTtsVoice": "leo"}` |
 | Switch to AP | `{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}` |
 | Enable TG | `{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}` |
 | Switch to Agent mode | `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home Server", "url": "https://gw.example.com", "token": "abc123", "active": true}]}` |
 | Image gen (Nano Banana) | `{"imageGenKey": "AIza..."}` -- Google AI key, defaults to gemini-2.5-flash-image |
 | Image gen (OpenRouter) | `{"imageGenKey": "sk-or-v1-..."}` -- OpenRouter key, set imageGenModel for specific model |
 | Image gen (custom) | `{"imageGenUrl": "https://api.example.com/v1/images/generations", "imageGenKey": "sk-...", "imageGenModel": "model-name"}` |
-| Save EL credits | `{"ttsAutoPlay": false}` |
+| Mute auto-play | `{"ttsAutoPlay": false}` |
 | Custom prompt | `{"sysPrompt": "You are a pirate who speaks in nautical metaphors."}` |
 | Disable GIFs | `{"gifEnabled": false}` |
 | Color theme | `{"accentColor": "#8b5cf6", "chatUserColor": "#1a1040", "chatAiColor": "#0f0a2a", "bgColor": "#0a0520"}` |
@@ -721,8 +718,7 @@ GQ free tier only: chat, vision, AND voice input. One k covers all.
   "themeMode": "dark",
   "aiKey": "sk-or-v1-KEY",
   "whisperKey": "gsk_KEY",
-  "ttsKey": "sk_KEY",
-  "ttsVoice": "ThT5KcBeYPX7keBQBPPD",
+  "groqTtsVoice": "tara",
   "gifEnabled": true
 }
 ```
@@ -830,7 +826,7 @@ Minimum 4 characters enforced.
 ### Agent Config Guardrails
 You (the agent) can update ANY cfg field via tc-action config blocks EXCEPT:
 - Your own model: aiModel, searchModel, visionModel, fastModel
-- API keys: aiKey, whisperKey, ttsKey, gwToken
+- API keys: aiKey, whisperKey, gwToken
 - Mode: mode (direct/agent)
 These are owner-controlled only. You cannot change the model you run on or
 the keys that authenticate you. This prevents self-modification loops.
@@ -858,13 +854,12 @@ the keys that authenticate you. This prevents self-modification loops.
 
 4. Scan before publishing:
    ```bash
-   git log --all -p | grep -iE "(sk-or-v1-|gsk_|sk_[a-f0-9]{40}|sk-ant-)" | head -20
+   git log --all -p | grep -iE "(sk-or-v1-|gsk_|sk-ant-)" | head -20
    ```
 
 5. Rotate keys immediately if exposed:
    - OR: https://openrouter.ai/keys
    - GQ: https://console.groq.com/keys
-   - EL: https://elevenlabs.io/app/settings/api-keys
    - AP: https://console.anthropic.com/settings/keys
    - TG: message @BotFather with /revoke
 
@@ -898,7 +893,6 @@ names so you can rebuild their cfg without asking them to repeat everything.
 |----------|---------|-----------|
 | OR | https://openrouter.ai/keys | Some free models |
 | GQ | https://console.groq.com/keys | Free with rate limits |
-| EL | https://elevenlabs.io/app/settings/api-keys | 10K chars/month |
 | AP | https://console.anthropic.com/settings/keys | Pay-as-you-go |
 | TG Bot | https://t.me/BotFather (send /newbot) | Free |
 
@@ -957,11 +951,10 @@ research, deep research, Wolfram Alpha queries. Complete AI stack, zero extra ke
 
 ## Groq TTS (Orpheus)
 
-When no EL k is set but a GQ k exists, TC auto-falls back to GQ Orpheus TTS.
+GQ Orpheus is the TTS provider. Same GQ k (gsk_*) used for Whisper transcription.
 Voices: tara (dflt), leah, jess, leo, dan, mia.
 Cfg: `{"groqTtsVoice": "leo"}` to change voice. /voice cmd shows available voices.
 Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/speech.
-EL takes priority if both keys exist (higher quality, more voices).
 
 
 ## Chat Commands
@@ -1011,7 +1004,6 @@ Also:
 Usr pastes bare k, TC auto-detects:
 - sk-or-v1-* --> aiKey (OR)
 - gsk_* --> whisperKey (GQ)
-- sk_ + 40+ hex --> ttsKey (EL)
 - 123456:ABC-* --> tgToken (TG)
 - Negative or 6+ digit number --> tgChatId
 - http(s)://...:port --> gateway URL
@@ -1056,7 +1048,7 @@ settings, quick replies. Regenerate their full cfg from memory on new devices.
 Browser --(WebSocket)--> OpenClaw Gateway (agent mode, preferred)
 Browser --(HTTPS)------> OR/GQ/AP (chat completions, direct mode)
 Browser --(HTTPS)------> GQ Whisper (voice transcription)
-Browser --(HTTPS)------> EL (TTS)
+Browser --(HTTPS)------> GQ Orpheus (TTS)
 Browser --(HTTPS)------> OpenClaw Gateway (HTTP fallback for non-WS agents)
 Browser --(HTTPS)------> TG Bot API (msg forwarding)
 ```

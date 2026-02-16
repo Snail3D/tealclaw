@@ -2,7 +2,7 @@
 
 === LEGEND (decode before reading) ===
 TC=TealClaw  cfg=config  k=key  LS=localStorage  SW=service worker
-OR=OpenRouter  GQ=Groq  EL=ElevenLabs  TG=Telegram  AP=Anthropic
+OR=OpenRouter  GQ=Groq  TG=Telegram  AP=Anthropic
 b64=base64  enc=encrypted  md=Markdown  JS=JavaScript
 bg=background  btn=button  msg=message  rsp=response  usr=user
 req=required  opt=optional  dflt=default  fn=function
@@ -35,7 +35,7 @@ TC reads hash on load, imports cfg, clears hash. # fragment stays client-side.
 
 **Shell example:**
 ```bash
-CONFIG=$(echo -n '{"aiKey":"sk-or-v1-xxx","whisperKey":"gsk_xxx","ttsKey":"sk_xxx"}' | base64)
+CONFIG=$(echo -n '{"aiKey":"sk-or-v1-xxx","whisperKey":"gsk_xxx"}' | base64)
 open "https://tealclaw.ai/#config=$CONFIG"          # macOS
 xdg-open "https://tealclaw.ai/#config=$CONFIG"      # Linux
 start "https://tealclaw.ai/#config=$CONFIG"          # Windows
@@ -43,7 +43,7 @@ start "https://tealclaw.ai/#config=$CONFIG"          # Windows
 
 **JS example:**
 ```javascript
-const config = { aiKey: "sk-or-v1-xxx", whisperKey: "gsk_xxx", ttsKey: "sk_xxx" };
+const config = { aiKey: "sk-or-v1-xxx", whisperKey: "gsk_xxx" };
 const url = "https://tealclaw.ai/#config=" + btoa(JSON.stringify(config));
 window.open(url);
 // or: page.goto(url)  // Playwright/Puppeteer
@@ -52,7 +52,7 @@ window.open(url);
 **Python example:**
 ```python
 import json, base64, webbrowser
-config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx", "ttsKey": "sk_xxx"}
+config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx"}
 payload = base64.b64encode(json.dumps(config).encode()).decode()
 webbrowser.open(f"https://tealclaw.ai/#config={payload}")
 ```
@@ -95,9 +95,8 @@ Only include fields to set/change. TC uses partial merge.
 | aiModel | string | Chat model ID (dflt: google/gemini-2.5-flash-preview for OR, llama-3.3-70b-versatile for Groq) |
 | visionModel | string | Vision model for image understanding |
 | searchModel | string | Research/search model |
-| whisperKey | string | GQ k for Whisper voice transcription |
-| ttsKey | string | EL k for TTS |
-| ttsVoice | string | EL voice ID (dflt: ThT5KcBeYPX7keBQBPPD = Rachel) |
+| whisperKey | string | GQ k for Whisper transcription AND Orpheus TTS (gsk_*) |
+| groqTtsVoice | string | GQ Orpheus voice name (tara, leah, jess, leo, dan, mia). Dflt: tara |
 | ttsAutoPlay | boolean | true=auto-speak; false=on tap only. Dflt: true |
 | sysPrompt | string | System prompt |
 | mode | "direct"/"agent" | Direct=provider; Agent=OpenClaw gateway |
@@ -164,8 +163,6 @@ Only include fields to set/change. TC uses partial merge.
 | temperature | number | Creativity 0-2 (dflt: 0.7) |
 | hideBmc | boolean | Hide BMC link |
 | cameraEnabled | boolean | Camera access (dflt: true) |
-| ttsStability | number | EL voice stability 0-1 (dflt: 0.3) |
-| ttsSimilarityBoost | number | EL similarity boost 0-1 (dflt: 1.0) |
 | audioVolume | number | Playback volume 0-1 (dflt: 0.8) |
 | gestureConfidence | number | Gesture detection confidence 0.3-0.95 (dflt: 0.6) |
 | contextMessages | number | Context msgs (dflt: 20, 2-50) |
@@ -348,7 +345,7 @@ GQ Compound-powered research reports (same k as Whisper).
 Max output: 8,192 tokens. Context: 131,072 tokens.
 One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete stack.
 
-**Agent guardrail**: You may NOT change: aiModel, searchModel, visionModel, fastModel, aiKey, whisperKey, ttsKey, gwToken, mode. These are owner-controlled.
+**Agent guardrail**: You may NOT change: aiModel, searchModel, visionModel, fastModel, aiKey, whisperKey, gwToken, mode. These are owner-controlled.
 
 ## Common Recipes
 
@@ -356,11 +353,11 @@ One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete s
 
 | Recipe | JSON |
 |--------|------|
-| Full k setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","ttsKey":"sk_KEY","ttsVoice":"ThT5KcBeYPX7keBQBPPD"}` |
-| Change voice | `{"ttsVoice": "NEW_VOICE_ID"}` |
+| Full k setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"tara"}` |
+| Change voice | `{"groqTtsVoice": "leo"}` |
 | Switch provider | `{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}` |
 | Enable TG | `{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}` |
-| Save EL credits | `{"ttsAutoPlay": false}` |
+| Mute auto-play | `{"ttsAutoPlay": false}` |
 | Custom prompt | `{"sysPrompt": "You are a pirate who speaks in nautical metaphors."}` |
 | Disable GIFs | `{"gifEnabled": false}` |
 | Color theme | `{"accentColor": "#8b5cf6", "bgColor": "#0a0520", "chatUserColor": "#1a1040", "chatAiColor": "#0f0a2a"}` |
@@ -545,7 +542,6 @@ User clicks "Share Settings with Agent" in Settings > Agent Tools. This sends th
 Bare k auto-detection:
 - `sk-or-v1-*` --> OR AI k
 - `gsk_*` --> GQ Whisper k
-- `sk_` + hex --> EL TTS k
 - `AIza*` --> Tenor/Google API k
 
 ## Architecture
