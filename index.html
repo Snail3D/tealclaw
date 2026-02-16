@@ -4251,35 +4251,65 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       if(buffers.length===0)return new ArrayBuffer(0);
       if(buffers.length===1)return buffers[0];
       const first=new DataView(buffers[0]);
-      // Read WAV format from first buffer header
       const numChannels=first.getUint16(22,true);
       const sampleRate=first.getUint32(24,true);
       const bitsPerSample=first.getUint16(34,true);
-      // Extract PCM data from each buffer (skip 44-byte header)
+      const bytesPerSample=bitsPerSample/8;
+      const blockAlign=numChannels*bytesPerSample;
+      // Crossfade length: 64 samples (~1.3ms at 48kHz) to eliminate pops
+      const xfadeSamples=64;
+      const xfadeBytes=xfadeSamples*blockAlign;
+      // Extract PCM from each buffer (skip 44-byte WAV header)
       const pcmParts=buffers.map(b=>new Uint8Array(b).slice(44));
-      const totalPcmLen=pcmParts.reduce((sum,p)=>sum+p.length,0);
-      // Build new WAV
+      // Calculate total length after overlapping crossfade regions
+      let totalPcmLen=pcmParts[0].length;
+      for(let i=1;i<pcmParts.length;i++)totalPcmLen+=pcmParts[i].length-xfadeBytes;
       const wavLen=44+totalPcmLen;
       const out=new ArrayBuffer(wavLen);
       const view=new DataView(out);
-      const write4=(off,str)=>{for(let i=0;i<4;i++)view.setUint8(off+i,str.charCodeAt(i))};
-      write4(0,'RIFF');
-      view.setUint32(4,wavLen-8,true);
-      write4(8,'WAVE');
-      write4(12,'fmt ');
-      view.setUint32(16,16,true); // PCM subchunk size
-      view.setUint16(20,1,true);  // PCM format
-      view.setUint16(22,numChannels,true);
-      view.setUint32(24,sampleRate,true);
-      view.setUint32(28,sampleRate*numChannels*(bitsPerSample/8),true);
-      view.setUint16(32,numChannels*(bitsPerSample/8),true);
-      view.setUint16(34,bitsPerSample,true);
-      write4(36,'data');
-      view.setUint32(40,totalPcmLen,true);
-      // Copy PCM data
       const outBytes=new Uint8Array(out);
-      let offset=44;
-      for(const part of pcmParts){outBytes.set(part,offset);offset+=part.length}
+      // Write WAV header
+      const w4=(off,s)=>{for(let i=0;i<4;i++)view.setUint8(off+i,s.charCodeAt(i))};
+      w4(0,'RIFF');view.setUint32(4,wavLen-8,true);w4(8,'WAVE');w4(12,'fmt ');
+      view.setUint32(16,16,true);view.setUint16(20,1,true);
+      view.setUint16(22,numChannels,true);view.setUint32(24,sampleRate,true);
+      view.setUint32(28,sampleRate*blockAlign,true);
+      view.setUint16(32,blockAlign,true);view.setUint16(34,bitsPerSample,true);
+      w4(36,'data');view.setUint32(40,totalPcmLen,true);
+      // Copy first part
+      outBytes.set(pcmParts[0],44);
+      let writePos=44+pcmParts[0].length-xfadeBytes;
+      // Stitch remaining with crossfade to eliminate pops
+      for(let i=1;i<pcmParts.length;i++){
+        const part=pcmParts[i];
+        // Crossfade overlap region: blend end of previous with start of current
+        for(let s=0;s<xfadeSamples;s++){
+          const fadeOut=1-s/xfadeSamples;
+          const fadeIn=s/xfadeSamples;
+          for(let ch=0;ch<numChannels;ch++){
+            const byteOff=(s*numChannels+ch)*bytesPerSample;
+            const pos=writePos+byteOff;
+            // Read 16-bit PCM samples (little-endian)
+            const prev=view.getInt16(pos,true);
+            const curr=new DataView(part.buffer,part.byteOffset+byteOff,2).getInt16(0,true);
+            const blended=Math.round(prev*fadeOut+curr*fadeIn);
+            view.setInt16(pos,Math.max(-32768,Math.min(32767,blended)),true);
+          }
+        }
+        // Copy rest of current part after crossfade region
+        if(part.length>xfadeBytes)outBytes.set(part.slice(xfadeBytes),writePos+xfadeBytes);
+        writePos+=part.length-xfadeBytes;
+      }
+      // Fade out last 32 samples to prevent end-of-file pop
+      const fadeOutSamples=32;
+      const endPos=44+totalPcmLen;
+      for(let s=0;s<fadeOutSamples;s++){
+        const fade=1-s/fadeOutSamples;
+        for(let ch=0;ch<numChannels;ch++){
+          const pos=endPos-((fadeOutSamples-s)*numChannels+ch)*bytesPerSample;
+          if(pos>=44){const v=view.getInt16(pos,true);view.setInt16(pos,Math.round(v*fade),true)}
+        }
+      }
       return out;
     }
 
@@ -4313,12 +4343,51 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       if(!res.ok)return null;return await res.arrayBuffer();
     }
 
+    // TTS script preprocessor: convert AI text into speech-friendly format
+    async function ttsPreprocess(text,k){
+      const groqKey=k.whisperKey||k.aiKey;
+      if(!groqKey)return text;
+      // Short text doesn't need preprocessing
+      if(text.length<80)return text.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').trim()||text;
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model:'llama-3.3-70b-versatile',
+            messages:[
+              {role:'system',content:`Convert this AI response into a natural spoken script for text-to-speech. Rules:
+- Write out all numbers as words (42 → "forty-two", $3.99 → "three dollars and ninety-nine cents", 15% → "fifteen percent")
+- Remove all markdown formatting (headers, bold, italic, links, code blocks, tables)
+- Remove URLs, file paths, and code snippets entirely
+- If the text has long lists, code, tables, or detailed technical content: summarize the key points briefly and end with "Check your screen for the full details."
+- For research results: give a concise verbal summary (2-4 sentences) of the findings
+- Keep the conversational tone of the original
+- Maximum 3-4 sentences for long responses
+- Never say "here is" or "the following" — just speak naturally
+- Output ONLY the spoken script, nothing else`},
+              {role:'user',content:text}
+            ],
+            max_tokens:300,
+            temperature:0.3
+          })
+        });
+        const d=await res.json();
+        const script=d.choices?.[0]?.message?.content?.trim();
+        if(script&&script.length>10)return script;
+      }catch(e){console.warn('TTS preprocess failed:',e)}
+      // Fallback: basic cleanup
+      return text.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/https?:\/\/\S+/g,'').trim()||text;
+    }
+
     async function speak(text){
       const k=getK();
+      // Preprocess text into speech-friendly script
+      const script=await ttsPreprocess(text,k);
       const provider=k.ttsProvider||'groq';
-      if(provider==='elevenlabs') return k.ttsKey?speakElevenLabs(text,k):null;
+      if(provider==='elevenlabs') return k.ttsKey?speakElevenLabs(script,k):null;
       // groq (default)
-      return speakGroq(text,k);
+      return speakGroq(script,k);
     }
 
     function hasTTS(k){
