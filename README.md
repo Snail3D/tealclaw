@@ -2,59 +2,29 @@
 
 ![TealClaw — Private AI Control](og-image.png)
 
-**BYOK voice dashboard PWA at [tealclaw.ai](https://tealclaw.ai)**. Zero server. Total privacy. 95+ configurable fields.
+**BYOK voice dashboard at [tealclaw.ai](https://tealclaw.ai).** Your keys never leave your browser. We see nothing.
 
-Your API keys never leave your browser. All traffic goes directly from your browser to the AI provider. We see nothing.
+---
 
-## How It Works
+## Highlights
 
-```
-Your Browser → AI Provider (OpenRouter/Groq/Anthropic) → Your Browser
-Your Browser → Groq Whisper (voice transcription) → Your Browser
-Your Browser → Groq Research (deep reports) → Your Browser
-Your Browser → ElevenLabs (text-to-speech) → Your Browser
-Your Browser → OpenClaw Gateway (via Cloudflare Tunnel) → Your Browser
-Your Browser → Telegram Bot API → Your Telegram Chat
-Your Browser → Tenor (GIF reactions) → Your Browser
-```
+**Zero Server, Total Privacy** — Static files on Cloudflare Pages. No backend, no database, no tracking. Your browser talks directly to AI providers.
 
-No backend. No database. No tracking. Static files on Cloudflare Pages.
+**Voice Chat** — Hold-to-speak with Groq Whisper transcription. ElevenLabs TTS for voice responses. Full push-to-talk with live subtitles.
 
-## Features
+**The Claw** — MediaPipe hand-tracking gesture control. Pinch to talk, wave to clear, point to scroll. Hands-free everything.
 
-- **Chat** — Multi-turn conversation with persistent history
-- **Streaming** — Token-by-token AI response display
-- **Typing Animation** — Typewriter character reveal for AI responses (slow/medium/fast)
-- **Bubble Animations** — Slide, fade, scale, bounce entrance effects for chat messages
-- **Voice In** — Hold-to-speak with Groq Whisper transcription
-- **Voice Out** — ElevenLabs TTS with auto-play or tap-to-play
-- **Vision** — Drag-and-drop, paste, camera, or attach images for AI vision
-- **Research** — `/research` command for deep GROQ-powered reports with ORNOT-style segmented results
-- **GIF Reactions** — Fullscreen Tenor GIF overlay on AI responses (AI can tag with `[gif:search term]`)
-- **Image Generation** — `/imagine` command with configurable provider
-- **LaTeX/Math** — KaTeX rendering for $inline$ and $$block$$ math
-- **Mermaid Diagrams** — Interactive SVG diagram rendering from ```mermaid code blocks
-- **Quick Replies** — Configurable chip buttons for common prompts
-- **Multi-Model Routing** — Auto-select fast or capable model based on query complexity
-- **Style Templates** — Pre-built visual themes and bot configurations via `/template`
-- **Config Profiles** — Save/load/switch between different bot configurations
-- **QR Code Sharing** — Generate QR codes to configure another device instantly
-- **Chat Export** — Download conversations as Markdown
-- **Webhooks** — POST events to external endpoints
-- **Scheduled Messages** — Timed greetings and reminders
-- **PIN Code Lock** — Optional PIN to prevent unauthorized message sending
-- **Gesture Control** — MediaPipe hand recognition for hands-free voice and UI control
-- **Obsidian Integration** — /save command with YAML frontmatter for notes and ideas
-- **Ephemeral Sessions** — /session create with time-limited, encrypted share links
-- **Agent Mode** — Route through your OpenClaw gateway via Cloudflare Tunnel
-- **Telegram** — Forward conversations (including full research context) to Telegram
-- **95+ Config Fields** — Colors, fonts, layout, animations, markdown, buttons, accessibility, and more
-- **Custom Bot Persona** — Name, icon, greeting, system prompt — transform into any chatbot
-- **Accessibility** — Dyslexia font, high contrast, reduce motion, focus indicators
-- **Haptic Feedback** — Vibration patterns for send/receive/error (default ON)
-- **Sound Effects** — Subtle tones on interactions
-- **Dark/Light Theme** — Full theme customization with CSS variable cascade
-- **PWA** — Installable on iOS, Android, and desktop. Works offline.
+**Deep Research** — `/research` generates segmented, source-cited reports powered by Groq. Entire research pipelines in one command.
+
+**Vision** — Drag, paste, snap from camera, or attach. Multi-image support across providers.
+
+**Single HTML File** — No build step, no framework, no dependencies. View Source and read every line. `npx serve .` and you're developing.
+
+**95+ Config Fields** — Colors, fonts, layout, animations, persona, system prompt, accessibility, quick replies, scheduled messages, and more. Style templates let you transform the entire UI in one click.
+
+**Agent-Configurable** — AI agents read [llms.txt](https://tealclaw.ai/llms.txt), generate a JSON config, and deliver it via URL hash, file drop, or chat paste. Partial merge — only fields present get updated. See the [tc-action protocol](SKILL.md) for full agent control.
+
+---
 
 ## Quick Start (Free)
 
@@ -62,92 +32,53 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 2. Open [tealclaw.ai](https://tealclaw.ai)
 3. Paste your `gsk_` key in the chat
 
-That's it. One free key gives you: chat, voice input, vision, and `/research`.
+One free key gives you chat, voice input, vision, and `/research`.
 
 ## Bring Your Own Keys
 
-| Key | Provider | What It Does |
-|-----|----------|-------------|
+| Key | Provider | Unlocks |
+|-----|----------|---------|
 | AI Key | OpenRouter, Groq, or Anthropic | Chat completions |
-| Whisper Key | Groq | Voice transcription + /research reports |
-| TTS Key | ElevenLabs | Voice responses (optional) |
-| Gateway | OpenClaw via Cloudflare Tunnel | Agent mode with shared context |
+| Whisper Key | Groq | Voice transcription + research |
+| TTS Key | ElevenLabs | Voice responses |
+| Gateway | OpenClaw via Cloudflare Tunnel | Agent mode |
 | Telegram | Bot token + Chat ID | Message forwarding |
 
-All keys stored in browser `localStorage`. Nothing sent to tealclaw.ai. Read the full **[Security Philosophy](SECURITY.md)**.
+All keys stored in `localStorage`. Nothing sent to tealclaw.ai. Full details in **[Security Philosophy](SECURITY.md)**.
 
-## For AI Agents
-
-TealClaw is designed to be configured by AI agents. The full skill guide lives at:
-
-- **[tealclaw.ai/llms.txt](https://tealclaw.ai/llms.txt)** — Complete agent skill (raw text)
-- **[tealclaw.ai/llms.html](https://tealclaw.ai/llms.html)** — Human-readable with copy button
-
-See [llms.txt](https://tealclaw.ai/llms.txt) for the full agent skill guide and [SKILL.md](SKILL.md) for tc-action protocol docs.
-
-Agents generate a JSON config and deliver it via URL hash, file drop, or chat paste.
-TealClaw does partial merge — only fields present get updated.
-
-## Chat Commands
+## Commands
 
 | Command | What It Does |
 |---------|-------------|
-| `/help` | Show all commands |
-| `/research query` | Deep research report (GROQ-powered) |
+| `/research query` | Deep research report |
 | `/imagine prompt` | Generate an image |
-| `/export` | Download chat as Markdown |
-| `/profile save/load/list/delete` | Manage config profiles |
-| `/share` | Create encrypted share link (includes keys, passphrase-protected) |
-| `/qr` | Generate QR code to share config (visual settings only) |
-| `/setup` | Setup wizard |
-| `/keys` | Show current config |
-| `/clear` | Clear chat history |
-| `/clear all` | Delete all conversations |
-| `/clear keys` | Remove all API keys |
 | `/save` | Save chat to Obsidian |
-| `/save idea` | Quick-capture idea to Obsidian |
-| `/session create\|info\|end` | Manage time-limited ephemeral sessions |
 | `/template` | Browse and apply style templates |
-| `/telegram` | Telegram setup |
-| `/voice` | Voice settings |
+| `/session create` | Time-limited encrypted share link |
+| `/share` | Encrypted config link (passphrase-protected) |
+| `/profile save/load` | Manage config profiles |
+| `/help` | Show all commands |
 
-## Security & Privacy
+## Privacy
 
-TealClaw is built on one principle: **your data is yours**.
+- **No backend** — Static files only. No server, no database, no way to see your keys.
+- **Direct API calls** — Browser to provider. No middleman.
+- **No tracking** — No analytics, no cookies, no fingerprinting.
+- **Encrypted sharing** — AES-256-GCM config links with separate passphrase.
+- **Fully auditable** — One HTML file. No build step.
 
-- **Zero server** — tealclaw.ai serves static files only. No backend, no database, no way to see your keys.
-- **Direct API calls** — Your browser talks directly to AI providers. No middleman.
-- **No tracking** — No analytics, no cookies, no fingerprinting, no telemetry.
-- **Encrypted sharing** — `/share` creates AES-256-GCM encrypted config links. Passphrase shared separately.
-- **Fully auditable** — One HTML file. No build step. View Source and read every line.
+## For AI Agents
 
-Read the full **[Security Philosophy](SECURITY.md)** for technical details on encryption, key storage, and what third parties see.
-
-## Development
-
-Just open `index.html` in a browser. No build step, no server, no dependencies.
-
-```bash
-# For service worker testing:
-npx serve .
-```
+- **[tealclaw.ai/llms.txt](https://tealclaw.ai/llms.txt)** — Complete agent skill (raw text)
+- **[tealclaw.ai/llms.html](https://tealclaw.ai/llms.html)** — Human-readable with copy button
+- **[SKILL.md](SKILL.md)** — tc-action protocol docs
 
 ## Stack
 
-- Single HTML file (no build step, no framework)
-- Cloudflare Pages
-- PWA with service worker
-- CSS custom properties for dynamic theming
+Single HTML file on Cloudflare Pages. PWA with service worker. CSS custom properties for theming.
 
-## Creator & Community
+## Creator
 
-TealClaw is made by **Snail**.
-
-- **YouTube**: [youtube.com/@RealSnail3D](https://www.youtube.com/@RealSnail3D) — tutorials, demos, TealClaw content
-- **MakerWorld**: [makerworld.com/en/@Snail](https://makerworld.com/en/@Snail) — 3D-printable accessories
-
-## Support
-
-If TealClaw is useful to you:
+Made by **Snail** — [YouTube](https://www.youtube.com/@RealSnail3D) / [MakerWorld](https://makerworld.com/en/@Snail)
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/snail3d)
