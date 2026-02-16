@@ -3471,9 +3471,9 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       // Wire up activate/remove/edit/test
       $('sheetBody').querySelectorAll('.agent-act').forEach(b=>b.addEventListener('click',()=>{
         const ag=getAgents();ag.forEach(a=>a.active=(a.id===b.dataset.id));setAgents(ag);
-        // Auto-connect the newly active agent
+        // Auto-switch to agent mode and connect
         const active=ag.find(a=>a.active);
-        if(active)ensureAgentConnection(active);
+        if(active){const k=getK();k.mode='agent';setK(k);ensureAgentConnection(active)}
         openAgentEditor();renderAgentSelector();updateStatus();
       }));
       $('sheetBody').querySelectorAll('.agent-rm').forEach(b=>b.addEventListener('click',()=>{
@@ -3521,7 +3521,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const ag=getAgents();const id=Date.now().toString(36);
         const newAgent={id,name,url,token,active:ag.length===0};
         ag.push(newAgent);setAgents(ag);
-        if(newAgent.active&&getK().mode==='agent')ensureAgentConnection(newAgent);
+        // Auto-switch to agent mode when adding first agent
+        if(newAgent.active){const k=getK();k.mode='agent';setK(k);ensureAgentConnection(newAgent)}
         openAgentEditor();renderAgentSelector();updateStatus();showToast(name+' added','ok');
       });
 
