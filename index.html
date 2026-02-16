@@ -1770,6 +1770,8 @@
       if(/^https?:\/\/.+:\d{4,5}$/.test(val))return{field:'gwUrl',label:'Gateway URL'};
       if(/^[a-f0-9]{32,}$/.test(val))return{field:'gwToken',label:'Gateway Token'};
       if(/^https?:\/\/.*\/(images|generate|img)/i.test(val))return{field:'imageGenUrl',label:'Image Gen Endpoint'};
+      if(val.startsWith('AIza'))return{field:'imageGenKey',label:'Google AI Key (Image Gen — Nano Banana)'};
+      if(val.startsWith('sk-or-v1-'))return{field:'imageGenKey',label:'OpenRouter Key (Image Gen)'};
       // GIF key is hardcoded — no user detection needed
       return null;
     }
@@ -2066,6 +2068,7 @@
       const keys=[
         {label:'Groq Key',desc:'Chat + vision + voice + TTS (free)',field:'whisperKey',val:k.whisperKey,link:'https://console.groq.com/keys',linkText:'Get key',prefix:'gsk_'},
         {label:'ElevenLabs Key',desc:'Voice output (TTS)',field:'ttsKey',val:k.ttsKey,link:'https://elevenlabs.io/app/settings/api-keys',linkText:'Get key',prefix:'sk_'},
+        {label:'Image Gen Key',desc:'Google AI or OpenRouter — /imagine',field:'imageGenKey',val:k.imageGenKey,link:'https://aistudio.google.com/apikey',linkText:'Get key',prefix:'AIza'},
         {label:'Telegram Bot Token',desc:k.tgToken&&k.tgEnabled?'Active':'Forward messages to Telegram',field:'tgToken',val:k.tgToken,link:'https://t.me/BotFather',linkText:'Create bot'},
         {label:'Telegram Chat ID',desc:'Your user or group ID',field:'tgChatId',val:k.tgChatId,link:'https://t.me/userinfobot',linkText:'Get ID'}
       ];
@@ -2075,6 +2078,7 @@
         {name:'AI Chat',active:!!(k.whisperKey||getAgents().length)},
         {name:'Voice In',active:!!k.whisperKey},
         {name:'Voice Out',active:!!k.ttsKey},
+        {name:'Image Gen',active:!!(k.imageGenKey||k.imageGenUrl)},
         {name:'Telegram',active:!!(k.tgToken&&k.tgEnabled)},
         {name:'GIF',active:k.gifEnabled!==false},
         {name:'Agent',active:!!getAgents().length},
@@ -4345,6 +4349,11 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
 <td style="padding:6px 4px"><code>gsk_...</code></td>
 <td style="padding:6px 4px;color:var(--teal)"><strong>Free!</strong> Chat + vision + voice + TTS</td>
 </tr>
+<tr style="border-bottom:1px solid var(--border)">
+<td style="padding:6px 8px"><strong><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI</a></strong></td>
+<td style="padding:6px 4px"><code>AIza...</code></td>
+<td style="padding:6px 4px">Image gen via <code>/imagine</code> (Nano Banana)</td>
+</tr>
 <tr>
 <td style="padding:6px 8px"><strong><a href="https://openclaw.ai" target="_blank" rel="noopener">Gateway</a></strong></td>
 <td style="padding:6px 4px">Settings &rarr; Agent</td>
@@ -4640,6 +4649,9 @@ ${getOptionalSteps()}`;
         gwToken:()=>`<h3>Gateway Configured</h3>
 <p>Open Settings (gear icon) and switch to <strong>Agent</strong> mode to route through your gateway.</p>
 ${getOptionalSteps()}`,
+        imageGenKey:()=>`<h3>Image Gen Key Saved</h3>
+<p>Type <code>/imagine your prompt</code> in chat to generate images with Nano Banana.</p>
+${getOptionalSteps()}`,
         imageGenUrl:()=>`<h3>Image Gen Endpoint Saved</h3>
 <p>Type <code>/imagine your prompt</code> in chat to generate images.</p>
 ${getOptionalSteps()}`
@@ -4671,6 +4683,7 @@ ${getOptionalSteps()}`
         html+=`<li><strong>Voice Output</strong> -- <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener">ElevenLabs key</a> (<code>sk_...</code>) to hear AI speak</li>`;
       }
 
+      html+=`<li><strong>Image Gen</strong> -- <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI key</a> (<code>AIza...</code>) for <code>/imagine</code> (Nano Banana)</li>`;
       html+=`<li><strong>Agent Mode</strong> -- connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full tool access</li>`;
       html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to forward conversations</li>`;
       html+=`</ul>`;
@@ -6697,7 +6710,7 @@ ${agentNote}`);
           lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>');
           lines.push(k.ttsKey?'Voice Out: <strong>ElevenLabs</strong> (set)':'Voice Out: <strong>not set</strong> (text-only)');
           lines.push(k.tgToken&&k.tgChatId?`Telegram: <strong>${k.tgEnabled?'active':'configured (off)'}</strong>`:'Telegram: <strong>not set</strong>');
-          lines.push(k.imageGenUrl?'Image Gen: <strong>configured</strong>':'Image Gen: <strong>not set</strong>');
+          lines.push((k.imageGenKey||k.imageGenUrl)?`Image Gen: <strong>${k.imageGenKey?(k.imageGenKey.startsWith('AIza')?'Google AI':'OpenRouter'):'custom endpoint'}</strong>`:'Image Gen: <strong>not set</strong>');
           sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
 <p>Paste any key to update. Type <code>/clear keys</code> to wipe all keys.</p>`);
           return;
@@ -7654,8 +7667,48 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     // ── Image Generation ──────────────────────────────
     async function generateImage(prompt){
       const k=getK();
-      if(!k.imageGenUrl)return null;
       const apiKey=k.imageGenKey||k.aiKey;
+      if(!apiKey&&!k.imageGenUrl){showToast('No image gen key — paste a Google AI or OpenRouter key','err');return null}
+
+      // Google AI (Gemini / Nano Banana) — native API
+      if(apiKey&&apiKey.startsWith('AIza')){
+        const model=k.imageGenModel||'gemini-2.5-flash-image';
+        const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const res=await fetch(url,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            contents:[{parts:[{text:prompt}]}],
+            generationConfig:{responseModalities:['TEXT','IMAGE']}
+          })
+        });
+        if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`Gemini: ${res.status}`)}
+        const d=await res.json();
+        const parts=d.candidates?.[0]?.content?.parts||[];
+        const img=parts.find(p=>p.inline_data);
+        if(img)return `data:${img.inline_data.mime_type};base64,${img.inline_data.data}`;
+        return null;
+      }
+
+      // OpenRouter — OpenAI-compatible image API
+      if(apiKey&&apiKey.startsWith('sk-or-v1-')){
+        const genUrl=k.imageGenUrl||'https://openrouter.ai/api/v1/images/generations';
+        const body={prompt,n:1,size:k.imageGenSize||'1024x1024'};
+        if(k.imageGenModel)body.model=k.imageGenModel;
+        const res=await fetch(genUrl,{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify(body)
+        });
+        if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`OpenRouter: ${res.status}`)}
+        const d=await res.json();
+        if(d.data?.[0]?.url)return d.data[0].url;
+        if(d.data?.[0]?.b64_json)return 'data:image/png;base64,'+d.data[0].b64_json;
+        return null;
+      }
+
+      // Custom endpoint (OpenAI-compatible fallback)
+      if(!k.imageGenUrl)return null;
       if(!apiKey){showToast('No API key for image gen','err');return null}
       const body={prompt,n:1,size:k.imageGenSize||'1024x1024'};
       if(k.imageGenModel)body.model=k.imageGenModel;
@@ -7664,15 +7717,10 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
         body:JSON.stringify(body)
       });
-      if(!res.ok){
-        const err=await res.json().catch(()=>({}));
-        throw new Error(err.error?.message||`Image API: ${res.status}`);
-      }
+      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`Image API: ${res.status}`)}
       const d=await res.json();
-      // OpenAI format: {data: [{url: "..."}, ...]} or {data: [{b64_json: "..."}]}
       if(d.data?.[0]?.url)return d.data[0].url;
       if(d.data?.[0]?.b64_json)return 'data:image/png;base64,'+d.data[0].b64_json;
-      // FAL/other formats: {images: [{url}]} or {output: {url}} or direct {url}
       if(d.images?.[0]?.url)return d.images[0].url;
       if(d.output?.url)return d.output.url;
       if(d.url)return d.url;
