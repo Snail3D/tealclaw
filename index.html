@@ -6558,9 +6558,55 @@ Rules:
 
       const curModel=pk.aiModel||((pk.aiProvider==='groq'||(!pk.aiKey&&pk.whisperKey))?'groq/compound-mini':'');
       const isCompound=/compound/i.test(curModel);
-      const useStream=pk.streamEnabled!==false&&!imageBase64&&pk.mode!=='agent'&&!isCompound;
+      const isAgentMode=pk.mode==='agent'&&getActiveAgent();
+      const useStream=pk.streamEnabled!==false&&!imageBase64&&!isAgentMode&&!isCompound;
 
-      if(useStream){
+      if(isAgentMode){
+        // Agent mode: route through OpenClaw gateway WebSocket
+        const streamIdx=chatHistory.length;
+        addBubble('ai','...');
+        const scroll=$('chatScroll');
+        try{
+          const aiResult=await callAgent(text,imageBase64,(partial)=>{
+            chatHistory[streamIdx].text=partial;
+            const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
+            const last=bubbles[bubbles.length-1];
+            if(last){
+              last.classList.add('typing-active');
+              const md=last.querySelector('.md-content');
+              let rendered=renderMd(partial);rendered=renderLatex(rendered);
+              const withCursor=rendered+'<span class="typing-cursor"></span>';
+              if(md)md.innerHTML=withCursor;
+              else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
+            }
+            if(pk.autoScroll!==false&&isNearBottom(scroll,150))snapScrollToBottom(scroll);
+          });
+          const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
+          const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
+          let displayText=aiText||'(No response)';
+          const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
+          if(tcActions.length){displayText=actionClean;executeTcActions(tcActions).catch(()=>{})}
+          if(pk.gifEnabled!==false){
+            const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
+            searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+          }
+          chatHistory[streamIdx].text=displayText;
+          if(tcActions.length)chatHistory[streamIdx].actionsRun=tcActions.length;
+          if(aiUsage)chatHistory[streamIdx].usage=aiUsage;
+          setChat(chatHistory);renderChat();
+          detectAndApplyConfig(displayText);
+          sendTelegram(`AI: ${displayText}`);
+          fireWebhook('message.receive',{text:displayText});
+          if(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false){
+            const ttsData=await speak(displayText);
+            if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
+          }
+          playReceiveSound();haptic('receive');renderQuickReplies();
+        }catch(e){
+          chatHistory[streamIdx].text=`Error: ${e.message}`;setChat(chatHistory);renderChat();
+          showToast(e.message,'err');haptic('error');
+        }
+      } else if(useStream){
         // Streaming mode: show tokens as they arrive with cursor
         const streamIdx=chatHistory.length;
         addBubble('ai','...');
