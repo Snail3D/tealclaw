@@ -6581,8 +6581,9 @@ ${agentNote}`);
       }
 
       // Normalize slash-less commands so voice input works (e.g. "imagine a cat" → "/imagine a cat")
-      if(!text.startsWith('/')&&/^(imagine|research|deepresearch)\s/i.test(text)){
-        text='/'+text;
+      if(!text.startsWith('/')){
+        if(/^deep\s+research\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s+research\s+/i,'');
+        else if(/^(imagine|research|deepresearch)\s/i.test(text))text='/'+text;
       }
 
       // Chat commands
