@@ -1811,11 +1811,15 @@
       renderAgentSelector();
       chatHistory=getChat();
       renderChat();
-      // Auto-connect WS for agent mode
+      // Auto-connect WS for agent mode (also auto-switch if agents configured but mode not set)
       const k=getK();
-      if(k.mode==='agent'){
-        const agent=getAgents().find(a=>a.active)||getAgents()[0];
-        if(agent?.url&&agent?.token)ensureAgentConnection(agent);
+      const agents=getAgents();
+      const activeAgent=agents.find(a=>a.active)||agents[0];
+      if(activeAgent?.url&&activeAgent?.token&&k.mode!=='agent'){
+        k.mode='agent';setK(k);
+      }
+      if(k.mode==='agent'&&activeAgent?.url&&activeAgent?.token){
+        ensureAgentConnection(activeAgent);
       }
     }
 
