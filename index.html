@@ -4324,16 +4324,32 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     }
 
     // TTS script preprocessor: convert AI text into speech-friendly format with tone direction
+    // ── TTS text cleanup helpers ──
+    function ttsCleanUrls(t){
+      // Full URLs → just domain: "according to nytimes.com"
+      return t.replace(/https?:\/\/(?:www\.)?([a-z0-9.-]+\.[a-z]{2,})\S*/gi,(m,dom)=>dom);
+    }
+    function ttsCleanCitations(t){
+      // [1], [2,3], (Source: ...), ¹²³ superscripts, footnote markers
+      return t.replace(/\[\d+(?:,\s*\d+)*\]/g,'').replace(/\(\s*(?:Source|Ref|Citation|Via)[^)]*\)/gi,'').replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]+/g,'').replace(/\s{2,}/g,' ');
+    }
+    function ttsCleanMd(t){
+      return t.replace(/```[\s\S]*?```/g,' code block omitted ').replace(/`[^`]+`/g,m=>m.slice(1,-1)).replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[#*_~|>]/g,'').replace(/^[-•]\s*/gm,', ').replace(/^\d+\.\s*/gm,', ');
+    }
+    function ttsQuickClean(t){
+      return ttsCleanCitations(ttsCleanUrls(ttsCleanMd(t))).replace(/\s{2,}/g,' ').trim();
+    }
+
     async function ttsPreprocess(text,k){
       const groqKey=k.whisperKey||k.aiKey;
       // Strip any expression tags the AI included in the text
       const cleaned=stripExprTags(text);
-      if(!groqKey)return cleaned;
+      if(!groqKey)return ttsQuickClean(cleaned)||cleaned;
       // User-set expression override takes priority
       const userExpr=k.groqTtsExpression||'';
       // Short text: regex cleanup + user expression tag
       if(cleaned.length<80){
-        const simple=cleaned.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').trim()||cleaned;
+        const simple=ttsQuickClean(cleaned)||cleaned;
         return userExpr?`[${userExpr}] ${simple}`:simple;
       }
       try{
@@ -4344,11 +4360,29 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
             model:'llama-3.3-70b-versatile',
             messages:[
               {role:'system',content:`Convert this AI response into a natural spoken script for text-to-speech. Rules:
-- Write out all numbers as words (42 → "forty-two", $3.99 → "three dollars and ninety-nine cents", 15% → "fifteen percent")
+NUMBERS & MATH:
+- Write out all numbers as words (42 → "forty-two", 1000 → "one thousand", 3.14 → "three point one four")
+- Money: $3.99 → "three dollars ninety-nine cents", $1.2M → "one point two million dollars", €50 → "fifty euros", ¥1000 → "one thousand yen"
+- Percentages: 15% → "fifteen percent", 0.5% → "half a percent"
+- Fractions: 1/4 → "one quarter", 3/8 → "three eighths"
+- Math equations: read naturally (x² + 2x = 0 → "x squared plus two x equals zero", √16 → "square root of sixteen", π → "pi", ≈ → "approximately")
+- Statistics: p < 0.05 → "p value less than point oh five", n=500 → "sample size of five hundred", ±3.2 → "plus or minus three point two", σ → "sigma"
+- Ranges: 10-20 → "ten to twenty", 2x-5x → "two to five times"
+- Large numbers: 1,234,567 → "about one point two million" (round for speech)
+- Dates: 2/16/2026 → "February sixteenth, twenty twenty-six"
+
+CITATIONS & URLS:
+- Truncate URLs to just the domain name (https://www.nytimes.com/2024/article/blah → "nytimes.com")
+- Remove citation brackets [1], [2,3], footnote numbers, superscripts
+- Remove "(Source: ...)" and "(Ref: ...)" parentheticals
+- If citing, just say "according to domain.com" naturally — skip paths, query params, anchors
+- Remove "Retrieved from", "Available at", reference list entries entirely
+
+FORMATTING:
 - Remove all markdown formatting (headers, bold, italic, links, code blocks, tables)
-- Remove URLs, file paths, and code snippets entirely
+- Remove file paths and code snippets entirely
 - If the text has long lists, code, tables, or detailed technical content: summarize the key points briefly and end with "Check your screen for the full details."
-- For research results: give a concise verbal summary (2-4 sentences) of the findings
+- For research results: give a concise verbal summary (2-4 sentences max) of the key findings
 - Keep the conversational tone of the original
 - Maximum 3-4 sentences for long responses
 - Never say "here is" or "the following" — just speak naturally
@@ -4364,8 +4398,8 @@ ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- S
         const script=d.choices?.[0]?.message?.content?.trim();
         if(script&&script.length>10)return script;
       }catch(e){console.warn('TTS preprocess failed:',e)}
-      // Fallback: basic cleanup + user expression
-      const fallback=cleaned.replace(/```[\s\S]*?```/g,'').replace(/[#*_~`|>]/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/https?:\/\/\S+/g,'').trim()||cleaned;
+      // Fallback: regex cleanup + user expression
+      const fallback=ttsQuickClean(cleaned)||cleaned;
       return userExpr?`[${userExpr}] ${fallback}`:fallback;
     }
 
