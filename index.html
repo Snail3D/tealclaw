@@ -2136,7 +2136,6 @@
         const ttsProv=k.ttsProvider||'groq';
         const curTtsMode=k.ttsMode||(hasTTS(k)?'auto':'off');
         const groqVoice=k.groqTtsVoice||'troy';
-        const groqExpr=k.groqTtsExpression||'';
         html+=`<div class="sheet-section"><div class="sheet-section-title">Voice Output</div>
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Provider</div>
           <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px">
@@ -2160,19 +2159,7 @@
               ${groqVoices.map(v=>`<button class="sheet-chip groq-voice-chip ${groqVoice===v?'active':''}" data-gv="${v}">${v.charAt(0).toUpperCase()+v.slice(1)}</button>`).join('')}
             </div>
           </div>`;
-          // Expression preset chips
-          const exprPresets=[{v:'',n:'Natural'},{v:'cheerful',n:'Cheerful'},{v:'warm',n:'Warm'},{v:'whisper',n:'Whisper'},{v:'dramatic',n:'Dramatic'},{v:'sarcastic',n:'Sarcastic'},{v:'excited',n:'Excited'},{v:'professional',n:'Professional'}];
-          html+=`<div style="margin-top:10px">
-            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Expression</div>
-            <div class="sheet-chip-row" id="sheetExprPresets">
-              ${exprPresets.map(e=>`<button class="sheet-chip expr-chip ${groqExpr===e.v?'active':''}" data-expr="${e.v}">${e.n}</button>`).join('')}
-            </div>
-            <div style="display:flex;gap:5px;margin-top:6px">
-              <input type="text" class="sheet-input" id="sheetCustomExpr" value="${esc(groqExpr)}" placeholder="Custom expression (e.g. gravelly whisper)" style="font-size:11px;flex:1">
-              <button class="btn btn-teal btn-sm" id="sheetCustomExprSave">Set</button>
-            </div>
-            <div style="font-size:9px;color:var(--text-3);margin-top:3px">Prepends [tag] to set vocal direction. Leave empty for natural speech.</div>
-          </div>`;
+          html+=`<div style="font-size:9px;color:var(--text-3);margin-top:8px">Tone is set automatically based on the response content.</div>`;
         } else {
           // ElevenLabs voice settings
           html+=`<div style="margin-top:10px">
@@ -2562,17 +2549,7 @@
       $('sheetBody').querySelectorAll('.groq-voice-chip').forEach(b=>b.addEventListener('click',()=>{
         const k2=getK();k2.groqTtsVoice=b.dataset.gv;setK(k2);renderSheetContent();showToast(`Groq voice: ${b.dataset.gv}`,'ok');
       }));
-      // Wire up expression preset chips
-      $('sheetBody').querySelectorAll('.expr-chip').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.groqTtsExpression=b.dataset.expr;setK(k2);renderSheetContent();
-        showToast(b.dataset.expr?`Expression: ${b.dataset.expr}`:'Expression: natural','ok');
-      }));
-      // Wire up custom expression save
-      $('sheetBody').querySelector('#sheetCustomExprSave')?.addEventListener('click',()=>{
-        const val=$('sheetBody').querySelector('#sheetCustomExpr').value.trim();
-        const k2=getK();k2.groqTtsExpression=val;setK(k2);renderSheetContent();
-        showToast(val?`Expression: ${val}`:'Expression: natural','ok');
-      });
+
 
       // Wire up PIN code (hashed, 4-8 chars)
       $('sheetBody').querySelectorAll('.pin-mode-btn').forEach(b=>b.addEventListener('click',()=>{
