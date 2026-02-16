@@ -6778,7 +6778,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/deepresearch','/imagine','/telegram','/help','/save','/session'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/deepresearch','/imagine','/telegram','/help','/save','/session','/groq'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -6803,6 +6803,7 @@ ${agentNote}`);
 <li><code>/qr</code> -- generate encrypted QR code to share your config</li>
 <li><code>/telegram</code> -- set up Telegram forwarding</li>
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
+<li><code>/groq message</code> -- send directly to Groq (bypasses agent)</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear context window and start fresh</li>
 <li><code>/restart</code> -- same as /clear</li>
@@ -6823,6 +6824,31 @@ ${agentNote}`);
             sysBubble(helpHtml+`<p>You can also paste any API key or JSON config directly in the chat.</p>
 <p><strong>Tips:</strong> Attach an image with <code>/research</code> for visual analysis. Use <code>/qr</code> to set up another device instantly. Try <code>/template</code> for instant visual makeovers.</p>`);
           }
+          return;
+        }
+        if(cmd.startsWith('/groq ')||cmd.startsWith('/groq\n')){
+          const groqMsg=text.slice(6).trim();
+          if(!groqMsg){sysBubble('<p>Usage: <code>/groq your message</code></p>');return}
+          const gk=getK();
+          const gKey=gk.whisperKey||gk.aiKey;
+          if(!gKey){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+          // Bypass agent — call Groq directly
+          addBubble('user',groqMsg);
+          _userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
+          addTyping();
+          const gModel=gk.aiModel||'groq/compound-mini';
+          const gSys=buildSysPrompt(gk);
+          const gMsgs=[{role:'system',content:gSys},{role:'user',content:groqMsg}];
+          fetch('https://api.groq.com/openai/v1/chat/completions',{
+            method:'POST',
+            headers:{'Authorization':`Bearer ${gKey}`,'Content-Type':'application/json'},
+            body:JSON.stringify({model:gModel,messages:gMsgs,max_tokens:Math.min(gk.maxTokens||1024,8192)})
+          }).then(r=>r.json()).then(d=>{
+            removeTyping();
+            if(d.error)throw new Error(d.error.message);
+            const reply=d.choices?.[0]?.message?.content||'(No response)';
+            addBubble('ai',reply,{usage:d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:gModel}:null});
+          }).catch(e=>{removeTyping();sysBubble(`<p>Groq error: ${esc(e.message)}</p>`)});
           return;
         }
         if(cmd==='/setup'){
