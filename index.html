@@ -296,15 +296,6 @@
     .gesture-pip-close{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}
     .gesture-pip-close:hover{background:var(--err)}
 
-    /* ── Claw Recording Overlay ──────────────────────── */
-    .claw-overlay{position:fixed;inset:0;z-index:450;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;opacity:0;pointer-events:none;transition:opacity 0.3s}
-    .claw-overlay.active{opacity:1;pointer-events:auto}
-    .claw-icon{width:120px;height:120px;color:var(--teal);filter:drop-shadow(0 0 24px rgba(13,148,136,0.5));animation:claw-breathe 2s ease-in-out infinite}
-    @keyframes claw-breathe{0%,100%{transform:scale(1);filter:drop-shadow(0 0 24px rgba(13,148,136,0.5))}50%{transform:scale(1.06);filter:drop-shadow(0 0 36px rgba(13,148,136,0.7))}}
-    .claw-status{font-size:15px;color:rgba(255,255,255,0.7);font-family:var(--font);font-weight:500;letter-spacing:0.5px}
-    .claw-visualizer{display:flex;align-items:end;gap:3px;height:48px;margin-top:8px}
-    .claw-visualizer .bar{width:4px;border-radius:2px;background:var(--teal);transition:height 0.05s linear;min-height:3px}
-
     /* ── Cards (Settings/Agent pages) ──────────────────── */
     .page-scroll{flex:1;overflow-y:auto;padding:16px}
     .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
@@ -1181,22 +1172,6 @@
     <button class="gesture-pip-close" id="gesturePipClose">&times;</button>
   </div>
 
-  <!-- Claw recording overlay -->
-  <div class="claw-overlay" id="clawOverlay">
-    <svg class="claw-icon" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <!-- Index+Middle pair -->
-      <path d="M32 65 L28 25 Q28 18 32 18 Q36 18 36 25 L38 55" fill="none"/>
-      <path d="M42 62 L40 20 Q40 13 44 13 Q48 13 48 20 L48 52" fill="none"/>
-      <!-- Gap between pairs -->
-      <!-- Ring+Pinky pair -->
-      <path d="M58 62 L56 20 Q56 13 60 13 Q64 13 64 20 L62 52" fill="none"/>
-      <path d="M68 65 L66 25 Q66 18 70 18 Q74 18 74 25 L70 55" fill="none"/>
-      <!-- Palm -->
-      <path d="M28 60 Q28 82 50 85 Q72 82 72 60" fill="none"/>
-    </svg>
-    <div class="claw-status" id="clawStatus">Listening...</div>
-    <div class="claw-visualizer" id="clawVisualizer"></div>
-  </div>
 
   <!-- Camera overlay -->
   <div class="cam-overlay hidden" id="camOverlay">
@@ -7610,73 +7585,33 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
 
     function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording');haptic('light')}
 
-    // ── Claw Mode (always-listening voice) ─────────────
-    let _clawMode=false, _clawStream=null, _clawRecorder=null, _clawSilenceTimer=null;
+    // ── Claw Mode (vision/gesture toggle via triple-tap) ─────────────
     const CLAW_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 9l2 3-2 3"/><path d="M16 9l-2 3 2 3"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
     const SEND_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
 
     function toggleClawMode(){
-      if(_clawMode){stopClawMode()}else{startClawMode()}
-    }
-
-    async function startClawMode(){
-      try{
-        _clawStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
-      }catch{showToast('Mic access denied','err');return}
-      _clawMode=true;
-      const btn=$('sendBtn');
-      btn.innerHTML=CLAW_ICON;
-      btn.classList.remove('hidden');
-      btn.classList.add('claw-active');
-      $('micBtn').classList.add('hidden');
-      showToast('Claw mode on','ok');
-      haptic('success');
-      clawListen();
-    }
-
-    function stopClawMode(){
-      _clawMode=false;
-      clearTimeout(_clawSilenceTimer);
-      if(_clawRecorder&&_clawRecorder.state!=='inactive'){try{_clawRecorder.stop()}catch{}}
-      _clawRecorder=null;
-      if(_clawStream){_clawStream.getTracks().forEach(t=>t.stop());_clawStream=null}
-      const btn=$('sendBtn');
-      btn.innerHTML=SEND_ICON;
-      btn.classList.remove('claw-active');
-      const hasText=$('textIn').value.trim();
-      btn.classList.toggle('hidden',!hasText);
-      $('micBtn').classList.remove('hidden');
-      clearLiveSubtitle();
-      showToast('Claw mode off','ok');
-      haptic('light');
-    }
-
-    function clawListen(){
-      if(!_clawMode||!_clawStream)return;
-      const rec=new MediaRecorder(_clawStream,{mimeType:'audio/webm;codecs=opus'});
-      _clawRecorder=rec;
-      const parts=[];
-      rec.ondataavailable=e=>{if(e.data.size>0)parts.push(e.data)};
-      rec.onstop=async()=>{
-        if(!_clawMode)return;
-        if(parts.length>0){
-          const blob=new Blob(parts,{type:'audio/webm'});
-          try{
-            const text=await transcribe(blob);
-            if(text&&text.trim()){
-              showLiveSubtitle(text);
-              pipeline(text);
-            }
-          }catch{}
-        }
-        // Loop: start listening again after a brief pause
-        if(_clawMode)setTimeout(clawListen,400);
-      };
-      rec.start();
-      // Auto-stop after 15s of recording (Whisper limit), then loop
-      _clawSilenceTimer=setTimeout(()=>{
-        if(rec.state==='recording')rec.stop();
-      },15000);
+      if(gestureActive){
+        stopGestureTracking();
+        const btn=$('sendBtn');
+        btn.innerHTML=SEND_ICON;
+        btn.classList.remove('claw-active');
+        const hasText=$('textIn').value.trim();
+        btn.classList.toggle('hidden',!hasText);
+        $('micBtn').classList.remove('hidden');
+        showToast('Claw mode off','ok');
+        haptic('light');
+        const k2=getK();k2.gestureEnabled=false;setK(k2);
+      } else {
+        startGestureTracking();
+        const btn=$('sendBtn');
+        btn.innerHTML=CLAW_ICON;
+        btn.classList.remove('hidden');
+        btn.classList.add('claw-active');
+        $('micBtn').classList.add('hidden');
+        showToast('Claw mode on','ok');
+        haptic('success');
+        const k2=getK();k2.gestureEnabled=true;setK(k2);
+      }
     }
 
     // ── Telegram ─────────────────────────────────────────
@@ -9243,42 +9178,8 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     const CLAW_CONFIRM_MS=1000; // hold claw 1s before recording starts
     const GESTURE_GONE_MS=800; // ms after claw gone before stopping recording
 
-    // Claw audio: own mic stream, recorder, analyser for visualizer
-    let clawMicStream=null,clawRecorder=null,clawChunks=[],clawAnalyser=null,clawVizRAF=null;
-    const CLAW_BAR_COUNT=24;
-
-    function initClawVisualizer(){
-      const container=$('clawVisualizer');
-      container.innerHTML='';
-      for(let i=0;i<CLAW_BAR_COUNT;i++){
-        const bar=document.createElement('div');
-        bar.className='bar';bar.style.height='3px';
-        container.appendChild(bar);
-      }
-    }
-    initClawVisualizer();
-
-    function startClawViz(){
-      if(!clawAnalyser)return;
-      const bars=$('clawVisualizer').children;
-      const data=new Uint8Array(clawAnalyser.frequencyBinCount);
-      function draw(){
-        clawVizRAF=requestAnimationFrame(draw);
-        clawAnalyser.getByteFrequencyData(data);
-        const step=Math.floor(data.length/CLAW_BAR_COUNT);
-        for(let i=0;i<CLAW_BAR_COUNT;i++){
-          const v=data[i*step]||0;
-          bars[i].style.height=Math.max(3,v/255*48)+'px';
-        }
-      }
-      draw();
-    }
-
-    function stopClawViz(){
-      if(clawVizRAF){cancelAnimationFrame(clawVizRAF);clawVizRAF=null}
-      const bars=$('clawVisualizer').children;
-      for(let i=0;i<bars.length;i++)bars[i].style.height='3px';
-    }
+    // Claw audio: own mic stream, recorder, chunks
+    let clawMicStream=null,clawRecorder=null,clawChunks=[];
 
     // Live subtitle: show words that fade in then ghost away
     let liveSubWords=[];
@@ -9304,13 +9205,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(gestureRecording)return;
       try{
         clawMicStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
-        // Set up analyser for visualizer
-        const actx=new(window.AudioContext||window.webkitAudioContext)();
-        const src=actx.createMediaStreamSource(clawMicStream);
-        clawAnalyser=actx.createAnalyser();
-        clawAnalyser.fftSize=128;
-        src.connect(clawAnalyser);
-
         clawChunks=[];
         clawRecorder=new MediaRecorder(clawMicStream,{mimeType:'audio/webm;codecs=opus'});
         clawRecorder.ondataavailable=e=>{if(e.data.size>0)clawChunks.push(e.data)};
@@ -9327,8 +9221,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
 
         clawRecorder.onstop=async()=>{
           if(clawInterimTimer){clearInterval(clawInterimTimer);clawInterimTimer=null}
-          stopClawViz();
-          $('clawOverlay').classList.remove('active');
           if(clawChunks.length===0){clearLiveSubtitle();return}
           // Final transcription
           const blob=new Blob(clawChunks,{type:'audio/webm'});
@@ -9348,10 +9240,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         };
         clawRecorder.start(500); // 500ms timeslice for interim chunks
         gestureRecording=true;
-        $('clawOverlay').classList.add('active');
-        $('clawStatus').textContent='Listening...';
         clearLiveSubtitle();
-        startClawViz();
         haptic('success');
       }catch(err){
         console.error('[Claw mic]',err);
@@ -9363,7 +9252,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(!gestureRecording||!clawRecorder)return;
       clawRecorder.stop();
       gestureRecording=false;
-      $('clawStatus').textContent='Processing...';
       haptic('light');
     }
 
@@ -9434,8 +9322,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           minTrackingConfidence:0.5
         });
 
-        // No PIP preview
-        $('gesturePip').style.display='none';
+        // PiP shows via .active class from CSS
 
         gestureHands.onResults(results=>{
           if(results.multiHandLandmarks&&results.multiHandLandmarks.length>0){
@@ -9491,25 +9378,35 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
 
     function stopGestureTracking(){
       gestureActive=false;
-      $('gesturePip').style.display='none';
+      $('gesturePip').classList.remove('active');
       if(gestureStream){gestureStream.getTracks().forEach(t=>t.stop());gestureStream=null}
       $('gestureVideo').srcObject=null;
       if(gestureRecording)stopClawRecording();
       lastGesture='';gestureRecording=false;gestureGoneTime=0;clawDetectStart=0;
-      stopClawViz();
-      $('clawOverlay').classList.remove('active');
     }
 
-    // Pip close button (kept for safety but PIP is hidden)
+    // PiP close button — stop gesture + restore send button
     $('gesturePipClose').addEventListener('click',()=>{
       stopGestureTracking();
+      const btn=$('sendBtn');
+      btn.innerHTML=SEND_ICON;
+      btn.classList.remove('claw-active');
+      const hasText=$('textIn').value.trim();
+      btn.classList.toggle('hidden',!hasText);
+      $('micBtn').classList.remove('hidden');
       const k2=getK();k2.gestureEnabled=false;setK(k2);
-      showToast('The Claw gesture control off','ok');
+      showToast('Claw mode off','ok');
     });
 
-    // Auto-start if enabled
-    // The Claw defaults to on
-    if(getK().gestureEnabled!==false)startGestureTracking();
+    // Auto-start if enabled — swap send button to claw icon too
+    if(getK().gestureEnabled!==false){
+      startGestureTracking();
+      const btn=$('sendBtn');
+      btn.innerHTML=CLAW_ICON;
+      btn.classList.remove('hidden');
+      btn.classList.add('claw-active');
+      $('micBtn').classList.add('hidden');
+    }
 
     // ── Service Worker + Update Notification ──────────
     if('serviceWorker' in navigator){
