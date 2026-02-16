@@ -1,9 +1,9 @@
-const CACHE = 'tealclaw-v50';
+const CACHE = 'tealclaw-v51';
 const ASSETS = ['/', '/index.html', '/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png', '/og-image.png', '/stats.html', '/llms.txt', '/llms.html', '/sitemap.xml', '/robots.txt'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  // Don't skipWaiting here — let the app control activation via message
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
