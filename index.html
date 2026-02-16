@@ -7127,7 +7127,22 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       send();
     }
 
-    $('sendBtn').addEventListener('click',send);
+    // Triple-tap send button → enter voice mode
+    let _sendTaps=[],_sendTapTimer=0;
+    $('sendBtn').addEventListener('click',()=>{
+      const now=Date.now();
+      _sendTaps.push(now);
+      // Keep only taps within 600ms window
+      _sendTaps=_sendTaps.filter(t=>now-t<600);
+      if(_sendTaps.length>=3){
+        _sendTaps=[];
+        clearTimeout(_sendTapTimer);
+        enterVoiceMode();
+        return;
+      }
+      clearTimeout(_sendTapTimer);
+      _sendTapTimer=setTimeout(()=>{_sendTaps=[];send()},200);
+    });
     $('textIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
     // On mobile, tapping input should scroll chat to bottom so user sees latest messages
     $('textIn').addEventListener('focus',()=>{
