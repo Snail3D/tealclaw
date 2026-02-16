@@ -230,10 +230,16 @@
     .mic-circle.recording{background:var(--err);color:#fff;animation:mic-p 1.5s ease-in-out infinite}
     @keyframes mic-p{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.3)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
     .attach-btn{background:transparent;color:var(--text-3);border:none;width:50px;height:50px} .attach-btn:hover{color:var(--text)}
-    .attach-btn svg{width:20px;height:20px}
+    .attach-btn svg{width:24px;height:24px}
 
-    .input-hint{font-size:11px;color:var(--text-3);margin-top:5px;text-align:center}
-    .input-hint.active{color:var(--err)} .input-hint.ok{color:var(--ok)}
+    .input-hint{display:none}
+    .input-hint.active{display:none} .input-hint.ok{display:none}
+    /* ── Live Subtitle Transcription ─────────────────── */
+    .live-subtitle{position:absolute;bottom:100%;left:0;right:0;pointer-events:none;padding:16px 24px 12px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;z-index:50}
+    .live-subtitle .word{font-size:28px;font-weight:600;color:var(--text);font-family:var(--font);opacity:0;animation:word-in 0.3s ease-out forwards;text-shadow:0 1px 8px rgba(0,0,0,0.3)}
+    @keyframes word-in{0%{opacity:0;transform:translateY(8px) scale(0.9)}100%{opacity:0.85;transform:translateY(0) scale(1)}}
+    .live-subtitle .word.ghost{animation:word-ghost 1.2s ease-out forwards}
+    @keyframes word-ghost{0%{opacity:0.85;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}
 
     /* ── File Preview (multi-file stack) ──────────────── */
     .file-stack{display:none;flex-wrap:wrap;gap:6px;padding:8px 0;margin-bottom:4px}
@@ -1098,7 +1104,8 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </button>
 
-    <div class="input-bar">
+    <div class="input-bar" style="position:relative">
+      <div class="live-subtitle" id="liveSubtitle"></div>
       <div class="agent-selector" id="agentSelectorBar" style="display:none">
         <span class="agent-selector-label">Agent:</span>
         <select id="agentChatSelect"></select>
@@ -1108,14 +1115,8 @@
         <button class="circle-btn attach-btn" id="attachBtn" title="Attach file" aria-label="Attach file">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
-        <!-- Camera button removed — images auto-shrink to ~100kb on attach -->
-        <button class="circle-btn attach-btn hidden" id="cameraBtn" title="Take photo" aria-label="Take photo" style="display:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </button>
-        <!-- Voice chat mode button removed — The Claw gesture is primary voice input -->
-        <button class="circle-btn attach-btn hidden" id="voiceChatBtn" title="Voice chat mode" aria-label="Voice chat mode" style="display:none">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><circle cx="12" cy="12" r="10" stroke-dasharray="4 3"/></svg>
-        </button>
+        <span id="cameraBtn" hidden></span>
+        <span id="voiceChatBtn" hidden></span>
         <textarea class="input-text" id="textIn" placeholder="Message..." rows="1" aria-label="Chat message"></textarea>
         <button class="circle-btn mic-circle" id="micBtn" title="Hold to speak" aria-label="Hold to speak">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -1951,12 +1952,21 @@
       requestAnimationFrame(()=>{overlay.classList.add('in');});
       setTimeout(()=>{
         document.documentElement.setAttribute('data-theme',n);localStorage.setItem('tc-theme',n);
-        // Clear inline CSS overrides for theme-variant properties so [data-theme] CSS takes effect
+        // Update config themeMode + remove theme-specific color overrides so CSS theme vars take effect
+        const k=getK();
+        k.themeMode=n;
+        ['bgColor','textColor','chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor',
+         'topbarBg','inputBarBg','borderColor','bgImage'].forEach(key=>{delete k[key]});
+        setK(k);
+        // Clear inline CSS overrides
         const root=document.documentElement;
         ['--bg-root','--bg-1','--bg-2','--bg-card','--bg-hover','--bg-input','--bg-overlay',
-         '--border','--border-2','--text','--text-2','--text-3','--user-bg','--ai-bg','--shadow'
+         '--border','--border-2','--text','--text-2','--text-3','--user-bg','--ai-bg','--shadow',
+         '--user-text','--ai-text'
         ].forEach(v=>root.style.removeProperty(v));
         document.body.style.backgroundImage='';document.body.classList.remove('has-bg-image');
+        const topbar2=document.querySelector('.topbar');if(topbar2)topbar2.style.background='';
+        const ib=document.querySelector('.input-bar');if(ib)ib.style.background='';
         if(typeof updateThemeColor==='function')updateThemeColor();
         setTimeout(()=>{overlay.classList.remove('in');overlay.classList.add('out');setTimeout(()=>overlay.remove(),1600)},200);
       },1500);
@@ -7653,37 +7663,33 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data)};
         recorder.onstop=async()=>{
           if(chunks.length>0){
-            hint.textContent='Transcribing...';hint.className='input-hint';
             const blob=new Blob(chunks,{type:'audio/webm'});
             try{
               const text=await transcribe(blob);
               if(text){
-                hint.textContent=`"${text.slice(0,40)}..."`;hint.className='input-hint ok';
+                showLiveSubtitle(text);
+                setTimeout(clearLiveSubtitle,2500);
                 const inputVal=$('textIn').value.trim();
                 if(pendingFiles.length>0||inputVal){
-                  // Append voice text to existing input (e.g. /research + voice context)
                   $('textIn').value=(inputVal+' '+text).trim();
                   $('textIn').dispatchEvent(new Event('input'));
-                  // Auto-send if input has a /command prefix
                   if(inputVal.startsWith('/'))send();
                 } else {
                   pipeline(text);
                 }
               }
-              else{hint.textContent='No speech detected';hint.className='input-hint'}
-            }catch(e){hint.textContent='Transcription failed';hint.className='input-hint err'}
-            setTimeout(()=>{hint.textContent='';hint.className='input-hint'},3000);
+            }catch(e){showToast('Transcription failed','err')}
           }
           chunks=[];
         };
         return true;
-      }catch{hint.textContent='Mic access denied';return false}
+      }catch{showToast('Mic access denied','err');return false}
     }
 
-    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');hint.textContent='Release to send';hint.className='input-hint active';haptic('medium')});
+    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
     micBtn.addEventListener('mouseup',e=>{e.preventDefault();stopRec()});
     micBtn.addEventListener('mouseleave',()=>{if(recording)stopRec()});
-    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');hint.textContent='Release to send';hint.className='input-hint active';haptic('medium')});
+    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
     micBtn.addEventListener('touchend',e=>{e.preventDefault();stopRec()});
 
     function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording');haptic('light')}
@@ -8063,11 +8069,9 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       const topbar=document.querySelector('.topbar');
       if(topbar)topbar.style.display=k.hideTopbar?'none':'';
 
-      // Hide attach/camera buttons
+      // Hide attach button (camera/voice buttons permanently removed)
       const attachB=document.querySelector('#attachBtn');
-      const cameraB=document.querySelector('#cameraBtn');
       if(attachB)attachB.style.display=k.hideAttachBtn?'none':'';
-      if(cameraB)cameraB.style.display=k.hideCameraBtn?'none':'';
 
       // Custom button colors
       if(k.sendBtnColor){
@@ -9293,6 +9297,26 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       for(let i=0;i<bars.length;i++)bars[i].style.height='3px';
     }
 
+    // Live subtitle: show words that fade in then ghost away
+    let liveSubWords=[];
+    function showLiveSubtitle(text){
+      const container=$('liveSubtitle');
+      const words=text.split(/\s+/).filter(Boolean);
+      // Only show new words not already displayed
+      const newWords=words.slice(liveSubWords.length);
+      liveSubWords=words;
+      newWords.forEach((w,i)=>{
+        const el=document.createElement('span');
+        el.className='word';el.textContent=w;
+        el.style.animationDelay=(i*80)+'ms';
+        container.appendChild(el);
+        // Ghost away after 2s
+        setTimeout(()=>{el.classList.add('ghost');setTimeout(()=>el.remove(),1200)},2000+i*80);
+      });
+    }
+    function clearLiveSubtitle(){liveSubWords=[];$('liveSubtitle').innerHTML=''}
+
+    let clawInterimTimer=null;
     async function startClawRecording(){
       if(gestureRecording)return;
       try{
@@ -9307,29 +9331,43 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         clawChunks=[];
         clawRecorder=new MediaRecorder(clawMicStream,{mimeType:'audio/webm;codecs=opus'});
         clawRecorder.ondataavailable=e=>{if(e.data.size>0)clawChunks.push(e.data)};
+
+        // Interim transcription: every 2s, transcribe what we have so far for live subtitles
+        clawInterimTimer=setInterval(async()=>{
+          if(clawChunks.length===0)return;
+          try{
+            const blob=new Blob(clawChunks,{type:'audio/webm'});
+            const text=await transcribe(blob);
+            if(text)showLiveSubtitle(text);
+          }catch{}
+        },2000);
+
         clawRecorder.onstop=async()=>{
+          if(clawInterimTimer){clearInterval(clawInterimTimer);clawInterimTimer=null}
           stopClawViz();
           $('clawOverlay').classList.remove('active');
-          if(clawChunks.length===0)return;
-          $('inputHint').textContent='Transcribing...';$('inputHint').className='input-hint';
+          if(clawChunks.length===0){clearLiveSubtitle();return}
+          // Final transcription
           const blob=new Blob(clawChunks,{type:'audio/webm'});
           try{
             const text=await transcribe(blob);
             if(text){
-              $('inputHint').textContent=`"${text.slice(0,40)}..."`;$('inputHint').className='input-hint ok';
+              // Show final words briefly then clear
+              showLiveSubtitle(text);
+              setTimeout(clearLiveSubtitle,2500);
               pipeline(text);
             } else {
-              $('inputHint').textContent='No speech detected';$('inputHint').className='input-hint';
+              clearLiveSubtitle();
             }
-          }catch{$('inputHint').textContent='Transcription failed';$('inputHint').className='input-hint err'}
-          setTimeout(()=>{$('inputHint').textContent='';$('inputHint').className='input-hint'},3000);
+          }catch{clearLiveSubtitle()}
           clawChunks=[];
           if(clawMicStream){clawMicStream.getTracks().forEach(t=>t.stop());clawMicStream=null}
         };
-        clawRecorder.start();
+        clawRecorder.start(500); // 500ms timeslice for interim chunks
         gestureRecording=true;
         $('clawOverlay').classList.add('active');
         $('clawStatus').textContent='Listening...';
+        clearLiveSubtitle();
         startClawViz();
         haptic('success');
       }catch(err){
