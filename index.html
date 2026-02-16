@@ -3293,6 +3293,18 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       return audioCtx;
     }
 
+    // TTS audio blob cache — keep last N, revoke older ones to free memory
+    const TTS_CACHE_MAX=10;
+    function evictTTSCache(){
+      const withAudio=chatHistory.map((m,i)=>({i,url:m.audioUrl})).filter(x=>x.url);
+      if(withAudio.length<=TTS_CACHE_MAX)return;
+      const toRevoke=withAudio.slice(0,withAudio.length-TTS_CACHE_MAX);
+      for(const{i,url}of toRevoke){
+        try{URL.revokeObjectURL(url)}catch{}
+        chatHistory[i].audioUrl=null;
+      }
+    }
+
     // Play audio buffer reliably on all platforms
     let activeTTSSource=null;
     let activeTTSGain=null;
@@ -3580,6 +3592,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
             const blob=ttsBlob(ttsData);
             const url=URL.createObjectURL(blob);
             chatHistory[idx].audioUrl=url;
+            evictTTSCache();
             setChat(chatHistory);
             playAudioBuffer(ttsData);
           }
@@ -6559,7 +6572,7 @@ Rules:
           fireWebhook('message.receive',{text:displayText});
           if(ttsMode==='auto'&&hasTTS(pk)){
             const ttsData=await speak(displayText);
-            if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
+            if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);evictTTSCache();setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
           playReceiveSound();haptic('receive');renderQuickReplies();
         }catch(e){
@@ -6616,7 +6629,7 @@ Rules:
           // TTS
           if(ttsMode==='auto'&&hasTTS(pk)){
             const ttsData=await speak(displayText);
-            if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
+            if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);evictTTSCache();setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
           playReceiveSound();haptic('receive');renderQuickReplies();
         }catch(e){
@@ -6680,7 +6693,7 @@ Rules:
                   const decoded=await ctx.decodeAudioData(ttsData.slice(0));
                   const dur=decoded.duration;
                   const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);
-                  chatHistory[bubbleIdx].audioUrl=audioUrl;
+                  chatHistory[bubbleIdx].audioUrl=audioUrl;evictTTSCache();
                   // Start audio and synced typing simultaneously
                   playAudioBuffer(ttsData);
                   await typeRevealSynced(displayText,mdEl,dur);
@@ -6688,7 +6701,7 @@ Rules:
                   // Fallback: play audio normally + regular typing
                   playAudioBuffer(ttsData);
                   const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);
-                  chatHistory[bubbleIdx].audioUrl=audioUrl;
+                  chatHistory[bubbleIdx].audioUrl=audioUrl;evictTTSCache();
                   await typeReveal(displayText,mdEl,pk);
                 }
               } else {
@@ -6701,7 +6714,7 @@ Rules:
           } else {
             // No typing animation: instant display
             const ttsData=await ttsPromise;
-            if(ttsData){const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData)}
+            if(ttsData){const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData);evictTTSCache()}
             const extra=audioUrl?{audioUrl}:{};
             if(aiUsage)extra.usage=aiUsage;
             addBubble('ai',displayText,extra);
