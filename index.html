@@ -4974,9 +4974,7 @@ ${getOptionalSteps()}`
     function parseGifTag(text){
       const m=text.match(/\[gif:([^\]]+)\]/i);
       if(m)return{cleanText:text.replace(m[0],'').trim(),gifQuery:m[1].trim()};
-      // Auto-search: use first ~60 chars of response
-      const snippet=text.replace(/[#*_`\[\]()]/g,'').slice(0,60).trim();
-      return{cleanText:text,gifQuery:snippet};
+      return{cleanText:text,gifQuery:null};
     }
 
     function showGifOverlay(gifUrl,text){
