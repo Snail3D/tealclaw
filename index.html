@@ -5773,6 +5773,16 @@ Rules:
           switch(action.type){
             case 'config':{
               const data=action.data||action;
+              // Resolve CSS named colors (e.g. "pink") to hex for color fields
+              const colorFields=['accentColor','bgColor','textColor','chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg','sendBtnColor','micBtnColor','borderColor'];
+              for(const cf of colorFields){
+                if(data[cf]&&typeof data[cf]==='string'&&!/^#/.test(data[cf])){
+                  const tmp=document.createElement('div');tmp.style.color=data[cf];document.body.appendChild(tmp);
+                  const rgb=getComputedStyle(tmp).color;document.body.removeChild(tmp);
+                  const m=rgb.match(/(\d+)/g);
+                  if(m&&m.length>=3)data[cf]='#'+m.slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join('');
+                }
+              }
               const keys=Object.keys(data).filter(k=>k!=='type');
               const hasSensitive=['aiKey','whisperKey','ttsKey','tgToken','webhookUrl','customCSS','pinHash'].some(s=>data[s]);
               const desc=keys.slice(0,5).join(', ')+(keys.length>5?'...':'')+(hasSensitive?' (includes sensitive keys)':'');
@@ -5826,6 +5836,11 @@ Rules:
                 if(!ok){results.push({type:'style',ok:false,error:'denied by user'});break}
                 const root=document.documentElement;
                 keys.forEach(k=>root.style.setProperty(k,vars[k]));
+                // Persist accent color if --teal was set
+                if(vars['--teal']&&/^#[0-9a-f]{3,8}$/i.test(vars['--teal'])){
+                  const k2=getK();k2.accentColor=vars['--teal'];setK(k2);
+                  applyVisualConfig();
+                }
               }
               results.push({type:'style',ok:true});
               break;
@@ -6569,9 +6584,9 @@ ${agentNote}`);
           const helpHtml=`<h3>TealClaw Commands</h3>
 <ul>
 <li><code>/setup</code> -- restart the setup wizard</li>
-<li><code>/research query</code> -- research report (Compound Mini)</li>
-<li><code>/deepresearch query</code> -- deep multi-tool research (Compound)</li>
-<li><code>/imagine prompt</code> -- generate an image</li>
+<li><code>/research [query]</code> -- research report (Compound Mini)</li>
+<li><code>/deepresearch [query]</code> -- deep multi-tool research (Compound)</li>
+<li><code>/imagine [prompt]</code> -- generate an image</li>
 <li><code>/export</code> -- export current chat (encrypted JSON, re-importable)</li>
 <li><code>/export all</code> -- export all conversations (encrypted JSON)</li>
 <li><code>/export md</code> -- download chat as markdown (for reading)</li>
@@ -6580,7 +6595,7 @@ ${agentNote}`);
 <li><code>/qr</code> -- generate encrypted QR code to share your config</li>
 <li><code>/telegram</code> -- set up Telegram forwarding</li>
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
-<li><code>/groq message</code> -- send directly to Groq (bypasses agent)</li>
+<li><code>/groq [message]</code> -- send directly to Groq (bypasses agent)</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear context window and start fresh</li>
 <li><code>/restart</code> -- same as /clear</li>
@@ -6590,8 +6605,8 @@ ${agentNote}`);
 <li><code>/voice-chat</code> -- enter voice-only mode (push-to-talk)</li>
 <li><code>/template</code> -- browse and apply style templates</li>
 <li><code>/save</code> -- save current chat to Obsidian</li>
-<li><code>/save idea your thought</code> -- quick capture idea to Obsidian</li>
-<li><code>/session create 7d</code> -- create a time-limited share link</li>
+<li><code>/save idea [your thought]</code> -- quick capture idea to Obsidian</li>
+<li><code>/session create [duration]</code> -- create a time-limited share link</li>
 <li><code>/session info</code> -- show current session status</li>
 <li><code>/session end</code> -- end session early</li>
 </ul>`;
