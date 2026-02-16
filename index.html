@@ -4836,6 +4836,25 @@ ${getOptionalSteps()}`
       return{cleanText:text,gifQuery:null};
     }
 
+    // Auto-detect GIF-worthy responses when the AI doesn't include [gif:] tags
+    function autoDetectGif(text){
+      if(!text||text.length<10||text.length>600)return null;
+      const t=text.toLowerCase();
+      // Greetings
+      if(/^(hey|hello|hi|howdy|what'?s up|yo|greetings)\b/i.test(t))return 'hello wave';
+      // Celebrations / success
+      if(/\b(congrat|awesome|amazing|fantastic|great job|well done|nailed it|perfect|bravo|woohoo|yay|let'?s go)\b/i.test(t))return 'celebration';
+      // Humor / jokes
+      if(/\b(haha|lol|lmao|joke|funny|punchline|knock knock|😂|🤣)\b/i.test(t))return 'laughing';
+      // Thank you
+      if(/\b(you'?re welcome|no problem|glad to help|happy to help|anytime)\b/i.test(t))return 'thumbs up';
+      // Mind-blowing
+      if(/\b(mind.?blow|incredible|unbelievable|insane|wow|whoa|no way)\b/i.test(t))return 'mind blown';
+      // Goodbye
+      if(/\b(goodbye|bye|see you|take care|catch you later|peace out)\b/i.test(t))return 'bye wave';
+      return null;
+    }
+
     function showGifOverlay(gifUrl,text){
       const overlay=$('gifOverlay'),img=$('gifImg'),txt=$('gifText');
       img.src=gifUrl;
@@ -6401,7 +6420,8 @@ Rules:
           if(tcActions.length){displayText=actionClean;executeTcActions(tcActions).catch(()=>{})}
           if(pk.gifEnabled!==false){
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+            const query=gifQuery||autoDetectGif(displayText);
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
           }
           chatHistory[streamIdx].text=displayText;
           if(tcActions.length)chatHistory[streamIdx].actionsRun=tcActions.length;
@@ -6455,7 +6475,8 @@ Rules:
           if(tcActions.length){displayText=actionClean;executeTcActions(tcActions).catch(()=>{})}
           if(pk.gifEnabled!==false){
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+            const query=gifQuery||autoDetectGif(displayText);
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
           }
           chatHistory[streamIdx].text=displayText;
           if(tcActions.length)chatHistory[streamIdx].actionsRun=tcActions.length;
@@ -6501,7 +6522,8 @@ Rules:
           // GIF overlay
           if(pk.gifEnabled!==false){
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            searchGif(gifQuery).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+            const query=gifQuery||autoDetectGif(displayText);
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
           }
 
           sendTelegram(`AI: ${displayText}`);
