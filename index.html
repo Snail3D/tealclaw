@@ -1802,7 +1802,7 @@
       if(/^https?:\/\/.+:\d{4,5}$/.test(val))return{field:'gwUrl',label:'Gateway URL'};
       if(/^[a-f0-9]{32,}$/.test(val))return{field:'gwToken',label:'Gateway Token'};
       if(/^https?:\/\/.*\/(images|generate|img)/i.test(val))return{field:'imageGenUrl',label:'Image Gen Endpoint'};
-      if(/^AIza[A-Za-z0-9_-]{30,}$/.test(val)||/^klipy[_-]/i.test(val))return{field:'gifTenorKey',label:'GIF API Key (Klipy)'};
+      // GIF key is hardcoded — no user detection needed
       return null;
     }
 
@@ -2108,7 +2108,7 @@
         {name:'Voice In',active:!!k.whisperKey},
         {name:'Voice Out',active:!!k.ttsKey},
         {name:'Telegram',active:!!(k.tgToken&&k.tgEnabled)},
-        {name:'GIF',active:!!(k.gifEnabled!==false&&k.gifTenorKey)},
+        {name:'GIF',active:k.gifEnabled!==false},
         {name:'Agent',active:!!getAgents().length},
         {name:'LaTeX',active:true}
       ];
@@ -2246,15 +2246,7 @@
           <button class="mode-btn gif-mode-btn ${gifOn?'active':''}" data-gif="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gifOn?'var(--teal)':'transparent'};border:none;color:${gifOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
           <button class="mode-btn gif-mode-btn ${!gifOn?'active':''}" data-gif="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gifOn?'var(--teal)':'transparent'};border:none;color:${!gifOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show a relevant GIF overlay for 10 seconds on each AI response.</div>
-        <div style="margin-top:8px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">GIF API Key (Klipy)</div>
-          <div style="display:flex;gap:5px">
-            <input type="password" class="sheet-input" id="sheetTenorKey" value="${esc(k.gifTenorKey||'')}" placeholder="AIza..." style="font-family:var(--mono);font-size:11px">
-            <button class="btn btn-teal" id="sheetTenorKeySave">Set</button>
-          </div>
-          <div style="font-size:10px;color:var(--text-3);margin-top:3px">Get a free key at <a href="https://partner.klipy.com" target="_blank" rel="noopener" style="color:var(--teal)">partner.klipy.com</a></div>
-        </div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show a relevant GIF when the AI includes a [gif:tag] in its response.</div>
       </div>`;
 
       // AI Configuration
@@ -2727,13 +2719,6 @@
         const k2=getK();k2.gifEnabled=b.dataset.gif==='true';setK(k2);
         renderSheetContent();
       }));
-      // Wire up Tenor key save
-      $('sheetBody').querySelector('#sheetTenorKeySave')?.addEventListener('click',()=>{
-        const val=$('sheetBody').querySelector('#sheetTenorKey').value.trim();
-        const k2=getK();
-        if(val){k2.gifTenorKey=val}else{delete k2.gifTenorKey}
-        setK(k2);showToast(val?'GIF key saved':'GIF key removed','ok');
-      });
 
       // Wire up gesture control toggle
       $('sheetBody').querySelectorAll('.gesture-mode-btn').forEach(b=>b.addEventListener('click',()=>{
@@ -4958,8 +4943,8 @@ ${getOptionalSteps()}`
     // ── GIF Overlay ──────────────────────────────────────
     let gifTimer=null;
     async function searchGif(query){
-      const tenorKey=getK().gifTenorKey;
-      if(!tenorKey||!query)return null;
+      const tenorKey='1TQ3cxujEzKzdgNolKzXtK2O5pZnZs7yBQMunwngVDQkljHF8YqQIkmdMyBRdRDi';
+      if(!query)return null;
       try{
         const q=encodeURIComponent(query.slice(0,80));
         const res=await fetch(`https://api.klipy.com/v2/search?q=${q}&key=${tenorKey}&limit=8&media_filter=gif&contentfilter=medium`);
@@ -8043,7 +8028,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
-      gifEnabled:'gifEnabled',gifTenorKey:'gifTenorKey',
+      gifEnabled:'gifEnabled',
       accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
       bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
       chatUserColor:'chatUserColor',chatAiColor:'chatAiColor',
