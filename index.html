@@ -225,6 +225,8 @@
     .circle-btn svg{width:calc(var(--btn-size,50px) * 0.45);height:calc(var(--btn-size,50px) * 0.45)}
     .send-btn{background:var(--teal);color:#fff} .send-btn:hover{background:var(--teal-hover)}
     .send-btn.hidden{display:none}
+    .send-btn.claw-active{background:#e04040;animation:claw-pulse 2s ease-in-out infinite}
+    @keyframes claw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,64,64,0.4)}50%{box-shadow:0 0 0 8px rgba(224,64,64,0)}}
     .mic-circle{background:var(--text-3);color:var(--bg-root);border:none} .mic-circle:hover{background:var(--text-2)}
     .mic-circle.hidden{display:none}
     .mic-circle.recording{background:var(--err);color:#fff;animation:mic-p 1.5s ease-in-out infinite}
@@ -7127,17 +7129,16 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       send();
     }
 
-    // Triple-tap send button → enter voice mode
+    // Triple-tap send button → toggle claw mode (always-listening voice)
     let _sendTaps=[],_sendTapTimer=0;
     $('sendBtn').addEventListener('click',()=>{
       const now=Date.now();
       _sendTaps.push(now);
-      // Keep only taps within 600ms window
       _sendTaps=_sendTaps.filter(t=>now-t<600);
       if(_sendTaps.length>=3){
         _sendTaps=[];
         clearTimeout(_sendTapTimer);
-        enterVoiceMode();
+        toggleClawMode();
         return;
       }
       clearTimeout(_sendTapTimer);
@@ -7811,6 +7812,75 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     micBtn.addEventListener('touchend',e=>{e.preventDefault();stopRec()});
 
     function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording');haptic('light')}
+
+    // ── Claw Mode (always-listening voice) ─────────────
+    let _clawMode=false, _clawStream=null, _clawRecorder=null, _clawSilenceTimer=null;
+    const CLAW_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 9l2 3-2 3"/><path d="M16 9l-2 3 2 3"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
+    const SEND_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+
+    function toggleClawMode(){
+      if(_clawMode){stopClawMode()}else{startClawMode()}
+    }
+
+    async function startClawMode(){
+      try{
+        _clawStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+      }catch{showToast('Mic access denied','err');return}
+      _clawMode=true;
+      const btn=$('sendBtn');
+      btn.innerHTML=CLAW_ICON;
+      btn.classList.remove('hidden');
+      btn.classList.add('claw-active');
+      $('micBtn').classList.add('hidden');
+      showToast('Claw mode on','ok');
+      haptic('success');
+      clawListen();
+    }
+
+    function stopClawMode(){
+      _clawMode=false;
+      clearTimeout(_clawSilenceTimer);
+      if(_clawRecorder&&_clawRecorder.state!=='inactive'){try{_clawRecorder.stop()}catch{}}
+      _clawRecorder=null;
+      if(_clawStream){_clawStream.getTracks().forEach(t=>t.stop());_clawStream=null}
+      const btn=$('sendBtn');
+      btn.innerHTML=SEND_ICON;
+      btn.classList.remove('claw-active');
+      const hasText=$('textIn').value.trim();
+      btn.classList.toggle('hidden',!hasText);
+      $('micBtn').classList.remove('hidden');
+      clearLiveSubtitle();
+      showToast('Claw mode off','ok');
+      haptic('light');
+    }
+
+    function clawListen(){
+      if(!_clawMode||!_clawStream)return;
+      const rec=new MediaRecorder(_clawStream,{mimeType:'audio/webm;codecs=opus'});
+      _clawRecorder=rec;
+      const parts=[];
+      rec.ondataavailable=e=>{if(e.data.size>0)parts.push(e.data)};
+      rec.onstop=async()=>{
+        if(!_clawMode)return;
+        if(parts.length>0){
+          const blob=new Blob(parts,{type:'audio/webm'});
+          try{
+            const text=await transcribe(blob);
+            if(text&&text.trim()){
+              showLiveSubtitle(text);
+              pipeline(text);
+            }
+          }catch{}
+        }
+        // Loop: start listening again after a brief pause
+        if(_clawMode)setTimeout(clawListen,400);
+      };
+      rec.start();
+      // Auto-stop after 15s of recording (Whisper limit), then loop
+      _clawSilenceTimer=setTimeout(()=>{
+        if(rec.state==='recording')rec.stop();
+      },15000);
+    }
 
     // ── Telegram ─────────────────────────────────────────
     function getTelegramTag(){
