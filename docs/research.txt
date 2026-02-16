@@ -139,6 +139,6 @@ To also enable chat + voice output:
 {
   "whisperKey": "gsk_KEY",
   "aiKey": "sk-or-v1-KEY",
-  "ttsKey": "sk_KEY"
+  "groqTtsVoice": "troy"
 }
 ```

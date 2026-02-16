@@ -20,10 +20,9 @@ All values are stored in browser localStorage. No server, no database.
 | aiProvider | "openrouter" / "groq" / "anthropic" | AI provider for chat completions |
 | aiKey | string | API key for chat. Prefixes: sk-or-v1-* (OpenRouter), gsk_* (Groq), sk-ant-* (Anthropic) |
 | aiModel | string | Model ID. Default: google/gemini-2.5-flash-preview. Examples: llama-3.3-70b-versatile (Groq), claude-sonnet-4-5-20250929 (Anthropic) |
-| whisperKey | string | Groq API key for Whisper voice transcription AND /research command. Get free at console.groq.com |
-| ttsKey | string | ElevenLabs API key for text-to-speech output |
-| ttsVoice | string | ElevenLabs voice ID. Default: ThT5KcBeYPX7keBQBPPD (Rachel). Browse at elevenlabs.io/voice-lab |
-| ttsAutoPlay | boolean | Auto-speak AI responses. Default: true. Set false to save ElevenLabs credits (play on tap) |
+| whisperKey | string | Groq API key for Whisper voice transcription, Orpheus TTS, AND /research command. Get free at console.groq.com |
+| groqTtsVoice | string | Groq Orpheus TTS voice name. Options: autumn, diana, hannah, austin, daniel, troy. Default: troy |
+| ttsAutoPlay | boolean | Auto-speak AI responses. Default: true. Set false for on-demand playback (tap to hear) |
 | maxTokens | number | Max tokens per AI response. Default: 400. Range: 50-2000 |
 | temperature | number | AI creativity. 0=focused, 2=creative. Default: 0.7 |
 
@@ -267,8 +266,7 @@ Example: `{"rateLimitPerMin": 10}` — allows 10 messages per minute, blocks add
 
 When a bare key is pasted (no JSON), TealClaw auto-detects:
 - sk-or-v1-* → aiKey (OpenRouter)
-- gsk_* → whisperKey (Groq)
-- sk_ + 40+ hex chars → ttsKey (ElevenLabs)
+- gsk_* → whisperKey (Groq — also enables Orpheus TTS)
 - 123456:ABC-* → tgToken (Telegram bot)
 - Negative or 6+ digit number → tgChatId
 - http(s)://...:port → gateway URL

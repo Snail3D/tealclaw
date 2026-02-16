@@ -10,7 +10,7 @@
 
 **Zero Server, Total Privacy** — Static files on Cloudflare Pages. No backend, no database, no tracking. Your browser talks directly to AI providers.
 
-**Voice Chat** — Hold-to-speak with Groq Whisper transcription. ElevenLabs TTS for voice responses. Full push-to-talk with live subtitles.
+**Voice Chat** — Hold-to-speak with Groq Whisper transcription. Groq Orpheus TTS for voice responses. Full push-to-talk with live subtitles.
 
 **The Claw** — MediaPipe hand-tracking gesture control. Pinch to talk, wave to clear, point to scroll. Hands-free everything.
 
@@ -39,8 +39,7 @@ One free key gives you chat, voice input, vision, and `/research`.
 | Key | Provider | Unlocks |
 |-----|----------|---------|
 | AI Key | OpenRouter, Groq, or Anthropic | Chat completions |
-| Whisper Key | Groq | Voice transcription + research |
-| TTS Key | ElevenLabs | Voice responses |
+| Whisper Key | Groq | Voice transcription + TTS + research |
 | Gateway | OpenClaw via Cloudflare Tunnel | Agent mode |
 | Telegram | Bot token + Chat ID | Message forwarding |
 

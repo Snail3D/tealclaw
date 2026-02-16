@@ -221,16 +221,15 @@ client: {
 <!-- ═══════════════════════════════════════════════════════ -->
 <h2 id="tts-voice">5. TTS / Voice Issues <span class="tag tag-tts">TTS</span></h2>
 
-<h3>ElevenLabs TTS not speaking</h3>
+<h3>Groq Orpheus TTS not speaking</h3>
 <p><strong>Possible causes:</strong></p>
 <ul>
-<li>No ElevenLabs API key set in settings</li>
-<li>Invalid voice ID</li>
-<li>Account out of credits / character quota exceeded</li>
+<li>No Groq API key (<code>whisperKey</code>) set in settings</li>
+<li>Invalid voice name (valid: autumn, diana, hannah, austin, daniel, troy)</li>
 <li>Audio blob not properly cleaned up (memory leak)</li>
 </ul>
 <div class="fix-box">
-<p><strong>Fix:</strong> Check ElevenLabs dashboard for quota. Verify the voice ID exists. Check browser console for fetch errors to the ElevenLabs API.</p>
+<p><strong>Fix:</strong> Verify your Groq key is set (same key used for Whisper transcription). Check the <code>groqTtsVoice</code> setting. Check browser console for fetch errors to the Groq API.</p>
 </div>
 
 <h3>Browser TTS (Web Speech API) not working</h3>

@@ -8,7 +8,7 @@ TealClaw is a static single-page application. One HTML file. No server. No datab
 
 ```
 Your Browser ←→ AI Provider (OpenRouter / Groq / Anthropic)
-Your Browser ←→ ElevenLabs (text-to-speech)
+Your Browser ←→ Groq Orpheus (text-to-speech)
 Your Browser ←→ Tenor (GIF reactions)
 ```
 
@@ -75,7 +75,7 @@ When you use TealClaw, your AI provider (OpenRouter, Groq, Anthropic, etc.) rece
 |---------|--------------|------|
 | AI Provider | Your messages + API key | Every chat message |
 | Groq Whisper | Your voice audio + API key | When you use voice input |
-| ElevenLabs | AI response text + API key | When TTS plays |
+| Groq Orpheus | AI response text + API key | When TTS plays |
 | Tenor | GIF search queries | When GIF reactions are enabled |
 | Cloudflare Pages | Standard HTTP logs (IP, page request) | On page load only |
 

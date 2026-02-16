@@ -8,7 +8,7 @@
 
 ### Full Setup (all keys at once)
 ```json
-{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","ttsKey":"sk_KEY","ttsVoice":"ThT5KcBeYPX7keBQBPPD"}
+{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"troy"}
 ```
 
 ### Free Chatbot (zero cost, one Groq key)
@@ -210,11 +210,6 @@ One Groq key covers chat + vision + voice input + /research. No cost. Sign up at
 ```
 
 ## Behavior Recipes
-
-### Save ElevenLabs Credits
-```json
-{"ttsAutoPlay":false}
-```
 
 ### Verbose Creative Mode
 ```json
@@ -455,8 +450,7 @@ They render as interactive UI elements in the chat.
   "themeMode":"dark",
   "aiKey":"sk-or-v1-KEY",
   "whisperKey":"gsk_KEY",
-  "ttsKey":"sk_KEY",
-  "ttsVoice":"ThT5KcBeYPX7keBQBPPD",
+  "groqTtsVoice":"troy",
   "gifEnabled":true,
   "hapticFeedback":true,
   "soundEnabled":true,

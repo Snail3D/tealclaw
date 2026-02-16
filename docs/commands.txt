@@ -46,8 +46,7 @@ Shows the full command list in a formatted card. Always available.
 ### /setup
 Displays the setup wizard with direct links to get API keys:
 - OpenRouter (sk-or-v1-*) — recommended for chat
-- Groq (gsk_*) — free, also enables voice input and /research
-- ElevenLabs (sk_*) — voice output (optional)
+- Groq (gsk_*) — free, enables voice input, Orpheus TTS, and /research
 - Telegram setup instructions
 
 ### /research
@@ -65,7 +64,7 @@ Shows current configuration status:
 - AI provider and key status
 - Current model
 - Voice input (Groq Whisper) status
-- Voice output (ElevenLabs) status
+- Voice output (Groq Orpheus TTS) status
 - Telegram forwarding status
 - Image generation status
 
@@ -91,9 +90,9 @@ Toggle Telegram message forwarding without changing the token or chat ID.
 
 ### /voice
 Shows current TTS voice settings:
-- Current voice ID
-- Link to ElevenLabs Voice Lab to browse voices
-- Instructions to change voice by pasting a new voice ID
+- Current Groq Orpheus voice name (groqTtsVoice)
+- Available voices: autumn, diana, hannah, austin, daniel, troy
+- Instructions to change voice
 
 ### /imagine
 Generate images using a configured image generation API.
@@ -163,8 +162,7 @@ bot configuration with someone else. The QR code uses your accent color for bran
 ### Bare API Key Paste
 Paste any API key directly — TealClaw auto-detects by prefix:
 - `sk-or-v1-*` → OpenRouter AI key
-- `gsk_*` → Groq Whisper key
-- `sk_` + hex → ElevenLabs TTS key
+- `gsk_*` → Groq key (Whisper + Orpheus TTS)
 - `123456:ABC-*` → Telegram bot token
 
 ### JSON Config Paste

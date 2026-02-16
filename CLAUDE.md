@@ -7,7 +7,7 @@ BYOK voice dashboard PWA. Zero server. Total privacy.
 ```
 User's Browser → AI Provider (Groq/Anthropic) → User's Browser
 User's Browser → Groq Whisper (transcription) → User's Browser
-User's Browser → ElevenLabs (TTS) → User's Browser
+User's Browser → Groq Orpheus (TTS) → User's Browser
 User's Browser → OpenClaw Gateway (via Cloudflare Tunnel) → User's Browser
 ```
 
@@ -26,7 +26,7 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - Static HTML/CSS/JS (no build step)
 - Hosted on Cloudflare Pages (tealclaw.ai)
 - PWA with service worker
-- BYOK: Groq, Anthropic, ElevenLabs
+- BYOK: Groq, Anthropic
 - Agent: OpenClaw gateway via Cloudflare Tunnel
 
 ## Gateway + Cloudflare Tunnel Configuration
