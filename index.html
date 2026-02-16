@@ -231,6 +231,12 @@
     .send-btn.hidden{display:none}
     .send-btn.claw-active{background:#e04040;animation:claw-pulse 2s ease-in-out infinite}
     @keyframes claw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,64,64,0.4)}50%{box-shadow:0 0 0 8px rgba(224,64,64,0)}}
+    .claw-toggle{width:32px;height:32px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:transparent;color:var(--text-3);transition:all 0.25s;padding:0;margin-right:-4px}
+    .claw-toggle svg{width:20px;height:20px}
+    .claw-toggle:hover{color:var(--text-2)}
+    .claw-toggle.on{color:var(--teal)}
+    .claw-toggle.on:hover{color:var(--teal-hover)}
+    .claw-toggle.recording{color:#fff;background:var(--err);animation:claw-pulse 1.5s ease-in-out infinite}
     .mic-circle{background:var(--text-3);color:var(--bg-root);border:none} .mic-circle:hover{background:var(--text-2)}
     .mic-circle.hidden{display:none}
     .mic-circle.recording{background:var(--err);color:#fff;animation:mic-p 1.5s ease-in-out infinite}
@@ -1124,6 +1130,9 @@
       </div>
       <div class="file-stack" id="fileStack"></div>
       <div class="input-row">
+        <button class="claw-toggle" id="clawToggle" title="Toggle Claw mode" aria-label="Toggle Claw mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 9l2 3-2 3"/><path d="M16 9l-2 3 2 3"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+        </button>
         <button class="circle-btn attach-btn" id="attachBtn" title="Attach file" aria-label="Attach file">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
@@ -2194,7 +2203,7 @@
       }
 
       // Gesture Control — The Claw
-      const gestureOn=k.gestureEnabled!==false;
+      const gestureOn=k.gestureEnabled===true;
       html+=`<div class="sheet-section"><div class="sheet-section-title">The Claw Gesture</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
           <button class="mode-btn gesture-mode-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
@@ -2591,7 +2600,7 @@
         const enabled=b.dataset.gesture==='true';
         const k2=getK();k2.gestureEnabled=enabled;setK(k2);
         renderSheetContent();
-        if(enabled)startGestureTracking();else stopGestureTracking();
+        if(enabled){startGestureTracking();$('clawToggle').classList.add('on')}else stopGestureTracking();
       }));
       // Gesture confidence slider
       $('sheetBody').querySelector('#sheetGestureConf')?.addEventListener('input',e=>{
@@ -7172,21 +7181,8 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       send();
     }
 
-    // Triple-tap send button → toggle claw mode (always-listening voice)
-    let _sendTaps=[],_sendTapTimer=0;
-    $('sendBtn').addEventListener('click',()=>{
-      const now=Date.now();
-      _sendTaps.push(now);
-      _sendTaps=_sendTaps.filter(t=>now-t<600);
-      if(_sendTaps.length>=3){
-        _sendTaps=[];
-        clearTimeout(_sendTapTimer);
-        toggleClawMode();
-        return;
-      }
-      clearTimeout(_sendTapTimer);
-      _sendTapTimer=setTimeout(()=>{_sendTaps=[];send()},200);
-    });
+    // Send button — clean single click
+    $('sendBtn').addEventListener('click',()=>send());
     $('textIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
     // On mobile, tapping input should scroll chat to bottom so user sees latest messages
     $('textIn').addEventListener('focus',()=>{
@@ -7856,34 +7852,24 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
 
     function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording');haptic('light')}
 
-    // ── Claw Mode (vision/gesture toggle via triple-tap) ─────────────
-    const CLAW_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 9l2 3-2 3"/><path d="M16 9l-2 3 2 3"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>';
-    const SEND_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
-
+    // ── Claw Mode (dedicated toggle button) ─────────────
     function toggleClawMode(){
+      const btn=$('clawToggle');
       if(gestureActive){
         stopGestureTracking();
-        const btn=$('sendBtn');
-        btn.innerHTML=SEND_ICON;
-        btn.classList.remove('claw-active');
-        const hasText=$('textIn').value.trim();
-        btn.classList.toggle('hidden',!hasText);
-        $('micBtn').classList.remove('hidden');
+        btn.classList.remove('on','recording');
         showToast('Claw mode off','ok');
         haptic('light');
         const k2=getK();k2.gestureEnabled=false;setK(k2);
       } else {
         startGestureTracking();
-        const btn=$('sendBtn');
-        btn.innerHTML=CLAW_ICON;
-        btn.classList.remove('hidden');
-        btn.classList.add('claw-active');
-        $('micBtn').classList.add('hidden');
+        btn.classList.add('on');
         showToast('Claw mode on','ok');
         haptic('success');
         const k2=getK();k2.gestureEnabled=true;setK(k2);
       }
     }
+    $('clawToggle').addEventListener('click',toggleClawMode);
 
     // ── Telegram ─────────────────────────────────────────
     function getTelegramTag(){
@@ -9596,6 +9582,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         };
         clawRecorder.start(500); // 500ms timeslice for interim chunks
         gestureRecording=true;
+        $('clawToggle').classList.add('recording');
         clearLiveSubtitle();
         haptic('success');
       }catch(err){
@@ -9608,6 +9595,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(!gestureRecording||!clawRecorder)return;
       clawRecorder.stop();
       gestureRecording=false;
+      $('clawToggle').classList.remove('recording');
       haptic('light');
     }
 
@@ -9722,9 +9710,8 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         });
         await mpCamera.start();
 
-        $('gesturePip').classList.add('active');
         gestureActive=true;
-        showToast('The Claw gesture active - hold The Claw for 1s to record','ok');
+        showToast('Claw mode on — show The Claw to speak','ok');
       }catch(err){
         console.error('[Gesture]',err);
         showToast('Gesture setup failed: '+err.message,'err');
@@ -9734,34 +9721,17 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
 
     function stopGestureTracking(){
       gestureActive=false;
-      $('gesturePip').classList.remove('active');
+      $('clawToggle').classList.remove('on','recording');
       if(gestureStream){gestureStream.getTracks().forEach(t=>t.stop());gestureStream=null}
       $('gestureVideo').srcObject=null;
       if(gestureRecording)stopClawRecording();
       lastGesture='';gestureRecording=false;gestureGoneTime=0;clawDetectStart=0;
     }
 
-    // PiP close button — stop gesture + restore send button
-    $('gesturePipClose').addEventListener('click',()=>{
-      stopGestureTracking();
-      const btn=$('sendBtn');
-      btn.innerHTML=SEND_ICON;
-      btn.classList.remove('claw-active');
-      const hasText=$('textIn').value.trim();
-      btn.classList.toggle('hidden',!hasText);
-      $('micBtn').classList.remove('hidden');
-      const k2=getK();k2.gestureEnabled=false;setK(k2);
-      showToast('Claw mode off','ok');
-    });
-
-    // Auto-start if enabled — swap send button to claw icon too
-    if(getK().gestureEnabled!==false){
+    // Auto-start claw mode if previously enabled
+    if(getK().gestureEnabled===true){
       startGestureTracking();
-      const btn=$('sendBtn');
-      btn.innerHTML=CLAW_ICON;
-      btn.classList.remove('hidden');
-      btn.classList.add('claw-active');
-      $('micBtn').classList.add('hidden');
+      $('clawToggle').classList.add('on');
     }
 
     // ── Service Worker + Update Notification ──────────
