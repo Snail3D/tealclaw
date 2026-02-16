@@ -6578,6 +6578,11 @@ ${agentNote}`);
         }catch{}
       }
 
+      // Normalize slash-less commands so voice input works (e.g. "imagine a cat" → "/imagine a cat")
+      if(!text.startsWith('/')&&/^(imagine|research|deepresearch)\s/i.test(text)){
+        text='/'+text;
+      }
+
       // Chat commands
       if(text.startsWith('/')){
         const cmd=text.toLowerCase();
@@ -6597,9 +6602,9 @@ ${agentNote}`);
           const helpHtml=`<h3>TealClaw Commands</h3>
 <ul>
 <li><code>/setup</code> -- restart the setup wizard</li>
-<li><code>/research [query]</code> -- research report (Compound Mini)</li>
-<li><code>/deepresearch [query]</code> -- deep multi-tool research (Compound)</li>
-<li><code>/imagine [prompt]</code> -- generate an image</li>
+<li><code>/research [query]</code> -- research report (works by voice: "research...")</li>
+<li><code>/deepresearch [query]</code> -- deep multi-tool research (works by voice: "deepresearch...")</li>
+<li><code>/imagine [prompt]</code> -- generate an image (attach a photo to edit/remix it; works by voice: "imagine...")</li>
 <li><code>/export</code> -- export current chat (encrypted JSON, re-importable)</li>
 <li><code>/export all</code> -- export all conversations (encrypted JSON)</li>
 <li><code>/export md</code> -- download chat as markdown (for reading)</li>
@@ -6835,10 +6840,11 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           researchPipeline(rQuery,rImage);
           return;
         }
-        if(text.startsWith('/imagine ')){
-          const prompt=text.slice(9).trim();
-          if(prompt)imagePipeline(prompt);
-          else showToast('Usage: /imagine your prompt here','err');
+        if(cmd==='/imagine'||text.startsWith('/imagine ')){
+          const prompt=text.slice(8).trim();
+          const refImage=images[0]||null;
+          if(prompt||refImage)imagePipeline(prompt,refImage);
+          else showToast('Usage: /imagine your prompt here (or attach an image)','err');
           return;
         }
         if(text.startsWith('/export')){
@@ -7665,7 +7671,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     }
 
     // ── Image Generation ──────────────────────────────
-    async function generateImage(prompt){
+    async function generateImage(prompt,refImage){
       const k=getK();
       const apiKey=k.imageGenKey||k.aiKey;
       if(!apiKey&&!k.imageGenUrl){showToast('No image gen key — paste a Google AI or OpenRouter key','err');return null}
@@ -7674,26 +7680,36 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(apiKey&&apiKey.startsWith('AIza')){
         const model=k.imageGenModel||'gemini-2.5-flash-image';
         const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        // Build parts: text prompt + optional reference image
+        const parts=[];
+        if(prompt)parts.push({text:prompt});
+        if(refImage){
+          // refImage is a data URL like "data:image/jpeg;base64,..."
+          const match=refImage.match(/^data:([^;]+);base64,(.+)$/);
+          if(match)parts.push({inline_data:{mime_type:match[1],data:match[2]}});
+        }
+        if(!parts.length)parts.push({text:'Generate a creative image'});
         const res=await fetch(url,{
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({
-            contents:[{parts:[{text:prompt}]}],
+            contents:[{parts}],
             generationConfig:{responseModalities:['TEXT','IMAGE']}
           })
         });
         if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`Gemini: ${res.status}`)}
         const d=await res.json();
-        const parts=d.candidates?.[0]?.content?.parts||[];
-        const img=parts.find(p=>p.inline_data);
-        if(img)return `data:${img.inline_data.mime_type};base64,${img.inline_data.data}`;
+        const resParts=d.candidates?.[0]?.content?.parts||[];
+        const img=resParts.find(p=>p.inline_data);
+        const txtPart=resParts.find(p=>p.text);
+        if(img)return {url:`data:${img.inline_data.mime_type};base64,${img.inline_data.data}`,text:txtPart?.text||null};
         return null;
       }
 
       // OpenRouter — OpenAI-compatible image API
       if(apiKey&&apiKey.startsWith('sk-or-v1-')){
         const genUrl=k.imageGenUrl||'https://openrouter.ai/api/v1/images/generations';
-        const body={prompt,n:1,size:k.imageGenSize||'1024x1024'};
+        const body={prompt:prompt||'Generate a creative image',n:1,size:k.imageGenSize||'1024x1024'};
         if(k.imageGenModel)body.model=k.imageGenModel;
         const res=await fetch(genUrl,{
           method:'POST',
@@ -7702,15 +7718,14 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         });
         if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`OpenRouter: ${res.status}`)}
         const d=await res.json();
-        if(d.data?.[0]?.url)return d.data[0].url;
-        if(d.data?.[0]?.b64_json)return 'data:image/png;base64,'+d.data[0].b64_json;
-        return null;
+        const u=d.data?.[0]?.url||(d.data?.[0]?.b64_json?'data:image/png;base64,'+d.data[0].b64_json:null);
+        return u?{url:u,text:null}:null;
       }
 
       // Custom endpoint (OpenAI-compatible fallback)
       if(!k.imageGenUrl)return null;
       if(!apiKey){showToast('No API key for image gen','err');return null}
-      const body={prompt,n:1,size:k.imageGenSize||'1024x1024'};
+      const body={prompt:prompt||'Generate a creative image',n:1,size:k.imageGenSize||'1024x1024'};
       if(k.imageGenModel)body.model=k.imageGenModel;
       const res=await fetch(k.imageGenUrl,{
         method:'POST',
@@ -7719,18 +7734,15 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       });
       if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`Image API: ${res.status}`)}
       const d=await res.json();
-      if(d.data?.[0]?.url)return d.data[0].url;
-      if(d.data?.[0]?.b64_json)return 'data:image/png;base64,'+d.data[0].b64_json;
-      if(d.images?.[0]?.url)return d.images[0].url;
-      if(d.output?.url)return d.output.url;
-      if(d.url)return d.url;
-      return null;
+      const u=d.data?.[0]?.url||(d.data?.[0]?.b64_json?'data:image/png;base64,'+d.data[0].b64_json:null)||d.images?.[0]?.url||d.output?.url||d.url||null;
+      return u?{url:u,text:null}:null;
     }
 
     // ── /imagine command in pipeline ────────────────────
-    async function imagePipeline(prompt){
-      addBubble('user','/imagine '+prompt);
-      sendTelegram('You: /imagine '+prompt);
+    async function imagePipeline(prompt,refImage){
+      const label=prompt?(refImage?'/imagine (with reference)':'/imagine'):'/imagine (image only)';
+      addBubble('user',prompt?`${label} ${prompt}`:label,refImage?{image:refImage}:{});
+      sendTelegram(`You: ${label} ${prompt||''}`);
 
       // Show generating state
       const genBubble=addBubble('ai','');
@@ -7741,17 +7753,61 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(lastBubble)lastBubble.innerHTML='<div class="gen-spinner">Generating image...</div>';
 
       try{
-        const imgUrl=await generateImage(prompt);
-        if(!imgUrl){
+        const result=await generateImage(prompt,refImage);
+        if(!result){
           chatHistory[idx].text='Image generation returned no result.';
           renderChat();return;
         }
-        chatHistory[idx].text=`Generated: "${prompt}"`;
+        const imgUrl=result.url;
+        const geminiText=result.text;
+        chatHistory[idx].text=geminiText||`Generated: "${prompt||'image'}"`;
         chatHistory[idx].image=imgUrl;
         setChat(chatHistory);
         renderChat();
-        sendTelegram(`AI: [Generated image for "${prompt}"]`);
+        sendTelegram(`AI: [Generated image for "${prompt||'reference'}"]`);
         showToast('Image generated','ok');
+
+        // Send generated image + metadata to connected agent
+        const k=getK();
+        if(k.mode==='agent'&&getActiveAgent()){
+          const agentMsg=`[Image generated via /imagine]\nPrompt: "${prompt||'(reference image)'}"\n${geminiText?'Gemini notes: '+geminiText+'\n':''}The generated image is attached.`;
+          callAgent(agentMsg,imgUrl).then(r=>{
+            if(r?.text){
+              addBubble('ai',r.text);
+              setChat(chatHistory);renderChat();
+              if(r.usage)chatHistory[chatHistory.length-1].usage=r.usage;
+            }
+          }).catch(()=>{});
+        }
+
+        // Send to Groq vision (Maverick) for commentary
+        const groqKey=k.whisperKey||k.aiKey;
+        if(groqKey&&imgUrl.startsWith('data:')){
+          const visionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
+          fetch('https://api.groq.com/openai/v1/chat/completions',{
+            method:'POST',
+            headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+            body:JSON.stringify({
+              model:visionModel,
+              messages:[
+                {role:'system',content:'You are reviewing an AI-generated image. Give a brief, conversational reaction — what you see, what works well, and any creative observations. Keep it to 2-3 sentences. Be enthusiastic but genuine.'},
+                {role:'user',content:[
+                  {type:'text',text:`I just generated this image${prompt?' with the prompt: "'+prompt+'"':''}. What do you think?`},
+                  {type:'image_url',image_url:{url:imgUrl}}
+                ]}
+              ],
+              max_tokens:300
+            })
+          }).then(r=>r.json()).then(d=>{
+            const comment=d.choices?.[0]?.message?.content;
+            if(comment){
+              addBubble('ai',comment);
+              const cIdx=chatHistory.length-1;
+              if(d.usage)chatHistory[cIdx].usage={prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:visionModel};
+              setChat(chatHistory);renderChat();
+            }
+          }).catch(()=>{});
+        }
       }catch(e){
         chatHistory[idx].text=`Image error: ${e.message}`;
         setChat(chatHistory);
