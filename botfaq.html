@@ -53,7 +53,7 @@
 <li><a href="#guest-links">6. Guest Links</a></li>
 <li><a href="#obsidian">7. Obsidian Integration</a></li>
 <li><a href="#pwa-cache">8. PWA / Service Worker / Cache</a></li>
-<li><a href="#tailscale">9. Tailscale + TLS</a></li>
+<li><a href="#cloudflare-tunnel">9. Cloudflare Tunnel + TLS</a></li>
 <li><a href="#telegram">10. Telegram Forwarding</a></li>
 <li><a href="#help-mode">11. Help Mode</a></li>
 <li><a href="#architecture">12. Architecture Reference</a></li>
@@ -110,7 +110,7 @@ client: {
 <div class="error-box">
 <code>REJECTED: {"code":"PAIRING_REQUIRED","message":"pairing required"}</code>
 </div>
-<p><strong>Cause:</strong> When using Tailscale Serve as a reverse proxy, the gateway sees connections from <code>127.0.0.1</code> instead of the real client IP. If <code>127.0.0.1</code> isn't in <code>trustedProxies</code>, the gateway doesn't read forwarded headers and treats it as an unknown client.</p>
+<p><strong>Cause:</strong> When using a reverse proxy (Cloudflare Tunnel, nginx, etc.), the gateway sees connections from <code>127.0.0.1</code> instead of the real client IP. If <code>127.0.0.1</code> isn't in <code>trustedProxies</code>, the gateway doesn't read forwarded headers and treats it as an unknown client.</p>
 <div class="fix-box">
 <p><strong>Fix:</strong> Add trusted proxies to <code>openclaw.json</code>:</p>
 </div>
@@ -134,22 +134,13 @@ client: {
 <!-- ═══════════════════════════════════════════════════════ -->
 <h2 id="gateway-config">2. Gateway Configuration <span class="tag tag-config">Config</span></h2>
 
-<h3>Error: Gateway crashes on startup</h3>
-<div class="error-box">
-<code>bind: "tailnet" is incompatible with tailscale.mode: "serve"</code>
-</div>
-<p><strong>Cause:</strong> <code>bind: "tailnet"</code> tells the gateway to bind directly to the Tailscale interface, but <code>tailscale.mode: "serve"</code> uses Tailscale Serve as a reverse proxy to localhost. These are mutually exclusive.</p>
-<div class="fix-box">
-<p><strong>Fix:</strong> Use <code>bind: "loopback"</code> with <code>tailscale.mode: "serve"</code>:</p>
-</div>
+<h3>Gateway bind configuration</h3>
+<p>When using a reverse proxy (Cloudflare Tunnel, nginx, Caddy), gateway should bind to <code>loopback</code>:</p>
 <pre><code>"gateway": {
-  "bind": "loopback",
-  "tailscale": {
-    "mode": "serve"
-  }
+  "bind": "loopback"
 }</code></pre>
 <div class="warn-box">
-<p><strong>Rule:</strong> <code>bind: "loopback"</code> + <code>tailscale.mode: "serve"</code> = correct. Never use <code>bind: "tailnet"</code> with <code>tailscale.mode: "serve"</code>.</p>
+<p><strong>Rule:</strong> <code>bind: "loopback"</code> when using any reverse proxy. The proxy handles external traffic and forwards to localhost.</p>
 </div>
 
 <h3>Config file location</h3>
@@ -303,26 +294,29 @@ client: {
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
-<h2 id="tailscale">9. Tailscale + TLS <span class="tag tag-ws">Network</span></h2>
+<h2 id="cloudflare-tunnel">9. Cloudflare Tunnel + TLS <span class="tag tag-ws">Network</span></h2>
 
 <h3>How TealClaw connects to the gateway</h3>
 <pre><code>TealClaw (browser on any device)
-  → wss://&lt;tailscale-hostname&gt;:443  (TLS terminated by Tailscale Serve)
-  → 127.0.0.1:18789                 (forwarded to local gateway)
+  → wss://gw.yourdomain.com:443  (TLS terminated by Cloudflare)
+  → cloudflared tunnel → 127.0.0.1:18789
   → OpenClaw gateway processes the WebSocket</code></pre>
 
-<h3>Tailscale Serve setup</h3>
-<p>Tailscale Serve provides automatic TLS certificates and proxies HTTPS traffic to a local port.</p>
-<pre><code># Check current Tailscale Serve config
-tailscale serve status
+<h3>Cloudflare Tunnel setup</h3>
+<p>Cloudflare Tunnel provides automatic TLS and proxies HTTPS traffic to your local gateway. No port forwarding needed.</p>
+<pre><code># One-time setup
+cloudflared tunnel create openclaw-gw
+cloudflared tunnel route dns openclaw-gw gw.yourdomain.com
 
-# Typical setup (already configured via openclaw.json):
-# https://&lt;hostname&gt;.ts.net → 127.0.0.1:18789</code></pre>
+# Run the tunnel
+cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
 
-<h3>Can't connect from outside Tailnet</h3>
-<p><strong>Cause:</strong> Tailscale Serve only works within your Tailnet by default. Devices must be on the same Tailscale network.</p>
+# Your gateway is now at: https://gw.yourdomain.com</code></pre>
+
+<h3>Can't connect to gateway</h3>
+<p><strong>Cause:</strong> Agent URL in TealClaw must be HTTPS. HTTP URLs and raw IPs are blocked by the browser (mixed content).</p>
 <div class="fix-box">
-<p><strong>Fix:</strong> Ensure the connecting device is logged into Tailscale and the Tailnet. For public access, consider Tailscale Funnel (exposes to the internet) — but be aware of the security implications.</p>
+<p><strong>Fix:</strong> Use your Cloudflare Tunnel HTTPS URL (e.g. <code>https://gw.yourdomain.com</code>). Make sure <code>cloudflared</code> is running and the tunnel is active. Check <code>cloudflared tunnel info</code> for status.</p>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -372,11 +366,11 @@ tailscale serve status
 <h3>Key settings that affect connectivity</h3>
 <table style="width:100%;border-collapse:collapse;margin:0.8rem 0">
 <tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:0.4rem;color:var(--teal)">Setting</th><th style="text-align:left;padding:0.4rem;color:var(--teal)">Where</th><th style="text-align:left;padding:0.4rem;color:var(--teal)">Purpose</th></tr>
-<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.bind</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">Network interface to bind (loopback, tailnet)</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.bind</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">Network interface to bind (use "loopback" with reverse proxy)</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.port</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">Gateway port (default 18789)</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.trustedProxies</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">IPs allowed to forward headers</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.controlUi.allowedOrigins</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">Allowed browser origins for WebSocket</td></tr>
-<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.tailscale.mode</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">"serve" = reverse proxy, "direct" = bind to tailnet</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>cloudflared tunnel</code></td><td style="padding:0.4rem">CLI / systemd</td><td style="padding:0.4rem">Exposes gateway via Cloudflare Tunnel (HTTPS)</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>gateway.auth.mode</code></td><td style="padding:0.4rem">openclaw.json</td><td style="padding:0.4rem">"token" = bearer token auth</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>maxTokens</code></td><td style="padding:0.4rem">TealClaw settings</td><td style="padding:0.4rem">Max AI response tokens (min 1024 for tc-action)</td></tr>
 <tr><td style="padding:0.4rem"><code>rateLimitPerMin</code></td><td style="padding:0.4rem">TealClaw settings</td><td style="padding:0.4rem">Client-side rate limiter for AI calls</td></tr>
@@ -388,7 +382,7 @@ tailscale serve status
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>invalid connect params</code></td><td style="padding:0.4rem">Use <code>client.id: 'webchat'</code>, remove extra properties</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>origin not allowed</code></td><td style="padding:0.4rem">Add domain to <code>gateway.controlUi.allowedOrigins</code></td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>pairing required</code></td><td style="padding:0.4rem">Add <code>127.0.0.1</code> to <code>gateway.trustedProxies</code></td></tr>
-<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">Gateway crash with tailscale</td><td style="padding:0.4rem">Use <code>bind: "loopback"</code> not <code>"tailnet"</code> with <code>tailscale.mode: "serve"</code></td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">Cannot reach gateway</td><td style="padding:0.4rem">Use HTTPS URL from Cloudflare Tunnel, not <code>http://</code> or raw IPs</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">tc-action silently fails</td><td style="padding:0.4rem">Increase <code>maxTokens</code> to 1024+</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem"><code>__NO_KEY__</code> in chat</td><td style="padding:0.4rem">Set an API key for the active provider</td></tr>
 <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">401 from AI provider</td><td style="padding:0.4rem">Re-check API key, billing, credits</td></tr>

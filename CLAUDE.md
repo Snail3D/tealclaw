@@ -5,10 +5,10 @@ BYOK voice dashboard PWA. Zero server. Total privacy.
 ## Architecture
 
 ```
-User's Browser → AI Provider (OpenRouter/Groq/Anthropic) → User's Browser
+User's Browser → AI Provider (Groq/Anthropic) → User's Browser
 User's Browser → Groq Whisper (transcription) → User's Browser
 User's Browser → ElevenLabs (TTS) → User's Browser
-User's Browser → OpenClaw Gateway (via Tailscale) → User's Browser
+User's Browser → OpenClaw Gateway (via Cloudflare Tunnel) → User's Browser
 ```
 
 No backend. No database. No tracking. Static files on Cloudflare Pages.
@@ -17,7 +17,7 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 
 - All API keys stored in browser localStorage only
 - All API calls go directly from browser to provider (verify in DevTools > Network)
-- Agent connection via user's own OpenClaw gateway over Tailscale
+- Agent connection via user's own OpenClaw gateway over Cloudflare Tunnel
 - PWA: installable, works offline (cached assets)
 - Single HTML file + manifest + service worker
 
@@ -26,30 +26,25 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - Static HTML/CSS/JS (no build step)
 - Hosted on Cloudflare Pages (tealclaw.ai)
 - PWA with service worker
-- BYOK: OpenRouter, Groq, Anthropic, ElevenLabs
-- Agent: OpenClaw gateway via Tailscale
+- BYOK: Groq, Anthropic, ElevenLabs
+- Agent: OpenClaw gateway via Cloudflare Tunnel
 
-## Gateway + Tailscale Configuration
+## Gateway + Cloudflare Tunnel Configuration
 
-When configuring the OpenClaw gateway for use with TealClaw via Tailscale:
+Expose your OpenClaw gateway to TealClaw using a Cloudflare Tunnel:
 
-- **tailscale serve** mode: `bind` MUST be `"loopback"`. Tailscale serve proxies external traffic to localhost, so the gateway listens on loopback and tailscale handles the external exposure. Setting `bind: "tailnet"` will crash the gateway.
+1. Gateway binds to `loopback` (127.0.0.1)
+2. `cloudflared tunnel` proxies your domain (e.g. `gw.yourdomain.com`) to `http://127.0.0.1:18789`
+3. TealClaw connects to `https://gw.yourdomain.com` (HTTPS, no mixed content issues)
 
-```json
-{
-  "gateway": {
-    "bind": "loopback",
-    "tailscale": {
-      "mode": "serve"
-    }
-  }
-}
+```bash
+# Create and run a Cloudflare Tunnel
+cloudflared tunnel create openclaw-gw
+cloudflared tunnel route dns openclaw-gw gw.yourdomain.com
+cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
 ```
 
-- **tailscale funnel** mode: same — `bind: "loopback"` + tailscale handles external routing.
-- **Direct tailnet access** (no serve/funnel): only then use `bind: "tailnet"`.
-
-**Never set `bind: "tailnet"` when `tailscale.mode` is `"serve"` or `"funnel"`.** This is the most common misconfiguration.
+**Agent URLs in TealClaw MUST be HTTPS.** Cloudflare Tunnel handles TLS automatically.
 
 ## Development
 

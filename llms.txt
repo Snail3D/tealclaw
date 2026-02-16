@@ -471,11 +471,10 @@ Only include fields you want to set/change. TC uses partial merge.
 | chatBubblePadding | string | Bubble padding |
 | agents | array | OpenClaw gateway agents (replaces entire list) |
 
-> **Gateway + Tailscale config note**: When the OpenClaw gateway uses
-> tailscale serve or funnel, `bind` MUST be `"loopback"` (NOT `"tailnet"`).
-> Tailscale serve/funnel proxies to localhost; `bind: "tailnet"` crashes the
-> gateway. Only use `bind: "tailnet"` for direct tailnet access without
-> serve/funnel. Correct: `{"gateway":{"bind":"loopback","tailscale":{"mode":"serve"}}}`
+> **Gateway exposure**: Use a **Cloudflare Tunnel** to expose your OpenClaw
+> gateway. Gateway binds to `loopback`, `cloudflared` proxies your domain
+> (e.g. `gw.yourdomain.com`) to `http://127.0.0.1:18789`. TealClaw connects
+> to `https://gw.yourdomain.com`. Agent URLs MUST be HTTPS.
 | typingAnimation | boolean | Typewriter char-by-char reveal (dflt: true). Md pre-rendered |
 | typingSpeed | "slow"/"medium"/"fast" | slow=45ms, medium=22ms (dflt), fast=8ms |
 | bubbleAnimation | "slide"/"fade"/"scale"/"bounce"/"none" | Bubble entrance (dflt: "slide") |
@@ -515,7 +514,7 @@ Only include fields you want to set/change. TC uses partial merge.
 |-------|------|-------------|
 | id | string | Unique ID |
 | name | string | Display name in TC UI |
-| url | string | Gateway URL -- **MUST be HTTPS** (e.g. `https://machine.tailXXXXX.ts.net`). HTTP and raw IPs will fail (mixed content). |
+| url | string | Gateway URL -- **MUST be HTTPS** (e.g. `https://gw.yourdomain.com` via Cloudflare Tunnel). HTTP and raw IPs will fail (mixed content). |
 | token | string | Gateway auth token |
 | active | boolean | true for selected agent |
 
@@ -1079,15 +1078,17 @@ content** (HTTPS page -> HTTP request). This means:
 - **NEVER use `http://` URLs** for agent/gateway connections. They will fail.
 - **NEVER use raw IP:port** like `http://192.168.1.50:18789` or
   `http://100.x.x.x:18789`. Browsers block or auto-upgrade these to HTTPS.
-- **ALWAYS use an HTTPS URL.** For home/self-hosted gateways, this means
-  Tailscale serve (gives you `https://machine-name.tailnet.ts.net`) or a
-  reverse proxy with TLS (Caddy, nginx, Cloudflare Tunnel, etc.).
+- **ALWAYS use an HTTPS URL.** For self-hosted gateways, use a **Cloudflare
+  Tunnel** (`cloudflared`) to expose your gateway with a proper HTTPS domain.
 
-**How to find the correct HTTPS URL for a Tailscale gateway:**
+**How to set up a Cloudflare Tunnel for your gateway:**
 ```bash
-tailscale serve status
-# Output: https://machine-name.tailXXXXX.ts.net -> proxy http://127.0.0.1:18789
-# Use: https://machine-name.tailXXXXX.ts.net (NOT the 127.0.0.1 or 100.x.x.x address)
+# One-time setup
+cloudflared tunnel create openclaw-gw
+cloudflared tunnel route dns openclaw-gw gw.yourdomain.com
+# Run (gateway must be on 127.0.0.1:18789)
+cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
+# Your HTTPS URL is: https://gw.yourdomain.com
 ```
 
 **Wrong** (will fail with "Cannot reach gateway"):
@@ -1099,15 +1100,14 @@ tailscale serve status
 
 **Correct:**
 ```json
-{"agents": [{"url": "https://my-server.tailabcde.ts.net"}]}
-{"agents": [{"url": "https://gw.mydomain.com"}]}
+{"agents": [{"url": "https://gw.yourdomain.com"}]}
 ```
 
 ### Transport: WebSocket (preferred)
 
 TealClaw connects to OpenClaw gateways via **WebSocket** (wss://). This
 bypasses CORS and Private Network Access restrictions that block HTTP
-fetch from tealclaw.ai to Tailscale/private network addresses.
+fetch from tealclaw.ai to private network addresses.
 
 - URLs are auto-converted: https:// -> wss://, http:// -> ws://
 - Full OpenClaw protocol: challenge/connect handshake, chat streaming,
@@ -1122,7 +1122,7 @@ The user must paste a JSON config with BOTH `mode` AND `agents`:
 ```json
 {
   "mode": "agent",
-  "agents": [{"id": "home", "name": "Home", "url": "https://machine.tail12345.ts.net", "token": "gateway-token-here", "active": true}]
+  "agents": [{"id": "home", "name": "Home", "url": "https://gw.yourdomain.com", "token": "gateway-token-here", "active": true}]
 }
 ```
 
@@ -1170,9 +1170,7 @@ Shows current mode, active agent name + URL, plus all configured keys.
 
 - **"Cannot reach gateway" error**: #1 cause is using an HTTP or raw-IP URL.
   Agent URLs MUST be HTTPS (see "CRITICAL: Agent URLs MUST be HTTPS" above).
-  For Tailscale gateways, use the `https://machine.tailXXXXX.ts.net` URL
-  from `tailscale serve status`, NOT the `100.x.x.x` IP. The user's device
-  also needs Tailscale running to reach *.ts.net addresses.
+  Use a Cloudflare Tunnel to get a proper HTTPS domain for your gateway.
 - **Pill shows "Groq" but config has mode:agent**: If the config paste
   didn't include `"mode": "agent"`, TealClaw stays in direct mode even
   though agents are configured. Fix: paste `{"mode": "agent"}` to switch.
