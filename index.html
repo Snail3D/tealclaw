@@ -4095,20 +4095,12 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       _send(obj){if(this.ws?.readyState===1)this.ws.send(JSON.stringify(obj))}
       _nextId(){return `tc-${++this._reqId}-${Date.now().toString(36)}`}
 
-      async _sendConnect(nonce){
-        const identity=await ensureDeviceIdentity();
-        const signedAtMs=Date.now();
-        const role='operator';const scopes=['operator.admin'];
-        const sig=await signDeviceAuth(identity,{
-          clientId:'webchat',clientMode:'webchat',role,scopes,
-          signedAtMs,token:this.token,nonce
-        });
+      _sendConnect(nonce){
         this._send({type:'req',id:this._nextId(),method:'connect',params:{
           minProtocol:3,maxProtocol:3,
-          role,scopes,
+          role:'operator',scopes:['operator.admin'],
           auth:{token:this.token},
-          client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'},
-          device:{id:identity.deviceId,publicKey:identity.publicKeyB64,signature:sig,signedAt:signedAtMs,nonce}
+          client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
         }});
       }
 
