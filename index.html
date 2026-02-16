@@ -4496,7 +4496,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       const groqKey=k.whisperKey||k.aiKey;
       if(!groqKey)return null;
       const voice=k.groqTtsVoice||'troy';
-      const model=k.groqTtsModel||'playai/playht-tts-v3';
+      const model=k.groqTtsModel||'canopylabs/orpheus-v1-english';
       const expr=k.groqTtsExpression||'';
       const chunks=chunkTextForTTS(text,200);
       // Prepend expression tag to first chunk only
