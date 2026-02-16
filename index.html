@@ -568,6 +568,18 @@
     .search-bar .search-nav:hover{border-color:var(--teal);color:var(--teal)}
     .chat-bubble.search-hit{outline:2px solid var(--teal);outline-offset:2px}
 
+    /* ── Heartbeat Animation ─────────────────────────── */
+    @keyframes heartbeat{
+      0%{transform:scale(1)}
+      7%{transform:scale(1.25)}
+      14%{transform:scale(1)}
+      21%{transform:scale(1.18)}
+      28%{transform:scale(1)}
+      100%{transform:scale(1)}
+    }
+    #aboutBtn svg{animation:heartbeat var(--hb-speed,1s) ease-in-out infinite;transform-origin:center;color:var(--hb-color,var(--text-3))}
+    #aboutBtn:hover svg{color:var(--err)}
+
     /* ── About Modal ─────────────────────────────────── */
     .about-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity 0.3s;overflow-y:auto;padding:20px 0}
     .about-overlay.hidden{opacity:0;pointer-events:none;display:none}
@@ -982,6 +994,12 @@
   <div class="about-overlay hidden" id="aboutOverlay">
     <div class="about-modal">
       <button class="about-modal-close" id="aboutClose">&times;</button>
+      <!-- New Chat / Clear Context -->
+      <button id="aboutNewChat" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;margin-bottom:16px;background:linear-gradient(135deg,var(--teal),#0f766e);border:none;border-radius:var(--r-md);cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span style="font-size:14px;font-weight:700;color:#fff;font-family:var(--font);letter-spacing:0.3px">New Chat</span>
+        <span id="aboutBpmLabel" style="font-size:10px;color:rgba(255,255,255,0.7);font-family:var(--mono);margin-left:auto">-- BPM</span>
+      </button>
       <h2 style="display:flex;align-items:center;gap:8px"><img src="/icon-192.png" alt="" style="width:24px;height:24px;object-fit:contain"> <span style="color:var(--teal)">Teal</span><span style="color:#ef4444;margin-left:-3px">Claw</span></h2>
       <div class="about-subtitle">Created by <a href="https://www.youtube.com/@RealSnail3D" target="_blank" rel="noopener" style="color:var(--text-2);text-decoration:underline;text-decoration-color:var(--border-2);text-underline-offset:2px;transition:color 0.2s">Snail</a> <a class="about-yt-btn" href="https://www.youtube.com/@RealSnail3D" target="_blank" rel="noopener" title="YouTube" style="display:inline-flex;align-items:center;vertical-align:middle;margin-left:2px;text-decoration:none"><svg width="20" height="14" viewBox="0 0 20 14" style="filter:drop-shadow(0 1px 1px rgba(0,0,0,0.2))"><rect width="20" height="14" rx="4" fill="#FF0000"/><polygon points="8,3 8,11 14,7" fill="#fff"/></svg></a></div>
       <div style="font-size:12px;color:var(--text-3);margin-top:2px;letter-spacing:0.3px">Free, open-source, and provably anonymous forever.</div>
@@ -1582,6 +1600,7 @@
       renderChat();
       updateConvTitle('New Chat');
       renderConvDropdown();
+      if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
       showToast('New conversation','ok');
     }
 
@@ -1598,6 +1617,7 @@
       chatHistory=record?.messages||[];
       localStorage.setItem('tc-chat',JSON.stringify(chatHistory));
       renderChat();
+      if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
       updateConvTitle(record?.title||'New Chat');
       closeConvDropdown();
       ObsidianSync.resetTracking();
@@ -2015,9 +2035,44 @@
     });
 
     // ── About Modal ──────────────────────────────────
-    $('aboutBtn').addEventListener('click',()=>$('aboutOverlay').classList.remove('hidden'));
+    $('aboutBtn').addEventListener('click',()=>{
+      updateHeartbeatBpm();
+      $('aboutOverlay').classList.remove('hidden');
+    });
     $('aboutClose').addEventListener('click',()=>$('aboutOverlay').classList.add('hidden'));
     $('aboutOverlay').addEventListener('click',e=>{if(e.target===$('aboutOverlay'))$('aboutOverlay').classList.add('hidden')});
+
+    // New Chat button in about modal
+    $('aboutNewChat').addEventListener('click',()=>{
+      $('aboutOverlay').classList.add('hidden');
+      newConversation();
+      haptic('medium');
+    });
+
+    // ── Heartbeat BPM (context-aware) ───────────────
+    // Resting: 60 BPM (0 messages). Marathon: 180 BPM (~300+ messages)
+    function calcHeartbeatBpm(){
+      const msgs=chatHistory.length;
+      const MIN_BPM=60,MAX_BPM=180,MAX_MSGS=300;
+      const ratio=Math.min(msgs/MAX_MSGS,1);
+      // Ease-in curve so it accelerates as context fills
+      return Math.round(MIN_BPM+(MAX_BPM-MIN_BPM)*ratio*ratio);
+    }
+
+    function updateHeartbeatBpm(){
+      const bpm=calcHeartbeatBpm();
+      const speed=(60/bpm).toFixed(2)+'s';
+      document.documentElement.style.setProperty('--hb-speed',speed);
+      // Color shifts from resting gray → warm → red as BPM climbs
+      const ratio=(bpm-60)/120;
+      if(ratio<0.3)document.documentElement.style.setProperty('--hb-color','var(--text-3)');
+      else if(ratio<0.6)document.documentElement.style.setProperty('--hb-color','var(--warn)');
+      else document.documentElement.style.setProperty('--hb-color','var(--err)');
+      const label=$('aboutBpmLabel');
+      if(label)label.textContent=bpm+' BPM';
+    }
+    // Update heartbeat whenever chat changes
+    updateHeartbeatBpm();
 
     // ── For Sale Price Escalation ─────────────────────
     (function initForSalePrice(){
@@ -3768,6 +3823,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       if(role==='user'&&chatHistory.filter(m=>m.role==='user').length===1)autoTitleConversation(text);
       // Obsidian auto-save
       ObsidianSync.schedule();
+      // Update heartbeat BPM
+      if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
       return entry;
     }
 
