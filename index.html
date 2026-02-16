@@ -3675,6 +3675,7 @@ Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Expression tags: prepend [cheerful], [whisper], [dramatic], etc. to text for vocal direction. Config: ttsProvider (groq|elevenlabs, default groq), groqTtsVoice, groqTtsExpression.
+GIF reactions: when the mood fits, append a [gif:search query] tag at the end of your message (e.g. [gif:thumbs up], [gif:mind blown], [gif:happy dance]). TealClaw will fetch and display a matching GIF overlay. Use sparingly — great for celebrations, jokes, greetings, and emotional moments. Don't use for serious/technical answers.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey, ttsKey), or mode. Those are owner-controlled only.`;
 
     function buildSysPrompt(k){
@@ -6281,12 +6282,13 @@ Rules:
         try{
           const aiResult=await callAgent(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
+            const visiblePartial=partial.replace(/\[gif:[^\]]*\]?$/i,'').trim();
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
               last.classList.add('typing-active');
               const md=last.querySelector('.md-content');
-              let rendered=renderMd(partial);rendered=renderLatex(rendered);
+              let rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
               const withCursor=rendered+'<span class="typing-cursor"></span>';
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
@@ -6326,12 +6328,13 @@ Rules:
         try{
           const aiResult=await callAIStream(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
+            const visiblePartial=partial.replace(/\[gif:[^\]]*\]?$/i,'').trim();
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
               last.classList.add('typing-active');
               const md=last.querySelector('.md-content');
-              let rendered=renderMd(partial);
+              let rendered=renderMd(visiblePartial);
               rendered=renderLatex(rendered);
               const withCursor=rendered+'<span class="typing-cursor"></span>';
               if(md)md.innerHTML=withCursor;
