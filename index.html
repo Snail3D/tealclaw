@@ -4229,69 +4229,112 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       return chunks.length?chunks:[text.slice(0,maxLen)];
     }
 
+    // Find the actual 'data' chunk in a WAV buffer (not always at byte 44)
+    function wavFindData(buf){
+      const dv=new DataView(buf);
+      let off=12; // skip RIFF header (12 bytes)
+      while(off+8<=buf.byteLength){
+        const id=String.fromCharCode(dv.getUint8(off),dv.getUint8(off+1),dv.getUint8(off+2),dv.getUint8(off+3));
+        const sz=dv.getUint32(off+4,true);
+        if(id==='data')return{offset:off+8,size:sz};
+        off+=8+sz;
+        if(off%2)off++; // WAV chunks are word-aligned
+      }
+      return{offset:44,size:buf.byteLength-44}; // fallback
+    }
+
+    // Trim near-silence from start/end of Int16 PCM (threshold ~0.3% of range)
+    function wavTrimSilence(samples,numCh,threshold){
+      const th=threshold||100;
+      const frameCount=Math.floor(samples.length/numCh);
+      let start=0;
+      for(;start<frameCount;start++){
+        let peak=0;
+        for(let c=0;c<numCh;c++)peak=Math.max(peak,Math.abs(samples[start*numCh+c]));
+        if(peak>th)break;
+      }
+      let end=frameCount;
+      for(;end>start;end--){
+        let peak=0;
+        for(let c=0;c<numCh;c++)peak=Math.max(peak,Math.abs(samples[(end-1)*numCh+c]));
+        if(peak>th)break;
+      }
+      return samples.subarray(start*numCh,end*numCh);
+    }
+
     function stitchWavBuffers(buffers){
       if(buffers.length===0)return new ArrayBuffer(0);
       if(buffers.length===1)return buffers[0];
       const first=new DataView(buffers[0]);
-      const numChannels=first.getUint16(22,true);
+      const numCh=first.getUint16(22,true);
       const sampleRate=first.getUint32(24,true);
       const bitsPerSample=first.getUint16(34,true);
-      const bytesPerSample=bitsPerSample/8;
-      const blockAlign=numChannels*bytesPerSample;
-      // Crossfade length: 64 samples (~1.3ms at 48kHz) to eliminate pops
-      const xfadeSamples=64;
-      const xfadeBytes=xfadeSamples*blockAlign;
-      // Extract PCM from each buffer (skip 44-byte WAV header)
-      const pcmParts=buffers.map(b=>new Uint8Array(b).slice(44));
-      // Calculate total length after overlapping crossfade regions
-      let totalPcmLen=pcmParts[0].length;
-      for(let i=1;i<pcmParts.length;i++)totalPcmLen+=pcmParts[i].length-xfadeBytes;
-      const wavLen=44+totalPcmLen;
-      const out=new ArrayBuffer(wavLen);
-      const view=new DataView(out);
-      const outBytes=new Uint8Array(out);
-      // Write WAV header
-      const w4=(off,s)=>{for(let i=0;i<4;i++)view.setUint8(off+i,s.charCodeAt(i))};
-      w4(0,'RIFF');view.setUint32(4,wavLen-8,true);w4(8,'WAVE');w4(12,'fmt ');
-      view.setUint32(16,16,true);view.setUint16(20,1,true);
-      view.setUint16(22,numChannels,true);view.setUint32(24,sampleRate,true);
-      view.setUint32(28,sampleRate*blockAlign,true);
-      view.setUint16(32,blockAlign,true);view.setUint16(34,bitsPerSample,true);
-      w4(36,'data');view.setUint32(40,totalPcmLen,true);
-      // Copy first part
-      outBytes.set(pcmParts[0],44);
-      let writePos=44+pcmParts[0].length-xfadeBytes;
-      // Stitch remaining with crossfade to eliminate pops
+      const blockAlign=numCh*(bitsPerSample/8);
+      // Extract PCM as Int16 arrays, trim silence from each chunk
+      const pcmParts=buffers.map(b=>{
+        const d=wavFindData(b);
+        const raw=new Int16Array(b,d.offset,Math.floor(d.size/2));
+        return wavTrimSilence(raw,numCh);
+      });
+      // Crossfade: 512 samples (~21ms@24kHz, ~10ms@48kHz) — smooth enough to kill pops
+      const xfade=Math.min(512,Math.floor(pcmParts.reduce((m,p)=>Math.min(m,p.length/numCh),Infinity)/2));
+      const xfadeSmp=xfade*numCh;
+      // Total output samples
+      let totalSmp=pcmParts[0].length;
+      for(let i=1;i<pcmParts.length;i++)totalSmp+=pcmParts[i].length-xfadeSmp;
+      // Fade in/out: 128 samples at very start and very end
+      const edgeFade=Math.min(128,Math.floor(totalSmp/(numCh*4)));
+      const outPcm=new Int16Array(totalSmp);
+      // Copy first chunk
+      outPcm.set(pcmParts[0]);
+      let wp=pcmParts[0].length-xfadeSmp;
+      // Stitch remaining chunks with raised-cosine crossfade
       for(let i=1;i<pcmParts.length;i++){
         const part=pcmParts[i];
-        // Crossfade overlap region: blend end of previous with start of current
-        for(let s=0;s<xfadeSamples;s++){
-          const fadeOut=1-s/xfadeSamples;
-          const fadeIn=s/xfadeSamples;
-          for(let ch=0;ch<numChannels;ch++){
-            const byteOff=(s*numChannels+ch)*bytesPerSample;
-            const pos=writePos+byteOff;
-            // Read 16-bit PCM samples (little-endian)
-            const prev=view.getInt16(pos,true);
-            const curr=new DataView(part.buffer,part.byteOffset+byteOff,2).getInt16(0,true);
-            const blended=Math.round(prev*fadeOut+curr*fadeIn);
-            view.setInt16(pos,Math.max(-32768,Math.min(32767,blended)),true);
+        for(let s=0;s<xfade;s++){
+          // Raised cosine: smoother than linear, no volume dip
+          const t=s/xfade;
+          const fadeIn=0.5*(1-Math.cos(Math.PI*t));
+          const fadeOut=1-fadeIn;
+          for(let c=0;c<numCh;c++){
+            const idx=s*numCh+c;
+            const prev=outPcm[wp+idx];
+            const curr=part[idx];
+            outPcm[wp+idx]=Math.max(-32768,Math.min(32767,Math.round(prev*fadeOut+curr*fadeIn)));
           }
         }
-        // Copy rest of current part after crossfade region
-        if(part.length>xfadeBytes)outBytes.set(part.slice(xfadeBytes),writePos+xfadeBytes);
-        writePos+=part.length-xfadeBytes;
+        // Copy remaining samples after crossfade
+        if(part.length>xfadeSmp){
+          outPcm.set(part.subarray(xfadeSmp),wp+xfadeSmp);
+        }
+        wp+=part.length-xfadeSmp;
       }
-      // Fade out last 32 samples to prevent end-of-file pop
-      const fadeOutSamples=32;
-      const endPos=44+totalPcmLen;
-      for(let s=0;s<fadeOutSamples;s++){
-        const fade=1-s/fadeOutSamples;
-        for(let ch=0;ch<numChannels;ch++){
-          const pos=endPos-((fadeOutSamples-s)*numChannels+ch)*bytesPerSample;
-          if(pos>=44){const v=view.getInt16(pos,true);view.setInt16(pos,Math.round(v*fade),true)}
+      // Gentle fade-in at very start
+      for(let s=0;s<edgeFade;s++){
+        const g=0.5*(1-Math.cos(Math.PI*s/edgeFade));
+        for(let c=0;c<numCh;c++)outPcm[s*numCh+c]=Math.round(outPcm[s*numCh+c]*g);
+      }
+      // Gentle fade-out at very end
+      const totalFrames=Math.floor(totalSmp/numCh);
+      for(let s=0;s<edgeFade;s++){
+        const g=0.5*(1-Math.cos(Math.PI*s/edgeFade));
+        for(let c=0;c<numCh;c++){
+          const idx=(totalFrames-1-s)*numCh+c;
+          if(idx>=0)outPcm[idx]=Math.round(outPcm[idx]*g);
         }
       }
+      // Build output WAV
+      const pcmBytes=totalSmp*2;
+      const wavLen=44+pcmBytes;
+      const out=new ArrayBuffer(wavLen);
+      const v=new DataView(out);
+      const w4=(off,s)=>{for(let i=0;i<4;i++)v.setUint8(off+i,s.charCodeAt(i))};
+      w4(0,'RIFF');v.setUint32(4,wavLen-8,true);w4(8,'WAVE');w4(12,'fmt ');
+      v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,numCh,true);
+      v.setUint32(24,sampleRate,true);v.setUint32(28,sampleRate*blockAlign,true);
+      v.setUint16(32,blockAlign,true);v.setUint16(34,bitsPerSample,true);
+      w4(36,'data');v.setUint32(40,pcmBytes,true);
+      new Int16Array(out,44).set(outPcm);
       return out;
     }
 
