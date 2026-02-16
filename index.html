@@ -135,16 +135,20 @@
 
     /* ── Chat Layout ───────────────────────────────────── */
     .chat-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px 16px;max-width:760px;width:100%;margin:0 auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
-    /* ── TTS Mute Toggle ────────────────────────────────── */
+    /* ── TTS 3-State Toggle (Auto / On / Off) ──────────── */
     .tts-mute-btn{position:absolute;top:8px;right:12px;z-index:40;width:32px;height:32px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-3);display:none;align-items:center;justify-content:center;cursor:pointer;transition:all 0.25s;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
-    .tts-mute-btn:hover{border-color:var(--teal);color:var(--teal);transform:scale(1.08)}
+    .tts-mute-btn:hover{transform:scale(1.08)}
     .tts-mute-btn.visible{display:flex}
-    .tts-mute-btn .tts-mute-on{display:block}
-    .tts-mute-btn .tts-mute-off{display:none}
-    .tts-mute-btn.muted{color:var(--err);border-color:var(--err)}
-    .tts-mute-btn.muted:hover{color:var(--err)}
-    .tts-mute-btn.muted .tts-mute-on{display:none}
-    .tts-mute-btn.muted .tts-mute-off{display:block}
+    .tts-mute-btn .tts-ico{display:none}
+    .tts-mute-btn[data-tts="auto"]{color:var(--teal);border-color:var(--teal)}
+    .tts-mute-btn[data-tts="auto"]:hover{color:var(--teal)}
+    .tts-mute-btn[data-tts="auto"] .tts-auto{display:block}
+    .tts-mute-btn[data-tts="on"]{color:var(--text-2);border-color:var(--border)}
+    .tts-mute-btn[data-tts="on"]:hover{color:var(--teal);border-color:var(--teal)}
+    .tts-mute-btn[data-tts="on"] .tts-on{display:block}
+    .tts-mute-btn[data-tts="off"]{color:var(--err);border-color:var(--err)}
+    .tts-mute-btn[data-tts="off"]:hover{color:var(--err)}
+    .tts-mute-btn[data-tts="off"] .tts-off{display:block}
 
     .scroll-anchor{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;width:40px;height:40px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
     .scroll-anchor.visible{opacity:1;pointer-events:auto}
@@ -1098,8 +1102,9 @@
   </div>
   <div class="main">
     <button class="tts-mute-btn" id="ttsMuteBtn" title="Toggle voice" aria-label="Toggle voice output">
-      <svg class="tts-mute-on" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-      <svg class="tts-mute-off" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+      <svg class="tts-ico tts-auto" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      <svg class="tts-ico tts-on" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      <svg class="tts-ico tts-off" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
     </button>
     <div class="chat-scroll" id="chatScroll" role="log" aria-live="polite" aria-label="Chat messages">
       <div class="chat-empty" id="chatEmpty"></div>
@@ -1210,7 +1215,7 @@
 
   <script>
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
-    let audioEnabled=false, chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
+    let ttsMode='off', chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
 
     function showToast(m,t='',dur=3000){toast.textContent=m;toast.style.cursor='';toast.onclick=null;toast.className='toast show '+t;if(t==='ok')haptic('success');if(t==='err')haptic('error');setTimeout(()=>toast.className='toast',dur)}
 
@@ -2129,7 +2134,7 @@
       // Voice output (show when any TTS provider is available)
       if(hasTTS(k)){
         const ttsProv=k.ttsProvider||'groq';
-        const autoPlay=k.ttsAutoPlay!==false;
+        const curTtsMode=k.ttsMode||(hasTTS(k)?'auto':'off');
         const groqVoice=k.groqTtsVoice||'troy';
         const groqExpr=k.groqTtsExpression||'';
         html+=`<div class="sheet-section"><div class="sheet-section-title">Voice Output</div>
@@ -2138,11 +2143,13 @@
             <button class="mode-btn tts-prov-btn ${ttsProv==='groq'?'active':''}" data-ttsprov="groq" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${ttsProv==='groq'?'var(--teal)':'transparent'};border:none;color:${ttsProv==='groq'?'#fff':'var(--text-3)'};cursor:pointer">Groq Orpheus</button>
             <button class="mode-btn tts-prov-btn ${ttsProv==='elevenlabs'?'active':''}" data-ttsprov="elevenlabs" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${ttsProv==='elevenlabs'?'var(--teal)':'transparent'};border:none;color:${ttsProv==='elevenlabs'?'#fff':'var(--text-3)'};cursor:pointer">ElevenLabs</button>
           </div>
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Mode</div>
           <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
-            <button class="mode-btn tts-mode-btn ${autoPlay?'active':''}" data-tts="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${autoPlay?'var(--teal)':'transparent'};border:none;color:${autoPlay?'#fff':'var(--text-3)'};cursor:pointer">Auto-play</button>
-            <button class="mode-btn tts-mode-btn ${!autoPlay?'active':''}" data-tts="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!autoPlay?'var(--teal)':'transparent'};border:none;color:${!autoPlay?'#fff':'var(--text-3)'};cursor:pointer">On Demand</button>
+            <button class="mode-btn tts-mode-btn ${curTtsMode==='auto'?'active':''}" data-ttsmode="auto" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${curTtsMode==='auto'?'var(--teal)':'transparent'};border:none;color:${curTtsMode==='auto'?'#fff':'var(--text-3)'};cursor:pointer">Auto</button>
+            <button class="mode-btn tts-mode-btn ${curTtsMode==='on'?'active':''}" data-ttsmode="on" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${curTtsMode==='on'?'var(--teal)':'transparent'};border:none;color:${curTtsMode==='on'?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+            <button class="mode-btn tts-mode-btn ${curTtsMode==='off'?'active':''}" data-ttsmode="off" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${curTtsMode==='off'?'var(--teal)':'transparent'};border:none;color:${curTtsMode==='off'?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
           </div>
-          <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${autoPlay?(ttsProv==='groq'?'Groq TTS plays on every AI response automatically.':'ElevenLabs is called on every AI response automatically.'):(ttsProv==='groq'?'Groq TTS only plays when you tap the speaker icon.':'ElevenLabs is only called when you tap Play -- saves credits.')}</div>`;
+          <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${curTtsMode==='auto'?'Speaks every AI response automatically.':(curTtsMode==='on'?'Shows a Listen button on responses — only calls TTS when tapped (saves money).':'Voice output disabled. No TTS calls made.')}</div>`;
 
         if(ttsProv==='groq'){
           // Groq voice chips
@@ -2545,10 +2552,11 @@
         const k2=getK();k2.ttsProvider=b.dataset.ttsprov;setK(k2);
         renderSheetContent();showToast(`TTS: ${b.dataset.ttsprov==='groq'?'Groq Orpheus':'ElevenLabs'}`,'ok');
       }));
-      // Wire up TTS auto-play toggle
+      // Wire up TTS mode toggle (auto/on/off)
       $('sheetBody').querySelectorAll('.tts-mode-btn').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.ttsAutoPlay=b.dataset.tts==='true';setK(k2);
-        renderSheetContent();renderChat();
+        ttsMode=b.dataset.ttsmode;
+        const k2=getK();k2.ttsMode=ttsMode;setK(k2);
+        updateMuteBtn();renderSheetContent();renderChat();
       }));
       // Wire up Groq voice chips
       $('sheetBody').querySelectorAll('.groq-voice-chip').forEach(b=>b.addEventListener('click',()=>{
@@ -3348,38 +3356,40 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     $('ttsStop').addEventListener('click',stopTTSPlayback);
 
     function enableAudio(){
-      if(audioEnabled)return;
-      audioEnabled=true;
       $('overlay').classList.add('hidden');
       ensureAudioCtx();
       audio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-      audio.play().then(()=>showToast('Audio enabled','ok')).catch(()=>{});
+      audio.play().catch(()=>{});
     }
     // Tap anywhere on overlay to enable
     $('overlay').addEventListener('click',enableAudio);
     $('enableBtn').addEventListener('click',enableAudio);
     audio.volume=getK().audioVolume!==undefined?getK().audioVolume:0.8;
 
-    // Auto-enable audio when TTS is available (skip overlay gate)
-    if(hasTTS()){enableAudio()}
-    else if(!('ontouchstart' in window)){enableAudio()}
+    // Restore TTS mode from config (auto/on/off, default auto if TTS available)
+    // Restore TTS mode: ttsMode > legacy ttsAutoPlay > default (auto if TTS available)
+    {const _k=getK();ttsMode=_k.ttsMode||(_k.ttsAutoPlay===false?'on':(hasTTS()?'auto':'off'))}
 
-    // Belt+suspenders: unlock audio context on any user interaction
+    // Auto-unlock audio context
+    if(hasTTS()||!('ontouchstart' in window)){enableAudio()}
     ['touchstart','mousedown','keydown'].forEach(evt=>{
-      document.addEventListener(evt,function unlock(){ensureAudioCtx();if(hasTTS()&&!audioEnabled)enableAudio();document.removeEventListener(evt,unlock)},{once:true});
+      document.addEventListener(evt,function unlock(){ensureAudioCtx();document.removeEventListener(evt,unlock)},{once:true});
     });
 
-    // TTS mute toggle button
+    // TTS 3-state toggle: Auto → On → Off → Auto
     function updateMuteBtn(){
       const btn=$('ttsMuteBtn');
       if(hasTTS()){btn.classList.add('visible')}else{btn.classList.remove('visible')}
-      if(audioEnabled){btn.classList.remove('muted')}else{btn.classList.add('muted')}
+      btn.dataset.tts=ttsMode;
+      btn.title=ttsMode==='auto'?'Voice: Auto (tap to switch to On)':ttsMode==='on'?'Voice: On demand (tap to switch to Off)':'Voice: Off (tap to switch to Auto)';
     }
     $('ttsMuteBtn').addEventListener('click',()=>{
-      audioEnabled=!audioEnabled;
-      if(audioEnabled)ensureAudioCtx();
-      updateMuteBtn();
-      showToast(audioEnabled?'Voice on':'Voice muted','ok');
+      ttsMode=ttsMode==='auto'?'on':ttsMode==='on'?'off':'auto';
+      if(ttsMode!=='off')ensureAudioCtx();
+      const k2=getK();k2.ttsMode=ttsMode;setK(k2);
+      updateMuteBtn();renderChat();
+      const labels={auto:'Voice: Auto',on:'Voice: On demand',off:'Voice: Off'};
+      showToast(labels[ttsMode],'ok');
     });
     updateMuteBtn();
 
@@ -3400,7 +3410,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       const s=$('chatScroll');
       if(chatHistory.length===0){/* onboarding will fill this */return}
       const ck=getK();
-      const hasTts=!!ck.ttsKey;
+      const hasTts=hasTTS(ck)&&ttsMode!=='off';
       s.innerHTML=chatHistory.map((m,i)=>{
         let content='';
         if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
@@ -3551,7 +3561,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       s.querySelectorAll('.tts-play').forEach(b=>b.addEventListener('click',async()=>{
         const idx=+b.dataset.idx;
         const m=chatHistory[idx];
-        if(!m||!audioEnabled)return;
+        if(!m)return;
+        ensureAudioCtx();
         if(m.audioUrl){
           audio.src=m.audioUrl;audio.play().catch(()=>{});
         } else {
@@ -4609,7 +4620,7 @@ RULES:
       setK(k);
       updateStatus();
       // Auto-enable audio when TTS becomes available after key setup
-      if(hasTTS(k)&&!audioEnabled){enableAudio()}
+      if(hasTTS(k)&&ttsMode==='off'){ttsMode='auto';const k2=getK();k2.ttsMode='auto';setK(k2);enableAudio();updateMuteBtn()}
 
       // Show masked key in user bubble
       const masked=val.slice(0,8)+'...' +val.slice(-4);
@@ -6341,7 +6352,7 @@ Rules:
           detectAndApplyConfig(displayText);
           sendTelegram(`AI: ${displayText}`);
           fireWebhook('message.receive',{text:displayText});
-          if(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false){
+          if(ttsMode==='auto'&&hasTTS(pk)){
             const ttsData=await speak(displayText);
             if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
@@ -6397,7 +6408,7 @@ Rules:
           sendTelegram(`AI: ${displayText}`);
           fireWebhook('message.receive',{text:displayText});
           // TTS
-          if(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false){
+          if(ttsMode==='auto'&&hasTTS(pk)){
             const ttsData=await speak(displayText);
             if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
@@ -6440,7 +6451,7 @@ Rules:
 
           // TTS (fetch audio while preparing UI)
           let audioUrl=null;
-          const wantTTS=audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false;
+          const wantTTS=ttsMode==='auto'&&hasTTS(pk);
           const ttsPromise=wantTTS?speak(displayText):Promise.resolve(null);
 
           // Typing animation: reveal character by character, synced to audio if available
@@ -7898,7 +7909,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     // ── Config Import (shared by hash, file drop, paste) ──
     const CONFIG_KEYS={
       aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
-      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',ttsProvider:'ttsProvider',groqTtsExpression:'groqTtsExpression',
+      whisperKey:'whisperKey',ttsKey:'ttsKey',ttsVoice:'ttsVoice',ttsAutoPlay:'ttsAutoPlay',ttsMode:'ttsMode',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',ttsProvider:'ttsProvider',groqTtsExpression:'groqTtsExpression',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
@@ -9245,7 +9256,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             addBubble('user',finalText);addBubble('ai',displayText);
             sendTelegram(`AI: ${displayText}`);
             // TTS with subtitle sync
-            if(audioEnabled&&hasTTS(pk)&&pk.ttsAutoPlay!==false){
+            if(ttsMode==='auto'&&hasTTS(pk)){
               $('voiceModeStatus').textContent='Speaking...';
               const ttsData=await speak(displayText);
               if(ttsData){
