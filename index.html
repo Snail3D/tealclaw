@@ -4352,14 +4352,16 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
         const onChat=(payload)=>{
           if(!runId&&payload.runId)runId=payload.runId;
           if(payload.state==='delta'&&payload.message){
-            // payload.message can be string or {content:string}
-            const chunk=typeof payload.message==='string'?payload.message:(payload.message.content||'');
+            // payload.message can be string, {content:string}, or {content:[{type,text}]}
+            const chunk=typeof payload.message==='string'?payload.message:
+              (Array.isArray(payload.message.content)?payload.message.content.map(c=>c.text||'').join(''):(payload.message.content||''));
             full+=chunk;
             if(onToken)onToken(full);
           } else if(payload.state==='final'){
             if(payload.usage)usage={prompt:payload.usage.prompt_tokens||0,completion:payload.usage.completion_tokens||0,total:payload.usage.total_tokens||0,model:'agent'};
             if(payload.message){
-              const finalText=typeof payload.message==='string'?payload.message:(payload.message.content||'');
+              const finalText=typeof payload.message==='string'?payload.message:
+                (Array.isArray(payload.message.content)?payload.message.content.map(c=>c.text||'').join(''):(payload.message.content||''));
               if(finalText&&!full)full=finalText;
               else if(finalText&&full.length<finalText.length)full=finalText;
             }
