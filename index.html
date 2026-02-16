@@ -1023,7 +1023,7 @@
           OpenClaw
         </a>
       </div>
-      <p style="margin-top:16px;padding:10px;background:var(--bg-hover);border-radius:var(--r-md);font-size:11px;line-height:1.6;color:var(--text-2)"><strong style="color:var(--text)">For sale: <span id="forSalePrice">$2,000,000</span>.</strong> If you have that kind of chedda', you can figure out how to get a hold of me. The terms are simple: TealClaw remains free and anonymous forever. But right here, in this little heart menu, you can put whatever you want (if it's Godly). That's the deal.</p>
+      <p style="margin-top:16px;padding:10px;background:var(--bg-hover);border-radius:var(--r-md);font-size:11px;line-height:1.6;color:var(--text-2)"><strong style="color:var(--text)">For sale: <span id="forSalePrice">$2,000,000</span>.</strong> The terms are simple: TealClaw remains free and anonymous forever. But right here, in this little heart menu, you can put whatever you want (if it's Godly). That's the deal. Reach out to <a href="https://www.linkedin.com/in/eric-woodard-8b22a2a5/" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:underline;text-underline-offset:2px">Eric Woodard on LinkedIn</a>.</p>
       <div id="forSaleBtn" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 18px;margin:10px 0;background:linear-gradient(135deg,#f59e0b,#d97706);border:1px solid rgba(217,119,6,0.4);border-radius:var(--r-md);cursor:default;position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.12) 0%,transparent 60%);pointer-events:none"></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;position:relative">
@@ -2251,48 +2251,14 @@
         </div>
       </div>`;
 
-      // Models
+      // Models — smart defaults, configurable via agent tc-action if needed
       const chatDefault='groq/compound-mini';
       const visionDefault='meta-llama/llama-4-maverick-17b-128e-instruct';
       const searchDefault='groq/compound-mini';
       const fastDefault='llama-3.1-8b-instant';
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Models <span style="font-size:9px;color:var(--teal);font-weight:400">(Groq)</span></div>
-        <div style="font-size:10px;color:var(--text-3);margin-bottom:10px">Type to search live models. Click to select. Each purpose uses its own model.</div>
-        ${[
-          {id:'chat',label:'Chat Model',key:'aiModel',def:chatDefault,desc:'General conversation'},
-          {id:'vision',label:'Vision Model',key:'visionModel',def:visionDefault,desc:'Image understanding'},
-          {id:'search',label:'Search / Research Model',key:'searchModel',def:searchDefault,desc:'Deep research queries'},
-          {id:'fast',label:'Fast Model (short queries)',key:'fastModel',def:fastDefault,desc:'Quick responses under routing threshold'},
-          {id:'complex',label:'Complex Model (long queries)',key:'complexModel',def:'',desc:'Detailed analysis, optional'}
-        ].map(m=>`
-          <div style="margin-bottom:10px" class="model-picker" data-model-key="${m.key}">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-              <div style="font-size:11px;font-weight:500;color:var(--text-2)">${m.label}</div>
-              <div style="font-size:9px;color:var(--text-3)">${m.desc}</div>
-            </div>
-            <div class="model-picker-input">
-              <input type="text" class="sheet-input model-search-input" data-model-key="${m.key}" value="${esc(k[m.key]||m.def)}" placeholder="Search models..." style="font-family:var(--mono);font-size:10px" autocomplete="off">
-              <button class="btn btn-teal btn-sm model-save-btn" data-model-key="${m.key}">Set</button>
-            </div>
-            <div class="model-picker-results" data-model-key="${m.key}"></div>
-          </div>`).join('')}
-        <div>
-          <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Routing Threshold (chars)</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="routeThreshVal">${k.routingThreshold||80}</span></div>
-          <input type="range" id="sheetRouteThresh" min="20" max="500" step="10" value="${k.routingThreshold||80}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
-          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Queries shorter than this use Fast model; longer use Complex model</div>
-        </div>
-      </div>`;
 
       // Integrations
       html+=`<div class="sheet-section"><div class="sheet-section-title">Integrations</div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Webhook URL</div>
-          <div style="display:flex;gap:5px">
-            <input type="text" class="sheet-input" id="sheetWebhookUrl" value="${esc(k.webhookUrl||'')}" placeholder="https://hooks.example.com/..." style="font-family:var(--mono);font-size:10px">
-            <button class="btn btn-teal btn-sm" id="sheetWebhookSave">Set</button>
-          </div>
-          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Forward messages to an external endpoint</div>
-        </div>
         <div style="margin-bottom:10px">
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Obsidian Vault Name</div>
           <div style="display:flex;gap:5px">
@@ -2312,41 +2278,8 @@
           </div>
           <div style="font-size:9px;color:var(--text-3);margin-top:3px">${typeof window.showDirectoryPicker==='function'?'Desktop: writes directly to vault folder':'Mobile: saves via Obsidian app using vault name above'}</div>
         </div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Quick Replies</div>
-          <input type="text" class="sheet-input" id="sheetQuickReplies" value="${esc(Array.isArray(k.quickReplies)?k.quickReplies.join(', '):(k.quickReplies||''))}" placeholder="Yes, No, Tell me more, Thanks" style="font-family:var(--font);font-size:11px">
-          <button class="btn btn-teal btn-sm" id="sheetQuickRepliesSave" style="margin-top:4px">Save</button>
-          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Comma-separated quick reply chips shown below input</div>
-        </div>
-        <div>
-          <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Rate Limit (msgs/min)</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="rateLimitVal">${k.rateLimitPerMin||0}</span></div>
-          <input type="range" id="sheetRateLimit" min="0" max="60" step="1" value="${k.rateLimitPerMin||0}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
-          <div style="font-size:9px;color:var(--text-3);margin-top:2px">0 = no limit</div>
-        </div>
       </div>`;
 
-      // Image Generation
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Image Generation</div>
-        <div style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Endpoint URL</div>
-          <input type="text" class="sheet-input" id="sheetImgGenUrl" value="${esc(k.imageGenUrl||'')}" placeholder="https://api.openai.com/v1/images/generations" style="font-family:var(--mono);font-size:10px">
-        </div>
-        <div style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">API Key</div>
-          <input type="password" class="sheet-input" id="sheetImgGenKey" value="${esc(k.imageGenKey||'')}" placeholder="sk-..." style="font-family:var(--mono);font-size:10px">
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <div style="flex:1">
-            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Model</div>
-            <input type="text" class="sheet-input" id="sheetImgGenModel" value="${esc(k.imageGenModel||'')}" placeholder="dall-e-3" style="font-size:10px">
-          </div>
-          <div style="flex:1">
-            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Size</div>
-            <input type="text" class="sheet-input" id="sheetImgGenSize" value="${esc(k.imageGenSize||'1024x1024')}" placeholder="1024x1024" style="font-size:10px">
-          </div>
-        </div>
-        <button class="btn btn-teal btn-sm" id="sheetImgGenSave">Save Image Gen</button>
-      </div>`;
 
       // Device Identity
       const dev=getDeviceTag();
@@ -2511,33 +2444,6 @@
           <button class="exp-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}" data-def="${!!def}">${on?'On':'Off'}</button>
         </div>`;
       });
-      // Max tokens slider
-      const curTokens=k.maxTokens||400;
-      html+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><div style="font-size:12px;font-weight:500">Response Length</div><div style="font-size:10px;color:var(--text-3)">Max tokens per AI response</div></div>
-          <div style="font-size:11px;font-family:var(--mono);color:var(--teal)" id="tokenVal">${curTokens}</div>
-        </div>
-        <input type="range" id="sheetMaxTokens" min="50" max="2000" step="50" value="${curTokens}" style="width:100%;margin-top:6px;accent-color:var(--teal)">
-      </div>`;
-      // Temperature slider
-      const curTemp=k.temperature!==undefined?k.temperature:0.7;
-      html+=`<div style="padding:8px 0">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><div style="font-size:12px;font-weight:500">Creativity</div><div style="font-size:10px;color:var(--text-3)">Temperature (0=focused, 2=creative)</div></div>
-          <div style="font-size:11px;font-family:var(--mono);color:var(--teal)" id="tempVal">${curTemp}</div>
-        </div>
-        <input type="range" id="sheetTemperature" min="0" max="2" step="0.1" value="${curTemp}" style="width:100%;margin-top:6px;accent-color:var(--teal)">
-      </div>`;
-      // Context window slider
-      const curCtx=k.contextMessages||100;
-      html+=`<div style="padding:8px 0">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><div style="font-size:12px;font-weight:500">Context Window</div><div style="font-size:10px;color:var(--text-3)">Messages sent for conversation context</div></div>
-          <div style="font-size:11px;font-family:var(--mono);color:var(--teal)" id="ctxVal">${curCtx}</div>
-        </div>
-        <input type="range" id="sheetContextMsgs" min="2" max="50" step="2" value="${curCtx}" style="width:100%;margin-top:6px;accent-color:var(--teal)">
-      </div>`;
       html+=`</div>`;
 
       // Stats link
@@ -2764,42 +2670,7 @@
       $('sheetBody').querySelector('#sheetSysPromptClear')?.addEventListener('click',()=>{
         const k2=getK();delete k2.sysPrompt;setK(k2);renderSheetContent();showToast('System prompt cleared','ok');
       });
-      // Wire up model pickers (search + save for each purpose)
-      $('sheetBody').querySelectorAll('.model-save-btn').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          const key=btn.dataset.modelKey;
-          const input=btn.closest('.model-picker').querySelector('.model-search-input');
-          const val=input?.value.trim();if(!val)return;
-          const k2=getK();k2[key]=val;setK(k2);showToast(`${key}: ${val}`,'ok');
-        });
-      });
-      $('sheetBody').querySelectorAll('.model-search-input').forEach(input=>{
-        let debounce=null;
-        input.addEventListener('input',()=>{
-          clearTimeout(debounce);
-          debounce=setTimeout(()=>searchModels(input),300);
-        });
-        input.addEventListener('focus',()=>{
-          clearTimeout(debounce);
-          debounce=setTimeout(()=>searchModels(input),200);
-        });
-      });
-      // Close model results on outside click
-      $('sheetBody').addEventListener('click',e=>{
-        if(!e.target.closest('.model-picker'))$('sheetBody').querySelectorAll('.model-picker-results').forEach(r=>r.classList.remove('open'));
-      });
-
-      // Wire up routing threshold
-      $('sheetBody').querySelector('#sheetRouteThresh')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#routeThreshVal');if(el)el.textContent=e.target.value;
-        const k2=getK();k2.routingThreshold=+e.target.value;setK(k2);
-      });
-
       // Wire up integrations
-      $('sheetBody').querySelector('#sheetWebhookSave')?.addEventListener('click',()=>{
-        const val=$('sheetBody').querySelector('#sheetWebhookUrl').value.trim();
-        const k2=getK();if(val){k2.webhookUrl=val}else{delete k2.webhookUrl}setK(k2);updateStatus();showToast(val?'Webhook set':'Webhook removed','ok');
-      });
       $('sheetBody').querySelector('#sheetObsidianSave')?.addEventListener('click',()=>{
         const val=$('sheetBody').querySelector('#sheetObsidianVault').value.trim();
         const k2=getK();if(val){k2.obsidianVault=val}else{delete k2.obsidianVault}setK(k2);showToast(`Vault: ${val||'Snail Vault'}`,'ok');
@@ -2812,31 +2683,6 @@
         }else{showToast('Auto-save disabled','ok')}
       });
       $('sheetBody').querySelector('#sheetObsidianPickFolder')?.addEventListener('click',()=>ObsidianSync.pickFolder());
-      $('sheetBody').querySelector('#sheetQuickRepliesSave')?.addEventListener('click',()=>{
-        const val=$('sheetBody').querySelector('#sheetQuickReplies').value.trim();
-        const k2=getK();if(val){k2.quickReplies=val.split(',').map(s=>s.trim()).filter(Boolean)}else{delete k2.quickReplies}setK(k2);showToast('Quick replies saved','ok');
-      });
-      $('sheetBody').querySelector('#sheetRateLimit')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#rateLimitVal');if(el)el.textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetRateLimit')?.addEventListener('change',e=>{
-        const k2=getK();k2.rateLimitPerMin=+e.target.value;setK(k2);showToast(`Rate limit: ${e.target.value||'off'}/min`,'ok');
-      });
-
-      // Wire up image gen
-      $('sheetBody').querySelector('#sheetImgGenSave')?.addEventListener('click',()=>{
-        const k2=getK();
-        const url=$('sheetBody').querySelector('#sheetImgGenUrl').value.trim();
-        const key=$('sheetBody').querySelector('#sheetImgGenKey').value.trim();
-        const model=$('sheetBody').querySelector('#sheetImgGenModel').value.trim();
-        const size=$('sheetBody').querySelector('#sheetImgGenSize').value.trim();
-        if(url)k2.imageGenUrl=url;else delete k2.imageGenUrl;
-        if(key)k2.imageGenKey=key;else delete k2.imageGenKey;
-        if(model)k2.imageGenModel=model;else delete k2.imageGenModel;
-        if(size)k2.imageGenSize=size;else delete k2.imageGenSize;
-        setK(k2);showToast('Image gen saved','ok');
-      });
-
       // Wire up device identity
       $('sheetBody').querySelector('#sheetDeviceSave')?.addEventListener('click',()=>{
         const k2=getK();
@@ -2918,33 +2764,6 @@
         else{k2[b.dataset.key]=!on}
         setK(k2);applyVisualConfig();renderSheetContent();
       }));
-
-      // Wire up max tokens slider
-      $('sheetBody').querySelector('#sheetMaxTokens')?.addEventListener('input',e=>{
-        $('sheetBody').querySelector('#tokenVal').textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetMaxTokens')?.addEventListener('change',e=>{
-        const k2=getK();k2.maxTokens=+e.target.value;setK(k2);
-        showToast(`Max tokens: ${e.target.value}`,'ok');
-      });
-
-      // Wire up temperature slider
-      $('sheetBody').querySelector('#sheetTemperature')?.addEventListener('input',e=>{
-        $('sheetBody').querySelector('#tempVal').textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetTemperature')?.addEventListener('change',e=>{
-        const k2=getK();k2.temperature=+e.target.value;setK(k2);
-        showToast(`Temperature: ${e.target.value}`,'ok');
-      });
-
-      // Wire up context window slider
-      $('sheetBody').querySelector('#sheetContextMsgs')?.addEventListener('input',e=>{
-        $('sheetBody').querySelector('#ctxVal').textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetContextMsgs')?.addEventListener('change',e=>{
-        const k2=getK();k2.contextMessages=+e.target.value;setK(k2);
-        showToast(`Context: ${e.target.value} messages`,'ok');
-      });
 
       // Wire up agent row
       $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
