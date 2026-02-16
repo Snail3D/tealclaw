@@ -4247,6 +4247,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     // ── Builder Agent Tabs ────────────────────────────────
     const builderRuns=new Map(); // runId → {label,lines[],state,startedAt,sessionKey,agentId}
     let activeBuilderRun=null;
+    let builderPanelExpanded=false;
 
     function handleAgentEvent(payload,conn){
       if(!payload||!payload.runId)return;
@@ -4291,14 +4292,15 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
             if(activeBuilderRun===e.target.dataset.close)activeBuilderRun=builderRuns.keys().next().value||null;
             renderBuilderTabs();renderBuilderPanel();return;
           }
-          activeBuilderRun=b.dataset.run;renderBuilderTabs();renderBuilderPanel();
+          if(activeBuilderRun===b.dataset.run){builderPanelExpanded=!builderPanelExpanded}else{activeBuilderRun=b.dataset.run;builderPanelExpanded=true}
+          renderBuilderTabs();renderBuilderPanel();
         });
       });
     }
 
     function renderBuilderPanel(){
       const panel=$('builderPanel');if(!panel)return;
-      if(!activeBuilderRun||!builderRuns.has(activeBuilderRun)){panel.classList.remove('open');return}
+      if(!activeBuilderRun||!builderRuns.has(activeBuilderRun)||!builderPanelExpanded){panel.classList.remove('open');return}
       panel.classList.add('open');
       const run=builderRuns.get(activeBuilderRun);
       $('builderPanelTitle').textContent=run.label+(run.state==='done'?' (done)':'');
