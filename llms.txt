@@ -515,7 +515,7 @@ Only include fields you want to set/change. TC uses partial merge.
 |-------|------|-------------|
 | id | string | Unique ID |
 | name | string | Display name in TC UI |
-| url | string | Gateway URL (HTTPS req) |
+| url | string | Gateway URL -- **MUST be HTTPS** (e.g. `https://machine.tailXXXXX.ts.net`). HTTP and raw IPs will fail (mixed content). |
 | token | string | Gateway auth token |
 | active | boolean | true for selected agent |
 
@@ -1071,6 +1071,38 @@ All API keys stay in usr's browser LS.
 Agent mode routes all chat through an OpenClaw gateway instead of calling
 provider APIs directly. This enables shared context across channels.
 
+### CRITICAL: Agent URLs MUST be HTTPS
+
+TealClaw is served from `https://tealclaw.ai`. Browsers **block mixed
+content** (HTTPS page -> HTTP request). This means:
+
+- **NEVER use `http://` URLs** for agent/gateway connections. They will fail.
+- **NEVER use raw IP:port** like `http://192.168.1.50:18789` or
+  `http://100.x.x.x:18789`. Browsers block or auto-upgrade these to HTTPS.
+- **ALWAYS use an HTTPS URL.** For home/self-hosted gateways, this means
+  Tailscale serve (gives you `https://machine-name.tailnet.ts.net`) or a
+  reverse proxy with TLS (Caddy, nginx, Cloudflare Tunnel, etc.).
+
+**How to find the correct HTTPS URL for a Tailscale gateway:**
+```bash
+tailscale serve status
+# Output: https://machine-name.tailXXXXX.ts.net -> proxy http://127.0.0.1:18789
+# Use: https://machine-name.tailXXXXX.ts.net (NOT the 127.0.0.1 or 100.x.x.x address)
+```
+
+**Wrong** (will fail with "Cannot reach gateway"):
+```json
+{"agents": [{"url": "http://100.92.86.99:18789"}]}
+{"agents": [{"url": "http://192.168.1.50:18789"}]}
+{"agents": [{"url": "http://localhost:18789"}]}
+```
+
+**Correct:**
+```json
+{"agents": [{"url": "https://my-server.tailabcde.ts.net"}]}
+{"agents": [{"url": "https://gw.mydomain.com"}]}
+```
+
 ### Transport: WebSocket (preferred)
 
 TealClaw connects to OpenClaw gateways via **WebSocket** (wss://). This
@@ -1136,9 +1168,11 @@ Shows current mode, active agent name + URL, plus all configured keys.
 
 ### Common issues
 
-- **"Cannot reach gateway" error**: The gateway URL must be reachable from
-  the user's device. Tailscale URLs (*.ts.net) require Tailscale to be
-  running on the device.
+- **"Cannot reach gateway" error**: #1 cause is using an HTTP or raw-IP URL.
+  Agent URLs MUST be HTTPS (see "CRITICAL: Agent URLs MUST be HTTPS" above).
+  For Tailscale gateways, use the `https://machine.tailXXXXX.ts.net` URL
+  from `tailscale serve status`, NOT the `100.x.x.x` IP. The user's device
+  also needs Tailscale running to reach *.ts.net addresses.
 - **Pill shows "Groq" but config has mode:agent**: If the config paste
   didn't include `"mode": "agent"`, TealClaw stays in direct mode even
   though agents are configured. Fix: paste `{"mode": "agent"}` to switch.

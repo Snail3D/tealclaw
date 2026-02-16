@@ -202,6 +202,12 @@ Only include fields to set/change. TC uses partial merge.
 
 Agent objects: `{ id, name, url, token, active }` -- see llms.txt for details.
 
+**CRITICAL: Agent URLs MUST be HTTPS.** TealClaw is served from `https://tealclaw.ai`.
+Browsers block mixed content (HTTPS page -> HTTP request). NEVER use `http://` URLs,
+raw IPs (`http://100.x.x.x:18789`), or `http://localhost`. For Tailscale gateways, run
+`tailscale serve status` to find the HTTPS URL (e.g. `https://machine.tailXXXXX.ts.net`).
+Use THAT, not the Tailscale IP.
+
 **Transport**: WebSocket (wss://) preferred. URLs auto-convert (https->wss, http->ws).
 WebSocket bypasses CORS/PNA restrictions for Tailscale/private network access.
 Falls back to HTTP (OpenAI-compatible) for non-OpenClaw gateways.
@@ -223,9 +229,10 @@ Remove, and Clear All. Connection status dots: green=connected, yellow=connectin
 **Test connection**: Per-agent "Test" button opens a temporary WS, performs handshake,
 shows toast with server version or error.
 
-**Common error**: "Cannot reach gateway" = gateway URL unreachable. Tailscale URLs (*.ts.net) require Tailscale running on the device.
+**Common error**: "Cannot reach gateway" = #1 cause is HTTP/raw-IP URLs. See HTTPS rule above.
+Tailscale URLs (*.ts.net) also require Tailscale running on the user's device.
 
-**Gateway + Tailscale**: When using tailscale serve/funnel, gateway `bind` MUST be `"loopback"` (NOT `"tailnet"`). `bind: "tailnet"` crashes the gateway. See llms.txt for full config example.
+**Gateway + Tailscale**: When using tailscale serve/funnel, gateway `bind` MUST be `"loopback"` (NOT `"tailnet"`). `bind: "tailnet"` crashes the gateway. The correct HTTPS URL comes from `tailscale serve status`. See llms.txt for full config example.
 
 ## Interactive Components (tc-ui)
 
