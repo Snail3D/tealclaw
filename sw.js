@@ -1,5 +1,5 @@
-const CACHE = 'tealclaw-v116';
-const ASSETS = ['/', '/index.html', '/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png', '/og-image.png', '/stats.html', '/llms.txt', '/llms.html', '/sitemap.xml', '/robots.txt'];
+const CACHE = 'tealclaw-v117';
+const ASSETS = ['/', '/index.html', '/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
