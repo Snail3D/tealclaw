@@ -2086,21 +2086,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           }
         }).catch(()=>{});
       }
-      // Auto-provision TealClaw public gateway token if no agents configured
-      const existingAgents=getAgents();
-      if(existingAgents.length===0){
-        autoProvisionToken().then(agent=>{
-          if(agent){
-            renderAgentSelector();updateStatus();
-            ensureAgentConnection(agent);
-            // If onboarding already rendered the "Start Chatting" button, replace it
-            if(chatHistory.length===0&&document.getElementById('onboardConnect')){
-              $('chatScroll').innerHTML='';
-              runOnboarding();
-            }
-          }
-        }).catch(()=>{});
-      }
+      // If agents already configured, connect; onboarding wizard handles fresh setup
+
       // Auto-connect WS for agent mode (also auto-switch if agents configured but mode not set)
       const k=getK();
       const agents=getAgents();
@@ -4906,100 +4893,226 @@ GIF REACTIONS (~75% of responses — encouraged!):
       return bubble;
     }
 
+    // ── Onboarding Wizard Helpers ──
+    function genHmacSecret(){
+      const bytes=new Uint8Array(32);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function testGatewayConnect(url){
+      try{
+        const res=await fetch(url+'/connect',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(res.ok){const d=await res.json();if(d.ok&&d.token)return{ok:true,token:d.token}}
+        return{ok:false,status:res.status}
+      }catch(e){return{ok:false,error:e.message}}
+    }
+
+    function onboardSuccess(gwUrl,agentName){
+      const scroll=$('chatScroll');
+      scroll.innerHTML='';
+      const safeUrl=esc(gwUrl);
+      sysBubble('<h2 style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Connected</h2>'
+        +'<p>Type a message below to start chatting.</p>'
+        +'<p style="font-size:11px;color:var(--text-3);margin-top:8px">For voice + TTS: paste a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq key</a> (<code>gsk_...</code>) into this chat.</p>'
+        +'<hr style="margin:12px 0;border-color:var(--border)">'
+        +'<details style="font-size:12px;color:var(--text-2)">'
+        +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Share with your AI agent</summary>'
+        +'<p style="margin:8px 0 6px;color:var(--text-3);font-size:11px">Copy this and paste it into your agent\'s prompt or chat:</p>'
+        +'<div class="onboard-copy-block" style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;position:relative;font-size:11px;line-height:1.5">'
+        +'<code style="white-space:pre-wrap;color:var(--text-2);font-family:var(--mono);font-size:11px">I use TealClaw (tealclaw.ai), a voice + chat PWA. I\'m connected to my gateway at '+safeUrl+'. Read https://tealclaw.ai/llms.txt for the full skill guide. To configure TealClaw, include a ```json code block in your response — the app auto-detects and applies it. When I give you an API key, put it directly in the JSON block (keys stay in my browser only). Example: {"whisperKey": "gsk_MY_KEY", "groqTtsVoice": "troy"}</code>'
+        +'<span style="position:absolute;top:6px;right:8px;font-size:9px;color:var(--text-3);pointer-events:none">tap to copy</span>'
+        +'</div>'
+        +'<p style="margin-top:6px;font-size:10px;color:var(--text-3)">Your agent will learn all TealClaw features from the skill guide.</p>'
+        +'</details>');
+      haptic('success');
+      showToast('Connected to '+(agentName||'gateway'),'ok');
+      setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus();inp.placeholder='Message TealClaw...'}},100);
+      wireOnboardCopyBlocks();
+    }
+
+    function wireOnboardCopyBlocks(){
+      setTimeout(()=>{document.querySelectorAll('.onboard-copy-block').forEach(b=>{
+        if(b._wired)return;b._wired=true;
+        b.addEventListener('click',()=>{const c=b.querySelector('code');if(c)navigator.clipboard.writeText(c.textContent).then(()=>showToast('Copied to clipboard','ok')).catch(()=>showToast('Failed to copy','err'))});
+      })},50);
+    }
+
     function runOnboarding(){
       const k=getK();
       if(k.aiKey||k.whisperKey)return;
-      const hasAny=chatHistory.length>0;
-      if(hasAny)return;
+      if(chatHistory.length>0)return;
 
-      // Check if already connected to gateway
+      // Already connected to a gateway
       const agents=getAgents();
-      const hasPublicAgent=agents.some(a=>a.id===TEALCLAW_PUBLIC_AGENT_ID);
-      if(hasPublicAgent){
-        sysBubble(`<h2 style="margin-bottom:4px">Welcome to TealClaw</h2>
-<p style="color:var(--ok);font-size:12px;font-weight:600;margin-bottom:8px">Connected to gateway</p>
-<p>You're ready to chat. Type a message or try a voice command.</p>
-<p style="font-size:11px;color:var(--text-3);margin-top:8px">For voice: paste a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq key</a> (<code>gsk_...</code>). Tap the gear for settings.</p>
-<details style="font-size:12px;color:var(--text-2);margin-top:10px">
-<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Share with your AI agent</summary>
-<p style="margin:8px 0 6px;color:var(--text-3);font-size:11px">Copy this and paste it into your agent's prompt or chat:</p>
-<div class="onboard-copy-block" style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;position:relative;font-size:11px;line-height:1.5">
-<code style="white-space:pre-wrap;color:var(--text-2);font-family:var(--mono);font-size:11px">I use TealClaw (tealclaw.ai), a voice + chat PWA. I'm already connected to the gateway at gw.tealclaw.ai. Read https://tealclaw.ai/llms.txt for the full skill guide. To configure it, include a \`\`\`json code block in your response — the app auto-detects and applies it. When I give you an API key, put it directly in the JSON block (keys stay in my browser only). Example: {"whisperKey": "gsk_MY_KEY", "groqTtsVoice": "troy"}</code>
-<span style="position:absolute;top:6px;right:8px;font-size:9px;color:var(--text-3);pointer-events:none">tap to copy</span>
-</div>
-</details>`);
+      const connected=agents.find(a=>a.url&&a.token);
+      if(connected){
+        onboardSuccess(connected.url,connected.name);
         return;
       }
 
-      // Primary onboarding: one-tap connect
-      sysBubble(`<h2 style="margin-bottom:6px">Welcome to TealClaw</h2>
-<p style="margin-bottom:12px">Private AI chat that runs in your browser. No accounts, no tracking.</p>
-<button id="onboardConnect" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.2s;min-height:48px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Chatting</button>
-<p style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px">Connects to the TealClaw gateway instantly</p>
-<hr style="margin:14px 0">
-<details style="font-size:12px;color:var(--text-2)">
-<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Other options</summary>
-<div style="margin-top:8px">
-<p><strong>Groq (free)</strong> — paste a <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq key</a> (<code>gsk_...</code>) for direct chat + voice + vision</p>
-<p style="margin-top:6px"><strong>Own gateway</strong> — connect your <a href="https://openclaw.ai" target="_blank" rel="noopener" style="color:var(--teal)">OpenClaw</a> instance in Settings &rarr; Agent</p>
-</div>
-</details>`);
+      // ── Wizard Step 1: Choose path ──
+      sysBubble('<h2 style="margin-bottom:6px">Welcome to TealClaw</h2>'
+        +'<p style="margin-bottom:14px;color:var(--text-2)">Private AI chat that runs in your browser. No accounts, no tracking.</p>'
+        +'<button id="obGateway" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.2s;min-height:48px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg> Connect Gateway</button>'
+        +'<p style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px">Connect to your OpenClaw gateway</p>'
+        +'<button id="obGroq" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 20px;margin-top:10px;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:100px;font-size:14px;font-weight:500;font-family:var(--font);cursor:pointer;transition:all 0.2s;min-height:44px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Use Groq Key (free)</button>'
+        +'<p style="font-size:10px;color:var(--text-3);text-align:center;margin-top:4px">Direct chat + voice, no gateway needed</p>');
 
-      // Wire up the connect button
       setTimeout(()=>{
-        const btn=document.getElementById('onboardConnect');
-        if(!btn)return;
-        btn.addEventListener('click',async()=>{
-          btn.disabled=true;
-          btn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Connecting...';
-          try{
-            const agent=await autoProvisionToken();
-            if(agent){
-              if(agent.active){ensureAgentConnection(agent);updateStatus();renderAgentSelector()}
-              chatHistory=[];setChat([]);
-              // Clear the DOM explicitly (renderChat bails on empty history)
-              $('chatScroll').innerHTML='';
-              sysBubble(`<h2 style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Connected</h2>
-<p>Type a message below to start chatting.</p>
-<p style="font-size:11px;color:var(--text-3);margin-top:8px">For voice + TTS: paste a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq key</a> (<code>gsk_...</code>) into this chat.</p>
-<hr style="margin:12px 0;border-color:var(--border)">
-<details style="font-size:12px;color:var(--text-2)">
-<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Share with your AI agent</summary>
-<p style="margin:8px 0 6px;color:var(--text-3);font-size:11px">Copy this and paste it into your agent's prompt or chat:</p>
-<div class="onboard-copy-block" style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;position:relative;font-size:11px;line-height:1.5">
-<code style="white-space:pre-wrap;color:var(--text-2);font-family:var(--mono);font-size:11px">I use TealClaw (tealclaw.ai), a voice + chat PWA. I'm already connected to the gateway at gw.tealclaw.ai. Read https://tealclaw.ai/llms.txt for the full skill guide. To configure it, include a \`\`\`json code block in your response — the app auto-detects and applies it. When I give you an API key, put it directly in the JSON block (keys stay in my browser only). Example: {"whisperKey": "gsk_MY_KEY", "groqTtsVoice": "troy"}</code>
-<span style="position:absolute;top:6px;right:8px;font-size:9px;color:var(--text-3);pointer-events:none">tap to copy</span>
-</div>
-<p style="margin-top:6px;font-size:10px;color:var(--text-3)">Your agent will learn all TealClaw features from the skill guide.</p>
-</details>`);
-              haptic('success');
-              showToast('Connected to TealClaw','ok');
-              // Focus chat input so user knows to type
-              setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus();inp.placeholder='Message TealClaw...'}},100);
-              // Wire click-to-copy on the new copy block
-              setTimeout(()=>{document.querySelectorAll('.onboard-copy-block').forEach(b=>{b.addEventListener('click',()=>{const c=b.querySelector('code');if(c)navigator.clipboard.writeText(c.textContent).then(()=>showToast('Copied to clipboard','ok')).catch(()=>showToast('Failed to copy','err'))})})},50);
-            } else {
-              btn.disabled=false;
-              btn.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Chatting';
-              showToast('Could not connect — try a Groq key instead','err');
-            }
-          }catch{
-            btn.disabled=false;
-            btn.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Chatting';
-            showToast('Connection failed — try a Groq key instead','err');
+        const gwBtn=document.getElementById('obGateway');
+        const groqBtn=document.getElementById('obGroq');
+        if(gwBtn)gwBtn.addEventListener('click',()=>onboardGatewayStep());
+        if(groqBtn)groqBtn.addEventListener('click',()=>onboardGroqStep());
+      },50);
+    }
+
+    // ── Wizard Step 2a: Gateway setup ──
+    function onboardGatewayStep(){
+      $('chatScroll').innerHTML='';
+      sysBubble('<h2 style="margin-bottom:8px">Connect Gateway</h2>'
+        +'<p style="margin-bottom:12px;font-size:13px;color:var(--text-2)">Enter your OpenClaw gateway URL. This is the public URL where your gateway is reachable (e.g. via Cloudflare Tunnel).</p>'
+        +'<input id="obGwUrl" type="url" placeholder="https://gw.example.com" value="'+esc(TEALCLAW_GW_URL)+'" style="width:100%;padding:12px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--font);box-sizing:border-box;outline:none">'
+        +'<button id="obGwTest" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;margin-top:10px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;min-height:48px">Test Connection</button>'
+        +'<button id="obGwBack" style="display:block;margin:10px auto 0;padding:8px 16px;background:transparent;color:var(--text-3);border:none;font-size:12px;font-family:var(--font);cursor:pointer">&larr; Back</button>');
+
+      setTimeout(()=>{
+        const urlInput=document.getElementById('obGwUrl');
+        const testBtn=document.getElementById('obGwTest');
+        const backBtn=document.getElementById('obGwBack');
+        if(backBtn)backBtn.addEventListener('click',()=>{$('chatScroll').innerHTML='';runOnboarding()});
+        if(!testBtn||!urlInput)return;
+        testBtn.addEventListener('click',async()=>{
+          const gwUrl=urlInput.value.trim().replace(/\/$/,'');
+          if(!gwUrl){showToast('Enter a gateway URL','err');return}
+          testBtn.disabled=true;
+          testBtn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Testing...';
+          const result=await testGatewayConnect(gwUrl);
+          if(result.ok){
+            // /connect worked — save agent and show success
+            const agents=getAgents();
+            const agent={id:'custom-gw',name:'Gateway',url:gwUrl,token:result.token,active:true};
+            const idx=agents.findIndex(a=>a.id==='custom-gw');
+            if(idx>=0)agents[idx]=agent;else agents.push(agent);
+            setAgents(agents);
+            const k=getK();k.mode='agent';setK(k);
+            ensureAgentConnection(agent);updateStatus();renderAgentSelector();
+            chatHistory=[];setChat([]);
+            onboardSuccess(gwUrl,'Gateway');
+          } else {
+            // /connect not available — show setup instructions
+            onboardGatewaySetup(gwUrl,result.status);
           }
         });
       },50);
-      // Wire click-to-copy on the onboarding copy block
+    }
+
+    // ── Wizard Step 2a-2: Gateway needs tenant provisioning ──
+    function onboardGatewaySetup(gwUrl,httpStatus){
+      $('chatScroll').innerHTML='';
+      const secret=genHmacSecret();
+      const safeUrl=esc(gwUrl);
+      const setupCommands='openclaw config set gateway.tenant.enabled true\nopenclaw config set gateway.tenant.hmacSecret "'+secret+'"\nopenclaw config set gateway.tenant.corsOrigins \'["https://tealclaw.ai"]\'\nopenclaw gateway restart';
+      const agentPrompt='Enable TealClaw tenant provisioning on my OpenClaw gateway. Run these commands exactly:\n\n'+setupCommands+'\n\nThis allows TealClaw (tealclaw.ai) to auto-provision connection tokens via POST /connect. The HMAC secret signs stateless tokens. CORS is locked to tealclaw.ai. After running these, TealClaw will connect automatically.';
+
+      sysBubble('<h2 style="margin-bottom:8px">Gateway Setup Needed</h2>'
+        +'<p style="margin-bottom:10px;font-size:13px;color:var(--text-2)">Your gateway at <strong>'+safeUrl+'</strong> needs tenant provisioning enabled so TealClaw can connect.'+(httpStatus===405?' (got 405 — endpoint not active yet)':'')+'</p>'
+        +'<p style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">Copy this to your OpenClaw agent:</p>'
+        +'<div class="onboard-copy-block" style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;position:relative;font-size:11px;line-height:1.6">'
+        +'<code style="white-space:pre-wrap;color:var(--text-2);font-family:var(--mono);font-size:11px">'+esc(agentPrompt)+'</code>'
+        +'<span style="position:absolute;top:6px;right:8px;font-size:9px;color:var(--text-3);pointer-events:none">tap to copy</span>'
+        +'</div>'
+        +'<p style="margin:10px 0 6px;font-size:12px;font-weight:600;color:var(--text)">Or run these commands yourself:</p>'
+        +'<div class="onboard-copy-block" style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;position:relative;font-size:11px;line-height:1.6">'
+        +'<code style="white-space:pre-wrap;color:var(--text-2);font-family:var(--mono);font-size:11px">'+esc(setupCommands)+'</code>'
+        +'<span style="position:absolute;top:6px;right:8px;font-size:9px;color:var(--text-3);pointer-events:none">tap to copy</span>'
+        +'</div>'
+        +'<button id="obGwRetry" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;margin-top:14px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;min-height:48px">Retry Connection</button>'
+        +'<hr style="margin:14px 0">'
+        +'<details style="font-size:12px;color:var(--text-2)">'
+        +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Manual: paste a gateway token</summary>'
+        +'<p style="margin:6px 0;font-size:11px;color:var(--text-3)">If you already have a gateway token, paste it here:</p>'
+        +'<input id="obManualToken" type="text" placeholder="tc1.xxxxx or bearer token" style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);box-sizing:border-box;outline:none;margin-bottom:8px">'
+        +'<button id="obManualSave" style="padding:8px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer">Save &amp; Connect</button>'
+        +'</details>'
+        +'<button id="obGwBack2" style="display:block;margin:10px auto 0;padding:8px 16px;background:transparent;color:var(--text-3);border:none;font-size:12px;font-family:var(--font);cursor:pointer">&larr; Start over</button>');
+
+      wireOnboardCopyBlocks();
+
       setTimeout(()=>{
-        document.querySelectorAll('.onboard-copy-block').forEach(block=>{
-          block.addEventListener('click',()=>{
-            const code=block.querySelector('code');
-            if(!code)return;
-            navigator.clipboard.writeText(code.textContent).then(()=>showToast('Copied to clipboard','ok')).catch(()=>showToast('Failed to copy','err'));
-          });
+        const retryBtn=document.getElementById('obGwRetry');
+        const manualToken=document.getElementById('obManualToken');
+        const manualSave=document.getElementById('obManualSave');
+        const backBtn=document.getElementById('obGwBack2');
+        if(backBtn)backBtn.addEventListener('click',()=>{$('chatScroll').innerHTML='';runOnboarding()});
+        if(retryBtn)retryBtn.addEventListener('click',async()=>{
+          retryBtn.disabled=true;
+          retryBtn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Testing...';
+          const result=await testGatewayConnect(gwUrl);
+          if(result.ok){
+            const agents=getAgents();
+            const agent={id:'custom-gw',name:'Gateway',url:gwUrl,token:result.token,active:true};
+            const idx=agents.findIndex(a=>a.id==='custom-gw');
+            if(idx>=0)agents[idx]=agent;else agents.push(agent);
+            setAgents(agents);
+            const k=getK();k.mode='agent';setK(k);
+            ensureAgentConnection(agent);updateStatus();renderAgentSelector();
+            chatHistory=[];setChat([]);
+            onboardSuccess(gwUrl,'Gateway');
+          } else {
+            retryBtn.disabled=false;
+            retryBtn.textContent='Retry Connection';
+            showToast('Still not ready — make sure your agent ran the commands and restarted the gateway','err');
+          }
         });
-      },100);
+        if(manualSave&&manualToken)manualSave.addEventListener('click',()=>{
+          const tok=manualToken.value.trim();
+          if(!tok){showToast('Paste a token','err');return}
+          const agents=getAgents();
+          const agent={id:'custom-gw',name:'Gateway',url:gwUrl,token:tok,active:true};
+          const idx=agents.findIndex(a=>a.id==='custom-gw');
+          if(idx>=0)agents[idx]=agent;else agents.push(agent);
+          setAgents(agents);
+          const k=getK();k.mode='agent';setK(k);
+          ensureAgentConnection(agent);updateStatus();renderAgentSelector();
+          chatHistory=[];setChat([]);
+          onboardSuccess(gwUrl,'Gateway');
+        });
+      },50);
+    }
+
+    // ── Wizard Step 2b: Groq key ──
+    function onboardGroqStep(){
+      $('chatScroll').innerHTML='';
+      sysBubble('<h2 style="margin-bottom:8px">Groq Setup</h2>'
+        +'<p style="margin-bottom:10px;font-size:13px;color:var(--text-2)">Paste your free <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq API key</a> to get started with chat, voice, and vision.</p>'
+        +'<input id="obGroqKey" type="text" placeholder="gsk_..." style="width:100%;padding:12px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--mono);box-sizing:border-box;outline:none">'
+        +'<button id="obGroqSave" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;margin-top:10px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;min-height:48px">Save &amp; Start Chatting</button>'
+        +'<button id="obGroqBack" style="display:block;margin:10px auto 0;padding:8px 16px;background:transparent;color:var(--text-3);border:none;font-size:12px;font-family:var(--font);cursor:pointer">&larr; Back</button>');
+
+      setTimeout(()=>{
+        const keyInput=document.getElementById('obGroqKey');
+        const saveBtn=document.getElementById('obGroqSave');
+        const backBtn=document.getElementById('obGroqBack');
+        if(backBtn)backBtn.addEventListener('click',()=>{$('chatScroll').innerHTML='';runOnboarding()});
+        if(!saveBtn||!keyInput)return;
+        saveBtn.addEventListener('click',()=>{
+          const key=keyInput.value.trim();
+          if(!key||!key.startsWith('gsk_')){showToast('Enter a valid Groq key (starts with gsk_)','err');return}
+          const k=getK();
+          k.whisperKey=key;k.mode='groq';
+          setK(k);
+          updateStatus();
+          chatHistory=[];setChat([]);
+          $('chatScroll').innerHTML='';
+          sysBubble('<h2 style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Ready</h2>'
+            +'<p>Groq key saved. Type a message below to start chatting.</p>'
+            +'<p style="font-size:11px;color:var(--text-3);margin-top:8px">Voice input + TTS are enabled. Tap the mic to talk.</p>');
+          haptic('success');
+          showToast('Groq key saved','ok');
+          setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus();inp.placeholder='Message TealClaw...'}},100);
+        });
+      },50);
     }
 
     // ── Help Mode ────────────────────────────────────
