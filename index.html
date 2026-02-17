@@ -104,6 +104,29 @@
     .cron-add-btn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;border-radius:50%;background:rgba(99,102,241,0.12);color:#818cf8;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--t);flex-shrink:0}
     .cron-add-btn:hover{background:rgba(99,102,241,0.25)}
 
+    /* ── Motion & Alarms Modal ────────────────────────── */
+    .ma-modal{position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .ma-modal.open{display:flex}
+    .ma-modal-card{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);max-width:420px;width:92%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:bubble-scale-in 0.2s ease-out}
+    .ma-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+    .ma-modal-header h3{margin:0;font-size:15px;font-weight:600;color:var(--text)}
+    .ma-modal-close{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg-input);color:var(--text-2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--t)}
+    .ma-modal-close:hover{background:var(--err);color:#fff}
+    .ma-modal-body{flex:1;overflow-y:auto;padding:16px 20px}
+    .ma-section{margin-bottom:16px}
+    .ma-section:last-child{margin-bottom:0}
+    .ma-section-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .ma-alarm-item,.ma-timer-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:6px;font-size:11px;color:var(--text)}
+    .ma-alarm-item .ma-item-info,.ma-timer-item .ma-item-info{flex:1;min-width:0}
+    .ma-alarm-item .ma-item-time{font-weight:600;color:#f59e0b}
+    .ma-timer-item .ma-item-time{font-weight:600;color:#3b82f6}
+    .ma-alarm-item .ma-item-msg,.ma-timer-item .ma-item-msg{font-size:10px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ma-item-del{width:22px;height:22px;border-radius:50%;border:none;background:rgba(239,68,68,0.1);color:var(--err);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--t)}
+    .ma-item-del:hover{background:var(--err);color:#fff}
+    .ma-empty{font-size:11px;color:var(--text-3);text-align:center;padding:16px 8px}
+    @keyframes settings-hold{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+    .icon-btn.holding{animation:settings-hold 0.6s ease-in-out infinite}
+
     /* ── Cron Detail Popover ─────────────────────────── */
     .cron-detail{position:absolute;top:calc(100% + 6px);right:0;min-width:220px;background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 8px 32px rgba(0,0,0,0.3);z-index:800;padding:12px;animation:bubble-scale-in 0.15s ease-out;font-size:11px;color:var(--text)}
     .cron-detail.hidden{display:none}
@@ -144,6 +167,29 @@
     .chron-wizard-banner.hidden{display:none}
     .chron-wizard-cancel{padding:3px 10px;font-size:10px;font-weight:600;font-family:var(--font);background:transparent;border:1px solid rgba(99,102,241,0.3);border-radius:100px;color:#818cf8;cursor:pointer;transition:all var(--t)}
     .chron-wizard-cancel:hover{background:rgba(99,102,241,0.15)}
+
+    /* ── Pomodoro Banner ───────────────────────────────── */
+    .pomodoro-banner{display:flex;flex-direction:column;padding:10px 16px;background:rgba(239,68,68,0.08);border-bottom:1px solid rgba(239,68,68,0.2);flex-shrink:0;gap:6px}
+    .pomodoro-banner.hidden{display:none}
+    .pomo-header{display:flex;align-items:center;gap:10px}
+    .pomo-timer{font-size:22px;font-weight:700;font-family:var(--mono);color:#ef4444;min-width:60px}
+    .pomo-phase{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding:2px 8px;border-radius:8px}
+    .pomo-phase.focus{background:rgba(239,68,68,0.15);color:#ef4444}
+    .pomo-phase.break{background:rgba(34,197,94,0.15);color:#22c55e}
+    .pomo-controls{display:flex;gap:6px;margin-left:auto}
+    .pomo-btn{font-size:10px;font-weight:600;font-family:var(--font);padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg-input);color:var(--text-2);cursor:pointer}
+    .pomo-btn:hover{background:var(--bg-2)}
+    .pomo-tasks{display:flex;flex-direction:column;gap:3px;max-height:100px;overflow-y:auto}
+    .pomo-task{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);cursor:pointer;padding:2px 0}
+    .pomo-task.done{text-decoration:line-through;opacity:0.5}
+    .pomo-task-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px}
+    .pomo-task.done .pomo-task-check{background:#ef4444;border-color:#ef4444;color:#fff}
+    .pomo-wizard-banner{display:flex;align-items:center;justify-content:space-between;padding:6px 16px;background:rgba(239,68,68,0.1);border-bottom:1px solid rgba(239,68,68,0.2);font-size:11px;font-weight:600;color:#ef4444;flex-shrink:0}
+    .pomo-wizard-banner.hidden{display:none}
+    .pomo-wizard-cancel{padding:3px 10px;font-size:10px;font-weight:600;font-family:var(--font);background:transparent;border:1px solid rgba(239,68,68,0.3);border-radius:100px;color:#ef4444;cursor:pointer;transition:all var(--t)}
+    .pomo-wizard-cancel:hover{background:rgba(239,68,68,0.15)}
+    .cron-pill.pomo-pill{background:rgba(239,68,68,0.12);color:#ef4444}
+    .cron-pill.pomo-pill:hover{background:rgba(239,68,68,0.2)}
 
     .pill{display:flex;align-items:center;gap:4px;padding:3px 10px;font-size:10px;font-weight:500;border-radius:100px;cursor:pointer;position:relative;user-select:none}
     .pill.ok{background:rgba(34,197,94,0.12);color:var(--ok)} .pill.off{background:rgba(239,68,68,0.12);color:var(--err)}
@@ -311,12 +357,12 @@
     .stop-stream-btn.hidden{display:none}
     .send-btn.claw-active{background:#e04040;animation:claw-pulse 2s ease-in-out infinite}
     @keyframes claw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,64,64,0.4)}50%{box-shadow:0 0 0 8px rgba(224,64,64,0)}}
-    .claw-toggle{width:38px;height:38px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:transparent;color:var(--text-3);transition:all 0.25s;padding:0;margin-right:0}
-    .claw-toggle svg{width:24px;height:24px}
-    .claw-toggle:hover{color:var(--text-2)}
-    .claw-toggle.on{color:var(--teal)}
-    .claw-toggle.on:hover{color:var(--teal-hover)}
-    .claw-toggle.recording{color:#fff;background:var(--err);animation:claw-pulse 1.5s ease-in-out infinite}
+    .claw-toggle{width:var(--btn-size,50px);height:var(--btn-size,50px);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:var(--text-3);color:var(--bg-root);transition:all 0.25s;padding:0;margin-right:0}
+    .claw-toggle svg{width:calc(var(--btn-size,50px) * 0.45);height:calc(var(--btn-size,50px) * 0.45)}
+    .claw-toggle:hover{background:var(--text-2)}
+    .claw-toggle.on{background:var(--err);color:#fff}
+    .claw-toggle.on:hover{background:#c53030}
+    .claw-toggle.recording{background:var(--err);color:#fff;animation:claw-pulse 1.5s ease-in-out infinite}
     .mic-circle{background:var(--text-3);color:var(--bg-root);border:none} .mic-circle:hover{background:var(--text-2)}
     .mic-circle.hidden{display:none}
     .mic-circle.recording{background:var(--err);color:#fff;animation:mic-p 1.5s ease-in-out infinite}
@@ -1266,6 +1312,22 @@
     <span>Setting up cron job via AI...</span>
     <button class="chron-wizard-cancel" id="chronCancelBtn">Cancel</button>
   </div>
+  <div class="pomo-wizard-banner hidden" id="pomoWizardBanner">
+    <span>Setting up Pomodoro via AI...</span>
+    <button class="pomo-wizard-cancel" id="pomoWizardCancelBtn">Cancel</button>
+  </div>
+  <div class="pomodoro-banner hidden" id="pomodoroBanner">
+    <div class="pomo-header">
+      <span class="pomo-timer" id="pomoTimer">25:00</span>
+      <span class="pomo-phase focus" id="pomoPhase">Focus</span>
+      <div class="pomo-controls">
+        <button class="pomo-btn" id="pomoPauseBtn">Pause</button>
+        <button class="pomo-btn" id="pomoSkipBtn">Skip</button>
+        <button class="pomo-btn" id="pomoCancelBtn">&times;</button>
+      </div>
+    </div>
+    <div class="pomo-tasks" id="pomoTasks"></div>
+  </div>
 
   <!-- Builder Agent Tabs -->
   <div class="builder-tabs" id="builderTabs"></div>
@@ -1311,8 +1373,8 @@
       <div class="file-stack" id="fileStack"></div>
       <div class="input-row">
         <button class="claw-toggle" id="clawToggle" title="Toggle Claw mode" aria-label="Toggle Claw mode">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="transform:rotate(45deg)">
-            <path fill-rule="evenodd" d="M4.2 8.5c1.6-3.3 5.4-5.4 9.5-5.4 5 0 8.4 3.8 8.4 8.6 0 4.9-3.7 8.7-8.8 8.7-4.4 0-8-2.3-9.3-6-.6-1.5-.5-3.8.2-5.9Zm5.8 5.6c.9-.4 1.8-1.1 2.9-1.9 1.6-1 3.2-1.6 5.1-1.6 1.4 0 2.5.5 3.3 1.3-.6 3.1-3.3 5.2-6.3 5.2-1.9 0-3.8-.7-5-1.8Z" clip-rule="evenodd"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 11V6a1 1 0 0 0-2 0"/><path d="M14 10V4a1 1 0 0 0-2 0"/><path d="M10 10.5V6a1 1 0 0 0-2 0v8"/><path d="M18 8a1 1 0 0 1 2 0v7.5a6.5 6.5 0 0 1-13 0v-2"/><path d="M6 15a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h0"/>
           </svg>
         </button>
         <button class="circle-btn attach-btn" id="attachBtn" title="Attach file" aria-label="Attach file">
@@ -1386,6 +1448,17 @@
         </button>
         <button class="sheet-btn sheet-btn-ghost" id="smExportJSON">Export Conversation (JSON)</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ Motion & Alarms Modal ═══ -->
+  <div class="ma-modal" id="maModal">
+    <div class="ma-modal-card">
+      <div class="ma-modal-header">
+        <h3>Motion &amp; Alarms</h3>
+        <button class="ma-modal-close" id="maModalClose">&times;</button>
+      </div>
+      <div class="ma-modal-body" id="maModalBody"></div>
     </div>
   </div>
 
@@ -2534,9 +2607,170 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     function openSheet(){settingsSheet.classList.add('open');sheetBackdrop.classList.add('open');renderSheetContent()}
     function closeSheet(){settingsSheet.classList.remove('open');sheetBackdrop.classList.remove('open')}
 
-    $('settingsBtn').addEventListener('click',openSheet);
+    // Long-press settings gear → Motion & Alarms modal; normal tap → settings sheet
+    (function(){
+      const btn=$('settingsBtn');
+      let holdTimer=null,holdVisual=null,startX=0,startY=0,fired=false;
+      btn.addEventListener('pointerdown',e=>{
+        fired=false;startX=e.clientX;startY=e.clientY;
+        holdVisual=setTimeout(()=>btn.classList.add('holding'),200);
+        holdTimer=setTimeout(()=>{
+          fired=true;btn.classList.remove('holding');
+          haptic('success');openMAModal();
+        },1500);
+      });
+      btn.addEventListener('pointerup',()=>{
+        clearTimeout(holdTimer);clearTimeout(holdVisual);btn.classList.remove('holding');
+        if(!fired)openSheet();
+      });
+      btn.addEventListener('pointercancel',()=>{
+        clearTimeout(holdTimer);clearTimeout(holdVisual);btn.classList.remove('holding');fired=false;
+      });
+      btn.addEventListener('pointermove',e=>{
+        if(Math.abs(e.clientX-startX)>10||Math.abs(e.clientY-startY)>10){
+          clearTimeout(holdTimer);clearTimeout(holdVisual);btn.classList.remove('holding');fired=false;
+        }
+      });
+    })();
     $('sheetClose').addEventListener('click',closeSheet);
     sheetBackdrop.addEventListener('click',closeSheet);
+
+    // ── Motion & Alarms Modal ─────────────────────────
+    let _maTimerInterval=null;
+    function openMAModal(){renderMAModal();$('maModal').classList.add('open')}
+    function closeMAModal(){$('maModal').classList.remove('open');if(_maTimerInterval){clearInterval(_maTimerInterval);_maTimerInterval=null}}
+    $('maModalClose').addEventListener('click',closeMAModal);
+    $('maModal').addEventListener('click',e=>{if(e.target===$('maModal'))closeMAModal()});
+    function renderMAModal(){
+      const k=getK();let html='';
+      const gestureOn=k.gestureEnabled===true,bookResearch=k.bookGestureResearch||'research';
+      html+=`<div class="ma-section"><div class="ma-section-title">Gesture Control</div>
+        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+          <button class="mode-btn ma-gesture-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+          <button class="mode-btn ma-gesture-btn ${!gestureOn?'active':''}" data-gesture="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gestureOn?'var(--teal)':'transparent'};border:none;color:${!gestureOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Hand gestures for voice control. Wireframes only appear for recognized gestures.</div>
+        ${gestureOn?`<div style="margin-top:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">The Claw</div>
+          <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Show The Claw (one hand) to start voice capture. Lower your hand to send.</div>
+          <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="maGestConfVal">${k.gestureConfidence||0.5}</span></div>
+          <input type="range" id="maGestureConf" min="0.25" max="0.95" step="0.05" value="${k.gestureConfidence||0.5}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
+          <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive, higher = more precise</div>
+          <div style="margin-top:14px">
+            <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Open Book</div>
+            <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Hold two open hands together like an open book to start voice research. Lower hands to send.</div>
+            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:4px">Research Type</div>
+            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+              <button class="mode-btn ma-book-btn ${bookResearch==='research'?'active':''}" data-bookres="research" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='research'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='research'?'#fff':'var(--text-3)'};cursor:pointer">Research</button>
+              <button class="mode-btn ma-book-btn ${bookResearch==='deepresearch'?'active':''}" data-bookres="deepresearch" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='deepresearch'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='deepresearch'?'#fff':'var(--text-3)'};cursor:pointer">Deep Research</button>
+            </div>
+          </div>
+        </div>`:''}
+      </div>`;
+      const plOn=k.photoLogEnabled===true,plCam=k.photoLogCamera||'user',plInt=k.photoLogInterval||5,plFrames=k.photoLogFrames||12;
+      const wmOn=k.watchModeEnabled===true,wmCam=k.watchModeCamera||'user',wmPrompt=k.watchModePrompt||'',wmRate=k.watchModeRateLimit||30,wmSens=k.watchModeSensitivity||0.05;
+      html+=`<div class="ma-section"><div class="ma-section-title">Security Overwatch</div>
+        <div style="font-size:10px;color:var(--text-3);margin-bottom:10px">Camera-based monitoring. Photo Log captures periodic snapshots for AI summary. Watch Mode alerts on faces/motion.</div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Photo Log</div>
+          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:8px">
+            <button class="mode-btn ma-pl-toggle ${plOn?'active':''}" data-pl="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${plOn?'var(--teal)':'transparent'};border:none;color:${plOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+            <button class="mode-btn ma-pl-toggle ${!plOn?'active':''}" data-pl="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!plOn?'var(--teal)':'transparent'};border:none;color:${!plOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+          </div>
+          ${plOn?`<div style="margin-bottom:6px">
+            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Camera</div>
+            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+              <button class="mode-btn ma-pl-cam ${plCam==='user'?'active':''}" data-cam="user" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plCam==='user'?'var(--teal)':'transparent'};border:none;color:${plCam==='user'?'#fff':'var(--text-3)'};cursor:pointer">Front</button>
+              <button class="mode-btn ma-pl-cam ${plCam==='environment'?'active':''}" data-cam="environment" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plCam==='environment'?'var(--teal)':'transparent'};border:none;color:${plCam==='environment'?'#fff':'var(--text-3)'};cursor:pointer">Back</button>
+            </div>
+          </div>
+          <div style="margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between"><div style="font-size:10px;font-weight:500;color:var(--text-2)">Capture Interval</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="maPlIntVal">${plInt}s</span></div>
+            <input type="range" id="maPlInterval" min="3" max="10" step="1" value="${plInt}" style="width:100%;margin-top:3px;accent-color:var(--teal)">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Frames per Collage</div>
+            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+              ${[6,9,12].map(n=>`<button class="mode-btn ma-pl-frames ${plFrames===n?'active':''}" data-frames="${n}" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plFrames===n?'var(--teal)':'transparent'};border:none;color:${plFrames===n?'#fff':'var(--text-3)'};cursor:pointer">${n}</button>`).join('')}
+            </div>
+          </div>`:''}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Watch Mode</div>
+          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:8px">
+            <button class="mode-btn ma-wm-toggle ${wmOn?'active':''}" data-wm="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${wmOn?'var(--teal)':'transparent'};border:none;color:${wmOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+            <button class="mode-btn ma-wm-toggle ${!wmOn?'active':''}" data-wm="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!wmOn?'var(--teal)':'transparent'};border:none;color:${!wmOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+          </div>
+          ${wmOn?`<div style="margin-bottom:6px">
+            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Camera</div>
+            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+              <button class="mode-btn ma-wm-cam ${wmCam==='user'?'active':''}" data-cam="user" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${wmCam==='user'?'var(--teal)':'transparent'};border:none;color:${wmCam==='user'?'#fff':'var(--text-3)'};cursor:pointer">Front</button>
+              <button class="mode-btn ma-wm-cam ${wmCam==='environment'?'active':''}" data-cam="environment" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${wmCam==='environment'?'var(--teal)':'transparent'};border:none;color:${wmCam==='environment'?'#fff':'var(--text-3)'};cursor:pointer">Back</button>
+            </div>
+          </div>
+          <div style="margin-bottom:6px">
+            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Custom Prompt</div>
+            <textarea class="sheet-textarea" id="maWmPrompt" placeholder="e.g. Notify me if you see a girl with blonde hair; otherwise ignore" style="min-height:48px;font-size:10px">${esc(wmPrompt)}</textarea>
+            <button class="btn btn-teal btn-sm" id="maWmPromptSave" style="margin-top:4px">Save Prompt</button>
+          </div>
+          <div style="margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between"><div style="font-size:10px;font-weight:500;color:var(--text-2)">Rate Limit</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="maWmRateVal">${wmRate}min</span></div>
+            <input type="range" id="maWmRate" min="5" max="60" step="5" value="${wmRate}" style="width:100%;margin-top:3px;accent-color:var(--teal)">
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between"><div style="font-size:10px;font-weight:500;color:var(--text-2)">Sensitivity</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="maWmSensVal">${wmSens}</span></div>
+            <input type="range" id="maWmSens" min="0.01" max="0.15" step="0.01" value="${wmSens}" style="width:100%;margin-top:3px;accent-color:var(--teal)">
+            <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive to motion</div>
+          </div>
+          <div style="margin-bottom:6px">
+            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Reference Photos (max 10)</div>
+            <div class="watch-ref-drop" id="maWatchRefDrop">Drop or tap to add reference photos</div>
+            <input type="file" id="maWatchRefFile" accept="image/*" multiple hidden>
+            <div class="watch-ref-grid" id="maWatchRefGrid"></div>
+          </div>`:''}
+        </div>
+      </div>`;
+      const alarms=getAlarms(),timers=getTimers();
+      html+=`<div class="ma-section"><div class="ma-section-title">Alarms &amp; Timers</div>`;
+      if(!alarms.length&&!timers.length){html+=`<div class="ma-empty">No active alarms or timers. Use /alarm or /timer to create them.</div>`}
+      else{alarms.forEach(a=>{const t=new Date(a.time),ts=t.toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+        html+=`<div class="ma-alarm-item"><div class="ma-item-info"><div class="ma-item-time">${esc(ts)}</div><div class="ma-item-msg">${esc(a.message||'Alarm')}</div></div><button class="ma-item-del" data-alarm-id="${a.id}" title="Delete">&times;</button></div>`});
+        timers.forEach(t=>{const rem=Math.max(0,new Date(t.endsAt).getTime()-Date.now()),m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);
+        html+=`<div class="ma-timer-item"><div class="ma-item-info"><div class="ma-item-time ma-timer-countdown" data-ends="${t.endsAt}">${m}m ${s}s</div><div class="ma-item-msg">${esc(t.message||'Timer')}</div></div><button class="ma-item-del" data-timer-id="${t.id}" title="Delete">&times;</button></div>`})}
+      html+=`</div>`;$('maModalBody').innerHTML=html;wireMAModalEvents();
+      if(_maTimerInterval){clearInterval(_maTimerInterval);_maTimerInterval=null}
+      if(timers.length){_maTimerInterval=setInterval(()=>{if(!$('maModal').classList.contains('open')){clearInterval(_maTimerInterval);_maTimerInterval=null;return}
+        document.querySelectorAll('.ma-timer-countdown').forEach(el=>{const ends=new Date(el.dataset.ends).getTime(),rem=Math.max(0,ends-Date.now()),m=Math.floor(rem/60000),s=Math.floor((rem%60000)/1000);el.textContent=rem<=0?'Done':`${m}m ${s}s`})},1000)}
+    }
+    function loadMAWatchRefThumbs(){const grid=$('maModalBody')?.querySelector('#maWatchRefGrid');if(!grid)return;
+      (async()=>{try{const refs=await getWatchRefs();grid.innerHTML='';refs.forEach(ref=>{const thumb=document.createElement('div');thumb.className='watch-ref-thumb';
+        thumb.innerHTML=`<img src="${ref.data}"><button class="watch-ref-del" data-refid="${ref.id}">&times;</button>`;
+        thumb.querySelector('.watch-ref-del').addEventListener('click',async e=>{e.stopPropagation();await deleteWatchRef(ref.id);showToast('Reference removed','ok');loadMAWatchRefThumbs()});
+        grid.appendChild(thumb)})}catch{}})()}
+    function wireMAModalEvents(){const body=$('maModalBody');
+      body.querySelectorAll('.ma-gesture-btn').forEach(b=>b.addEventListener('click',()=>{const enabled=b.dataset.gesture==='true';const k2=getK();k2.gestureEnabled=enabled;setK(k2);renderMAModal();
+        if(enabled){startGestureTracking();$('clawToggle').classList.add('on')}else{stopGestureTracking();$('clawToggle').classList.remove('on','recording')}}));
+      body.querySelector('#maGestureConf')?.addEventListener('input',e=>{const el=body.querySelector('#maGestConfVal');if(el)el.textContent=e.target.value});
+      body.querySelector('#maGestureConf')?.addEventListener('change',e=>{const k2=getK();k2.gestureConfidence=+e.target.value;setK(k2);showToast(`Gesture confidence: ${e.target.value}`,'ok')});
+      body.querySelectorAll('.ma-book-btn').forEach(b=>b.addEventListener('click',()=>{const k2=getK();k2.bookGestureResearch=b.dataset.bookres;setK(k2);renderMAModal();showToast(`Open Book → /${b.dataset.bookres}`,'ok')}));
+      body.querySelectorAll('.ma-pl-toggle').forEach(b=>b.addEventListener('click',()=>{const on=b.dataset.pl==='true';const k2=getK();k2.photoLogEnabled=on;setK(k2);renderMAModal();if(on)startPhotoLog();else stopPhotoLog()}));
+      body.querySelectorAll('.ma-pl-cam').forEach(b=>b.addEventListener('click',()=>{const k2=getK();k2.photoLogCamera=b.dataset.cam;setK(k2);renderMAModal();if(k2.photoLogEnabled){stopPhotoLog();startPhotoLog()}}));
+      body.querySelector('#maPlInterval')?.addEventListener('input',e=>{const el=body.querySelector('#maPlIntVal');if(el)el.textContent=e.target.value+'s'});
+      body.querySelector('#maPlInterval')?.addEventListener('change',e=>{const k2=getK();k2.photoLogInterval=+e.target.value;setK(k2);showToast(`Capture interval: ${e.target.value}s`,'ok');if(k2.photoLogEnabled){stopPhotoLog();startPhotoLog()}});
+      body.querySelectorAll('.ma-pl-frames').forEach(b=>b.addEventListener('click',()=>{const k2=getK();k2.photoLogFrames=+b.dataset.frames;setK(k2);renderMAModal();showToast(`Frames per collage: ${b.dataset.frames}`,'ok')}));
+      body.querySelectorAll('.ma-wm-toggle').forEach(b=>b.addEventListener('click',()=>{const on=b.dataset.wm==='true';const k2=getK();k2.watchModeEnabled=on;setK(k2);renderMAModal();if(on)startWatchMode();else stopWatchMode()}));
+      body.querySelectorAll('.ma-wm-cam').forEach(b=>b.addEventListener('click',()=>{const k2=getK();k2.watchModeCamera=b.dataset.cam;setK(k2);renderMAModal();if(k2.watchModeEnabled){stopWatchMode();startWatchMode()}}));
+      body.querySelector('#maWmPromptSave')?.addEventListener('click',()=>{const val=body.querySelector('#maWmPrompt').value;const k2=getK();k2.watchModePrompt=val;setK(k2);showToast('Watch prompt saved','ok')});
+      body.querySelector('#maWmRate')?.addEventListener('input',e=>{const el=body.querySelector('#maWmRateVal');if(el)el.textContent=e.target.value+'min'});
+      body.querySelector('#maWmRate')?.addEventListener('change',e=>{const k2=getK();k2.watchModeRateLimit=+e.target.value;setK(k2);showToast(`Rate limit: ${e.target.value}min`,'ok')});
+      body.querySelector('#maWmSens')?.addEventListener('input',e=>{const el=body.querySelector('#maWmSensVal');if(el)el.textContent=e.target.value});
+      body.querySelector('#maWmSens')?.addEventListener('change',e=>{const k2=getK();k2.watchModeSensitivity=+e.target.value;setK(k2);showToast(`Sensitivity: ${e.target.value}`,'ok')});
+      const refDrop=body.querySelector('#maWatchRefDrop'),refFile=body.querySelector('#maWatchRefFile');
+      if(refDrop){refDrop.addEventListener('click',()=>refFile?.click());refDrop.addEventListener('dragover',e=>{e.preventDefault();refDrop.classList.add('dragover')});refDrop.addEventListener('dragleave',()=>refDrop.classList.remove('dragover'));
+        refDrop.addEventListener('drop',async e=>{e.preventDefault();refDrop.classList.remove('dragover');const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));for(const f of files)await addWatchRef(f);loadMAWatchRefThumbs()})}
+      refFile?.addEventListener('change',async e=>{for(const f of e.target.files)await addWatchRef(f);loadMAWatchRefThumbs()});loadMAWatchRefThumbs();
+      body.querySelectorAll('.ma-item-del[data-alarm-id]').forEach(b=>b.addEventListener('click',()=>{removeAlarm(b.dataset.alarmId);renderMAModal();renderCronBar()}));
+      body.querySelectorAll('.ma-item-del[data-timer-id]').forEach(b=>b.addEventListener('click',()=>{removeTimer(b.dataset.timerId);renderMAModal();renderCronBar()}))}
 
     function renderSheetContent(){
       const k=getK();
@@ -2645,105 +2879,6 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           </div>
         </div>`;
       }
-
-      // Gesture Control — The Claw + Open Book
-      const gestureOn=k.gestureEnabled===true;
-      const bookResearch=k.bookGestureResearch||'research';
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Gesture Control</div>
-        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
-          <button class="mode-btn gesture-mode-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
-          <button class="mode-btn gesture-mode-btn ${!gestureOn?'active':''}" data-gesture="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gestureOn?'var(--teal)':'transparent'};border:none;color:${!gestureOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
-        </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Hand gestures for voice control. Wireframes only appear for recognized gestures.</div>
-        ${gestureOn?`<div style="margin-top:10px">
-          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">The Claw</div>
-          <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Show The Claw (one hand) to start voice capture. Lower your hand to send.</div>
-          <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="gestConfVal">${k.gestureConfidence||0.5}</span></div>
-          <input type="range" id="sheetGestureConf" min="0.25" max="0.95" step="0.05" value="${k.gestureConfidence||0.5}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
-          <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive, higher = more precise</div>
-          <div style="margin-top:14px">
-            <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Open Book</div>
-            <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Hold two open hands together like an open book to start voice research. Lower hands to send.</div>
-            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:4px">Research Type</div>
-            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-              <button class="mode-btn book-research-btn ${bookResearch==='research'?'active':''}" data-bookres="research" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='research'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='research'?'#fff':'var(--text-3)'};cursor:pointer">Research</button>
-              <button class="mode-btn book-research-btn ${bookResearch==='deepresearch'?'active':''}" data-bookres="deepresearch" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='deepresearch'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='deepresearch'?'#fff':'var(--text-3)'};cursor:pointer">Deep Research</button>
-            </div>
-          </div>
-        </div>`:''}
-      </div>`;
-
-      // Security Overwatch
-      const plOn=k.photoLogEnabled===true;
-      const plCam=k.photoLogCamera||'user';
-      const plInt=k.photoLogInterval||5;
-      const plFrames=k.photoLogFrames||12;
-      const wmOn=k.watchModeEnabled===true;
-      const wmCam=k.watchModeCamera||'user';
-      const wmPrompt=k.watchModePrompt||'';
-      const wmRate=k.watchModeRateLimit||30;
-      const wmSens=k.watchModeSensitivity||0.05;
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Security Overwatch</div>
-        <div style="font-size:10px;color:var(--text-3);margin-bottom:10px">Camera-based monitoring. Photo Log captures periodic snapshots for AI summary. Watch Mode alerts on faces/motion.</div>
-        <div style="margin-bottom:12px">
-          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Photo Log</div>
-          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:8px">
-            <button class="mode-btn ow-pl-toggle ${plOn?'active':''}" data-pl="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${plOn?'var(--teal)':'transparent'};border:none;color:${plOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
-            <button class="mode-btn ow-pl-toggle ${!plOn?'active':''}" data-pl="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!plOn?'var(--teal)':'transparent'};border:none;color:${!plOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
-          </div>
-          ${plOn?`<div style="margin-bottom:6px">
-            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Camera</div>
-            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-              <button class="mode-btn ow-pl-cam ${plCam==='user'?'active':''}" data-cam="user" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plCam==='user'?'var(--teal)':'transparent'};border:none;color:${plCam==='user'?'#fff':'var(--text-3)'};cursor:pointer">Front</button>
-              <button class="mode-btn ow-pl-cam ${plCam==='environment'?'active':''}" data-cam="environment" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plCam==='environment'?'var(--teal)':'transparent'};border:none;color:${plCam==='environment'?'#fff':'var(--text-3)'};cursor:pointer">Back</button>
-            </div>
-          </div>
-          <div style="margin-bottom:6px">
-            <div style="display:flex;justify-content:space-between"><div style="font-size:10px;font-weight:500;color:var(--text-2)">Capture Interval</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="plIntVal">${plInt}s</span></div>
-            <input type="range" id="sheetPlInterval" min="3" max="10" step="1" value="${plInt}" style="width:100%;margin-top:3px;accent-color:var(--teal)">
-          </div>
-          <div>
-            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Frames per Collage</div>
-            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-              ${[6,9,12].map(n=>`<button class="mode-btn ow-pl-frames ${plFrames===n?'active':''}" data-frames="${n}" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plFrames===n?'var(--teal)':'transparent'};border:none;color:${plFrames===n?'#fff':'var(--text-3)'};cursor:pointer">${n}</button>`).join('')}
-            </div>
-          </div>`:''}
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Watch Mode</div>
-          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:8px">
-            <button class="mode-btn ow-wm-toggle ${wmOn?'active':''}" data-wm="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${wmOn?'var(--teal)':'transparent'};border:none;color:${wmOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
-            <button class="mode-btn ow-wm-toggle ${!wmOn?'active':''}" data-wm="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!wmOn?'var(--teal)':'transparent'};border:none;color:${!wmOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
-          </div>
-          ${wmOn?`<div style="margin-bottom:6px">
-            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Camera</div>
-            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-              <button class="mode-btn ow-wm-cam ${wmCam==='user'?'active':''}" data-cam="user" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${wmCam==='user'?'var(--teal)':'transparent'};border:none;color:${wmCam==='user'?'#fff':'var(--text-3)'};cursor:pointer">Front</button>
-              <button class="mode-btn ow-wm-cam ${wmCam==='environment'?'active':''}" data-cam="environment" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${wmCam==='environment'?'var(--teal)':'transparent'};border:none;color:${wmCam==='environment'?'#fff':'var(--text-3)'};cursor:pointer">Back</button>
-            </div>
-          </div>
-          <div style="margin-bottom:6px">
-            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Custom Prompt</div>
-            <textarea class="sheet-textarea" id="sheetWmPrompt" placeholder="e.g. Notify me if you see a girl with blonde hair; otherwise ignore" style="min-height:48px;font-size:10px">${esc(wmPrompt)}</textarea>
-            <button class="btn btn-teal btn-sm" id="sheetWmPromptSave" style="margin-top:4px">Save Prompt</button>
-          </div>
-          <div style="margin-bottom:6px">
-            <div style="display:flex;justify-content:space-between"><div style="font-size:10px;font-weight:500;color:var(--text-2)">Rate Limit</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="wmRateVal">${wmRate}min</span></div>
-            <input type="range" id="sheetWmRate" min="5" max="60" step="5" value="${wmRate}" style="width:100%;margin-top:3px;accent-color:var(--teal)">
-          </div>
-          <div style="margin-bottom:8px">
-            <div style="display:flex;justify-content:space-between"><div style="font-size:10px;font-weight:500;color:var(--text-2)">Sensitivity</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="wmSensVal">${wmSens}</span></div>
-            <input type="range" id="sheetWmSens" min="0.01" max="0.15" step="0.01" value="${wmSens}" style="width:100%;margin-top:3px;accent-color:var(--teal)">
-            <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive to motion</div>
-          </div>
-          <div style="margin-bottom:6px">
-            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:3px">Reference Photos (max 10)</div>
-            <div class="watch-ref-drop" id="watchRefDrop">Drop or tap to add reference photos</div>
-            <input type="file" id="watchRefFile" accept="image/*" multiple hidden>
-            <div class="watch-ref-grid" id="watchRefGrid"></div>
-          </div>`:''}
-        </div>
-      </div>`;
 
       // AI Configuration
       html+=`<div class="sheet-section"><div class="sheet-section-title">AI Configuration</div>
@@ -3084,99 +3219,6 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         showToast(val?'Password set (hashed)':'Password removed','ok');
       });
 
-
-      // Wire up gesture control toggle
-      $('sheetBody').querySelectorAll('.gesture-mode-btn').forEach(b=>b.addEventListener('click',()=>{
-        const enabled=b.dataset.gesture==='true';
-        const k2=getK();k2.gestureEnabled=enabled;setK(k2);
-        renderSheetContent();
-        if(enabled){startGestureTracking();$('clawToggle').classList.add('on')}else stopGestureTracking();
-      }));
-      // Gesture confidence slider
-      $('sheetBody').querySelector('#sheetGestureConf')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#gestConfVal');if(el)el.textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetGestureConf')?.addEventListener('change',e=>{
-        const k2=getK();k2.gestureConfidence=+e.target.value;setK(k2);showToast(`Gesture confidence: ${e.target.value}`,'ok');
-      });
-      // Book gesture research type toggle
-      $('sheetBody').querySelectorAll('.book-research-btn').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.bookGestureResearch=b.dataset.bookres;setK(k2);
-        renderSheetContent();
-        showToast(`Open Book → /${b.dataset.bookres}`,'ok');
-      }));
-
-      // Wire up Security Overwatch — Photo Log
-      $('sheetBody').querySelectorAll('.ow-pl-toggle').forEach(b=>b.addEventListener('click',()=>{
-        const on=b.dataset.pl==='true';
-        const k2=getK();k2.photoLogEnabled=on;setK(k2);
-        renderSheetContent();
-        if(on)startPhotoLog();else stopPhotoLog();
-      }));
-      $('sheetBody').querySelectorAll('.ow-pl-cam').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.photoLogCamera=b.dataset.cam;setK(k2);
-        renderSheetContent();
-        if(k2.photoLogEnabled){stopPhotoLog();startPhotoLog()}
-      }));
-      $('sheetBody').querySelector('#sheetPlInterval')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#plIntVal');if(el)el.textContent=e.target.value+'s';
-      });
-      $('sheetBody').querySelector('#sheetPlInterval')?.addEventListener('change',e=>{
-        const k2=getK();k2.photoLogInterval=+e.target.value;setK(k2);showToast(`Capture interval: ${e.target.value}s`,'ok');
-        if(k2.photoLogEnabled){stopPhotoLog();startPhotoLog()}
-      });
-      $('sheetBody').querySelectorAll('.ow-pl-frames').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.photoLogFrames=+b.dataset.frames;setK(k2);
-        renderSheetContent();
-        showToast(`Frames per collage: ${b.dataset.frames}`,'ok');
-      }));
-      // Wire up Security Overwatch — Watch Mode
-      $('sheetBody').querySelectorAll('.ow-wm-toggle').forEach(b=>b.addEventListener('click',()=>{
-        const on=b.dataset.wm==='true';
-        const k2=getK();k2.watchModeEnabled=on;setK(k2);
-        renderSheetContent();
-        if(on)startWatchMode();else stopWatchMode();
-      }));
-      $('sheetBody').querySelectorAll('.ow-wm-cam').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.watchModeCamera=b.dataset.cam;setK(k2);
-        renderSheetContent();
-        if(k2.watchModeEnabled){stopWatchMode();startWatchMode()}
-      }));
-      $('sheetBody').querySelector('#sheetWmPromptSave')?.addEventListener('click',()=>{
-        const val=$('sheetBody').querySelector('#sheetWmPrompt').value;
-        const k2=getK();k2.watchModePrompt=val;setK(k2);showToast('Watch prompt saved','ok');
-      });
-      $('sheetBody').querySelector('#sheetWmRate')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#wmRateVal');if(el)el.textContent=e.target.value+'min';
-      });
-      $('sheetBody').querySelector('#sheetWmRate')?.addEventListener('change',e=>{
-        const k2=getK();k2.watchModeRateLimit=+e.target.value;setK(k2);showToast(`Rate limit: ${e.target.value}min`,'ok');
-      });
-      $('sheetBody').querySelector('#sheetWmSens')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#wmSensVal');if(el)el.textContent=e.target.value;
-      });
-      $('sheetBody').querySelector('#sheetWmSens')?.addEventListener('change',e=>{
-        const k2=getK();k2.watchModeSensitivity=+e.target.value;setK(k2);showToast(`Sensitivity: ${e.target.value}`,'ok');
-      });
-      // Watch ref drop zone + file input
-      const refDrop=$('sheetBody').querySelector('#watchRefDrop');
-      const refFile=$('sheetBody').querySelector('#watchRefFile');
-      if(refDrop){
-        refDrop.addEventListener('click',()=>refFile?.click());
-        refDrop.addEventListener('dragover',e=>{e.preventDefault();refDrop.classList.add('dragover')});
-        refDrop.addEventListener('dragleave',()=>refDrop.classList.remove('dragover'));
-        refDrop.addEventListener('drop',async e=>{
-          e.preventDefault();refDrop.classList.remove('dragover');
-          const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
-          for(const f of files)await addWatchRef(f);
-          loadWatchRefThumbs();
-        });
-      }
-      refFile?.addEventListener('change',async e=>{
-        for(const f of e.target.files)await addWatchRef(f);
-        loadWatchRefThumbs();
-      });
-      loadWatchRefThumbs();
 
       $('sheetBody').querySelector('#sheetAudioVolume')?.addEventListener('input',e=>{
         const v=applyPlaybackVolume(e.target.value,false);
@@ -4414,7 +4456,8 @@ Multi-device: each TealClaw instance has a unique device ID + name + location (s
 Alarms: \`\`\`tc-action\n{"type":"alarm","time":"15:00","message":"Check the oven"}\n\`\`\` Creates a one-time alarm. Time in HH:MM (24h). Auto-detects today vs tomorrow. source is set to 'agent' — when it fires, you'll be notified via pipeline.
 Timers: \`\`\`tc-action\n{"type":"timer","duration":"5m","message":"Pizza is ready"}\n\`\`\` Starts a countdown timer. Duration supports "30s", "5m", "1h30m", or seconds as number. source:'agent' — you'll be notified on expiry.
 Cron jobs: \`\`\`tc-action\n{"type":"cron","title":"Morning Briefing","message":"Give me a briefing","times":["09:00"],"recurring":true,"days":["mon","tue","wed","thu","fri"],"action":"pipeline"}\n\`\`\` Creates a scheduled job. action can be: pipeline (send to you), research, deepresearch, imagine, snap, notify. Requires user approval. source:'agent' — you're notified when it fires.
-User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /chron /alarm /timer /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza")
+Pomodoro: \`\`\`tc-action\n{"type":"pomodoro","duration":25,"breakDuration":5,"rounds":4,"tasks":["Task 1","Task 2"]}\n\`\`\` Starts a Pomodoro focus timer with task checklist. You're notified on phase changes (focus_start, break_start) and completion. Control: {"type":"pomodoro","action":"pause|resume|stop"}.
+User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /chron /alarm /timer /pomodoro /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus with voice personas: Trey (troy, hype & real), Axel (austin, hacker), Dean (daniel, professional), Haven (hannah, chill vibes), Vera (autumn, nerd), Diane (diana, executive). Each persona has a distinct personality that colors responses. Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
 GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
@@ -5707,7 +5750,7 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -7259,7 +7302,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron','pomodoro']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -7647,6 +7690,22 @@ Rules:
               results.push({type:'cron',ok:true,id:cJob.id,title:cTitle});
               break;
             }
+            case 'pomodoro':{
+              if(action.action==='stop'){endPomodoro('Stopped by agent')}
+              else if(action.action==='pause'){pausePomodoro()}
+              else if(action.action==='resume'){resumePomodoro()}
+              else{
+                startPomodoro({
+                  tasks:(action.tasks||[]).map(t=>typeof t==='string'?{text:t,done:false}:t),
+                  duration:action.duration||25,
+                  breakDuration:action.breakDuration||5,
+                  totalRounds:action.rounds||4,
+                  source:'agent'
+                });
+              }
+              results.push({type:'pomodoro',ok:true});
+              break;
+            }
           }
         }catch(e){results.push({type:action.type,ok:false,error:e.message})}
       }
@@ -8010,6 +8069,164 @@ Rules:
       timers.forEach(t=>scheduleTimer(t));
     }
 
+    // ── Pomodoro Timer ────────────────────────────────────
+    let _pomoInterval=null;
+    function getPomodoro(){return getK().pomodoro||null}
+    function setPomodoro(p){const k=getK();if(p)k.pomodoro=p;else delete k.pomodoro;setK(k)}
+
+    function startPomodoro(config){
+      if(_pomoInterval){clearInterval(_pomoInterval);_pomoInterval=null}
+      const id='pomo-'+Date.now();
+      const pomo={
+        id,
+        tasks:(config.tasks||[]).map(t=>typeof t==='string'?{text:t,done:false}:t),
+        phase:'focus',
+        timeLeft:(config.duration||25)*60,
+        duration:config.duration||25,
+        breakDuration:config.breakDuration||5,
+        round:1,
+        totalRounds:config.totalRounds||4,
+        paused:false,
+        source:config.source||'local'
+      };
+      setPomodoro(pomo);
+      renderPomodoroBanner();
+      $('pomodoroBanner')?.classList.remove('hidden');
+      _pomoInterval=setInterval(tickPomodoro,1000);
+      renderCronBar();
+      showToast(`Pomodoro started: ${pomo.duration}m focus`,'ok');
+      haptic('success');
+      sysBubble(`<div style="border-left:3px solid #ef4444;padding:6px 10px;font-size:12px"><strong style="color:#ef4444">Pomodoro</strong> Round ${pomo.round}/${pomo.totalRounds} — ${pomo.duration}m focus${pomo.tasks.length?' ('+pomo.tasks.length+' tasks)':''}</div>`);
+      notifyPomoAgent('focus_start',`Round ${pomo.round}/${pomo.totalRounds} started — ${pomo.duration}m focus`);
+    }
+
+    function tickPomodoro(){
+      const pomo=getPomodoro();
+      if(!pomo||pomo.paused)return;
+      pomo.timeLeft--;
+      if(pomo.timeLeft<=0){
+        if(pomo.phase==='focus'){
+          if(pomo.round>=pomo.totalRounds){
+            setPomodoro(pomo);
+            endPomodoro('All rounds completed!');
+            return;
+          }
+          pomo.phase='break';
+          pomo.timeLeft=pomo.breakDuration*60;
+          setPomodoro(pomo);
+          renderPomodoroBanner();
+          renderCronBar();
+          playAlarmSound();haptic('success');
+          showToast('Break time!','ok');
+          sysBubble(`<div style="border-left:3px solid #22c55e;padding:6px 10px;font-size:12px"><strong style="color:#22c55e">Break</strong> ${pomo.breakDuration}m break — round ${pomo.round}/${pomo.totalRounds} complete</div>`);
+          notifyPomoAgent('break_start',`Round ${pomo.round} done — ${pomo.breakDuration}m break`);
+        } else {
+          pomo.phase='focus';
+          pomo.round++;
+          pomo.timeLeft=pomo.duration*60;
+          setPomodoro(pomo);
+          renderPomodoroBanner();
+          renderCronBar();
+          playAlarmSound();haptic('success');
+          showToast(`Round ${pomo.round} — Focus!`,'ok');
+          sysBubble(`<div style="border-left:3px solid #ef4444;padding:6px 10px;font-size:12px"><strong style="color:#ef4444">Focus</strong> Round ${pomo.round}/${pomo.totalRounds} — ${pomo.duration}m</div>`);
+          notifyPomoAgent('focus_start',`Round ${pomo.round}/${pomo.totalRounds} started`);
+        }
+      } else {
+        setPomodoro(pomo);
+        renderPomodoroBanner();
+        // Update pill countdown in cronbar
+        const pill=document.querySelector('.pomo-pill .pomo-cd');
+        if(pill)pill.textContent=fmtPomoCd(pomo.timeLeft);
+      }
+    }
+
+    function pausePomodoro(){
+      const pomo=getPomodoro();if(!pomo)return;
+      pomo.paused=true;setPomodoro(pomo);
+      renderPomodoroBanner();
+      showToast('Pomodoro paused','ok');
+    }
+    function resumePomodoro(){
+      const pomo=getPomodoro();if(!pomo)return;
+      pomo.paused=false;setPomodoro(pomo);
+      renderPomodoroBanner();
+      showToast('Pomodoro resumed','ok');
+    }
+    function skipPomoPhase(){
+      const pomo=getPomodoro();if(!pomo)return;
+      pomo.timeLeft=0;setPomodoro(pomo);
+      tickPomodoro();
+    }
+    function endPomodoro(reason){
+      const pomo=getPomodoro();
+      if(_pomoInterval){clearInterval(_pomoInterval);_pomoInterval=null}
+      $('pomodoroBanner')?.classList.add('hidden');
+      if(pomo){
+        const doneCount=pomo.tasks.filter(t=>t.done).length;
+        const summary=`Pomodoro complete! ${pomo.round} round${pomo.round>1?'s':''}, ${doneCount}/${pomo.tasks.length} tasks done.`;
+        sysBubble(`<div style="border-left:3px solid #ef4444;padding:6px 10px;font-size:12px"><strong style="color:#ef4444">Pomodoro Done</strong> ${esc(reason||summary)}</div>`);
+        notifyPomoAgent('completed',reason||summary);
+        playAlarmSound();haptic('success');
+      }
+      setPomodoro(null);
+      renderCronBar();
+      if(reason)showToast(reason,'ok');
+    }
+    function togglePomoTask(index){
+      const pomo=getPomodoro();if(!pomo||!pomo.tasks[index])return;
+      pomo.tasks[index].done=!pomo.tasks[index].done;
+      setPomodoro(pomo);
+      renderPomodoroBanner();
+      notifyPomoAgent('task_checked',`Task "${pomo.tasks[index].text}" ${pomo.tasks[index].done?'completed':'unchecked'}`);
+    }
+    function renderPomodoroBanner(){
+      const pomo=getPomodoro();if(!pomo)return;
+      const timerEl=$('pomoTimer');
+      const phaseEl=$('pomoPhase');
+      const tasksEl=$('pomoTasks');
+      const pauseBtn=$('pomoPauseBtn');
+      if(timerEl){
+        const m=Math.floor(pomo.timeLeft/60);
+        const s=pomo.timeLeft%60;
+        timerEl.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      }
+      if(phaseEl){
+        phaseEl.textContent=pomo.phase==='focus'?'Focus':'Break';
+        phaseEl.className='pomo-phase '+(pomo.phase==='focus'?'focus':'break');
+      }
+      if(pauseBtn)pauseBtn.textContent=pomo.paused?'Resume':'Pause';
+      if(tasksEl){
+        tasksEl.innerHTML=pomo.tasks.map((t,i)=>
+          `<div class="pomo-task${t.done?' done':''}" data-pomo-task="${i}"><span class="pomo-task-check">${t.done?'✓':''}</span><span>${esc(t.text)}</span></div>`
+        ).join('');
+      }
+    }
+    function fmtPomoCd(sec){
+      if(sec>=3600)return Math.floor(sec/3600)+'h'+String(Math.floor((sec%3600)/60)).padStart(2,'0')+'m';
+      if(sec>=60)return Math.floor(sec/60)+'m'+String(sec%60).padStart(2,'0')+'s';
+      return sec+'s';
+    }
+    function notifyPomoAgent(event,message){
+      const pomo=getPomodoro();
+      if(!pomo||pomo.source==='local')return;
+      const k=getK();
+      if(k.mode==='agent'){
+        const ag=getActiveAgent();
+        const conn=ag?agentConnections.get(ag.id):null;
+        if(conn&&conn.connected)pipeline(`[Pomodoro: ${event}] ${message}`);
+      }
+    }
+    function restorePomodoro(){
+      const pomo=getPomodoro();
+      if(!pomo)return;
+      $('pomodoroBanner')?.classList.remove('hidden');
+      renderPomodoroBanner();
+      if(!pomo.paused){
+        _pomoInterval=setInterval(tickPomodoro,1000);
+      }
+    }
+
     // ── Alarm Checker ───────────────────────────────────
     function checkAlarms(){
       const alarms=getAlarms();
@@ -8117,7 +8334,7 @@ Rules:
       const alarms=getAlarms();
       const timers=getTimers();
       const jobs=getCronJobs();
-      if(!alarms.length&&!timers.length&&!jobs.length&&!gwConnected){bar.classList.add('hidden');if(_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}return}
+      if(!alarms.length&&!timers.length&&!jobs.length&&!gwConnected&&!getPomodoro()){bar.classList.add('hidden');if(_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}return}
       bar.classList.remove('hidden');
       const pills=$('cronPills');
       pills.innerHTML='';
@@ -8160,6 +8377,22 @@ Rules:
         });
         pills.appendChild(el);
       });
+      // Pomodoro pill (tomato red)
+      const pomo=getPomodoro();
+      if(pomo){
+        const pel=document.createElement('div');
+        pel.className='cron-pill pomo-pill';
+        const cdTxt=fmtPomoCd(pomo.timeLeft);
+        const phaseIcon=pomo.phase==='focus'?'🍅':'☕';
+        pel.innerHTML=`<span class="cron-pill-dot on"></span>${phaseIcon} <span class="pomo-cd">${cdTxt}</span> R${pomo.round}/${pomo.totalRounds}${pomo.paused?' ⏸':''}<span class="cron-pill-x" data-pomo-cancel="1">&times;</span>`;
+        pel.addEventListener('click',e=>{
+          if(e.target.dataset.pomoCancel){e.stopPropagation();endPomodoro('Cancelled');return}
+          e.stopPropagation();
+          const banner=$('pomodoroBanner');
+          if(banner)banner.classList.toggle('hidden');
+        });
+        pills.appendChild(pel);
+      }
       // Timer countdown interval
       if(timers.length&&!_timerPillInterval){
         _timerPillInterval=setInterval(()=>{
@@ -8434,6 +8667,119 @@ Time format: HH:MM (24h). Days: mon,tue,wed,thu,fri,sat,sun.`+TC_CORE_POLICY;
     }
 
     $('chronCancelBtn')?.addEventListener('click',()=>endChronWizard('Cron setup cancelled.'));
+
+    // ── /pomodoro Wizard ──────────────────────────────────
+    let _pomoWizardActive=false,_pomoWizardTimeout=null,_pomoHistory=[];
+
+    const POMO_WIZARD_PROMPT=`You are TealClaw's Pomodoro setup wizard. Help the user plan a focus session with a task checklist.
+
+Gather the following conversationally:
+1. What do they want to focus on? Help break it into 2-5 checklist tasks.
+2. Focus duration (default 25 minutes). Suggest a duration based on the tasks.
+3. Break duration (default 5 minutes).
+4. Number of rounds (default 4).
+
+Be brief and encouraging. After gathering info, output a JSON block:
+
+\`\`\`tc-pomo-create
+{"duration":25,"breakDuration":5,"rounds":4,"tasks":["Task 1","Task 2","Task 3"]}
+\`\`\`
+
+If the user wants to cancel, output:
+\`\`\`tc-pomo-cancel
+\`\`\`
+
+Keep tasks short and actionable. Duration in minutes. Rounds 1-8.`+TC_CORE_POLICY;
+
+    function startPomoWizard(initialMsg){
+      _pomoWizardActive=true;
+      _pomoHistory=[{role:'system',content:POMO_WIZARD_PROMPT}];
+      $('pomoWizardBanner')?.classList.remove('hidden');
+      resetPomoWizardTimeout();
+      if(initialMsg){
+        _pomoHistory.push({role:'user',content:initialMsg});
+        pomoWizardCall();
+      } else {
+        _pomoHistory.push({role:'user',content:'I want to start a Pomodoro focus session.'});
+        pomoWizardCall();
+      }
+    }
+
+    function resetPomoWizardTimeout(){
+      if(_pomoWizardTimeout)clearTimeout(_pomoWizardTimeout);
+      _pomoWizardTimeout=setTimeout(()=>endPomoWizard('Wizard timed out (2 min). No session created.'),120000);
+    }
+
+    async function pomoWizardCall(){
+      const k=getK();
+      const key=k.whisperKey||k.aiKey;
+      if(!key){endPomoWizard('No Groq API key configured.');return}
+      addTyping();
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:_pomoHistory,temperature:0.3,max_tokens:800})
+        });
+        removeTyping();
+        if(!res.ok)throw new Error(`API ${res.status}`);
+        const data=await res.json();
+        const reply=data.choices?.[0]?.message?.content||'';
+        _pomoHistory.push({role:'assistant',content:reply});
+
+        const createMatch=reply.match(/```tc-pomo-create\s*([\s\S]*?)```/);
+        if(createMatch){
+          try{
+            const cfg=JSON.parse(createMatch[1].trim());
+            startPomodoro({
+              duration:cfg.duration||25,
+              breakDuration:cfg.breakDuration||5,
+              totalRounds:cfg.rounds||4,
+              tasks:(cfg.tasks||[]).map(t=>({text:t,done:false})),
+              source:'wizard'
+            });
+            const cleanReply=reply.replace(/```tc-pomo-create[\s\S]*?```/,'').trim();
+            if(cleanReply)sysBubble(`<div class="md-content">${renderMd(cleanReply)}</div>`);
+            endPomoWizard(null);
+          }catch(e){
+            sysBubble(`<div class="md-content">${renderMd(reply)}</div>`);
+          }
+          return;
+        }
+
+        if(reply.includes('```tc-pomo-cancel')){
+          endPomoWizard('Pomodoro setup cancelled.');
+          return;
+        }
+
+        sysBubble(`<div class="md-content">${renderMd(reply)}</div>`);
+      }catch(e){
+        removeTyping();
+        endPomoWizard('Error: '+e.message);
+      }
+    }
+
+    function endPomoWizard(reason){
+      _pomoWizardActive=false;
+      _pomoHistory=[];
+      if(_pomoWizardTimeout){clearTimeout(_pomoWizardTimeout);_pomoWizardTimeout=null}
+      $('pomoWizardBanner')?.classList.add('hidden');
+      if(reason)showToast(reason,'ok');
+    }
+
+    $('pomoWizardCancelBtn')?.addEventListener('click',()=>endPomoWizard('Pomodoro setup cancelled.'));
+
+    // Pomodoro banner button wiring
+    $('pomoPauseBtn')?.addEventListener('click',()=>{
+      const pomo=getPomodoro();if(!pomo)return;
+      if(pomo.paused)resumePomodoro();else pausePomodoro();
+    });
+    $('pomoSkipBtn')?.addEventListener('click',()=>skipPomoPhase());
+    $('pomoCancelBtn')?.addEventListener('click',()=>endPomodoro('Cancelled'));
+    $('pomoTasks')?.addEventListener('click',e=>{
+      const taskEl=e.target.closest('[data-pomo-task]');
+      if(taskEl)togglePomoTask(parseInt(taskEl.dataset.pomoTask));
+    });
 
     // ── /alarm & /timer AI Parsers ─────────────────────
     const ALARM_PARSE_PROMPT=`You extract alarm time and message from natural language. The current date/time is provided as context.
@@ -8875,6 +9221,16 @@ Return ONLY valid JSON, no explanation.`;
         return;
       }
 
+      // Pomodoro wizard intercept
+      if(_pomoWizardActive&&!text.startsWith('/')){
+        addBubble('user',text);
+        if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
+        _pomoHistory.push({role:'user',content:text});
+        resetPomoWizardTimeout();
+        pomoWizardCall();
+        return;
+      }
+
       // Check if it's an API key being pasted
       if(text&&!firstImage&&handleChatKey(text))return;
 
@@ -8919,6 +9275,7 @@ ${agentNote}`);
         else if(/^alarm\b/i.test(text))text='/alarm'+text.slice(5);
         else if(/^timer\b/i.test(text))text='/timer'+text.slice(5);
         else if(/^chron\b/i.test(text))text='/chron'+text.slice(5);
+        else if(/^pomodoro\b/i.test(text))text='/pomodoro '+text.replace(/^pomodoro\s*/i,'');
         else if(/^deep\s*(?:re)?search\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s*(?:re)?search\s+/i,'');
         else if(/^(imagine|(?:re)?search|deep(?:re)?search)\s/i.test(text))text='/'+text;
         // Natural language image generation intent → /imagine
@@ -8936,7 +9293,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -8980,6 +9337,8 @@ ${agentNote}`);
 <li><code>/chron</code> -- AI-guided cron job setup wizard (voice: "chron...")</li>
 <li><code>/alarm [time] [message]</code> -- set an alarm (voice: "alarm 3pm check oven")</li>
 <li><code>/timer [duration] [message]</code> -- set a countdown timer (voice: "timer 5 minutes pizza")</li>
+<li><code>/pomodoro 25m task1, task2</code> -- quick-start Pomodoro with tasks (voice: "pomodoro...")</li>
+<li><code>/pomodoro</code> -- AI-guided Pomodoro setup wizard</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -9025,6 +9384,23 @@ ${agentNote}`);
           const tk=getK();
           if(!(tk.whisperKey||tk.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           handleTimerCommand(timerArg);
+          return;
+        }
+        if(cmd==='/pomodoro'||cmd.startsWith('/pomodoro ')){
+          const pomoArg=text.slice(9).trim();
+          const durMatch=pomoArg.match(/^(\d+)\s*m(?:in)?\s+(.*)/i);
+          if(durMatch){
+            const dur=parseInt(durMatch[1]);
+            const tasks=durMatch[2].split(',').map(t=>t.trim()).filter(Boolean);
+            startPomodoro({duration:dur,tasks:tasks.map(t=>({text:t,done:false})),source:'local'});
+          } else if(pomoArg&&pomoArg.includes(',')){
+            const tasks=pomoArg.split(',').map(t=>t.trim()).filter(Boolean);
+            startPomodoro({tasks:tasks.map(t=>({text:t,done:false})),source:'local'});
+          } else {
+            const pk=getK();
+            if(!(pk.whisperKey||pk.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+            startPomoWizard(pomoArg||null);
+          }
           return;
         }
         if(cmd.startsWith('/groq ')||cmd.startsWith('/groq\n')){
@@ -12016,6 +12392,7 @@ ${agentNote}`);
 
     // Cron jobs + scheduled messages + alarms + timers — check every 60s
     reconstitueTimers();
+    restorePomodoro();
     checkCronJobs();
     setInterval(checkCronJobs,60000);
     renderCronBar();
@@ -12578,12 +12955,6 @@ ${agentNote}`);
       lastGesture='';gestureRecording=false;gestureGoneTime=0;clawDetectStart=0;
     }
 
-    // Auto-start claw mode if previously enabled
-    if(getK().gestureEnabled===true){
-      startGestureTracking();
-      $('clawToggle').classList.add('on');
-    }
-
     // ── Service Worker + Update Notification ──────────
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('/sw.js').then(reg=>{
@@ -12698,6 +13069,8 @@ ${agentNote}`);
     // ── Escape key closes overlays/sheets ──────────────
     document.addEventListener('keydown',e=>{
       if(e.key!=='Escape')return;
+      const maModal=document.querySelector('.ma-modal.open');
+      if(maModal){closeMAModal();e.preventDefault();return}
       const sheet=document.querySelector('.sheet.open');
       if(sheet){closeSheet();e.preventDefault();return}
       const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.cam-overlay:not(.hidden),.gif-overlay:not(.hidden),.cron-modal:not(.hidden)');
@@ -12705,12 +13078,6 @@ ${agentNote}`);
       const search=document.querySelector('.search-bar.open');
       if(search){search.classList.remove('open');e.preventDefault();return}
     });
-
-    // ── Auto-restore Overwatch modes on page load ─────
-    {const _k=getK();
-      if(_k.photoLogEnabled)setTimeout(()=>startPhotoLog(),2000);
-      if(_k.watchModeEnabled)setTimeout(()=>startWatchMode(),2500);
-    }
 
     // ── Standalone mode back gesture handling ─────────
     const isStandalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
