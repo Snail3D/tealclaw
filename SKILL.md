@@ -9,6 +9,7 @@ req=required  opt=optional  dflt=default  fn=function
 ===
 
 BYOK voice dashboard PWA at tealclaw.ai. Zero server, total privacy, Cloudflare Pages.
+Auto-connects to `gw.tealclaw.ai` on first visit (zero-config). Users just paste a Groq key to start.
 
 ## For AI Agents: How to Configure TC
 
@@ -551,6 +552,8 @@ Bare k auto-detection:
 - Single HTML file -- no build step
 - SW for offline PWA
 - All API keys in browser LS
+- Auto-provisions gateway token from `gw.tealclaw.ai` on first visit (zero-config)
+- Stateless HMAC tokens (`tc1.*`) -- no database, no accounts
 - Skill guide: `/llms.txt` (raw), `/llms.html` (copy btn)
 - Stats: `/stats.html` (Cloudflare Analytics via Pages Function)
 

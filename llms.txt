@@ -39,7 +39,19 @@ Usr must click Accept to apply. The JSON stays visible in chat.
 
 ## First-Time Setup
 
-When someone sets up TC for the first time:
+**Auto-provisioned users (most common):** TC auto-connects to the public
+gateway at `gw.tealclaw.ai` on first visit. No signup, no token pasting.
+The usr just needs to paste a Groq key (`gsk_...`) to unlock voice + chat.
+If auto-provisioning worked, `tc-agents` in localStorage will contain an
+agent with id `tealclaw-public`. These users see a simplified onboarding.
+
+**For auto-provisioned users:**
+1. They already have a gateway connection -- focus on getting them a Groq key
+2. Ask what they want TC to feel like -- colors, persona, voice
+3. Build a cfg JSON with their preferences (no agent/mode fields needed)
+4. Offer proactively: PIN code, quick reply btns, profiles, research tool
+
+**For manual setup users (own OpenClaw gateway):**
 
 1. Ask what they want TC to feel like -- developer? student? parent?
    playful or professional? dark or light? favorite color?
@@ -1045,16 +1057,23 @@ settings, quick replies. Regenerate their full cfg from memory on new devices.
 ## Architecture
 
 ```
-Browser --(WebSocket)--> OpenClaw Gateway (agent mode, preferred)
-Browser --(HTTPS)------> OR/GQ/AP (chat completions, direct mode)
-Browser --(HTTPS)------> GQ Whisper (voice transcription)
-Browser --(HTTPS)------> GQ Orpheus (TTS)
-Browser --(HTTPS)------> OpenClaw Gateway (HTTP fallback for non-WS agents)
-Browser --(HTTPS)------> TG Bot API (msg forwarding)
+Browser --(POST /connect)--> gw.tealclaw.ai (auto-provision token on first visit)
+Browser --(WebSocket)------> OpenClaw Gateway (agent mode, preferred)
+Browser --(HTTPS)----------> OR/GQ/AP (chat completions, direct mode)
+Browser --(HTTPS)----------> GQ Whisper (voice transcription)
+Browser --(HTTPS)----------> GQ Orpheus (TTS)
+Browser --(HTTPS)----------> OpenClaw Gateway (HTTP fallback for non-WS agents)
+Browser --(HTTPS)----------> TG Bot API (msg forwarding)
 ```
 
 No server-side processing. tealclaw.ai serves only static files.
 All API keys stay in usr's browser LS.
+
+**Auto-provisioning flow:** On first visit with no agents configured, TC
+calls `POST https://gw.tealclaw.ai/connect` to get a stateless HMAC token
+(`tc1.*`). Token stored in `tc-agents` as the `tealclaw-public` agent.
+No signup, no database -- tokens are cryptographic signatures verified on
+the gateway. Users bring their own API key (BYOK) for AI calls.
 
 
 ## Agent Mode Setup (OpenClaw Gateway)
@@ -1062,7 +1081,18 @@ All API keys stay in usr's browser LS.
 Agent mode routes all chat through an OpenClaw gateway instead of calling
 provider APIs directly. This enables shared context across channels.
 
-### CRITICAL: Agent URLs MUST be HTTPS via Cloudflare Tunnel
+### Auto-Provisioned Gateway (Default)
+
+New users auto-connect to `gw.tealclaw.ai` on first visit. A stateless
+HMAC token is provisioned via `POST /connect` -- no signup needed. The
+token is stored locally as the `tealclaw-public` agent. Users only need
+to paste a Groq key (`gsk_...`) to unlock voice + chat. The auto-provisioned
+agent has restricted scopes (`webchat.send`) and per-token rate limiting.
+
+Users who want full tool access (builder agents, commands, etc.) should
+connect their own OpenClaw gateway via Settings > Agent > Add Agent.
+
+### Custom Gateway: Agent URLs MUST be HTTPS via Cloudflare Tunnel
 
 TealClaw is served from `https://tealclaw.ai`. Browsers **block mixed
 content** (HTTPS page -> HTTP request). This means:
