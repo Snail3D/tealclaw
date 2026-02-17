@@ -282,6 +282,19 @@
     .drag-overlay-text{font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px}
     .drag-overlay-hint{font-size:12px;color:var(--text-2)}
 
+    /* ── Export Modal ──────────────────────────────── */
+    .export-modal{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+    .export-modal.hidden{display:none}
+    .export-modal-card{background:var(--bg-1);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+    .export-modal-card h3{margin:0 0 4px;font-size:16px;color:var(--text)}
+    .export-modal-card p{margin:0 0 16px;font-size:12px;color:var(--text-2)}
+    .export-modal-card label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;padding:6px 0}
+    .export-modal-card label input[type="checkbox"]{accent-color:var(--teal);width:16px;height:16px}
+    .export-modal-card label.disabled{opacity:0.4;cursor:default}
+    .conv-dropdown-export{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--bg-input);border:1px solid var(--border);cursor:pointer;color:var(--text-2);transition:all var(--t);flex-shrink:0}
+    .conv-dropdown-export:hover{background:var(--teal-dim);color:var(--teal);border-color:var(--teal)}
+    .conv-dropdown-export svg{width:14px;height:14px}
+
     /* ── Voice-Only Chat Mode ───────────────────────── */
     .voice-mode-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;transition:opacity 0.3s}
     .voice-mode-overlay.hidden{display:none}
@@ -801,6 +814,14 @@
     .builder-log-line[data-stream="stderr"]{color:var(--err)}
     .builder-log-line[data-stream="tool.invoke"]{color:var(--teal)}
     .builder-log-line[data-stream="lifecycle"]{color:var(--warn)}
+    .builder-summary{padding:8px 12px;font-family:var(--sans);font-size:12px;line-height:1.5;color:var(--text)}
+    .builder-summary-text{cursor:pointer;padding:4px 0}
+    .builder-summary-text:hover{color:var(--teal)}
+    .builder-raw-details{margin-top:6px}
+    .builder-raw-details summary{font-size:10px;color:var(--text-3);cursor:pointer;user-select:none}
+    .builder-raw-details summary:hover{color:var(--text-2)}
+    .digest-toggle{background:none;border:none;color:var(--text-3);font-size:10px;cursor:pointer;padding:0 4px;font-family:var(--font);opacity:0.7;transition:opacity var(--t)}
+    .digest-toggle:hover{opacity:1;color:var(--teal)}
 
     /* ── WS / Transport Status ────────────────────────── */
     .pill-transport{font-size:8px;font-weight:600;opacity:0.7;margin-left:2px;text-transform:uppercase}
@@ -1081,7 +1102,12 @@
     <div class="conv-dropdown" id="convDropdown">
       <div class="conv-dropdown-header">
         <span class="conv-dropdown-header-title">Conversations</span>
-        <button class="conv-dropdown-new" id="convDropdownNew">+ New Chat</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="conv-dropdown-export" id="convDropdownExport" title="Export conversation (JSON)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <button class="conv-dropdown-new" id="convDropdownNew">+ New Chat</button>
+        </div>
       </div>
       <div class="conv-search"><input type="text" id="convSearchInput" placeholder="Search all conversations..." aria-label="Search conversations"></div>
       <div class="conv-list" id="convList"></div>
@@ -1157,6 +1183,20 @@
       <div class="drag-overlay-icon">+</div>
       <div class="drag-overlay-text">Drop files here</div>
       <div class="drag-overlay-hint">Images, PDFs, documents, code files</div>
+    </div>
+  </div>
+
+  <!-- ═══ Export Modal ═══ -->
+  <div class="export-modal hidden" id="exportModal">
+    <div class="export-modal-card">
+      <h3>Export Conversation</h3>
+      <p>Plain JSON — drag into any TealClaw to import</p>
+      <label><input type="checkbox" id="exportIncludeConfig"> Include settings (no API keys)</label>
+      <label class="disabled"><input type="checkbox" id="exportIncludeKeys" disabled> Include API keys</label>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-ghost" id="exportModalCancel">Cancel</button>
+        <button class="btn btn-teal" id="exportModalGo">Export</button>
+      </div>
     </div>
   </div>
 
@@ -1763,6 +1803,11 @@
     $('convTitle').addEventListener('click',toggleConvDropdown);
     $('newChatBtn').addEventListener('click',()=>newConversation());
     $('convDropdownNew').addEventListener('click',()=>{closeConvDropdown();newConversation()});
+    $('convDropdownExport')?.addEventListener('click',e=>{
+      e.stopPropagation();
+      closeConvDropdown();
+      openExportModal();
+    });
     // Conversation search
     let _convSearchTimer;
     $('convSearchInput').addEventListener('input',e=>{
@@ -2085,9 +2130,7 @@
       const keys=[
         {label:'Groq Key',desc:'Chat + vision + voice + TTS (free)',field:'whisperKey',val:k.whisperKey,link:'https://console.groq.com/keys',linkText:'Get key',prefix:'gsk_'},
 
-        {label:'Image Gen Key',desc:'Google AI or OpenRouter — /imagine',field:'imageGenKey',val:k.imageGenKey,link:'https://aistudio.google.com/apikey',linkText:'Get key',prefix:'AIza'},
-        {label:'Telegram Bot Token',desc:k.tgToken&&k.tgEnabled?'Active':'Forward messages to Telegram',field:'tgToken',val:k.tgToken,link:'https://t.me/BotFather',linkText:'Create bot'},
-        {label:'Telegram Chat ID',desc:'Your user or group ID',field:'tgChatId',val:k.tgChatId,link:'https://t.me/userinfobot',linkText:'Get ID'}
+        {label:'Image Gen Key',desc:'Google AI or OpenRouter — /imagine',field:'imageGenKey',val:k.imageGenKey,link:'https://aistudio.google.com/apikey',linkText:'Get key',prefix:'AIza'}
       ];
 
       // Connected Services summary
@@ -2096,7 +2139,6 @@
         {name:'Voice In',active:!!k.whisperKey},
         {name:'Voice Out',active:hasTTS()},
         {name:'Image Gen',active:!!(k.imageGenKey||k.imageGenUrl)},
-        {name:'Telegram',active:!!(k.tgToken&&k.tgEnabled)},
         {name:'GIF',active:k.gifEnabled!==false},
         {name:'Agent',active:!!getAgents().length},
         {name:'LaTeX',active:true}
@@ -2454,6 +2496,7 @@
 
       // Actions
       html+=`<div class="sheet-section">
+        <button class="sheet-btn sheet-btn-ghost" id="sheetExportJSON" style="margin-bottom:8px">Export Conversation (JSON)</button>
         <button class="sheet-btn sheet-btn-ghost" id="sheetClearChat" style="margin-bottom:8px">Clear Chat History</button>
         <button class="sheet-btn sheet-btn-danger" id="sheetWipeKeys">Clear All Keys &amp; Reset</button>
       </div>`;
@@ -2692,6 +2735,9 @@
       $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
 
       // Wire up actions
+      $('sheetBody').querySelector('#sheetExportJSON')?.addEventListener('click',()=>{
+        closeSheet();openExportModal();
+      });
       $('sheetBody').querySelector('#sheetClearChat')?.addEventListener('click',()=>{
         chatHistory=[];setChat([]);renderChat();closeSheet();showToast('Chat cleared','ok');
       });
@@ -3386,13 +3432,14 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       const ck=getK();
       const hasTts=hasTTS(ck)&&ttsMode!=='off';
       s.innerHTML=chatHistory.map((m,i)=>{
+        const displayText=(m.rawText&&m._showRaw)?m.rawText:m.text;
         let content='';
         if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
         if(m.role==='ai'){
-          if(m.raw)content+=m.text;
+          if(m.raw)content+=displayText;
           else{
             // Parse tc-ui component blocks before rendering markdown
-            const{cleanText:tcClean,components}=parseTcComponents(m.text);
+            const{cleanText:tcClean,components}=parseTcComponents(displayText);
             const cleanText=stripExprTags(tcClean);
             let rendered=renderMd(cleanText);rendered=renderLatex(rendered);
             content+=`<div class="md-content">${rendered}</div>`;
@@ -3406,7 +3453,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
             }}catch{}}
           }
         } else {
-          content+=esc(m.text);
+          content+=esc(displayText);
         }
         // Action badge for messages that executed tc-action blocks
         if(m.actionsRun)content+=`<div class="tc-action-badge">\u26A1 ${m.actionsRun} action${m.actionsRun>1?'s':''} executed</div>`;
@@ -3425,7 +3472,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const actionsHtml=`<div class="chat-actions"><button class="chat-action-btn share-msg-btn" data-idx="${i}" title="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>${editBtn}${delBtn}${obsBtn}</div>`;
         const avatarUrl=m.role==='user'?ck.userAvatar:ck.aiAvatar;
         const deviceBadge=m.device?`<span style="font-size:8px;background:var(--bg-2);padding:1px 5px;border-radius:100px;color:var(--text-3);margin-left:4px">${esc(m.device)}</span>`:'';
-        const metaHtml=`<div class="chat-meta"><span>${m.time||''}</span>${deviceBadge}${fmtTokens(m.usage)}</div>`;
+        const digestBtn=(m.rawText&&m.rawText!==m.text)?` <button class="digest-toggle" onclick="toggleDigest(${i})">${m._showRaw?'View summary':'View original'}</button>`:'';
+        const metaHtml=`<div class="chat-meta"><span>${m.time||''}</span>${deviceBadge}${digestBtn}${fmtTokens(m.usage)}</div>`;
         if(avatarUrl){
           return `<div class="chat-bubble-wrap ${m.role}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${actionsHtml}${content}${metaHtml}</div></div>`;
         }
@@ -3555,6 +3603,12 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
           renderChat();
         }
       }));
+    }
+
+    function toggleDigest(idx){
+      const m=chatHistory[idx];if(!m||!m.rawText)return;
+      m._showRaw=!m._showRaw;
+      setChat(chatHistory);renderChat();
     }
 
     function addBubble(role,text,extra={}){
@@ -3916,6 +3970,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
         handleRemoteChatSync(payload);
       });
       conn.start().then(hello=>{
+        agentContext.agentName=agent.name||'';
         updateStatus();
         if(hello.server?.version)console.log(`[OpenClaw] Connected to ${agent.name} v${hello.server.version}`);
       }).catch(e=>{
@@ -3981,6 +4036,48 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     let builderLastActivity=0;
     let builderInactiveTimer=null;
 
+    // ── Groq Narrator Layer ──────────────────────────────
+    const agentContext={
+      agentName:'',
+      recentEvents:[],  // last ~30 builder events {stream,text,ts,runId}
+      activeRuns:new Map(),
+      lastDigest:0
+    };
+
+    function groqShouldDigest(text){
+      if(!text||text.length<200)return false;
+      if((text.match(/```/g)||[]).length>=4)return true;
+      if(text.length>800&&text.split('\n').length>15)return true;
+      if(/\[tool:|Tool result:|<tool_result>|executed_results/i.test(text))return true;
+      return false;
+    }
+
+    async function groqDigest(rawText,mode){
+      const k=getK();
+      const apiKey=k.whisperKey||k.aiKey;
+      if(!apiKey)return rawText;
+      const ctxSummary=agentContext.recentEvents.slice(-10)
+        .map(e=>`[${e.stream}] ${e.text}`).join('\n');
+      const sysPrompts={
+        chat:`You are a narrator translating technical agent output into clean, conversational language. The user is chatting with an AI agent named "${agentContext.agentName||'their agent'}". Simplify verbose technical output (tool calls, code dumps, logs) into a clear summary of what happened and the actual answer. Keep the tone friendly and concise. If there's a direct answer buried in the output, lead with it. Preserve any important data/numbers. Do NOT add fluff or commentary about yourself.`,
+        builder:`Summarize this agent builder activity into 1-2 sentences. Say what the agent did and the result. Be specific but brief. Example: "Built a login page with email/password form and validation." or "Searched 3 APIs and found the cheapest flight for $247."`
+      };
+      const msgs=[
+        {role:'system',content:sysPrompts[mode]},
+        ...(ctxSummary?[{role:'user',content:`Recent agent activity for context:\n${ctxSummary}`}]:[]),
+        {role:'user',content:`${mode==='chat'?'Agent response':'Builder run log'}:\n${rawText.slice(0,4000)}`}
+      ];
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,max_tokens:1024})
+        });
+        const d=await res.json();
+        return d.choices?.[0]?.message?.content||rawText;
+      }catch{return rawText}
+    }
+
     function handleAgentEvent(payload,conn){
       if(!payload||!payload.runId)return;
       const{runId,seq,stream,ts,data}=payload;
@@ -3995,11 +4092,17 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       // Detect lifecycle end
       if(stream==='lifecycle'&&data?.event==='end'){
         run.state='done';
+        // Generate Groq summary for completed run
+        const runLog=run.lines.map(l=>l.text).join('\n');
+        run.summary='Summarizing...';
+        groqDigest(runLog,'builder').then(s=>{run.summary=s;renderBuilderPanel()}).catch(()=>{run.summary='';renderBuilderPanel()});
         setTimeout(()=>{if(builderRuns.has(runId)&&run.state==='done'){builderRuns.delete(runId);if(activeBuilderRun===runId)activeBuilderRun=builderRuns.keys().next().value||null;renderBuilderTabs();renderBuilderPanel()}},5000);
       }
       // Append log line
       const text=data?.text||data?.message||data?.tool||data?.event||(typeof data==='string'?data:JSON.stringify(data));
       run.lines.push({stream:stream||'stdout',text:text||'',ts});
+      agentContext.recentEvents.push({stream:stream||'stdout',text:text||'',ts,runId});
+      if(agentContext.recentEvents.length>30)agentContext.recentEvents.shift();
       builderLastActivity=Date.now();
       clearTimeout(builderInactiveTimer);
       builderInactiveTimer=setTimeout(()=>{
@@ -4047,8 +4150,13 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       const run=builderRuns.get(activeBuilderRun);
       $('builderPanelTitle').textContent=run.label+(run.state==='done'?' (done)':'');
       const log=$('builderPanelLog');
-      log.innerHTML=run.lines.map(l=>`<div class="builder-log-line" data-stream="${esc(l.stream)}">${esc(l.text)}</div>`).join('');
-      log.scrollTop=log.scrollHeight;
+      const rawHtml=run.lines.map(l=>`<div class="builder-log-line" data-stream="${esc(l.stream)}">${esc(l.text)}</div>`).join('');
+      if(run.state==='done'&&run.summary){
+        log.innerHTML=`<div class="builder-summary"><div class="builder-summary-text">${esc(run.summary)}</div><details class="builder-raw-details"><summary>Raw log (${run.lines.length} lines)</summary>${rawHtml}</details></div>`;
+      }else{
+        log.innerHTML=rawHtml;
+        log.scrollTop=log.scrollHeight;
+      }
       // Show/hide stop button
       const stopBtn=$('builderPanelStop');
       if(stopBtn)stopBtn.style.display=run.state==='running'?'':'none';
@@ -4067,6 +4175,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     function disconnectAgent(agentId){
       const conn=agentConnections.get(agentId);
       if(conn){conn.stop();agentConnections.delete(agentId)}
+      agentContext.agentName='';agentContext.recentEvents=[];
     }
 
     function getAgentTransport(agent){
@@ -4521,11 +4630,12 @@ tc-action blocks let you control TealClaw directly:
 Examples:
 \`\`\`tc-action {"type":"video-grid","title":"Cameras","cols":2,"feeds":[{"url":"...","label":"Front Door"},{"url":"...","label":"Backyard"}]} \`\`\`
 \`\`\`tc-action {"type":"gallery","title":"Photos","images":[{"url":"...","caption":"View"}]} \`\`\`
-Gateway: wss:// via Cloudflare Tunnel or ws://localhost:18789.
+Gateway: HTTPS only via Cloudflare Tunnel (e.g. https://gw.yourdomain.com). Agent URLs MUST be HTTPS -- browsers block mixed content from HTTPS pages. Never use http://, raw IPs, or localhost.
+To connect TealClaw: {"mode":"agent","agents":[{"id":"home","name":"Home","url":"https://gw.yourdomain.com","token":"YOUR_TOKEN","active":true}]}
 Token: openclaw config get gateway.token</code><span style="position:absolute;bottom:4px;right:8px;font-size:10px;color:var(--text-3)">click to copy</span></pre>
 <p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> In TealClaw Settings → Agent Mode, add your gateway:</p>
 <ul style="font-size:12px;margin:4px 0">
-<li><strong>URL:</strong> <code>https://gw.yourdomain.com</code> (Cloudflare Tunnel) or <code>ws://localhost:18789</code> (local)</li>
+<li><strong>URL:</strong> <code>https://gw.yourdomain.com</code> (HTTPS via Cloudflare Tunnel — required)</li>
 <li><strong>Token:</strong> run <code>openclaw config get gateway.token</code> and paste it</li>
 </ul>
 <hr>
@@ -5616,6 +5726,152 @@ Rules:
       }
     }
 
+    // ── Portable JSON Export/Import ─────────────────────
+    const SENSITIVE_KEYS = new Set(['aiKey','whisperKey','tgToken','tgChatId','imageGenKey','pinHash','pinIsAlpha','pinLen','pinRequired']);
+
+    function compressImageDataUrl(dataUrl){
+      if(!dataUrl||!dataUrl.startsWith('data:image'))return Promise.resolve(dataUrl);
+      const TARGET_BYTES=100*1024;
+      // Already small enough
+      if(dataUrl.length*0.75<=TARGET_BYTES)return Promise.resolve(dataUrl);
+      return new Promise(resolve=>{
+        const img=new Image();
+        img.onload=()=>{
+          let w=img.width,h=img.height;
+          const canvas=document.createElement('canvas');
+          const ctx=canvas.getContext('2d');
+          function tryCompress(dim,q){
+            let tw=w,th=h;
+            if(tw>dim||th>dim){const s=Math.min(dim/tw,dim/th);tw=Math.round(tw*s);th=Math.round(th*s)}
+            canvas.width=tw;canvas.height=th;
+            ctx.drawImage(img,0,0,tw,th);
+            return canvas.toDataURL('image/jpeg',q);
+          }
+          let result=tryCompress(1568,0.75);
+          if(result.length*0.75>TARGET_BYTES)result=tryCompress(1024,0.65);
+          if(result.length*0.75>TARGET_BYTES)result=tryCompress(800,0.55);
+          if(result.length*0.75>TARGET_BYTES)result=tryCompress(640,0.45);
+          resolve(result);
+        };
+        img.onerror=()=>resolve(dataUrl);
+        img.src=dataUrl;
+      });
+    }
+
+    async function exportConvJSON(includeConfig,includeKeys){
+      try{
+        const id=getActiveConvId();
+        const record=await ConvDB.get(id).catch(()=>null);
+        const msgs=(record?.messages||chatHistory).map(m=>({...m}));
+        // Compress images
+        for(const m of msgs){
+          if(m.image)m.image=await compressImageDataUrl(m.image);
+        }
+        const payload={
+          tealclaw:'conversation',
+          version:1,
+          exportedAt:Date.now(),
+          conversation:{
+            id:id||genConvId(),
+            title:record?.title||'Chat',
+            messages:msgs
+          },
+          config:null
+        };
+        if(includeConfig){
+          const k={...getK()};
+          if(!includeKeys){
+            for(const s of SENSITIVE_KEYS)delete k[s];
+          }
+          // Strip agent tokens unless keys included
+          if(k.agents||getAgents().length){
+            const agents=getAgents().map(a=>{
+              const copy={...a};
+              if(!includeKeys){delete copy.token;delete copy.gwToken}
+              return copy;
+            });
+            k.agents=agents;
+          }
+          payload.config=k;
+        }
+        const json=JSON.stringify(payload,null,2);
+        const blob=new Blob([json],{type:'application/json'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        const name=(record?.title||'chat').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,40);
+        a.href=url;
+        a.download=`${name}-${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+        showToast('Conversation exported','ok');
+        haptic('success');
+      }catch(e){
+        showToast('Export failed: '+String(e),'err');
+      }
+    }
+
+    function openExportModal(){
+      const modal=$('exportModal');
+      const configCb=$('exportIncludeConfig');
+      const keysCb=$('exportIncludeKeys');
+      configCb.checked=false;
+      keysCb.checked=false;
+      keysCb.disabled=true;
+      keysCb.closest('label').classList.add('disabled');
+      modal.classList.remove('hidden');
+    }
+    function closeExportModal(){
+      $('exportModal').classList.add('hidden');
+    }
+    // Wire export modal
+    $('exportIncludeConfig').addEventListener('change',e=>{
+      const keysCb=$('exportIncludeKeys');
+      keysCb.disabled=!e.target.checked;
+      keysCb.closest('label').classList.toggle('disabled',!e.target.checked);
+      if(!e.target.checked)keysCb.checked=false;
+    });
+    $('exportModalCancel').addEventListener('click',closeExportModal);
+    $('exportModalGo').addEventListener('click',()=>{
+      closeExportModal();
+      exportConvJSON($('exportIncludeConfig').checked,$('exportIncludeKeys').checked);
+    });
+    $('exportModal').addEventListener('click',e=>{
+      if(e.target===$('exportModal'))closeExportModal();
+    });
+
+    async function importConvJSON(payload){
+      try{
+        if(payload.tealclaw!=='conversation'||!payload.conversation?.messages){
+          showToast('Invalid conversation file','err');return;
+        }
+        const conv=payload.conversation;
+        const newId=genConvId();
+        const msgs=conv.messages||[];
+        // Save current conversation first
+        const curId=getActiveConvId();
+        if(curId)await ConvDB.save(curId,chatHistory).catch(()=>{});
+        // Store imported conversation
+        await ConvDB.save(newId,msgs).catch(()=>{});
+        if(conv.title)await ConvDB.rename(newId,conv.title).catch(()=>{});
+        // Apply config if present
+        if(payload.config){
+          importConfig(payload.config);
+          applyVisualConfig();updateStatus();renderAgentSelector();
+        }
+        // Switch to imported conversation
+        setActiveConvId(newId);
+        chatHistory=msgs;
+        localStorage.setItem('tc-chat',JSON.stringify(chatHistory));
+        renderChat();
+        updateConvTitle(conv.title||'Imported Chat');
+        renderConvDropdown();
+        if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
+        showToast(`Imported ${msgs.length} messages`,'ok');
+        haptic('success');
+      }catch(e){
+        showToast('Import failed: '+String(e),'err');
+      }
+    }
+
     // ── Profiles ─────────────────────────────────────────
     function handleProfile(arg){
       const k=getK();
@@ -6497,7 +6753,13 @@ Rules:
             const query=gifQuery||autoDetectGif(displayText);
             if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
           }
+          // Groq narrator: digest verbose agent output
+          let rawText=null;
+          if(groqShouldDigest(displayText)){
+            try{rawText=displayText;displayText=await groqDigest(displayText,'chat')}catch{}
+          }
           chatHistory[streamIdx].text=displayText;
+          if(rawText&&rawText!==displayText)chatHistory[streamIdx].rawText=rawText;
           if(tcActions.length)chatHistory[streamIdx].actionsRun=tcActions.length;
           if(aiUsage)chatHistory[streamIdx].usage=aiUsage;
           setChat(chatHistory);renderChat();
@@ -6773,6 +7035,7 @@ ${agentNote}`);
 <li><code>/deepresearch [query]</code> -- deep multi-tool research (works by voice: "deepresearch...")</li>
 <li><code>/imagine [prompt]</code> -- generate an image (attach a photo to edit/remix it; works by voice: "imagine...")</li>
 <li><code>/export</code> -- export current chat (encrypted JSON, re-importable)</li>
+<li><code>/export json</code> -- export as portable JSON (drag-droppable)</li>
 <li><code>/export all</code> -- export all conversations (encrypted JSON)</li>
 <li><code>/export md</code> -- download chat as markdown (for reading)</li>
 <li><code>/profile save|load|list|delete name</code> -- manage config profiles</li>
@@ -7000,6 +7263,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         }
         if(text.startsWith('/export')){
           const exportArg=text.slice(7).trim().toLowerCase();
+          if(exportArg==='json'){openExportModal();return}
           if(exportArg==='md'){exportChat();return}
           if(exportArg==='all'){exportConversations(true);return}
           exportConversations(false);return;
@@ -7520,6 +7784,10 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             // Encrypted conversation import
             if(cfg.tealclaw==='encrypted-export'&&cfg.data){
               showConvImportPrompt(cfg.data);
+              return;
+            }
+            if(cfg.tealclaw==='conversation'&&cfg.conversation){
+              importConvJSON(cfg);
               return;
             }
             const recognized=Object.keys(CONFIG_KEYS);

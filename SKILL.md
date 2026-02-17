@@ -204,9 +204,9 @@ Browsers block mixed content (HTTPS page -> HTTP request). NEVER use `http://` U
 raw IPs (`http://100.x.x.x:18789`), or `http://localhost`. Use a **Cloudflare Tunnel**
 to expose your gateway with a proper HTTPS domain (e.g. `https://gw.yourdomain.com`).
 
-**Transport**: WebSocket (wss://) preferred. URLs auto-convert (https->wss, http->ws).
-WebSocket bypasses CORS/PNA restrictions for private network access.
-Falls back to HTTP (OpenAI-compatible) for non-OpenClaw gateways.
+**Transport**: WebSocket (wss://) preferred. HTTPS URLs auto-convert to wss://.
+WebSocket bypasses CORS/PNA restrictions.
+Falls back to HTTPS (OpenAI-compatible) for non-OpenClaw gateways.
 
 **Switching to Agent mode**: Config MUST include `"mode": "agent"` alongside `agents` array.
 Without `"mode": "agent"`, agents get saved but TealClaw stays in direct mode.

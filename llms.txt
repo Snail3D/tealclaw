@@ -1097,15 +1097,13 @@ cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
 
 ### Transport: WebSocket (preferred)
 
-TealClaw connects to OpenClaw gateways via **WebSocket** (wss://). This
-bypasses CORS and Private Network Access restrictions that block HTTP
-fetch from tealclaw.ai to private network addresses.
+TealClaw connects to OpenClaw gateways via **WebSocket** (wss://).
 
-- URLs are auto-converted: https:// -> wss://, http:// -> ws://
+- HTTPS URLs auto-convert to wss:// for the WebSocket connection
 - Full OpenClaw protocol: challenge/connect handshake, chat streaming,
   agent events, tick keepalive
 - Auto-reconnect with exponential backoff (1s -> 30s)
-- Falls back to HTTP (OpenAI-compatible) for non-OpenClaw gateways
+- Falls back to HTTPS (OpenAI-compatible) for non-OpenClaw gateways
 
 ### How to enable agent mode
 
