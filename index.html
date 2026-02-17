@@ -1000,7 +1000,7 @@
     <div class="guest-modal-card" id="guestModalCard"></div>
   </div>
 
-  <div class="overlay" id="overlay" style="cursor:pointer">
+  <div class="overlay hidden" id="overlay" style="cursor:pointer">
     <button class="overlay-btn" id="enableBtn" style="padding:20px 48px;font-size:16px;border-radius:var(--r-lg)">Enable Audio</button>
     <p class="overlay-hint" style="margin-top:12px;font-size:13px">Tap anywhere to enable voice</p>
   </div>
@@ -3649,19 +3649,15 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       audio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
       audio.play().catch(()=>{});
     }
-    // Tap anywhere on overlay to enable
-    $('overlay').addEventListener('click',enableAudio);
-    $('enableBtn').addEventListener('click',enableAudio);
     audio.volume=getConfiguredVolume();
 
     // Restore TTS mode from config (auto/on/off, default auto if TTS available)
     // Restore TTS mode: ttsMode > legacy ttsAutoPlay > default (auto if TTS available)
     {const _k=getK();ttsMode=_k.ttsMode||(_k.ttsAutoPlay===false?'on':(hasTTS()?'auto':'off'))}
 
-    // Auto-unlock audio context
-    if(hasTTS()||!('ontouchstart' in window)){enableAudio()}
+    // Silently unlock audio on first user interaction (no blocking overlay)
     ['touchstart','mousedown','keydown'].forEach(evt=>{
-      document.addEventListener(evt,function unlock(){ensureAudioCtx();document.removeEventListener(evt,unlock)},{once:true});
+      document.addEventListener(evt,function unlock(){enableAudio();document.removeEventListener(evt,unlock)},{once:true});
     });
 
     // TTS 3-state toggle: Auto → On → Off → Auto
