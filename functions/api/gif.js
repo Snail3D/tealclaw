@@ -1,0 +1,64 @@
+/**
+ * TealClaw GIF Proxy — Cloudflare Pages Function
+ *
+ * Proxies GIF search requests to Klipy using a server-side API key.
+ *
+ * Environment variables:
+ *   KLIPY_API_KEY — Klipy API key
+ */
+
+const CACHE_TTL = 300; // 5 minutes
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': `public, max-age=${CACHE_TTL}`,
+    },
+  });
+}
+
+export async function onRequest(context) {
+  const { request, env } = context;
+
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204 });
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  if (!env.KLIPY_API_KEY) return json({ error: 'GIF API not configured. Set KLIPY_API_KEY.' }, 503);
+
+  const reqUrl = new URL(request.url);
+  const q = (reqUrl.searchParams.get('q') || '').trim().slice(0, 80);
+  if (!q) return json({ url: null });
+
+  // Cache by normalized query
+  const cache = caches.default;
+  const cacheKey = new Request(new URL(`/api/gif/cached?q=${encodeURIComponent(q)}`, request.url), request);
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const upstream = new URL('https://api.klipy.com/v2/search');
+    upstream.searchParams.set('q', q);
+    upstream.searchParams.set('key', env.KLIPY_API_KEY);
+    upstream.searchParams.set('limit', '8');
+    upstream.searchParams.set('media_filter', 'gif');
+    upstream.searchParams.set('contentfilter', 'medium');
+
+    const res = await fetch(upstream.toString());
+    if (!res.ok) throw new Error(`Klipy API: ${res.status}`);
+
+    const data = await res.json();
+    const results = Array.isArray(data?.results) ? data.results : [];
+    if (!results.length) return json({ url: null });
+
+    const pick = results[Math.floor(Math.random() * results.length)];
+    const gifUrl = pick?.media_formats?.gif?.url || pick?.media_formats?.mediumgif?.url || null;
+
+    const response = json({ url: gifUrl });
+    context.waitUntil(cache.put(cacheKey, response.clone()));
+    return response;
+  } catch (err) {
+    return json({ error: err.message }, 500);
+  }
+}
+

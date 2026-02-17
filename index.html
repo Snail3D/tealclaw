@@ -231,8 +231,8 @@
     .send-btn.hidden{display:none}
     .send-btn.claw-active{background:#e04040;animation:claw-pulse 2s ease-in-out infinite}
     @keyframes claw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,64,64,0.4)}50%{box-shadow:0 0 0 8px rgba(224,64,64,0)}}
-    .claw-toggle{width:32px;height:32px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:transparent;color:var(--text-3);transition:all 0.25s;padding:0;margin-right:-4px}
-    .claw-toggle svg{width:20px;height:20px}
+    .claw-toggle{width:38px;height:38px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:transparent;color:var(--text-3);transition:all 0.25s;padding:0;margin-right:0}
+    .claw-toggle svg{width:24px;height:24px}
     .claw-toggle:hover{color:var(--text-2)}
     .claw-toggle.on{color:var(--teal)}
     .claw-toggle.on:hover{color:var(--teal-hover)}
@@ -409,14 +409,12 @@
     body.focus-visible .input-text:focus-visible{outline:none!important;box-shadow:none!important}
 
     /* ── GIF Overlay ──────────────────────────────────── */
-    .gif-overlay{position:fixed;bottom:80px;right:16px;z-index:400;max-width:280px;border-radius:var(--r-lg);overflow:hidden;background:var(--bg-2);box-shadow:0 4px 24px rgba(0,0,0,0.35);opacity:0;transform:translateY(12px) scale(0.95);transition:opacity 0.4s ease,transform 0.4s ease;pointer-events:auto;cursor:pointer}
-    .gif-overlay.hidden{opacity:0;transform:translateY(12px) scale(0.95);pointer-events:none}
-    .gif-overlay.visible{opacity:1;transform:translateY(0) scale(1)}
-    .gif-overlay.fade-out{opacity:0;transform:translateY(-8px) scale(0.97);transition:opacity 0.6s ease,transform 0.6s ease}
-    .gif-overlay img{width:100%;display:block;border-radius:var(--r-lg) var(--r-lg) 0 0;max-height:200px;object-fit:cover}
-    .gif-overlay .gif-text{padding:8px 12px;font-size:12px;color:var(--fg-2);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-    .gif-overlay .gif-attr{padding:0 12px 6px;font-size:8px;color:var(--fg-3);letter-spacing:0.03em;text-align:right}
-    @media(max-width:600px){.gif-overlay{bottom:70px;right:8px;max-width:200px}.gif-overlay img{max-height:140px}}
+    .gif-overlay{position:fixed;left:50%;top:22vh;transform:translateX(-50%);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 0.45s ease,visibility 0s linear 0.45s}
+    .gif-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .gif-overlay.visible{opacity:1;visibility:visible;transition:opacity 0.45s ease,visibility 0s linear 0s}
+    .gif-overlay.fade-out{opacity:0;visibility:hidden;transition:opacity 0.8s ease,visibility 0s linear 0.8s}
+    .gif-overlay img{width:100%;max-width:min(60vw,380px);max-height:50vh;border-radius:var(--r-lg);box-shadow:0 8px 30px rgba(0,0,0,0.45);object-fit:contain}
+    @media(max-width:700px){.gif-overlay{top:18vh}.gif-overlay img{max-width:68vw;max-height:42vh}}
 
     /* ── Config Apply Button (in-chat) ─────────────── */
     .config-apply-card{margin-top:10px;padding:10px 14px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.25);border-radius:var(--r-md);display:flex;align-items:center;gap:10px}
@@ -1000,8 +998,6 @@
   </div>
   <div class="gif-overlay hidden" id="gifOverlay">
     <img id="gifImg" src="" alt="">
-    <div class="gif-text" id="gifText"></div>
-    <div class="gif-attr">Powered by Klipy</div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="tc-notify" id="tcNotify"><div class="tc-notify-card" id="tcNotifyCard"></div></div>
@@ -1157,7 +1153,14 @@
       <div class="file-stack" id="fileStack"></div>
       <div class="input-row">
         <button class="claw-toggle" id="clawToggle" title="Toggle Claw mode" aria-label="Toggle Claw mode">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 9l2 3-2 3"/><path d="M16 9l-2 3 2 3"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 18c0-2 1.2-3.4 2.8-3.4S12.6 16 12.6 18"/>
+            <path d="M11.4 18c0-2 1.2-3.4 2.8-3.4S17 16 17 18"/>
+            <path d="M8.7 12.2l-1.9-4.6"/>
+            <path d="M12 11.2V6.1"/>
+            <path d="M15.3 12.2l1.9-4.6"/>
+            <path d="M6.4 20.1h11.2"/>
+          </svg>
         </button>
         <button class="circle-btn attach-btn" id="attachBtn" title="Attach file" aria-label="Attach file">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -4834,14 +4837,16 @@ RULES:
               else last.innerHTML='<div class="md-content">'+rendered+'<span class="typing-cursor"></span></div><div class="chat-meta">'+(chatHistory[streamIdx].time||'')+'</div>';
             }
             if(pk.autoScroll!==false)snapScrollToBottom(scroll2);
-          }).then(aiResult=>{
+          }).then(async aiResult=>{
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
             if(aiText==='__NO_KEY__'){chatHistory.pop();sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free direct chat</li></ul>`);return}
             let displayText=aiText||'How can I help you with TealClaw?';
             const{cleanText,actions}=parseTcActions(displayText);
-            if(actions.length){displayText=cleanText;executeTcActions(actions).catch(()=>{})}
+            let actionResults=[];
+            if(actions.length){displayText=cleanText;actionResults=await executeTcActions(actions).catch(()=>[])}
             chatHistory[streamIdx].text=displayText;
-            if(actions.length)chatHistory[streamIdx].actionsRun=actions.length;
+            const executed=actionResults.filter(r=>r&&r.ok).length;
+            if(executed)chatHistory[streamIdx].actionsRun=executed;
             setChat(chatHistory);renderChat();
           }).catch(()=>{
             removeTyping();
@@ -4849,14 +4854,16 @@ RULES:
           });
         } else {
           addTyping();
-          callAI(helpMsg,null).then(aiResult=>{
+          callAI(helpMsg,null).then(async aiResult=>{
             removeTyping();
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
             if(aiText==='__NO_KEY__'){sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free direct chat</li></ul>`);return}
             let displayText=aiText||'How can I help you with TealClaw?';
             const{cleanText,actions}=parseTcActions(displayText);
-            if(actions.length){displayText=cleanText;executeTcActions(actions).catch(()=>{})}
-            addBubble('ai',displayText,actions.length?{actionsRun:actions.length}:{});
+            let actionResults=[];
+            if(actions.length){displayText=cleanText;actionResults=await executeTcActions(actions).catch(()=>[])}
+            const executed=actionResults.filter(r=>r&&r.ok).length;
+            addBubble('ai',displayText,executed?{actionsRun:executed}:{});
           }).catch(()=>{removeTyping();sysBubble('<p>Could not reach the AI.</p>')});
         }
       }
@@ -5040,23 +5047,27 @@ ${getOptionalSteps()}`
 
     // ── GIF Overlay ──────────────────────────────────────
     let gifTimer=null;
+    let gifFadeTimer=null;
     async function searchGif(query){
-      const tenorKey='1TQ3cxujEzKzdgNolKzXtK2O5pZnZs7yBQMunwngVDQkljHF8YqQIkmdMyBRdRDi';
       if(!query)return null;
       try{
-        const q=encodeURIComponent(query.slice(0,80));
-        const res=await fetch(`https://api.klipy.com/v2/search?q=${q}&key=${tenorKey}&limit=8&media_filter=gif&contentfilter=medium`);
+        const q=encodeURIComponent(String(query).slice(0,80));
+        const res=await fetch(`/api/gif?q=${q}`);
         if(!res.ok)return null;
         const d=await res.json();
-        if(!d.results?.length)return null;
-        const pick=d.results[Math.floor(Math.random()*d.results.length)];
-        return pick.media_formats?.gif?.url||pick.media_formats?.mediumgif?.url||null;
+        return d.url||null;
       }catch{return null}
     }
 
     function parseGifTag(text){
-      const m=text.match(/\[gif:([^\]]+)\]/i);
-      if(m)return{cleanText:text.replace(m[0],'').trim(),gifQuery:m[1].trim()};
+      if(!text)return{cleanText:'',gifQuery:null};
+      // Accept [gif:query] and tolerate missing closing bracket ([gif:query)
+      const m=text.match(/\[gif:\s*([^\]\n]+)\]?/i);
+      if(m){
+        const gifQuery=(m[1]||'').trim().slice(0,80);
+        const cleanText=text.replace(m[0],'').replace(/\s{2,}/g,' ').trim();
+        return{cleanText,gifQuery:gifQuery||null};
+      }
       return{cleanText:text,gifQuery:null};
     }
 
@@ -5079,16 +5090,19 @@ ${getOptionalSteps()}`
       return null;
     }
 
-    function showGifOverlay(gifUrl,text){
-      const overlay=$('gifOverlay'),img=$('gifImg'),txt=$('gifText');
+    function showGifOverlay(gifUrl){
+      const overlay=$('gifOverlay'),img=$('gifImg');
+      if(!gifUrl)return;
+      if(gifTimer){clearTimeout(gifTimer);gifTimer=null}
+      if(gifFadeTimer){clearTimeout(gifFadeTimer);gifFadeTimer=null}
       img.src=gifUrl;
-      txt.textContent=text?.slice(0,120)||'';
+      // Restart animation cleanly when a new GIF arrives
       overlay.classList.remove('hidden','fade-out');
       // Trigger reflow so the transition actually fires
       void overlay.offsetWidth;
       overlay.classList.add('visible');
-      if(gifTimer)clearTimeout(gifTimer);
-      gifTimer=setTimeout(hideGifOverlay,8000);
+      // Visible window: 10s before fade out
+      gifFadeTimer=setTimeout(hideGifOverlay,10000);
     }
 
     function hideGifOverlay(){
@@ -5096,8 +5110,9 @@ ${getOptionalSteps()}`
       overlay.classList.remove('visible');
       overlay.classList.add('fade-out');
       if(gifTimer){clearTimeout(gifTimer);gifTimer=null}
+      if(gifFadeTimer){clearTimeout(gifFadeTimer);gifFadeTimer=null}
       // After fade-out transition completes, fully hide
-      setTimeout(()=>{overlay.classList.add('hidden');overlay.classList.remove('fade-out')},650);
+      gifTimer=setTimeout(()=>{overlay.classList.add('hidden');overlay.classList.remove('fade-out')},850);
     }
 
     $('gifOverlay').addEventListener('click',hideGifOverlay);
@@ -6189,19 +6204,55 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config']);
+
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
     // Parsed, executed, and stripped before display.
     function parseTcActions(text){
       const actions=[];
+      const stripBlocks=[];
       const re=/```tc-action\s*([\s\S]*?)```/g;
       let m;
       while((m=re.exec(text))!==null){
-        try{actions.push(JSON.parse(m[1].trim()))}catch(e){console.warn('tc-action parse failed:',e.message,m[1].trim().slice(0,200))}
+        try{
+          const obj=JSON.parse(m[1].trim());
+          if(obj&&typeof obj==='object'&&typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
+            actions.push(obj);
+            stripBlocks.push(m[0]);
+          }
+        }catch(e){console.warn('tc-action parse failed:',e.message,m[1].trim().slice(0,200))}
       }
-      const cleanText=text.replace(/```tc-action\s*[\s\S]*?```/g,'').trim();
+      // Help mode fallback: some models ignore the tc-action fence and emit plain JSON.
+      if(_helpMode&&!actions.length){
+        const altRe=/```(?:json|js|javascript)\s*([\s\S]*?)```/gi;
+        let a;
+        while((a=altRe.exec(text))!==null){
+          try{
+            const obj=JSON.parse(a[1].trim());
+            if(obj&&typeof obj==='object'&&typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
+              actions.push(obj);
+              stripBlocks.push(a[0]);
+            }
+          }catch{}
+        }
+      }
+      let cleanText=text;
+      stripBlocks.forEach(block=>{cleanText=cleanText.replace(block,'')});
+      cleanText=cleanText.trim();
       return{cleanText,actions};
     }
+
+    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','gwToken','gwUrl','mode','pinCode','pinHash','tgToken','tgChatId','imageGenKey']);
+    const TC_HELPMODE_AUTO_KEYS=new Set([
+      'accentColor','fontSize','fontFamily','bgColor','bgImage','textColor','themeMode',
+      'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
+      'borderColor','chatBubbleRadius','chatBubblePadding','chatMaxWidth','sendBtnColor','micBtnColor',
+      'lineHeight','letterSpacing','borderRadius','botName','botIcon','botGreeting','inputPlaceholder',
+      'streamEnabled','gifEnabled','hapticFeedback','soundEnabled','reduceMotion','highContrast',
+      'compactMode','autoScroll','typingAnimation','typingSpeed','bubbleAnimation','use24HourTime',
+      'quickReplies','inputPrefix','translateTo','audioVolume'
+    ]);
 
     // Prompt user to approve a tc-action before execution
     function confirmTcAction(title,details){
@@ -6216,6 +6267,11 @@ Rules:
             <button class="btn btn-teal" id="${id}-allow">Allow</button>
           </div>
         </div>`);
+        const scroll=$('chatScroll');
+        if(scroll){
+          if(typeof snapScrollToBottom==='function')snapScrollToBottom(scroll);
+          else scroll.scrollTop=scroll.scrollHeight;
+        }
         const last=document.querySelector('.chat-bubble:last-child');
         const disable=()=>{last?.querySelectorAll('.btn').forEach(b=>{b.style.opacity='0.5';b.style.pointerEvents='none'})};
         last?.querySelector('#'+id+'-deny')?.addEventListener('click',()=>{disable();showToast('Action denied','ok');haptic('light');resolve(false)});
@@ -6263,13 +6319,23 @@ Rules:
                   if(m&&m.length>=3)data[cf]='#'+m.slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join('');
                 }
               }
+              const blockedKeys=Object.keys(data).filter(k=>k!=='type'&&TC_BLOCKED_CONFIG_KEYS.has(k));
+              if(blockedKeys.length){
+                blockedKeys.forEach(k=>delete data[k]);
+                showToast('Blocked sensitive setting changes: '+blockedKeys.join(', '),'err');
+              }
               const keys=Object.keys(data).filter(k=>k!=='type');
+              if(!keys.length){results.push({type:'config',ok:false,error:'no allowed config fields'});break}
               const hasSensitive=['aiKey','whisperKey','tgToken','webhookUrl','customCSS','pinHash'].some(s=>data[s]);
               const desc=keys.slice(0,5).join(', ')+(keys.length>5?'...':'')+(hasSensitive?' (includes sensitive keys)':'');
-              const ok=await confirmTcAction('Update '+keys.length+' config setting'+(keys.length===1?'':'s'),desc);
-              if(!ok){results.push({type:'config',ok:false,error:'denied by user'});break}
+              const helpAutoApply=_helpMode&&keys.every(k=>TC_HELPMODE_AUTO_KEYS.has(k));
+              if(!helpAutoApply){
+                const ok=await confirmTcAction('Update '+keys.length+' config setting'+(keys.length===1?'':'s'),desc);
+                if(!ok){results.push({type:'config',ok:false,error:'denied by user'});break}
+              }
               const count=importConfig(data);
               applyVisualConfig();updateStatus();renderAgentSelector();renderQuickReplies();
+              if(_helpMode)showToast(`Applied ${count} setting${count===1?'':'s'}`,'ok');
               results.push({type:'config',ok:true,count});
               break;
             }
@@ -6794,11 +6860,12 @@ Rules:
           const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
           let displayText=aiText||'(No response)';
           const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
-          if(tcActions.length){displayText=actionClean;executeTcActions(tcActions).catch(()=>{})}
+          let tcResults=[];
+          if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
           if(pk.gifEnabled!==false){
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             const query=gifQuery||autoDetectGif(displayText);
-            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
           }
           // Groq narrator: digest verbose agent output
           let rawText=null;
@@ -6807,7 +6874,8 @@ Rules:
           }
           chatHistory[streamIdx].text=displayText;
           if(rawText&&rawText!==displayText)chatHistory[streamIdx].rawText=rawText;
-          if(tcActions.length)chatHistory[streamIdx].actionsRun=tcActions.length;
+          const executed=tcResults.filter(r=>r&&r.ok).length;
+          if(executed)chatHistory[streamIdx].actionsRun=executed;
           if(aiUsage)chatHistory[streamIdx].usage=aiUsage;
           setChat(chatHistory);renderChat();
           detectAndApplyConfig(displayText);
@@ -6855,14 +6923,16 @@ Rules:
           let displayText=aiText||'(No response)';
           // Parse and execute agent actions
           const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
-          if(tcActions.length){displayText=actionClean;executeTcActions(tcActions).catch(()=>{})}
+          let tcResults=[];
+          if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
           if(pk.gifEnabled!==false){
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             const query=gifQuery||autoDetectGif(displayText);
-            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
           }
           chatHistory[streamIdx].text=displayText;
-          if(tcActions.length)chatHistory[streamIdx].actionsRun=tcActions.length;
+          const executed=tcResults.filter(r=>r&&r.ok).length;
+          if(executed)chatHistory[streamIdx].actionsRun=executed;
           if(aiUsage)chatHistory[streamIdx].usage=aiUsage;
           setChat(chatHistory);renderChat();
           // Auto-detect and apply TealClaw config in AI response
@@ -6900,13 +6970,15 @@ Rules:
           // Parse and execute agent actions
           let displayText=aiText;
           const{cleanText:actionClean2,actions:tcActions2}=parseTcActions(displayText);
-          if(tcActions2.length){displayText=actionClean2;executeTcActions(tcActions2).catch(()=>{})}
+          let tcResults2=[];
+          if(tcActions2.length){displayText=actionClean2;tcResults2=await executeTcActions(tcActions2).catch(()=>[])}
+          const executed2=tcResults2.filter(r=>r&&r.ok).length;
 
           // GIF overlay
           if(pk.gifEnabled!==false){
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             const query=gifQuery||autoDetectGif(displayText);
-            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url,cleanText.slice(0,120))}).catch(()=>{});
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
           }
 
           sendTelegram(`AI: ${displayText}`);
@@ -6953,6 +7025,7 @@ Rules:
               lastBubble.classList.remove('typing-active');
             }
             chatHistory[bubbleIdx].text=displayText;
+            if(executed2)chatHistory[bubbleIdx].actionsRun=executed2;
             setChat(chatHistory);renderChat();
           } else {
             // No typing animation: instant display
@@ -6960,6 +7033,7 @@ Rules:
             if(ttsData){const blob=ttsBlob(ttsData);audioUrl=URL.createObjectURL(blob);playAudioBuffer(ttsData);evictTTSCache()}
             const extra=audioUrl?{audioUrl}:{};
             if(aiUsage)extra.usage=aiUsage;
+            if(executed2)extra.actionsRun=executed2;
             addBubble('ai',displayText,extra);
           }
           // Auto-detect and apply TealClaw config in AI response
@@ -8035,14 +8109,24 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     // ── Microphone ─────────────────────────────────────
     const micBtn=$('micBtn'),hint=$('inputHint');
 
+    function createAudioRecorder(audioStream,onData,onStop){
+      const candidates=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
+      let mimeType='';
+      if(window.MediaRecorder&&MediaRecorder.isTypeSupported){
+        mimeType=candidates.find(t=>MediaRecorder.isTypeSupported(t))||'';
+      }
+      const rec=mimeType?new MediaRecorder(audioStream,{mimeType}):new MediaRecorder(audioStream);
+      rec.ondataavailable=onData;
+      rec.onstop=onStop;
+      return rec;
+    }
+
     async function initMic(){
       try{
         stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
-        recorder=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus'});
-        recorder.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data)};
-        recorder.onstop=async()=>{
+        recorder=createAudioRecorder(stream,e=>{if(e.data.size>0)chunks.push(e.data)},async()=>{
           if(chunks.length>0){
-            const blob=new Blob(chunks,{type:'audio/webm'});
+            const blob=new Blob(chunks,{type:recorder?.mimeType||'audio/webm'});
             try{
               const text=await transcribe(blob);
               if(text){
@@ -8060,15 +8144,15 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             }catch(e){showToast('Transcription failed','err')}
           }
           chunks=[];
-        };
+        });
         return true;
       }catch{showToast('Mic access denied','err');return false}
     }
 
-    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
+    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(recording||recorder?.state==='recording')return;if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
     micBtn.addEventListener('mouseup',e=>{e.preventDefault();stopRec()});
     micBtn.addEventListener('mouseleave',()=>{if(recording)stopRec()});
-    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
+    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(recording||recorder?.state==='recording')return;if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
     micBtn.addEventListener('touchend',e=>{e.preventDefault();stopRec()});
 
     function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording');haptic('light')}
@@ -8091,6 +8175,11 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       }
     }
     $('clawToggle').addEventListener('click',toggleClawMode);
+    $('gesturePipClose').addEventListener('click',()=>{
+      stopGestureTracking();
+      const k2=getK();k2.gestureEnabled=false;setK(k2);
+      showToast('Claw mode off','ok');
+    });
 
     // ── Telegram ─────────────────────────────────────────
     function getTelegramTag(){
@@ -9652,12 +9741,10 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(voiceModeRecording)return;
       if(!await initVoiceModeMic()){$('voiceModeStatus').textContent='Mic access denied';return}
       voiceModeChunks=[];
-      voiceModeRecorder=new MediaRecorder(voiceModeStream,{mimeType:'audio/webm;codecs=opus'});
-      voiceModeRecorder.ondataavailable=e=>{if(e.data.size>0)voiceModeChunks.push(e.data)};
-      voiceModeRecorder.onstop=async()=>{
+      voiceModeRecorder=createAudioRecorder(voiceModeStream,e=>{if(e.data.size>0)voiceModeChunks.push(e.data)},async()=>{
         if(voiceModeChunks.length===0)return;
         $('voiceModeStatus').textContent='Transcribing...';
-        const blob=new Blob(voiceModeChunks,{type:'audio/webm'});
+        const blob=new Blob(voiceModeChunks,{type:voiceModeRecorder?.mimeType||'audio/webm'});
         try{
           const text=await transcribe(blob);
           if(!text){$('voiceModeStatus').textContent='No speech detected';return}
@@ -9678,9 +9765,11 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             // Parse agent actions
             let displayText=aiText;
             const{cleanText:ac,actions:tca}=parseTcActions(displayText);
-            if(tca.length){displayText=ac;executeTcActions(tca).catch(()=>{})}
+            let tcaResults=[];
+            if(tca.length){displayText=ac;tcaResults=await executeTcActions(tca).catch(()=>[])}
+            const tcaExecuted=tcaResults.filter(r=>r&&r.ok).length;
             // Add to chat history
-            addBubble('user',finalText);addBubble('ai',displayText);
+            addBubble('user',finalText);addBubble('ai',displayText,tcaExecuted?{actionsRun:tcaExecuted}:{});
             sendTelegram(`AI: ${displayText}`);
             // TTS with subtitle sync
             if(ttsMode==='auto'&&hasTTS(pk)){
@@ -9709,7 +9798,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             $('voiceModeSubtitle').textContent='';
           }
         }catch{$('voiceModeStatus').textContent='Transcription failed'}
-      };
+      });
       voiceModeRecorder.start();
       voiceModeRecording=true;
       $('voicePttBtn').classList.add('recording');
@@ -9735,7 +9824,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     pttBtn.addEventListener('touchend',e=>{e.preventDefault();stopVoiceModeRec()});
 
     // ── Gesture Control (MediaPipe Hands) ────────────
-    let gestureStream=null,gestureHands=null,gestureRAF=null,gestureActive=false;
+    let gestureStream=null,gestureHands=null,gestureRAF=null,gestureCamera=null,gestureActive=false;
     let lastGesture='',gestureGoneTime=0,gestureRecording=false;
     let clawDetectStart=0; // timestamp when claw first detected (for 1s delay)
     const CLAW_CONFIRM_MS=1000; // hold claw 1s before recording starts
@@ -9763,30 +9852,18 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     }
     function clearLiveSubtitle(){liveSubWords=[];$('liveSubtitle').innerHTML=''}
 
-    let clawInterimTimer=null;
+    let clawInterimTimer=null,clawStarting=false;
     async function startClawRecording(){
-      if(gestureRecording)return;
+      if(gestureRecording||clawStarting)return;
+      clawStarting=true;
       try{
         clawMicStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
         clawChunks=[];
-        clawRecorder=new MediaRecorder(clawMicStream,{mimeType:'audio/webm;codecs=opus'});
-        clawRecorder.ondataavailable=e=>{if(e.data.size>0)clawChunks.push(e.data)};
-
-        // Interim transcription: every 2s, transcribe what we have so far for live subtitles
-        clawInterimTimer=setInterval(async()=>{
-          if(clawChunks.length===0)return;
-          try{
-            const blob=new Blob(clawChunks,{type:'audio/webm'});
-            const text=await transcribe(blob);
-            if(text)showLiveSubtitle(text);
-          }catch{}
-        },2000);
-
-        clawRecorder.onstop=async()=>{
+        clawRecorder=createAudioRecorder(clawMicStream,e=>{if(e.data.size>0)clawChunks.push(e.data)},async()=>{
           if(clawInterimTimer){clearInterval(clawInterimTimer);clawInterimTimer=null}
           if(clawChunks.length===0){clearLiveSubtitle();return}
           // Final transcription
-          const blob=new Blob(clawChunks,{type:'audio/webm'});
+          const blob=new Blob(clawChunks,{type:clawRecorder?.mimeType||'audio/webm'});
           try{
             const text=await transcribe(blob);
             if(text){
@@ -9800,15 +9877,29 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           }catch{clearLiveSubtitle()}
           clawChunks=[];
           if(clawMicStream){clawMicStream.getTracks().forEach(t=>t.stop());clawMicStream=null}
-        };
+        });
+
+        // Interim transcription: every 2s, transcribe what we have so far for live subtitles
+        clawInterimTimer=setInterval(async()=>{
+          if(clawChunks.length===0)return;
+          try{
+            const blob=new Blob(clawChunks,{type:clawRecorder?.mimeType||'audio/webm'});
+            const text=await transcribe(blob);
+            if(text)showLiveSubtitle(text);
+          }catch{}
+        },2000);
         clawRecorder.start(500); // 500ms timeslice for interim chunks
         gestureRecording=true;
+        $('gesturePip').classList.add('recording');
+        $('gesturePipLabel').textContent='Recording...';
         $('clawToggle').classList.add('recording');
         clearLiveSubtitle();
         haptic('success');
       }catch(err){
         console.error('[Claw mic]',err);
         showToast('Mic access denied','err');
+      }finally{
+        clawStarting=false;
       }
     }
 
@@ -9816,6 +9907,8 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(!gestureRecording||!clawRecorder)return;
       clawRecorder.stop();
       gestureRecording=false;
+      $('gesturePip').classList.remove('recording');
+      $('gesturePipLabel').textContent=gestureActive?'Listening for claw...':'';
       $('clawToggle').classList.remove('recording');
       haptic('light');
     }
@@ -9875,8 +9968,12 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         });
 
         const video=$('gestureVideo');
+        const pip=$('gesturePip');
+        const pipLabel=$('gesturePipLabel');
         video.srcObject=gestureStream;
         await video.play();
+        pip.classList.add('active');
+        pipLabel.textContent='Listening for claw...';
 
         const conf=getK().gestureConfidence||0.6;
         gestureHands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
@@ -9895,6 +9992,8 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             const gesture=classifyGesture(lm);
 
             if(gesture==='the_claw'){
+              pip.classList.add('recognized');
+              pipLabel.textContent=gestureRecording?'Recording...':'Claw detected...';
               gestureGoneTime=0;
               if(!gestureRecording){
                 // 1-second confirmation delay
@@ -9906,6 +10005,8 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
               }
               // While recording + claw still held: keep going (no stop)
             } else {
+              pip.classList.remove('recognized');
+              if(!gestureRecording)pipLabel.textContent='Listening for claw...';
               clawDetectStart=0; // reset detection timer
               // Claw gone while recording — start stop countdown
               if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
@@ -9915,6 +10016,8 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
               }
             }
           } else {
+            pip.classList.remove('recognized');
+            if(!gestureRecording)pipLabel.textContent='Listening for claw...';
             clawDetectStart=0;
             // No hand at all while recording
             if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
@@ -9925,11 +10028,11 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           }
         });
 
-        const mpCamera=new window.Camera(video,{
+        gestureCamera=new window.Camera(video,{
           onFrame:async()=>{await gestureHands.send({image:video})},
           width:320,height:240
         });
-        await mpCamera.start();
+        await gestureCamera.start();
 
         gestureActive=true;
         showToast('Claw mode on — show The Claw to speak','ok');
@@ -9943,9 +10046,15 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     function stopGestureTracking(){
       gestureActive=false;
       $('clawToggle').classList.remove('on','recording');
+      $('gesturePip').classList.remove('active','recognized','recording');
+      $('gesturePipLabel').textContent='';
+      if(gestureCamera&&gestureCamera.stop){try{gestureCamera.stop()}catch{}}
+      gestureCamera=null;
       if(gestureStream){gestureStream.getTracks().forEach(t=>t.stop());gestureStream=null}
       $('gestureVideo').srcObject=null;
       if(gestureRecording)stopClawRecording();
+      if(clawInterimTimer){clearInterval(clawInterimTimer);clawInterimTimer=null}
+      clawStarting=false;
       lastGesture='';gestureRecording=false;gestureGoneTime=0;clawDetectStart=0;
     }
 
