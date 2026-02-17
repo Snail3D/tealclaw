@@ -4536,35 +4536,13 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
           }
         };
         conn.on('chat',onChat);
-        // Also listen for agent events to keep the timeout alive (agent is working)
-        const onAgent=()=>{lastActivity=Date.now()};
-        conn.on('agent',onAgent);
         // Build message with image if needed
         let msg=text||'';
         if(imageBase64)msg=(text||'What do you see?')+`\n[image attached]`;
         conn.chatSend(msg,imageBase64?[{type:'image',data:imageBase64}]:undefined).catch(e=>{
-          if(!settled){settled=true;conn.off('chat',onChat);conn.off('agent',onAgent);reject(e)}
+          if(!settled){settled=true;conn.off('chat',onChat);reject(e)}
         });
-        // Activity-based timeout: 5 min max, but resets on any agent/chat activity
-        const checkTimeout=()=>{
-          if(settled)return;
-          const idle=Date.now()-lastActivity;
-          if(idle>120000){
-            // 2 min of silence — resolve with partial text if any, otherwise timeout error
-            settled=true;conn.off('chat',onChat);conn.off('agent',onAgent);
-            if(full)resolve({text:full,usage:null});
-            else reject(new Error('Agent response timeout'));
-          } else if(Date.now()-startTime>600000){
-            // Hard 10 min cap
-            settled=true;conn.off('chat',onChat);conn.off('agent',onAgent);
-            if(full)resolve({text:full,usage:null});
-            else reject(new Error('Agent response timeout'));
-          } else {
-            setTimeout(checkTimeout,10000);
-          }
-        };
-        const startTime=Date.now();
-        setTimeout(checkTimeout,10000);
+        // No timeout — agent reports when done (long-horizon tasks can run indefinitely)
       });
     }
 
