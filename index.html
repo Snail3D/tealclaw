@@ -3471,8 +3471,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),
         gw:agent?.url||null,
         tk:agent?.token||null,
-        ak:(k.mode==='direct'||!agent)?k.whisperKey:null,
-        prov:(k.mode==='direct'||!agent)?'groq':null,
+        ak:k.whisperKey||null,
+        prov:'groq',
         nm:name,
         own:ownerName,
         ins:instructions||'General assistant — answer questions and help out.',
@@ -7608,7 +7608,7 @@ Rules:
                 else if(expiry==='1y')exp=now+365*86400000;
                 const agent=getAgents().find(a=>a.active)||getAgents()[0];
                 const k2=getK();
-                const payload={v:1,id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),gw:agent?.url||null,tk:agent?.token||null,ak:(k2.mode==='direct'||!agent)?k2.whisperKey:null,prov:(k2.mode==='direct'||!agent)?'groq':null,nm:name,own:k2.deviceName||'Owner',ins:instructions,pre:presets,mc:maxChars,rl:rateLimit,exp,tgToken:(k2.tgEnabled&&k2.tgToken)?k2.tgToken:null,tgChat:(k2.tgEnabled&&k2.tgChatId)?k2.tgChatId:null};
+                const payload={v:1,id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),gw:agent?.url||null,tk:agent?.token||null,ak:k2.whisperKey||null,prov:'groq',nm:name,own:k2.deviceName||'Owner',ins:instructions,pre:presets,mc:maxChars,rl:rateLimit,exp,tgToken:(k2.tgEnabled&&k2.tgToken)?k2.tgToken:null,tgChat:(k2.tgEnabled&&k2.tgChatId)?k2.tgChatId:null};
                 const passphrase=generatePassphrase();
                 const blob=await encryptConfig(JSON.stringify(payload),passphrase);
                 const record={id:payload.id,name,encBlob:blob,instructions,presets,maxChars,rateLimit,expires:exp?new Date(exp).toISOString().slice(0,10):null,created:new Date().toISOString().slice(0,10),enabled:true};
