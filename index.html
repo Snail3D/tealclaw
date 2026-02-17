@@ -4692,24 +4692,34 @@ ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- S
 <h3>Agent Mode — Connect to OpenClaw</h3>
 <p>If you run <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a>, TealClaw can be your front-end UI with full tool access.</p>
 <p style="font-size:12px"><strong>Step 1:</strong> Paste this into your OpenClaw agent's system prompt so it knows about TealClaw:</p>
-<pre class="onboard-copy-block" style="background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:10px 10px 28px;font-size:11px;overflow-x:auto;position:relative;white-space:pre-wrap;word-break:break-word;line-height:1.5;cursor:pointer" title="Click to copy"><code>You have a TealClaw web UI connected via WebSocket.
-TealClaw location: https://tealclaw.ai | Docs: https://tealclaw.ai/llms.txt
-Config: Settings gear (top right) or paste JSON in chat.
-Key features: voice I/O, streaming, Obsidian save (/save), sessions, vision, GIFs, image gen (/imagine with Nano Banana), tc-action blocks.
-Image gen: users can /imagine [prompt] to generate images (Gemini). Attach a reference image for edits/remixes. Generated images are sent to you as attachments with metadata. Groq Maverick also gives visual commentary.
+<pre class="onboard-copy-block" style="background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:10px 10px 28px;font-size:11px;overflow-x:auto;position:relative;white-space:pre-wrap;word-break:break-word;line-height:1.5;cursor:pointer" title="Click to copy"><code>TealClaw is a voice+chat web UI at https://tealclaw.ai that connects to your gateway.
+Docs: https://tealclaw.ai/llms.txt | Config: Settings gear (top right) or paste JSON in chat.
+
+SETUP — To connect TealClaw to this gateway:
+1. Enable tenant auto-provisioning:
+   openclaw config set gateway.tenant.enabled true
+   openclaw config set gateway.tenant.hmacSecret "$(openssl rand -hex 32)"
+   openclaw config set gateway.tenant.corsOrigins '["https://tealclaw.ai"]'
+2. Expose gateway via HTTPS (Cloudflare Tunnel — the ONLY supported method):
+   cloudflared tunnel create openclaw-gw
+   cloudflared tunnel route dns openclaw-gw gw.yourdomain.com
+   cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
+3. Restart the gateway so tenant config takes effect.
+4. Tell the user to open https://tealclaw.ai — it auto-connects on first visit. No token pasting needed.
+   They just need a Groq key (gsk_...) for voice + chat.
+If already set up, TealClaw users auto-provision tokens via POST /connect (stateless HMAC, zero-config).
+
+FEATURES: voice I/O, streaming, Obsidian save (/save), sessions, vision, GIFs, image gen (/imagine), tc-action blocks.
 tc-action blocks let you control TealClaw directly:
 - config, toast, navigate, style, research, save, bubble
 - video: stream a feed (HLS/MP4/WebM), auto-PiP on scroll
 - video-grid: security camera grid (1-4 cols), each feed has url+label
 - gallery: photo collage with lightbox, captions, keyboard nav
+Image gen: /imagine [prompt] generates images (Gemini). Attach reference images for edits.
 Examples:
 \`\`\`tc-action {"type":"video-grid","title":"Cameras","cols":2,"feeds":[{"url":"...","label":"Front Door"},{"url":"...","label":"Backyard"}]} \`\`\`
-\`\`\`tc-action {"type":"gallery","title":"Photos","images":[{"url":"...","caption":"View"}]} \`\`\`
-Gateway: TealClaw auto-connects to gw.tealclaw.ai on first visit (zero-config). No signup, no token. Users just paste a Groq key (gsk_...) for voice + chat.
-For own gateway (full tool access): HTTPS only via Cloudflare Tunnel. Agent URLs MUST be HTTPS. Never use http://, raw IPs, localhost, Tailscale, or ngrok.
-Own gateway config: {"mode":"agent","agents":[{"id":"home","name":"Home","url":"https://gw.yourdomain.com","token":"YOUR_TOKEN","active":true}]}
-Token: openclaw config get gateway.token</code><span style="position:absolute;bottom:4px;right:8px;font-size:10px;color:var(--text-3)">click to copy</span></pre>
-<p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> Most users are already connected via the public gateway. For your own OpenClaw gateway:</p>
+\`\`\`tc-action {"type":"gallery","title":"Photos","images":[{"url":"...","caption":"View"}]} \`\`\`</code><span style="position:absolute;bottom:4px;right:8px;font-size:10px;color:var(--text-3)">click to copy</span></pre>
+<p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> The agent will handle the rest. If you need to manually connect:</p>
 <ul style="font-size:12px;margin:4px 0">
 <li><strong>URL:</strong> <code>https://gw.yourdomain.com</code> (HTTPS via Cloudflare Tunnel — required)</li>
 <li><strong>Token:</strong> run <code>openclaw config get gateway.token</code> and paste it</li>
