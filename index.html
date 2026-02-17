@@ -4911,98 +4911,59 @@ GIF REACTIONS (~75% of responses — encouraged!):
       const hasAny=chatHistory.length>0;
       if(hasAny)return;
 
-      // Simplified onboarding when auto-provisioned with TealClaw public gateway
+      // Check if already connected to gateway
       const agents=getAgents();
       const hasPublicAgent=agents.some(a=>a.id===TEALCLAW_PUBLIC_AGENT_ID);
       if(hasPublicAgent){
-        sysBubble(`<h2>Welcome to TealClaw</h2>
-<p>Connected to TealClaw gateway. Paste a <a href="https://console.groq.com/keys" target="_blank" rel="noopener"><strong>Groq key</strong></a> (<code>gsk_...</code>) for voice + chat, or start typing.</p>
-<hr>
-<h3>Useful Commands</h3>
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr><td style="padding:3px 6px"><code>/help</code></td><td style="padding:3px 6px">Full command list</td></tr>
-<tr><td style="padding:3px 6px"><code>/save</code></td><td style="padding:3px 6px">Save chat to Obsidian</td></tr>
-<tr><td style="padding:3px 6px"><code>/clear</code></td><td style="padding:3px 6px">Clear conversation</td></tr>
-</table>
-<p style="font-size:11px;color:var(--text-3);margin-top:8px">Want full tool access? Connect your own <a href="https://openclaw.ai" target="_blank" rel="noopener" style="color:var(--teal)">OpenClaw gateway</a> in Settings &rarr; Agent.</p>`);
+        sysBubble(`<h2 style="margin-bottom:4px">Welcome to TealClaw</h2>
+<p style="color:var(--ok);font-size:12px;font-weight:600;margin-bottom:8px">Connected to gateway</p>
+<p>You're ready to chat. Type a message or try a voice command.</p>
+<p style="font-size:11px;color:var(--text-3);margin-top:8px">For voice: paste a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq key</a> (<code>gsk_...</code>). Tap the gear for all settings.</p>`);
         return;
       }
 
-      sysBubble(`<h2>Welcome to TealClaw</h2>
-<p>Your private, zero-tracking voice + chat dashboard. Everything runs in your browser — your keys never leave this device.</p>
-<hr>
-<h3>Quick Start — Paste a Key</h3>
-<p>Grab an API key and paste it right into this chat. TealClaw auto-detects the provider:</p>
-<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:13px">
-<tr style="border-bottom:1px solid var(--border)">
-<td style="padding:6px 8px"><strong><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a></strong></td>
-<td style="padding:6px 4px"><code>gsk_...</code></td>
-<td style="padding:6px 4px;color:var(--teal)"><strong>Free!</strong> Chat + vision + voice + TTS</td>
-</tr>
-<tr style="border-bottom:1px solid var(--border)">
-<td style="padding:6px 8px"><strong><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI</a></strong></td>
-<td style="padding:6px 4px"><code>AIza...</code></td>
-<td style="padding:6px 4px">Image gen via <code>/imagine</code> (Nano Banana)</td>
-</tr>
-<tr>
-<td style="padding:6px 8px"><strong><a href="https://openclaw.ai" target="_blank" rel="noopener">Gateway</a></strong></td>
-<td style="padding:6px 4px">Settings &rarr; Agent</td>
-<td style="padding:6px 4px">OpenClaw gateway with full tool access</td>
-</tr>
-</table>
-<hr>
-<h3>Agent Mode — Connect to OpenClaw</h3>
-<p>If you run <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a>, TealClaw can be your front-end UI with full tool access.</p>
-<p style="font-size:12px"><strong>Step 1:</strong> Paste this into your OpenClaw agent's system prompt so it knows about TealClaw:</p>
-<pre class="onboard-copy-block" style="background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:10px 10px 28px;font-size:11px;overflow-x:auto;position:relative;white-space:pre-wrap;word-break:break-word;line-height:1.5;cursor:pointer" title="Click to copy"><code>TealClaw is a voice+chat web UI at https://tealclaw.ai that connects to your gateway.
-Docs: https://tealclaw.ai/llms.txt | Config: Settings gear (top right) or paste JSON in chat.
+      // Primary onboarding: one-tap connect
+      sysBubble(`<h2 style="margin-bottom:6px">Welcome to TealClaw</h2>
+<p style="margin-bottom:12px">Private AI chat that runs in your browser. No accounts, no tracking.</p>
+<button id="onboardConnect" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 20px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.2s;min-height:48px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Chatting</button>
+<p style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px">Connects to the TealClaw gateway instantly</p>
+<hr style="margin:14px 0">
+<details style="font-size:12px;color:var(--text-2)">
+<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Other options</summary>
+<div style="margin-top:8px">
+<p><strong>Groq (free)</strong> — paste a <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq key</a> (<code>gsk_...</code>) for direct chat + voice + vision</p>
+<p style="margin-top:6px"><strong>Own gateway</strong> — connect your <a href="https://openclaw.ai" target="_blank" rel="noopener" style="color:var(--teal)">OpenClaw</a> instance in Settings &rarr; Agent</p>
+</div>
+</details>`);
 
-SETUP — When the user says "set up TealClaw" or "connect TealClaw", just do it. Don't ask questions — check the system yourself.
-1. Check if gateway.tenant is already configured: openclaw config get gateway.tenant
-   If not set up yet, enable it:
-   openclaw config set gateway.tenant.enabled true
-   openclaw config set gateway.tenant.hmacSecret "$(openssl rand -hex 32)"
-   openclaw config set gateway.tenant.corsOrigins '["https://tealclaw.ai"]'
-2. Check if cloudflared is installed: which cloudflared (install via brew install cloudflared if missing)
-   Check if a tunnel already exists: cloudflared tunnel list
-   If no tunnel, create one. Ask the user ONLY for the hostname (e.g. gw.tealclaw.ai) — they must have the domain in Cloudflare.
-   cloudflared tunnel create openclaw-gw
-   cloudflared tunnel route dns openclaw-gw &lt;hostname&gt;
-   cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
-   If a tunnel config already exists (check ~/.cloudflared/), just start it: cloudflared tunnel run
-3. Restart the gateway so tenant config takes effect.
-4. Verify: curl -s https://&lt;hostname&gt;/health should return OK.
-5. Tell the user to open https://tealclaw.ai — it auto-connects on first visit. No token pasting needed.
-   They just need a Groq key (gsk_...) for voice + chat.
-If already set up (gateway.tenant.enabled is true + tunnel running), just tell the user it's ready.
-
-FEATURES: voice I/O, streaming, Obsidian save (/save), sessions, vision, GIFs, image gen (/imagine), tc-action blocks.
-tc-action blocks let you control TealClaw directly:
-- config, toast, navigate, style, research, save, bubble
-- video: stream a feed (HLS/MP4/WebM), auto-PiP on scroll
-- video-grid: security camera grid (1-4 cols), each feed has url+label
-- gallery: photo collage with lightbox, captions, keyboard nav
-Image gen: /imagine [prompt] generates images (Gemini). Attach reference images for edits.
-Examples:
-\`\`\`tc-action {"type":"video-grid","title":"Cameras","cols":2,"feeds":[{"url":"...","label":"Front Door"},{"url":"...","label":"Backyard"}]} \`\`\`
-\`\`\`tc-action {"type":"gallery","title":"Photos","images":[{"url":"...","caption":"View"}]} \`\`\`</code><span style="position:absolute;bottom:4px;right:8px;font-size:10px;color:var(--text-3)">click to copy</span></pre>
-<p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> The agent will handle the rest. If you need to manually connect:</p>
-<ul style="font-size:12px;margin:4px 0">
-<li><strong>URL:</strong> <code>https://gw.yourdomain.com</code> (HTTPS via Cloudflare Tunnel — required)</li>
-<li><strong>Token:</strong> run <code>openclaw config get gateway.token</code> and paste it</li>
-</ul>
-<hr>
-<h3>Useful Commands</h3>
-<table style="width:100%;border-collapse:collapse;font-size:12px">
-<tr><td style="padding:3px 6px"><code>/help</code></td><td style="padding:3px 6px">Full command list</td></tr>
-<tr><td style="padding:3px 6px"><code>/save</code></td><td style="padding:3px 6px">Save chat to Obsidian</td></tr>
-<tr><td style="padding:3px 6px"><code>/save idea ...</code></td><td style="padding:3px 6px">Quick capture an idea</td></tr>
-<tr><td style="padding:3px 6px"><code>/session create 7d</code></td><td style="padding:3px 6px">Create a time-limited share link</td></tr>
-<tr><td style="padding:3px 6px"><code>/groq</code></td><td style="padding:3px 6px">Quick Groq chat (bypasses agent)</td></tr>
-<tr><td style="padding:3px 6px"><code>/clear</code></td><td style="padding:3px 6px">Clear conversation</td></tr>
-</table>
-<p style="font-size:11px;margin-top:10px">New here? Watch the <a href="https://youtube.com/playlist?list=PLJB4l6OZ0E3HhHZ-yNaoYvo6H_sk0iGIU" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:underline;text-underline-offset:2px">setup tutorials &amp; guides</a> on YouTube.</p>
-<p style="font-size:11px;color:var(--text-3);margin-top:4px">Tap the gear icon (top right) for settings. Tap any message to share, save, edit, or delete it.</p>`);
+      // Wire up the connect button
+      setTimeout(()=>{
+        const btn=document.getElementById('onboardConnect');
+        if(!btn)return;
+        btn.addEventListener('click',async()=>{
+          btn.disabled=true;
+          btn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Connecting...';
+          try{
+            const agent=await autoProvisionToken();
+            if(agent){
+              if(agent.active){ensureAgentConnection(agent);updateStatus();renderAgentSelector()}
+              chatHistory=[];setChat([]);renderChat();
+              sysBubble(`<h2 style="margin-bottom:4px">You're connected</h2>
+<p>Start chatting below. The AI is ready.</p>
+<p style="font-size:11px;color:var(--text-3);margin-top:8px">For voice input + TTS: paste a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq key</a> (<code>gsk_...</code>) into this chat. Tap the gear for settings.</p>`);
+              haptic('success');
+            } else {
+              btn.disabled=false;
+              btn.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Chatting';
+              showToast('Could not connect — try a Groq key instead','err');
+            }
+          }catch{
+            btn.disabled=false;
+            btn.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Chatting';
+            showToast('Connection failed — try a Groq key instead','err');
+          }
+        });
+      },50);
       // Wire click-to-copy on the onboarding copy block
       setTimeout(()=>{
         document.querySelectorAll('.onboard-copy-block').forEach(block=>{
