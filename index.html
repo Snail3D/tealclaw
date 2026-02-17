@@ -3395,10 +3395,10 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         if(!val){showToast('Enter a value','err');return}
         const k2=getK();k2[field]=val;
         if(field==='tgChatId'&&k2.tgToken){k2.tgEnabled=true}
-        setK(k2);updateStatus();renderSheetContent();showToast(info.label+' saved','ok');
+        setK(k2);updateStatus();renderChannelDropdown();renderAgentSelector();renderSheetContent();showToast(info.label+' saved','ok');
       });
       $('sheetBody').querySelector('#sheetKeyRemove')?.addEventListener('click',()=>{
-        const k2=getK();delete k2[field];setK(k2);updateStatus();renderSheetContent();showToast(info.label+' removed','ok');
+        const k2=getK();delete k2[field];setK(k2);updateStatus();renderChannelDropdown();renderAgentSelector();renderSheetContent();showToast(info.label+' removed','ok');
       });
       $('sheetBody').querySelector('#sheetKeyBack').addEventListener('click',renderSheetContent);
     }
@@ -5022,7 +5022,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
         if(groqBtn)groqBtn.addEventListener('click',()=>{
           const key=(groqKey?.value||'').trim();
           if(!key||!key.startsWith('gsk_')){showToast('Enter a valid Groq key (starts with gsk_)','err');return}
-          const k=getK();k.whisperKey=key;k.mode='groq';setK(k);
+          const k=getK();k.whisperKey=key;if(k.mode!=='agent')k.mode='direct';setK(k);
           updateStatus();chatHistory=[];setChat([]);
           $('chatScroll').innerHTML='';
           sysBubble('<h2 style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Ready</h2>'
