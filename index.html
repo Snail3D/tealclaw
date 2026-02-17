@@ -2173,7 +2173,7 @@
         {name:'Voice In',active:!!k.whisperKey},
         {name:'Voice Out',active:hasTTS()},
         {name:'Image Gen',active:!!(k.imageGenKey||k.imageGenUrl)},
-        {name:'GIF',active:k.gifEnabled!==false},
+        {name:'GIF',active:true},
         {name:'Agent',active:!!getAgents().length},
         {name:'LaTeX',active:true}
       ];
@@ -2265,15 +2265,6 @@
         </div>`:''}
       </div>`;
 
-      // GIF Reactions toggle
-      const gifOn=k.gifEnabled!==false;
-      html+=`<div class="sheet-section"><div class="sheet-section-title">GIF Reactions</div>
-        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
-          <button class="mode-btn gif-mode-btn ${gifOn?'active':''}" data-gif="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gifOn?'var(--teal)':'transparent'};border:none;color:${gifOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
-          <button class="mode-btn gif-mode-btn ${!gifOn?'active':''}" data-gif="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gifOn?'var(--teal)':'transparent'};border:none;color:${!gifOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
-        </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show a relevant GIF when the AI includes a [gif:tag] in its response.</div>
-      </div>`;
 
       // AI Configuration
       html+=`<div class="sheet-section"><div class="sheet-section-title">AI Configuration</div>
@@ -2633,11 +2624,6 @@
         showToast(val?'PIN/password set (hashed)':'PIN removed','ok');
       });
 
-      // Wire up GIF toggle
-      $('sheetBody').querySelectorAll('.gif-mode-btn').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.gifEnabled=b.dataset.gif==='true';setK(k2);
-        renderSheetContent();
-      }));
 
       // Wire up gesture control toggle
       $('sheetBody').querySelectorAll('.gesture-mode-btn').forEach(b=>b.addEventListener('click',()=>{
@@ -4623,7 +4609,14 @@ FORMATTING:
 - Maximum 3-4 sentences for long responses
 - Never say "here is" or "the following" — just speak naturally
 ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- Start the script with a tone tag in brackets that matches the mood. Pick ONE from: [cheerful], [warm], [whisper], [dramatic], [sarcastic], [excited], [professional], [calm], [gentle], [playful], [confident], [empathetic]. Match the emotion of the content.`}
-- Output ONLY the spoken script (with the tone tag at the start), nothing else`},
+
+GIF REACTIONS (~75% of responses):
+- After the spoken script, on a new line, add a [gif:short search query] tag with a fun/relevant GIF search term
+- Keep queries SHORT (2-4 words max), generic, and mood-matching (e.g. [gif:happy dance], [gif:mind blown], [gif:thumbs up])
+- Add a GIF for ~75% of responses — skip for serious, sad, or sensitive topics
+- SECURITY: NEVER include passwords, API keys, tokens, emails, phone numbers, names, addresses, or ANY user-provided sensitive data in the gif query. Keep it generic and mood-based only.
+- If the user's message contains credentials or personal info, the gif query must be completely unrelated to that content
+- Output ONLY the spoken script (with the tone tag at the start) + optional gif tag on the last line, nothing else`},
               {role:'user',content:cleaned}
             ],
             max_tokens:300,
@@ -4642,7 +4635,10 @@ ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- S
     async function speak(text){
       const k=getK();
       const script=await ttsPreprocess(text,k);
-      return speakGroq(script,k);
+      // Extract GIF tag injected by the TTS model before sending to audio
+      const{cleanText:ttsClean,gifQuery:ttsGif}=parseGifTag(script);
+      if(ttsGif)searchGif(ttsGif).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
+      return speakGroq(ttsClean,k);
     }
 
     function hasTTS(k){
@@ -4829,7 +4825,7 @@ Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMod
 Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
 Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
 Voice: ttsAutoPlay, groqTtsVoice(autumn/diana/hannah/austin/daniel/troy), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
-Features: streamEnabled, gifEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
+Features: streamEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
 Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
 Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
@@ -6311,7 +6307,7 @@ Rules:
       'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
       'borderColor','chatBubbleRadius','chatBubblePadding','chatMaxWidth','sendBtnColor','micBtnColor',
       'lineHeight','letterSpacing','borderRadius','botName','botIcon','botGreeting','inputPlaceholder',
-      'streamEnabled','gifEnabled','hapticFeedback','soundEnabled','reduceMotion','highContrast',
+      'streamEnabled','hapticFeedback','soundEnabled','reduceMotion','highContrast',
       'compactMode','autoScroll','typingAnimation','typingSpeed','bubbleAnimation','use24HourTime',
       'quickReplies','inputPrefix','translateTo','audioVolume'
     ]);
@@ -6924,7 +6920,7 @@ Rules:
           const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
           let tcResults=[];
           if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
-          if(pk.gifEnabled!==false){
+          {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             const query=gifQuery||autoDetectGif(displayText);
             if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
@@ -6987,7 +6983,7 @@ Rules:
           const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
           let tcResults=[];
           if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
-          if(pk.gifEnabled!==false){
+          {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             const query=gifQuery||autoDetectGif(displayText);
             if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
@@ -7037,7 +7033,7 @@ Rules:
           const executed2=tcResults2.filter(r=>r&&r.ok).length;
 
           // GIF overlay
-          if(pk.gifEnabled!==false){
+          {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             const query=gifQuery||autoDetectGif(displayText);
             if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
@@ -7172,7 +7168,6 @@ Rules:
             if(cfg.aiKey)parts.push('AI key');
             if(cfg.whisperKey)parts.push('Groq/Whisper');
             if(cfg.tgToken)parts.push('Telegram');
-            if(cfg.gifEnabled!==undefined)parts.push('GIF reactions');
             if(cfg.mode)parts.push(`mode: ${cfg.mode}`);
             const agentNote=cfg.mode==='agent'?'<p>Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway. Make sure the gateway is reachable from this device.</p>':'<p>Your TealClaw has been customized.</p>';
             sysBubble(`<h3>Config Applied!</h3>
@@ -8491,7 +8486,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
-      gifEnabled:'gifEnabled',
       accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
       bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
       chatUserColor:'chatUserColor',chatAiColor:'chatAiColor',
@@ -8944,7 +8938,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
-    const CONFIG_DEFAULTS={ttsAutoPlay:true,gifEnabled:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,};
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,};
 
     function buildConfigPayload(includeSensitive=false){
       const k=getK();
