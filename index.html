@@ -3793,7 +3793,7 @@ Multi-device: each TealClaw instance has a unique device ID + name + location (s
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help (also work without / for voice: "imagine a cat", "research quantum physics")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
-GIF reactions: when the mood fits, append a [gif:search query] tag at the end of your message (e.g. [gif:thumbs up], [gif:mind blown], [gif:happy dance]). TealClaw will fetch and display a matching GIF overlay via Klipy. Use sparingly — great for celebrations, jokes, greetings, and emotional moments. Don't use for serious/technical answers. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries. Keep queries short and generic.
+GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
 Inline media: your responses support full markdown rendering. Use ![alt](url) for inline images, ![audio](url.mp3) for inline audio players, ![video](url.mp4) for inline video players. Use [download:filename.ext](url) for download buttons. All render natively in the chat — no plugins needed.
 File generation: to produce a downloadable file, use \`\`\`tc-action\n{"type":"file","filename":"notes.md","content":"# My Notes\\n\\nContent here...","mime":"text/markdown"}\n\`\`\` Supported: .md, .json, .csv, .txt, .html. The file appears as a styled download card in chat. Use this when users ask for exports, reports, templates, or any generated document.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey), or mode. Those are owner-controlled only.`;
@@ -4642,11 +4642,13 @@ FORMATTING:
 - Never say "here is" or "the following" — just speak naturally
 ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- Start the script with a tone tag in brackets that matches the mood. Pick ONE from: [cheerful], [warm], [whisper], [dramatic], [sarcastic], [excited], [professional], [calm], [gentle], [playful], [confident], [empathetic]. Match the emotion of the content.`}
 
-GIF REACTIONS (~75% of responses):
+GIF REACTIONS (~75% of responses — encouraged!):
 - After the spoken script, on a new line, add a [gif:short search query] tag with a fun/relevant GIF search term
-- Keep queries SHORT (2-4 words max), generic, and mood-matching (e.g. [gif:happy dance], [gif:mind blown], [gif:thumbs up])
-- Add a GIF for ~75% of responses — skip for serious, sad, or sensitive topics
-- SECURITY: NEVER include passwords, API keys, tokens, emails, phone numbers, names, addresses, or ANY user-provided sensitive data in the gif query. Keep it generic and mood-based only.
+- Keep queries SHORT (2-4 words max) but TOPICAL — match the subject of the conversation, not just the mood
+- If discussing a TV show, movie, celebrity, game, sport, animal, food, hobby, or any pop culture topic: use a GIF related to THAT topic (e.g. talking about The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss], cats → [gif:cat typing])
+- For general chat: use mood-matching GIFs (e.g. [gif:happy dance], [gif:mind blown], [gif:thumbs up], [gif:high five])
+- GIFs make the conversation fun and expressive — use them liberally! Skip ONLY for genuinely sad, tragic, or deeply sensitive topics
+- SECURITY: NEVER include passwords, API keys, tokens, emails, phone numbers, names, addresses, or ANY user-provided sensitive data in the gif query. Keep it generic.
 - If the user's message contains credentials or personal info, the gif query must be completely unrelated to that content
 - Output ONLY the spoken script (with the tone tag at the start) + optional gif tag on the last line, nothing else`},
               {role:'user',content:cleaned}
