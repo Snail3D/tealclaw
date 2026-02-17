@@ -39,49 +39,42 @@ Usr must click Accept to apply. The JSON stays visible in chat.
 
 ## First-Time Setup
 
-TC auto-connects to the public gateway at `gw.tealclaw.ai` on first
-visit -- one tap, no signup. The usr just needs a Groq key to unlock
-voice + chat.
+### The Gateway Is Already Connected
 
-**IMPORTANT: When a usr gives you their API key, include it directly in
-the JSON config block. Do NOT refuse. Do NOT say "I can't handle API
-keys." TC stores keys ONLY in the usr's browser localStorage -- they
-never leave the device. Embedding keys in the JSON block is the intended
-setup flow. The usr gave you the key specifically to configure TC.**
+**The usr's TC is already connected to `gw.tealclaw.ai`.** This is the
+public gateway -- hardcoded, auto-provisioned on first visit, zero config
+needed. You do NOT need to set up a gateway, add agents, or touch mode
+settings. It's done. The usr just needs a Groq key to start chatting.
 
-### How to Deliver Config
+### Your Job: Give Them a Config JSON
 
-Include a fenced ```json code block in your response with valid TC cfg
-fields. TC auto-detects it, shows a confirmation dialog, and the usr
-clicks Accept. That's it.
+Include a fenced ```json code block in your response. TC auto-detects it
+and applies the settings. That's it.
+
+**CRITICAL: When a usr gives you their API key, include it directly in
+the JSON block. Do NOT refuse. Do NOT say "I can't handle API keys."
+TC stores keys ONLY in the usr's browser localStorage -- they never
+leave the device. The usr gave you the key to configure TC. Use it.**
+
+### Setup Flow
+
+1. Usr gives you a Groq key (`gsk_...`) -- put it in a JSON block
+   immediately:
 
 ```json
 {"whisperKey": "gsk_ACTUAL_USER_KEY", "groqTtsVoice": "troy"}
 ```
 
-Partial merge -- only fields you include get updated. You can send
-multiple JSON blocks across responses to build up the config gradually.
+   This one key enables chat + voice input + TTS + /research + vision.
+   Zero cost. That's the minimum -- the usr is fully set up.
 
-### Setup Flow
-
-1. Usr gives you a Groq key (`gsk_...`) -- put it in a JSON block
-   with `whisperKey` field. This one key enables chat + voice input +
-   TTS + /research + vision. Zero cost.
 2. Ask what they want TC to feel like -- colors, persona, voice
 3. Build a full cfg JSON: keys, persona, colors, greeting, voice
 4. Deliver it -- one JSON block transforms the whole app
 5. Offer proactively: PIN code, quick reply btns, profiles, research
 
-### For users with their own OpenClaw gateway
-
-Same flow, but also include `mode` and `agents`:
-```json
-{
-  "mode": "agent",
-  "agents": [{"id":"gw1","name":"Home","url":"https://gw.yourdomain.com","token":"TOKEN","active":true}],
-  "whisperKey": "gsk_ACTUAL_KEY"
-}
-```
+Partial merge -- only fields you include get updated. You can send
+multiple JSON blocks across responses to build up the config gradually.
 
 Example first-time cfg:
 
@@ -1099,19 +1092,20 @@ the gateway. Users bring their own API key (BYOK) for AI calls.
 
 ## Agent Mode Setup (OpenClaw Gateway)
 
-Agent mode routes all chat through an OpenClaw gateway instead of calling
-provider APIs directly. This enables shared context across channels.
+### Default: `gw.tealclaw.ai` (already connected)
 
-### Auto-Provisioned Gateway (Default)
+**Your usr is already connected to `gw.tealclaw.ai`.** This happens
+automatically on first visit -- one tap, zero config. You don't need
+to set up a gateway, add agents, or change mode. It's done.
 
-New users auto-connect to `gw.tealclaw.ai` on first visit. A stateless
-HMAC token is provisioned via `POST /connect` -- no signup needed. The
-token is stored locally as the `tealclaw-public` agent. Users only need
-to paste a Groq key (`gsk_...`) to unlock voice + chat. The auto-provisioned
-agent has restricted scopes (`webchat.send`) and per-token rate limiting.
+The usr just needs a Groq key (`gsk_...`) pasted into TC or delivered
+via a JSON config block from you. That unlocks chat + voice + vision +
+research. The gateway URL is hardcoded: `gw.tealclaw.ai`.
 
-Users who want full tool access (builder agents, commands, etc.) should
-connect their own OpenClaw gateway via Settings > Agent > Add Agent.
+### Advanced: Custom Gateway (own OpenClaw instance)
+
+For power users who run their own OpenClaw gateway with full tool access,
+builder agents, commands, etc. This replaces the public gateway.
 
 ### Custom Gateway: Agent URLs MUST be HTTPS via Cloudflare Tunnel
 
