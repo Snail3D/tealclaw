@@ -34,7 +34,7 @@ That's it. One key gives you chat, voice, vision, image generation, and deep res
 
 **110+ Settings** — Colors, fonts, layout, voice, persona, quick replies, scheduled messages, templates. Everything is customizable. AI agents can configure it all via JSON.
 
-**Guest Links** — Create encrypted, time-limited access links for friends. PIN-protected, rate-limited, with full control over what they can do.
+**Guest Links** — Create encrypted, scoped access links for anyone. AI security filter screens every message before it reaches your agent. Attack detection, automatic session blocking, and silent owner alerts built in.
 
 **Obsidian Integration** — Save conversations and AI notes directly to your vault.
 
@@ -51,6 +51,34 @@ TealClaw has **no backend**. The site is static files on Cloudflare Pages.
 - The entire app is one HTML file. View Source and read every line.
 
 Full details: **[Security Philosophy](SECURITY.md)**
+
+---
+
+## Scoped Agent Access
+
+TealClaw solves one of the hardest problems in AI: **letting other people use your agent without giving them the keys.**
+
+Guest links create encrypted, scoped access points with a multi-layer AI security filter between the guest and your agent. No API keys exposed. No prompt injection. No unauthorized access.
+
+**How it works:**
+
+1. Owner creates a guest link with defined scope (allowed topics, presets, rate limits)
+2. Guest unlocks with a passphrase and sees only preset conversation starters
+3. Every message goes through a **Groq AI security filter** first — not to the agent
+4. The filter screens for prompt injection, social engineering, and out-of-scope requests
+5. When the request is ready, guest clicks **"Send to Bot"** — the filter summarizes the conversation and forwards a clean, scoped message to the agent inside a security envelope
+6. If an attack is detected: session terminated, 1-hour block, and your agent is **silently notified** with instructions to alert you immediately
+
+**What makes this different:**
+
+- **Guests never talk to the agent directly** — every message is filtered and summarized first
+- **The agent never sees raw guest input** — only a distilled, security-screened request
+- **Attack detection is autonomous** — no owner intervention needed to block threats
+- **Silent escalation** — your agent alerts you via the best available channel without tipping off the attacker
+- **3-strike policy** — repeated out-of-scope attempts automatically trigger attack protocols
+- **Zero server** — all of this runs client-side with your own Groq key
+
+This is scoped agent access with defense in depth. Full technical details: **[Security Philosophy](SECURITY.md#guest-link-security-filter)**
 
 ---
 

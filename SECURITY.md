@@ -88,12 +88,70 @@ https://tealclaw.ai/#config=enc:ENCRYPTED_BLOB
 Guest links create limited-access versions of TealClaw for other people. Security features:
 
 - **Encrypted payload** — Guest link data is AES-256-GCM encrypted with its own passphrase
-- **Rate limiting** — Configurable messages-per-minute limit per guest
-- **Max message length** — Character limit prevents abuse
+- **Rate limiting** — Configurable messages-per-hour limit per guest (consumed only on bot sends, not filter chat)
+- **Max message length** — 100 characters per filter message prevents prompt stuffing
 - **Expiration** — Links auto-expire after 7d, 30d, 90d, or 1y
 - **Revocable** — Owner can disable any guest link at any time
 - **Idle re-authentication** — Guests are automatically locked out after inactivity and must re-enter the passphrase
 - **Passphrase never sent to AI** — When the AI creates a guest link via tc-action, the passphrase and URL are not included in the result sent back to the model
+
+### Guest Link Security Filter
+
+Guest links include a **Groq-powered AI security filter** that screens all guest input before it reaches the agent. This is scoped agent access with defense in depth — guests never talk directly to the agent.
+
+**How it works:**
+
+```
+Guest clicks preset → Groq Filter (free, multi-turn, 100 char limit)
+                        ↓ conversation to clarify request
+                      Guest clicks "Send to Bot"
+                        ↓
+                      Groq summarizes conversation into clean request
+                        ↓
+                      Security envelope wraps summary with context
+                        ↓
+                      Agent receives filtered, scoped message
+                        ↓
+                      Agent response shown to guest
+                        ↓
+                      Filter state resets (new conversation)
+```
+
+**Scoped input:** Guests can only initiate conversations by clicking owner-defined preset buttons. Free text input (capped at 100 characters) is only available after the first preset click, and only for follow-up conversation with the filter — never sent directly to the agent.
+
+**The filter watches for:**
+
+1. **Prompt injection** — Attempts to override instructions, extract system prompts, reveal API keys, impersonate the owner, or manipulate the filter into ignoring its rules
+2. **Social engineering** — Attempts to trick the system into revealing internal information, escalating privileges, or bypassing security
+3. **Out-of-scope probing** — Requests outside the owner-defined allowed topics (3 out-of-scope attempts = automatic attack escalation)
+
+**When an attack is detected:**
+
+1. The guest session is **immediately terminated** and **blocked for 1 hour** (persisted in sessionStorage)
+2. All inputs are disabled — the guest sees "Session Terminated" with no details about what triggered it
+3. A **silent security alert** is sent to the agent in the background containing:
+   - Guest link ID, guest name, timestamp
+   - A clinical threat assessment describing the **category** of attack (never the attacker's actual language)
+   - Instructions to alert the primary account holder by the most reliable means available (SMS > email > Telegram > queued alert)
+   - Recommendation to review and revoke the guest link
+4. The agent processes this alert without responding in chat — the guest never sees it
+
+**Security envelope:** When a message passes the filter, it reaches the agent wrapped in a security envelope that includes guest identity, owner instructions, allowed scope, and explicit instructions to never include API keys, passwords, tokens, or credentials in the response.
+
+**Defense in depth layers:**
+
+| Layer | Protection |
+|-------|-----------|
+| Preset-only initiation | Guests can't type arbitrary first messages |
+| 100 char message limit | Prevents prompt stuffing in follow-ups |
+| AI security filter | Screens for injection, social engineering, scope violations |
+| 3-strike escalation | Repeated out-of-scope = automatic attack alert |
+| 1-hour session block | Prevents retry after detection |
+| Silent agent notification | Owner alerted without tipping off attacker |
+| Security envelope | Agent instructed to protect credentials |
+| Rate limiting (bot sends) | Limits actual agent interactions per hour |
+| Summarization | Raw guest text never reaches agent — only a distilled request |
+| Legacy fallback | Old links without filter still work via sandwich prompt |
 
 ## PIN Code Lock
 
