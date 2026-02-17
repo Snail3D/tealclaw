@@ -1676,6 +1676,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
     function triggerCompactionCheck(){
       if(_compacting)return;
+      // Skip in agent mode — the gateway manages its own context server-side
+      const k=getK();
+      if(k.mode==='agent'&&getActiveAgent())return;
       if(shouldCompact())compactConversation().catch(()=>{});
     }
 
@@ -7171,7 +7174,9 @@ Rules:
           });
           const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
           const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
-          let displayText=aiText||'(No response)';
+          // Prefer resolved text, fall back to streamed partial, then "(No response)"
+          let displayText=aiText||chatHistory[streamIdx]?.text||'(No response)';
+          if(displayText==='...')displayText='(No response)'; // initial placeholder
           const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
           let tcResults=[];
           if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
