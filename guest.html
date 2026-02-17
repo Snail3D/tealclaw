@@ -106,6 +106,10 @@
     .bubble th{background:var(--bg-card);font-weight:600}
     .bubble img{max-width:100%;border-radius:8px;margin:6px 0}
     .bubble hr{border:none;border-top:1px solid var(--border);margin:8px 0}
+    /* ── System Bubble (idle lock prompts) ────────────── */
+    .bubble.system{align-self:center;text-align:center;background:var(--teal-dim);color:var(--text-2);font-size:12px;max-width:90%;border-radius:12px;padding:10px 18px;margin:8px auto}
+    .chat-scroll.locked{opacity:0.5;pointer-events:none}
+
     .hidden{display:none!important}
   </style>
 </head>
@@ -178,22 +182,28 @@ let tickIntervalMs=30000;
 let messagesSentThisHour=0;
 let hourStart=0;
 let sending=false;
+let lastActivity=Date.now();
+const idleTimeoutMs=15*60*1000; // 15 min
+let idleLocked=false;
+let unlockPassphrase=null; // stored after initial unlock
+let encryptedBlob=null;    // stored after initial unlock
 
 // ── DOM Helpers ───────────────────────────────────
 const $=id=>document.getElementById(id);
 
 // ── Crypto (AES-256-GCM via PBKDF2) ──────────────
-async function deriveKey(passphrase){
+async function deriveKey(passphrase,salt){
   const enc=new TextEncoder();
   const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(passphrase),'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('tealclaw-v1'),iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 }
 
 async function decrypt(blob,passphrase){
   const raw=Uint8Array.from(atob(blob),c=>c.charCodeAt(0));
-  const iv=raw.slice(0,12);
-  const ct=raw.slice(12);
-  const key=await deriveKey(passphrase);
+  const salt=raw.slice(0,16);
+  const iv=raw.slice(16,28);
+  const ct=raw.slice(28);
+  const key=await deriveKey(passphrase,salt);
   const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
   return new TextDecoder().decode(pt);
 }
@@ -227,6 +237,10 @@ function init(){
         showExpired('This link has expired.');
         return;
       }
+      // Store for idle re-auth
+      encryptedBlob=hash;
+      unlockPassphrase=pass;
+      lastActivity=Date.now();
       startGuestUI();
     }catch(e){
       passInput.classList.add('error');
@@ -295,6 +309,10 @@ function startGuestUI(){
     updateConnDot('off');
     addBubble('ai','No connection configured for this guest link.');
   }
+
+  // Idle lock timer
+  setInterval(checkIdle,60000);
+  $('guestInput').addEventListener('focus',touchActivity);
 }
 
 // ── Input Setup ──────────────────────────────────
@@ -379,6 +397,15 @@ function updateRateDisplay(){
 // ── Send Message ─────────────────────────────────
 async function sendMessage(text,isPreset){
   if(sending)return;
+  // Idle lock gate — treat input as passphrase attempt
+  if(idleLocked){
+    const input=$('guestInput');
+    if(input){input.value='';input.style.height='auto'}
+    $('sendBtn').disabled=true;
+    handleIdleReAuth(text);
+    return;
+  }
+  touchActivity();
   if(!canSend()){
     addBubble('ai','Rate limit reached. Please wait before sending more messages.');
     return;
@@ -553,7 +580,7 @@ function sendViaWS(text){
   return new Promise((resolve,reject)=>{
     let full='';
     const sessionKey=`tc-guest-${guestData.id}`;
-    const idempotencyKey=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const idempotencyKey=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>b.toString(36)).join('').slice(0,10)}`;
 
     const onChat=(payload)=>{
       if(payload.state==='delta'&&payload.message){
@@ -625,6 +652,16 @@ function addBubble(role,html){
   el.innerHTML=html+`<div class="meta">${fmtTime()}</div>`;
   scroll.appendChild(el);
   streamBubbleEl=null;
+  scrollToBottom();
+  return el;
+}
+
+function addSystemBubble(text){
+  const scroll=$('chatScroll');
+  const el=document.createElement('div');
+  el.className='bubble system';
+  el.textContent=text;
+  scroll.appendChild(el);
   scrollToBottom();
   return el;
 }
@@ -726,6 +763,37 @@ function renderBasicMd(text){
   // Line breaks
   s=s.replace(/\n/g,'<br>');
   return s;
+}
+
+// ── Idle Lock ────────────────────────────────────
+function touchActivity(){lastActivity=Date.now()}
+
+function checkIdle(){
+  if(!encryptedBlob||!unlockPassphrase||idleLocked)return;
+  if(Date.now()-lastActivity>idleTimeoutMs){
+    idleLocked=true;
+    // Disconnect WS
+    if(ws&&ws.readyState<=1){ws.close(4001,'idle lock')}
+    $('chatScroll').classList.add('locked');
+    $('guestInput').placeholder='Enter passphrase...';
+    addSystemBubble('Session locked. Enter your passphrase to continue.');
+  }
+}
+
+async function handleIdleReAuth(text){
+  try{
+    await decrypt(encryptedBlob,text);
+    // Success
+    idleLocked=false;
+    lastActivity=Date.now();
+    $('chatScroll').classList.remove('locked');
+    $('guestInput').placeholder='Type a message...';
+    addSystemBubble('Welcome back!');
+    // Reconnect WS
+    if(guestData.gw&&guestData.tk)connectWS();
+  }catch(e){
+    addSystemBubble('Wrong passphrase. Try again.');
+  }
 }
 
 // ── Telegram Forwarding ─────────────────────────

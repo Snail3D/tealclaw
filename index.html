@@ -421,21 +421,6 @@
     .config-apply-btn:hover{background:var(--teal-hover)}
     .config-apply-btn.applied{background:var(--ok);pointer-events:none}
 
-    /* ── PIN Lock Screen ─────────────────────────────── */
-    .pin-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg-root);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;opacity:1;transition:opacity 0.3s}
-    .pin-overlay.hidden{opacity:0;pointer-events:none;display:none}
-    .pin-overlay h2{font-size:18px;font-weight:700;color:var(--teal)}
-    .pin-overlay p{font-size:12px;color:var(--text-2);max-width:280px;text-align:center}
-    .pin-dots{display:flex;gap:12px}
-    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border-2);transition:all 0.15s}
-    .pin-dot.filled{background:var(--teal);border-color:var(--teal)}
-    .pin-dot.wrong{background:var(--err);border-color:var(--err);animation:shake 0.3s}
-    .pin-pad{display:grid;grid-template-columns:repeat(3,64px);gap:10px;margin-top:12px}
-    .pin-key{width:64px;height:64px;border-radius:50%;border:1.5px solid var(--border-2);background:var(--bg-card);color:var(--text);font-size:22px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center}
-    .pin-key:hover,.pin-key:active{background:var(--teal-dim);border-color:var(--teal)}
-    .pin-key.wide{grid-column:span 1;font-size:13px;font-weight:500}
-    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-
     /* ── Guest Link Modal ─────────────────────────────── */
     .guest-modal{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:1;transition:opacity 0.2s}
     .guest-modal.hidden{opacity:0;pointer-events:none;display:none}
@@ -469,6 +454,10 @@
     .decrypt-btn{padding:12px 32px;font-size:14px;font-weight:600;font-family:var(--font);color:#fff;background:var(--teal);border:none;border-radius:var(--r-md);cursor:pointer;transition:background 0.2s}
     .decrypt-btn:hover{background:var(--teal-hover)}
     .decrypt-hint{font-size:10px;color:var(--text-3)}
+
+    /* ── System Bubble (in-chat lock prompts) ──────────── */
+    .chat-bubble.system{align-self:center;text-align:center;background:var(--teal-dim);color:var(--text-2);font-size:12px;max-width:90%;border-radius:12px;padding:10px 18px;margin:8px auto}
+    .chat-scroll.locked{opacity:0.5;pointer-events:none}
 
     /* ── Typing Animation ──────────────────────────────── */
     .typing-cursor{display:inline-block;width:2px;height:1.1em;background:var(--teal);margin-left:1px;vertical-align:text-bottom;border-radius:1px;animation:cursor-blink 0.7s step-end infinite}
@@ -987,13 +976,6 @@
     <input class="decrypt-input" id="decryptInput" type="text" maxlength="8" placeholder="A1b2C3d4" autocomplete="off" spellcheck="false">
     <button class="decrypt-btn" id="decryptBtn">Unlock</button>
     <div class="decrypt-hint">Ask the person who sent you this link for the passphrase</div>
-  </div>
-
-  <div class="pin-overlay hidden" id="pinOverlay">
-    <h2 id="pinTitle">Enter PIN</h2>
-    <p>This TealClaw is protected. Enter your PIN to continue.</p>
-    <div class="pin-dots" id="pinDots"></div>
-    <div class="pin-pad" id="pinPad"></div>
   </div>
 
   <div class="guest-modal hidden" id="guestModal">
@@ -2511,18 +2493,18 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         </div>
       </div>`;
 
-      // PIN Code Security (4-8 chars, numeric or alphanumeric, hashed)
+      // Password Lock
       const pinOn=!!k.pinRequired;
       const hasPin=!!k.pinHash;
-      html+=`<div class="sheet-section"><div class="sheet-section-title">PIN / Password Lock</div>
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Password Lock</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
           <button class="mode-btn pin-mode-btn ${pinOn?'active':''}" data-pin="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${pinOn?'var(--teal)':'transparent'};border:none;color:${pinOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
           <button class="mode-btn pin-mode-btn ${!pinOn?'active':''}" data-pin="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!pinOn?'var(--teal)':'transparent'};border:none;color:${!pinOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
         <div style="margin-top:8px">
-          <input type="password" class="sheet-input" id="sheetPinCode" value="" placeholder="${hasPin?'PIN set (enter new to change)':'Enter 4-8 char PIN or password'}" maxlength="8" autocomplete="off" style="font-family:var(--mono);font-size:12px;letter-spacing:3px;text-align:center">
+          <input type="password" class="sheet-input" id="sheetPinCode" value="" placeholder="${hasPin?'Password set (enter new to change)':'Enter password (4-8 characters)'}" maxlength="8" autocomplete="off" style="font-family:var(--mono);font-size:12px;letter-spacing:3px;text-align:center">
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">4-8 characters. Numbers only = numpad unlock. Letters + numbers = text input unlock. Stored as SHA-256 hash — never visible in cleartext.</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">4-8 characters. Locks chat after 15 min of inactivity. Type password in chat to unlock. Stored as SHA-256 hash.</div>
       </div>`;
 
       // Guest Links section
@@ -2790,10 +2772,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       $('sheetBody').querySelectorAll('.pin-mode-btn').forEach(b=>b.addEventListener('click',()=>{
         const k2=getK();
         const on=b.dataset.pin==='true';
-        if(on&&!k2.pinHash){showToast('Set a PIN first','err');return}
+        if(on&&!k2.pinHash){showToast('Set a password first','err');return}
         k2.pinRequired=on;setK(k2);
         renderSheetContent();
-        showToast(on?'PIN lock enabled':'PIN lock disabled','ok');
+        showToast(on?'Password lock enabled':'Password lock disabled','ok');
       }));
       $('sheetBody').querySelector('#sheetPinCode')?.addEventListener('change',async(e)=>{
         const val=e.target.value;
@@ -2801,15 +2783,13 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         const k2=getK();
         if(val){
           k2.pinHash=await hashPin(val);
-          k2.pinIsAlpha=/[a-zA-Z]/.test(val);
-          k2.pinLen=val.length;
-          delete k2.pinCode; // remove any legacy plaintext
+          delete k2.pinCode;delete k2.pinIsAlpha;delete k2.pinLen;
         }else{
           delete k2.pinHash;delete k2.pinIsAlpha;delete k2.pinLen;delete k2.pinCode;
           k2.pinRequired=false;
         }
         setK(k2);renderSheetContent();
-        showToast(val?'PIN/password set (hashed)':'PIN removed','ok');
+        showToast(val?'Password set (hashed)':'Password removed','ok');
       });
 
 
@@ -3866,7 +3846,19 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       ObsidianSync.schedule();
       // Update heartbeat BPM
       if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
+      // Track activity for idle lock
+      if(typeof touchActivity==='function')touchActivity();
       return entry;
+    }
+
+    function addSystemBubble(text){
+      const s=$('chatScroll');
+      const el=document.createElement('div');
+      el.className='chat-bubble system';
+      el.textContent=text;
+      s.appendChild(el);
+      smoothScrollToBottom(s,280);
+      return el;
     }
 
     function addTyping(){
@@ -6089,7 +6081,7 @@ Rules:
     }
 
     // ── Portable JSON Export/Import ─────────────────────
-    const SENSITIVE_KEYS = new Set(['aiKey','whisperKey','tgToken','tgChatId','imageGenKey','pinHash','pinIsAlpha','pinLen','pinRequired']);
+    const SENSITIVE_KEYS = new Set(['aiKey','whisperKey','tgToken','tgChatId','imageGenKey','pinHash','pinRequired']);
 
     function compressImageDataUrl(dataUrl){
       if(!dataUrl||!dataUrl.startsWith('data:image'))return Promise.resolve(dataUrl);
@@ -7392,8 +7384,14 @@ Rules:
       const exifTexts=imageFiles.filter(f=>f.exifText).map(f=>f.exifText);
       if(exifTexts.length){text=(text||'')+'\n'+exifTexts.join('\n')}
 
-      // PIN code gate
-      if(!checkPinLock())return;
+      // Password lock gate — intercept input for unlock
+      if(chatLocked){
+        $('textIn').value='';$('textIn').style.height='auto';
+        clearAllFiles();updateActionBtn();
+        handleChatLockInput(text);
+        return;
+      }
+      touchActivity();
 
       // Input rules: max length
       const sk=getK();
@@ -8785,7 +8783,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       webhookUrl:'webhookUrl',webhookEvents:'webhookEvents',
       scheduledMessages:'scheduledMessages',latexEnabled:'latexEnabled',
       // Security
-      pinHash:'pinHash',pinIsAlpha:'pinIsAlpha',pinLen:'pinLen',pinRequired:'pinRequired',
+      pinHash:'pinHash',pinRequired:'pinRequired',
       // Animations
       typingAnimation:'typingAnimation',typingSpeed:'typingSpeed',bubbleAnimation:'bubbleAnimation',
       use24HourTime:'use24HourTime',
@@ -9069,25 +9067,27 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     }
 
     // ── AES-GCM Encryption (Web Crypto API) ────────────
-    async function deriveKey(passphrase){
+    async function deriveKey(passphrase,salt){
       const enc=new TextEncoder();
       const keyMaterial=await crypto.subtle.importKey('raw',enc.encode(passphrase),'PBKDF2',false,['deriveKey']);
-      return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('tealclaw-v1'),iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+      return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:100000,hash:'SHA-256'},keyMaterial,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
     }
     async function encryptConfig(json,passphrase){
-      const key=await deriveKey(passphrase);
+      const salt=crypto.getRandomValues(new Uint8Array(16));
       const iv=crypto.getRandomValues(new Uint8Array(12));
+      const key=await deriveKey(passphrase,salt);
       const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(json));
-      // Combine iv + ciphertext, encode as base64
-      const buf=new Uint8Array(iv.length+ct.byteLength);
-      buf.set(iv);buf.set(new Uint8Array(ct),iv.length);
+      // Combine salt(16) + iv(12) + ciphertext, encode as base64
+      const buf=new Uint8Array(salt.length+iv.length+ct.byteLength);
+      buf.set(salt);buf.set(iv,salt.length);buf.set(new Uint8Array(ct),salt.length+iv.length);
       return btoa(String.fromCharCode(...buf));
     }
     async function decryptConfig(blob,passphrase){
       const raw=Uint8Array.from(atob(blob),c=>c.charCodeAt(0));
-      const iv=raw.slice(0,12);
-      const ct=raw.slice(12);
-      const key=await deriveKey(passphrase);
+      const salt=raw.slice(0,16);
+      const iv=raw.slice(16,28);
+      const ct=raw.slice(28);
+      const key=await deriveKey(passphrase,salt);
       const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
       return new TextDecoder().decode(pt);
     }
@@ -9255,8 +9255,10 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       return{url:location.origin+'/#config=enc:'+blob,passphrase};
     }
 
-    // ── PIN Code Lock (4-8 chars, hashed storage) ────
-    let pinUnlocked=false;
+    // ── Password Lock (hashed storage) ────────────────
+    let chatLocked=false;
+    let lastActivity=Date.now();
+    const idleTimeoutMs=15*60*1000; // 15 minutes
 
     async function hashPin(pin){
       const data=new TextEncoder().encode(pin+'tealclaw-pin-salt');
@@ -9269,95 +9271,48 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       const k=getK();
       if(k.pinCode&&!k.pinHash){
         k.pinHash=await hashPin(k.pinCode);
-        k.pinIsAlpha=/[a-zA-Z]/.test(k.pinCode);
-        k.pinLen=k.pinCode.length;
-        delete k.pinCode;
+        delete k.pinCode;delete k.pinIsAlpha;delete k.pinLen;
         setK(k);
       }
     })();
 
-    function checkPinLock(){
+    function initChatLock(){
       const k=getK();
-      if(!k.pinHash||!k.pinRequired)return true;
-      if(pinUnlocked)return true;
-      showPinScreen();
-      return false;
+      if(k.pinRequired&&k.pinHash){
+        chatLocked=true;
+        $('chatScroll').classList.add('locked');
+        $('textIn').placeholder='Enter password...';
+        addSystemBubble('This chat is password-protected. Type your password to unlock.');
+      }
     }
 
-    function showPinScreen(){
-      const overlay=$('pinOverlay');
-      overlay.classList.remove('hidden');
+    async function handleChatLockInput(text){
+      // Called from send() when chatLocked is true
       const k=getK();
-      const isAlpha=!!k.pinIsAlpha;
-      const pinLen=k.pinLen||4;
-      let entered='';
-      const dotsEl=$('pinDots');
-      const padEl=$('pinPad');
-
-      if(isAlpha){
-        // Show text input for alphanumeric passwords
-        dotsEl.innerHTML='';
-        padEl.innerHTML='';
-        const wrap=document.createElement('div');
-        wrap.style.cssText='display:flex;flex-direction:column;align-items:center;gap:12px;width:100%';
-        const input=document.createElement('input');
-        input.type='password';input.maxLength=8;input.autocomplete='off';input.spellcheck=false;
-        input.style.cssText='width:200px;padding:12px 16px;font-family:var(--mono);font-size:16px;letter-spacing:3px;text-align:center;background:var(--bg-card);border:2px solid var(--border-2);border-radius:10px;color:var(--text);outline:none;caret-shape:block;caret-color:var(--teal)';
-        input.placeholder='Password';
-        const btn=document.createElement('button');
-        btn.className='pin-key';btn.style.cssText='width:auto;padding:10px 32px;border-radius:10px;font-size:14px;height:auto';
-        btn.textContent='Unlock';
-        wrap.appendChild(input);wrap.appendChild(btn);
-        padEl.appendChild(wrap);
-
-        async function tryUnlock(){
-          const val=input.value;
-          if(val.length<4)return;
-          const h=await hashPin(val);
-          if(h===k.pinHash){
-            pinUnlocked=true;overlay.classList.add('hidden');haptic('success');showToast('Unlocked','ok');
-          } else {
-            haptic('error');input.value='';
-            input.style.borderColor='var(--err)';
-            setTimeout(()=>{input.style.borderColor='var(--border-2)'},400);
-          }
-        }
-        btn.addEventListener('click',tryUnlock);
-        input.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock()});
-        setTimeout(()=>input.focus(),100);
+      const h=await hashPin(text);
+      if(h===k.pinHash){
+        chatLocked=false;
+        $('chatScroll').classList.remove('locked');
+        $('textIn').placeholder='';
+        addSystemBubble('Unlocked!');
+        haptic('success');
+        lastActivity=Date.now();
       } else {
-        // Numeric PIN pad (up to 8 dots)
-        function renderDots(){
-          dotsEl.innerHTML=Array.from({length:pinLen},(_,i)=>`<div class="pin-dot${i<entered.length?' filled':''}"></div>`).join('');
-        }
-        function renderPad(){
-          padEl.innerHTML='';
-          [1,2,3,4,5,6,7,8,9].forEach(n=>{
-            const btn=document.createElement('button');btn.className='pin-key';btn.textContent=n;
-            btn.addEventListener('click',()=>enterDigit(String(n)));padEl.appendChild(btn);
-          });
-          const clear=document.createElement('button');clear.className='pin-key wide';clear.textContent='Clear';
-          clear.addEventListener('click',()=>{entered='';renderDots()});padEl.appendChild(clear);
-          const zero=document.createElement('button');zero.className='pin-key';zero.textContent='0';
-          zero.addEventListener('click',()=>enterDigit('0'));padEl.appendChild(zero);
-          const del=document.createElement('button');del.className='pin-key wide';del.innerHTML='&#9003;';
-          del.addEventListener('click',()=>{entered=entered.slice(0,-1);renderDots()});padEl.appendChild(del);
-        }
-        async function enterDigit(d){
-          if(entered.length>=pinLen)return;
-          entered+=d;renderDots();
-          if(entered.length===pinLen){
-            const h=await hashPin(entered);
-            if(h===k.pinHash){
-              pinUnlocked=true;overlay.classList.add('hidden');haptic('success');showToast('Unlocked','ok');
-            } else {
-              haptic('error');
-              dotsEl.querySelectorAll('.pin-dot').forEach(d=>d.classList.add('wrong'));
-              setTimeout(()=>{entered='';renderDots()},400);
-            }
-          }
-        }
-        renderDots();renderPad();
+        addSystemBubble('Wrong password. Try again.');
+        haptic('error');
+      }
+    }
+
+    function touchActivity(){lastActivity=Date.now()}
+
+    function checkIdle(){
+      const k=getK();
+      if(!k.pinRequired||!k.pinHash||chatLocked)return;
+      if(Date.now()-lastActivity>idleTimeoutMs){
+        chatLocked=true;
+        $('chatScroll').classList.add('locked');
+        $('textIn').placeholder='Enter password...';
+        addSystemBubble('Session locked. Type your password to continue.');
       }
     }
 
@@ -9984,8 +9939,11 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     loadUI();
     // Disconnect WS on page unload
     window.addEventListener('pagehide',()=>{agentConnections.forEach(c=>c.stop());agentConnections.clear()});
-    // PIN lock on startup
-    checkPinLock();
+    // Password lock on startup + idle timer
+    initChatLock();
+    setInterval(checkIdle,60000);
+    // Track activity on input focus
+    $('textIn').addEventListener('focus',touchActivity);
     // Session expiry check + badge
     checkSessionExpiry();
     updateSessionBadge();
@@ -10559,7 +10517,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(e.key!=='Escape')return;
       const sheet=document.querySelector('.sheet.open');
       if(sheet){closeSheet();e.preventDefault();return}
-      const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.pin-overlay:not(.hidden),.cam-overlay:not(.hidden),.gif-overlay:not(.hidden)');
+      const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.cam-overlay:not(.hidden),.gif-overlay:not(.hidden)');
       if(overlay){overlay.classList.add('hidden');e.preventDefault();return}
       const search=document.querySelector('.search-bar.open');
       if(search){search.classList.remove('open');e.preventDefault();return}
@@ -10572,7 +10530,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       history.pushState({page:'main'},'');
       window.addEventListener('popstate',()=>{
         const sheet=document.querySelector('.sheet.open');
-        const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.pin-overlay:not(.hidden),.cam-overlay:not(.hidden)');
+        const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.cam-overlay:not(.hidden)');
         if(sheet){closeSheet()}
         else if(overlay){overlay.classList.add('hidden')}
         history.pushState({page:'main'},'');
