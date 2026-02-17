@@ -1502,6 +1502,26 @@
     }
     function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
     function setAgents(a){localStorage.setItem('tc-agents',JSON.stringify(a))}
+
+    // ── Auto-provisioning for tealclaw.ai public gateway ──
+    const TEALCLAW_GW_URL='https://gw.tealclaw.ai';
+    const TEALCLAW_PUBLIC_AGENT_ID='tealclaw-public';
+
+    async function autoProvisionToken(){
+      try{
+        const agents=getAgents();
+        const existing=agents.find(a=>a.id===TEALCLAW_PUBLIC_AGENT_ID);
+        if(existing)return existing;
+        const res=await fetch(TEALCLAW_GW_URL+'/connect',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(!res.ok)return null;
+        const data=await res.json();
+        if(!data.ok||!data.token)return null;
+        const agent={id:TEALCLAW_PUBLIC_AGENT_ID,name:'TealClaw',url:TEALCLAW_GW_URL,token:data.token,active:agents.length===0};
+        agents.push(agent);setAgents(agents);
+        if(agent.active){const k=getK();k.mode='agent';setK(k)}
+        return agent;
+      }catch{return null}
+    }
     function getGuestLinks(){try{return JSON.parse(localStorage.getItem('tc-guest-links')||'[]')}catch{return[]}}
     function setGuestLinks(l){localStorage.setItem('tc-guest-links',JSON.stringify(l))}
 
@@ -1843,6 +1863,16 @@
       renderAgentSelector();
       chatHistory=getChat();
       renderChat();
+      // Auto-provision TealClaw public gateway token if no agents configured
+      const existingAgents=getAgents();
+      if(existingAgents.length===0){
+        autoProvisionToken().then(agent=>{
+          if(agent){
+            renderAgentSelector();updateStatus();
+            ensureAgentConnection(agent);
+          }
+        }).catch(()=>{});
+      }
       // Auto-connect WS for agent mode (also auto-switch if agents configured but mode not set)
       const k=getK();
       const agents=getAgents();
@@ -4590,6 +4620,23 @@ ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- S
       if(k.aiKey||k.whisperKey)return;
       const hasAny=chatHistory.length>0;
       if(hasAny)return;
+
+      // Simplified onboarding when auto-provisioned with TealClaw public gateway
+      const agents=getAgents();
+      const hasPublicAgent=agents.some(a=>a.id===TEALCLAW_PUBLIC_AGENT_ID);
+      if(hasPublicAgent){
+        sysBubble(`<h2>Welcome to TealClaw</h2>
+<p>Connected to TealClaw gateway. Paste a <a href="https://console.groq.com/keys" target="_blank" rel="noopener"><strong>Groq key</strong></a> (<code>gsk_...</code>) for voice + chat, or start typing.</p>
+<hr>
+<h3>Useful Commands</h3>
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<tr><td style="padding:3px 6px"><code>/help</code></td><td style="padding:3px 6px">Full command list</td></tr>
+<tr><td style="padding:3px 6px"><code>/save</code></td><td style="padding:3px 6px">Save chat to Obsidian</td></tr>
+<tr><td style="padding:3px 6px"><code>/clear</code></td><td style="padding:3px 6px">Clear conversation</td></tr>
+</table>
+<p style="font-size:11px;color:var(--text-3);margin-top:8px">Want full tool access? Connect your own <a href="https://openclaw.ai" target="_blank" rel="noopener" style="color:var(--teal)">OpenClaw gateway</a> in Settings &rarr; Agent.</p>`);
+        return;
+      }
 
       sysBubble(`<h2>Welcome to TealClaw</h2>
 <p>Your private, zero-tracking voice + chat dashboard. Everything runs in your browser — your keys never leave this device.</p>
