@@ -2647,28 +2647,19 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     $('maModal').addEventListener('click',e=>{if(e.target===$('maModal'))closeMAModal()});
     function renderMAModal(){
       const k=getK();let html='';
-      const gestureOn=k.gestureEnabled===true,bookResearch=k.bookGestureResearch||'research';
+      const gestureOn=k.gestureEnabled===true;
       html+=`<div class="ma-section"><div class="ma-section-title">Gesture Control</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
           <button class="mode-btn ma-gesture-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
           <button class="mode-btn ma-gesture-btn ${!gestureOn?'active':''}" data-gesture="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gestureOn?'var(--teal)':'transparent'};border:none;color:${!gestureOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Hand gestures for voice control. Wireframes only appear for recognized gestures.</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show The Claw gesture to start voice capture. Lower your hand to send.</div>
         ${gestureOn?`<div style="margin-top:10px">
           <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">The Claw</div>
           <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Show The Claw (one hand) to start voice capture. Lower your hand to send.</div>
           <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="maGestConfVal">${k.gestureConfidence||0.5}</span></div>
           <input type="range" id="maGestureConf" min="0.25" max="0.95" step="0.05" value="${k.gestureConfidence||0.5}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
           <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive, higher = more precise</div>
-          <div style="margin-top:14px">
-            <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Open Book</div>
-            <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Hold two open hands together like an open book to start voice research. Lower hands to send.</div>
-            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:4px">Research Type</div>
-            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-              <button class="mode-btn ma-book-btn ${bookResearch==='research'?'active':''}" data-bookres="research" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='research'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='research'?'#fff':'var(--text-3)'};cursor:pointer">Research</button>
-              <button class="mode-btn ma-book-btn ${bookResearch==='deepresearch'?'active':''}" data-bookres="deepresearch" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='deepresearch'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='deepresearch'?'#fff':'var(--text-3)'};cursor:pointer">Deep Research</button>
-            </div>
-          </div>
         </div>`:''}
       </div>`;
       const plOn=k.photoLogEnabled===true,plCam=k.photoLogCamera||'user',plInt=k.photoLogInterval||5,plFrames=k.photoLogFrames||12;
@@ -4447,7 +4438,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style require user approval.
+IMPORTANT: When the user asks to change settings, customize the app, or modify their configuration — activate help mode first with {"type":"navigate","target":"help-mode"} so you have full context to make changes accurately. You can also show the help menu with {"type":"navigate","target":"help"} to let the user see available commands.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Video: \`\`\`tc-action\n{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}\n\`\`\` Supports HLS, MP4, WebM. Auto-PiP on scroll.
 Camera grid: \`\`\`tc-action\n{"type":"video-grid","title":"Security","cols":2,"feeds":[{"url":"...","label":"Front"},{"url":"...","label":"Back"}]}\n\`\`\` 1-4 cols, each feed has url+label+live.
@@ -5740,7 +5732,7 @@ AVAILABLE ACTION TYPES:
 - config: {"type":"config", ...fields} — set any config field(s)
 - command: {"type":"command","command":"/slash-command"} — run a slash command
 - toast: {"type":"toast","message":"text","style":"ok"} — show notification
-- navigate: {"type":"navigate","target":"settings"|"new-chat"} — open a view
+- navigate: {"type":"navigate","target":"settings"|"new-chat"|"help"|"help-mode"} — open a view or activate help mode
 - guest-link: {"type":"guest-link","action":"create","name":"...","instructions":"...","expires":"7d"}
 - request-config: {"type":"request-config"} — read current config
 - prompt: {"type":"prompt","question":"Pick one","options":["A","B","C"]}
@@ -7511,6 +7503,8 @@ Rules:
             case 'navigate':{
               if(action.target==='settings'){openSheet()}
               else if(action.target==='new-chat'){newConversation()}
+              else if(action.target==='help'){$('helpBtn').click()}
+              else if(action.target==='help-mode'){enterHelpMode()}
               results.push({type:'navigate',ok:true});
               break;
             }
@@ -11109,10 +11103,12 @@ ${agentNote}`);
       // Combine salt(16) + iv(12) + ciphertext, encode as base64
       const buf=new Uint8Array(salt.length+iv.length+ct.byteLength);
       buf.set(salt);buf.set(iv,salt.length);buf.set(new Uint8Array(ct),salt.length+iv.length);
-      return btoa(String.fromCharCode(...buf));
+      return btoa(String.fromCharCode(...buf)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
     }
     async function decryptConfig(blob,passphrase){
-      const raw=Uint8Array.from(atob(blob),c=>c.charCodeAt(0));
+      let b64=blob.replace(/-/g,'+').replace(/_/g,'/');
+      while(b64.length%4)b64+='=';
+      const raw=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
       const salt=raw.slice(0,16);
       const iv=raw.slice(16,28);
       const ct=raw.slice(28);
@@ -12639,8 +12635,6 @@ ${agentNote}`);
     let clawDetectStart=0; // timestamp when claw first detected (for start delay)
     const CLAW_CONFIRM_MS=250; // hold claw briefly before recording starts
     const GESTURE_GONE_MS=500; // stop after claw gone for 0.5s
-    let bookDetectStart=0,bookRecording=false,bookGoneTime=0;
-    const BOOK_CONFIRM_MS=500; // hold open book gesture for 0.5s before activating
 
     // Claw audio: own mic stream, recorder, chunks
     let clawMicStream=null,clawRecorder=null,clawChunks=[];
@@ -12721,66 +12715,10 @@ ${agentNote}`);
       haptic('light');
     }
 
-    let bookStarting=false;
-    async function startBookRecording(){
-      if(gestureRecording||bookRecording||bookStarting)return;
-      bookStarting=true;
-      try{
-        clawMicStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
-        clawChunks=[];
-        clawRecorder=createAudioRecorder(clawMicStream,e=>{if(e.data.size>0)clawChunks.push(e.data)},async()=>{
-          if(clawInterimTimer){clearInterval(clawInterimTimer);clawInterimTimer=null}
-          if(clawChunks.length===0){clearLiveSubtitle();return}
-          const blob=new Blob(clawChunks,{type:clawRecorder?.mimeType||'audio/webm'});
-          try{
-            const text=await transcribe(blob);
-            if(text){
-              showLiveSubtitle(text);
-              setTimeout(clearLiveSubtitle,2500);
-              const researchType=getK().bookGestureResearch||'research';
-              pipeline('/'+researchType+' '+text);
-            } else {
-              clearLiveSubtitle();
-            }
-          }catch{clearLiveSubtitle()}
-          clawChunks=[];
-          if(clawMicStream){clawMicStream.getTracks().forEach(t=>t.stop());clawMicStream=null}
-        });
-        clawInterimTimer=setInterval(async()=>{
-          if(clawChunks.length===0)return;
-          try{
-            const blob=new Blob(clawChunks,{type:clawRecorder?.mimeType||'audio/webm'});
-            const text=await transcribe(blob);
-            if(text)showLiveSubtitle(text);
-          }catch{}
-        },2000);
-        clawRecorder.start(500);
-        bookRecording=true;
-        gestureRecording=true;
-        $('clawToggle').classList.add('recording');
-        clearLiveSubtitle();
-        haptic('success');
-      }catch(err){
-        console.error('[Book mic]',err);
-        showToast('Mic access denied','err');
-      }finally{
-        bookStarting=false;
-      }
-    }
-
-    function stopBookRecording(){
-      if(!bookRecording||!clawRecorder)return;
-      clawRecorder.stop();
-      bookRecording=false;
-      gestureRecording=false;
-      $('clawToggle').classList.remove('recording');
-      haptic('light');
-    }
 
     function getGestureBindings(){
       return[
-        {gesture:'the_claw',action:'voice_toggle',label:'The Claw: voice capture'},
-        {gesture:'open_book',action:'research_voice',label:'Open Book: voice research'}
+        {gesture:'the_claw',action:'voice_toggle',label:'The Claw: voice capture'}
       ];
     }
 
@@ -12879,35 +12817,6 @@ ${agentNote}`);
       return'the_claw';
     }
 
-    function classifyOpenBook(multiHandLandmarks){
-      if(!multiHandLandmarks||multiHandLandmarks.length!==2)return null;
-      const dist=(lm,a,b)=>Math.hypot(lm[a].x-lm[b].x,lm[a].y-lm[b].y,lm[a].z-lm[b].z);
-      const wristDist=(lm,i)=>dist(lm,i,0);
-      for(let h=0;h<2;h++){
-        const lm=multiHandLandmarks[h];
-        if(!lm||lm.length<21)return null;
-        // All 4 fingers must be extended (tip further from wrist than PIP)
-        const tips=[8,12,16,20],pips=[6,10,14,18];
-        const extended=tips.every((t,i)=>wristDist(lm,t)>wristDist(lm,pips[i]));
-        if(!extended)return null;
-        // Thumb should point outward (tip further from wrist than thumb IP joint)
-        if(wristDist(lm,4)<=wristDist(lm,3))return null;
-        // Finger spread check: adjacent fingertips shouldn't be bunched together
-        const palmSize=dist(lm,0,9);
-        const pairs=[[8,12],[12,16],[16,20]];
-        const minSpread=palmSize*0.08;
-        if(pairs.some(([a,b])=>dist(lm,a,b)<minSpread))return null;
-      }
-      // Hands near each other: pinky-base (17) of one hand near index-base (5) of the other
-      const lm0=multiHandLandmarks[0],lm1=multiHandLandmarks[1];
-      const crossDist1=Math.hypot(lm0[17].x-lm1[5].x,lm0[17].y-lm1[5].y);
-      const crossDist2=Math.hypot(lm1[17].x-lm0[5].x,lm1[17].y-lm0[5].y);
-      const proximity=Math.min(crossDist1,crossDist2);
-      // Threshold: relative to average palm size of both hands
-      const avgPalm=(Math.hypot(lm0[0].x-lm0[9].x,lm0[0].y-lm0[9].y)+Math.hypot(lm1[0].x-lm1[9].x,lm1[0].y-lm1[9].y))/2;
-      if(proximity>avgPalm*2.5)return null;
-      return'open_book';
-    }
 
     async function startGestureTracking(){
       if(gestureActive)return;
@@ -12942,42 +12851,10 @@ ${agentNote}`);
         gestureHands.onResults(results=>{
           const multi=results.multiHandLandmarks||[];
           if(multi.length>0){
-            // Check open book first (needs 2 hands)
-            const bookGesture=classifyOpenBook(multi);
-            // Check claw on first hand
             const clawGesture=classifyGesture(multi[0]);
-
-            if(bookGesture==='open_book'&&!gestureRecording){
-              // Open book detected — draw both hands in amber
-              drawGestureWireframe(multi.map(lm=>({landmarks:lm,color:'#f59e0b'})));
-              clawDetectStart=0;
-              bookGoneTime=0;
-              if(!bookRecording){
-                if(!bookDetectStart)bookDetectStart=Date.now();
-                if(Date.now()-bookDetectStart>=BOOK_CONFIRM_MS){
-                  startBookRecording();
-                  bookDetectStart=0;
-                }
-              }
-            } else if(bookRecording){
-              // Currently book-recording — keep amber wireframes while gesture holds
-              if(bookGesture==='open_book'){
-                drawGestureWireframe(multi.map(lm=>({landmarks:lm,color:'#f59e0b'})));
-                bookGoneTime=0;
-              } else {
-                drawGestureWireframe([]);
-                if(!bookGoneTime)bookGoneTime=Date.now();
-                if(Date.now()-bookGoneTime>GESTURE_GONE_MS){
-                  stopBookRecording();
-                  bookGoneTime=0;
-                  bookDetectStart=0;
-                }
-              }
-            } else if(clawGesture==='the_claw'){
-              // Single-hand claw gesture
+            if(clawGesture==='the_claw'){
               drawGestureWireframe([{landmarks:multi[0],color:'#10b7a9'}]);
               gestureGoneTime=0;
-              bookDetectStart=0;
               if(!gestureRecording){
                 if(!clawDetectStart)clawDetectStart=Date.now();
                 if(Date.now()-clawDetectStart>=CLAW_CONFIRM_MS){
@@ -12986,12 +12863,9 @@ ${agentNote}`);
                 }
               }
             } else {
-              // Hands visible but no recognized gesture — hide wireframe
               drawGestureWireframe([]);
               clawDetectStart=0;
-              bookDetectStart=0;
-              // Claw gone while recording — start stop countdown
-              if(gestureRecording&&!bookRecording){
+              if(gestureRecording){
                 if(!gestureGoneTime)gestureGoneTime=Date.now();
                 if(Date.now()-gestureGoneTime>GESTURE_GONE_MS){
                   stopClawRecording();
@@ -13000,17 +12874,9 @@ ${agentNote}`);
               }
             }
           } else {
-            // No hands at all
             drawGestureWireframe([]);
             clawDetectStart=0;
-            bookDetectStart=0;
-            if(bookRecording){
-              if(!bookGoneTime)bookGoneTime=Date.now();
-              if(Date.now()-bookGoneTime>GESTURE_GONE_MS){
-                stopBookRecording();
-                bookGoneTime=0;
-              }
-            } else if(gestureRecording){
+            if(gestureRecording){
               if(!gestureGoneTime)gestureGoneTime=Date.now();
               if(Date.now()-gestureGoneTime>GESTURE_GONE_MS){
                 stopClawRecording();
@@ -13027,7 +12893,7 @@ ${agentNote}`);
         await gestureCamera.start();
 
         gestureActive=true;
-        showToast('Gesture mode on — Claw to speak, Open Book to research','ok');
+        showToast('Gesture mode on — show The Claw to speak','ok');
       }catch(err){
         console.error('[Gesture]',err);
         showToast('Gesture setup failed: '+err.message,'err');
