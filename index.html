@@ -7789,13 +7789,13 @@ Rules:
                 setTimeout(()=>{
                   const b=sysBubble(`<div style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><button style="width:100%;margin:8px 0;padding:10px;font-size:12px;font-weight:600;font-family:var(--font);border:1.5px solid var(--teal);border-radius:var(--r-md);background:transparent;color:var(--teal);cursor:pointer" class="gl-inline-copy-link">Copy Link</button><button style="width:100%;padding:8px;font-size:11px;font-weight:600;font-family:var(--font);border:1.5px dashed var(--warn);border-radius:var(--r-md);background:transparent;color:var(--warn);cursor:pointer" class="gl-inline-reveal">Reveal Passphrase</button><div class="gl-inline-pass-area" style="margin-top:6px"></div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:6px">Share the passphrase separately from the link.</div></div>`);
                   b.querySelector('.gl-inline-copy-link').addEventListener('click',function(){
-                    navigator.clipboard.writeText('${fullUrl.replace(/'/g,"\\'")}').then(()=>{this.textContent='Copied!';showToast('Link copied','ok');setTimeout(()=>this.textContent='Copy Link',2000)}).catch(()=>showToast('Copy failed','err'));
+                    navigator.clipboard.writeText(fullUrl).then(()=>{this.textContent='Copied!';showToast('Link copied','ok');setTimeout(()=>this.textContent='Copy Link',2000)}).catch(()=>showToast('Copy failed','err'));
                   });
                   const revealBtn=b.querySelector('.gl-inline-reveal');
                   const passArea=b.querySelector('.gl-inline-pass-area');
                   revealBtn.addEventListener('click',function showPass(){
-                    passArea.innerHTML='<div style="padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer;margin-bottom:4px" class="gl-pp">${passphrase}</div><div style="font-size:9px;color:var(--text-3);text-align:center">Hiding in <span class="gl-timer">10</span>s</div>';
-                    passArea.querySelector('.gl-pp').addEventListener('click',()=>{navigator.clipboard.writeText('${passphrase}').then(()=>showToast('Passphrase copied','ok'))});
+                    passArea.innerHTML='<div style="padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer;margin-bottom:4px" class="gl-pp">'+esc(passphrase)+'</div><div style="font-size:9px;color:var(--text-3);text-align:center">Hiding in <span class="gl-timer">10</span>s</div>';
+                    passArea.querySelector('.gl-pp').addEventListener('click',()=>{navigator.clipboard.writeText(passphrase).then(()=>showToast('Passphrase copied','ok'))});
                     let sec=10;const iv=setInterval(()=>{sec--;const t=passArea.querySelector('.gl-timer');if(t)t.textContent=sec;if(sec<=0){clearInterval(iv);passArea.innerHTML='';revealBtn.textContent='Reveal Passphrase'}},1000);
                     revealBtn.textContent='Hiding in 10s';revealBtn.disabled=true;
                     setTimeout(()=>{revealBtn.disabled=false},10000);
