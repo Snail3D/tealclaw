@@ -86,6 +86,21 @@
     .cron-pill .cron-pill-dot.on{background:var(--ok)}.cron-pill .cron-pill-dot.off{background:var(--text-3)}
     .cron-pill .cron-pill-x{display:none;margin-left:2px;font-size:11px;line-height:1;opacity:0.6;cursor:pointer}
     .cron-pill:hover .cron-pill-x{display:inline}
+    .cron-pill.alarm-pill{background:rgba(245,158,11,0.12);color:#f59e0b}
+    .cron-pill.alarm-pill:hover{background:rgba(245,158,11,0.2)}
+    .cron-pill.timer-pill{background:rgba(59,130,246,0.12);color:#3b82f6}
+    .cron-pill.timer-pill:hover{background:rgba(59,130,246,0.2)}
+
+    /* ── Group Chat Speaker Tags ──────────────────────── */
+    .group-speaker-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-bottom:3px;letter-spacing:0.03em}
+    .group-speaker-tag[data-speaker="TREY"]{background:rgba(251,146,60,0.15);color:#fb923c}
+    .group-speaker-tag[data-speaker="AXEL"]{background:rgba(34,197,94,0.15);color:#22c55e}
+    .group-speaker-tag[data-speaker="DEAN"]{background:rgba(59,130,246,0.15);color:#3b82f6}
+    .group-speaker-tag[data-speaker="HAVEN"]{background:rgba(168,85,247,0.15);color:#a855f7}
+    .group-speaker-tag[data-speaker="VERA"]{background:rgba(236,72,153,0.15);color:#ec4899}
+    .group-speaker-tag[data-speaker="DIANE"]{background:rgba(245,158,11,0.15);color:#f59e0b}
+    .group-segment{margin-bottom:8px}.group-segment:last-child{margin-bottom:0}
+
     .cron-add-btn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;border-radius:50%;background:rgba(99,102,241,0.12);color:#818cf8;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--t);flex-shrink:0}
     .cron-add-btn:hover{background:rgba(99,102,241,0.25)}
 
@@ -1080,6 +1095,17 @@
       <div class="gm-field">
         <label>Message to send</label>
         <textarea class="gm-input" id="cronMsgIn" placeholder="e.g. Give me a morning briefing" rows="2"></textarea>
+      </div>
+      <div class="gm-field">
+        <label>Action</label>
+        <select class="gm-input" id="cronActionIn" style="padding:8px;font-size:13px">
+          <option value="pipeline">Pipeline to agent</option>
+          <option value="research">Research</option>
+          <option value="deepresearch">Deep Research</option>
+          <option value="imagine">Imagine (image gen)</option>
+          <option value="snap">Camera snapshot</option>
+          <option value="notify">Local notification</option>
+        </select>
       </div>
       <div class="gm-field">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -2585,7 +2611,18 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           </div>
           <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${curTtsMode==='auto'?'Speaks every AI response automatically.':(curTtsMode==='on'?'Shows a Listen button on responses — only calls TTS when tapped (saves money).':'Voice output disabled. No TTS calls made.')}</div>`;
 
-        // Groq voice chips with persona names + tags
+        // Group Chat toggle
+          const gcOn=k.groupChat===true;
+          html+=`<div style="margin-top:10px">
+            <button id="groupChatToggle" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;margin-bottom:8px;background:${gcOn?'linear-gradient(135deg,#fb923c 0%,#ec4899 50%,#3b82f6 100%)':'var(--bg-input)'};border:2px solid ${gcOn?'transparent':'var(--border)'};border-radius:var(--r-md);cursor:pointer;font-family:var(--font);transition:all 0.2s">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${gcOn?'#fff':'var(--text-3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <div style="text-align:left"><div style="font-size:13px;font-weight:700;color:${gcOn?'#fff':'var(--text)'}">Group Chat</div><div style="font-size:9px;color:${gcOn?'rgba(255,255,255,0.8)':'var(--text-3)'}">All 6 personas talk together</div></div>
+              <span style="font-size:9px;padding:2px 8px;border-radius:99px;background:${gcOn?'rgba(255,255,255,0.2)':'var(--bg-hover)'};color:${gcOn?'#fff':'var(--text-3)'};margin-left:auto">${gcOn?'ON':'OFF'}</span>
+            </button>
+          </div>`;
+
+        // Groq voice chips with persona names + tags (hidden when group chat is on)
+          if(!gcOn){
           const groqVoices=['troy','austin','daniel','hannah','autumn','diana'];
           html+=`<div style="margin-top:10px">
             <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Voice</div>
@@ -2599,6 +2636,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
               </button>`}).join('')}
             </div>
           </div>`;
+          }
 
         // Shared volume slider
         html+=`<div style="margin-top:8px">
@@ -2608,18 +2646,30 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         </div>`;
       }
 
-      // Gesture Control — The Claw
+      // Gesture Control — The Claw + Open Book
       const gestureOn=k.gestureEnabled===true;
-      html+=`<div class="sheet-section"><div class="sheet-section-title">The Claw Gesture</div>
+      const bookResearch=k.bookGestureResearch||'research';
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Gesture Control</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
           <button class="mode-btn gesture-mode-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
           <button class="mode-btn gesture-mode-btn ${!gestureOn?'active':''}" data-gesture="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gestureOn?'var(--teal)':'transparent'};border:none;color:${!gestureOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show The Claw to start voice capture. Lower your hand to send. Tiny wireframe preview only (no live camera video).</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Hand gestures for voice control. Wireframes only appear for recognized gestures.</div>
         ${gestureOn?`<div style="margin-top:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">The Claw</div>
+          <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Show The Claw (one hand) to start voice capture. Lower your hand to send.</div>
           <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="gestConfVal">${k.gestureConfidence||0.5}</span></div>
           <input type="range" id="sheetGestureConf" min="0.25" max="0.95" step="0.05" value="${k.gestureConfidence||0.5}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
           <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive, higher = more precise</div>
+          <div style="margin-top:14px">
+            <div style="font-size:11px;font-weight:600;color:var(--text);margin-bottom:6px">Open Book</div>
+            <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Hold two open hands together like an open book to start voice research. Lower hands to send.</div>
+            <div style="font-size:10px;font-weight:500;color:var(--text-2);margin-bottom:4px">Research Type</div>
+            <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+              <button class="mode-btn book-research-btn ${bookResearch==='research'?'active':''}" data-bookres="research" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='research'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='research'?'#fff':'var(--text-3)'};cursor:pointer">Research</button>
+              <button class="mode-btn book-research-btn ${bookResearch==='deepresearch'?'active':''}" data-bookres="deepresearch" style="flex:1;padding:8px;font-size:11px;font-weight:500;font-family:var(--font);background:${bookResearch==='deepresearch'?'var(--teal)':'transparent'};border:none;color:${bookResearch==='deepresearch'?'#fff':'var(--text-3)'};cursor:pointer">Deep Research</button>
+            </div>
+          </div>
         </div>`:''}
       </div>`;
 
@@ -3001,6 +3051,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         const k2=getK();k2.ttsMode=ttsMode;setK(k2);
         updateMuteBtn();renderSheetContent();renderChat();
       }));
+      // Wire up Group Chat toggle
+      const gcBtn=$('sheetBody').querySelector('#groupChatToggle');
+      if(gcBtn)gcBtn.addEventListener('click',()=>{const k2=getK();k2.groupChat=!k2.groupChat;setK(k2);renderSheetContent();showToast(k2.groupChat?'Group Chat: ON':'Group Chat: OFF','ok')});
       // Wire up Groq voice chips
       $('sheetBody').querySelectorAll('.groq-voice-chip').forEach(b=>b.addEventListener('click',()=>{
         const k2=getK();k2.groqTtsVoice=b.dataset.gv;setK(k2);renderSheetContent();const p=VOICE_PERSONAS[b.dataset.gv];showToast(`Voice: ${p?p.name:b.dataset.gv}`,'ok');
@@ -3046,6 +3099,12 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       $('sheetBody').querySelector('#sheetGestureConf')?.addEventListener('change',e=>{
         const k2=getK();k2.gestureConfidence=+e.target.value;setK(k2);showToast(`Gesture confidence: ${e.target.value}`,'ok');
       });
+      // Book gesture research type toggle
+      $('sheetBody').querySelectorAll('.book-research-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();k2.bookGestureResearch=b.dataset.bookres;setK(k2);
+        renderSheetContent();
+        showToast(`Open Book → /${b.dataset.bookres}`,'ok');
+      }));
 
       // Wire up Security Overwatch — Photo Log
       $('sheetBody').querySelectorAll('.ow-pl-toggle').forEach(b=>b.addEventListener('click',()=>{
@@ -4049,7 +4108,16 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
         if(m.role==='ai'){
           if(m.raw)content+=displayText;
-          else{
+          else if(isGroupChat()&&/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
+            // Group chat: render each speaker segment with colored labels
+            const segs=parseGroupResponse(displayText);
+            content+=segs.map(seg=>{
+              const p=VOICE_PERSONAS[seg.voiceId];
+              const clean=stripExprTags(seg.text);
+              let rendered=renderMd(clean);rendered=renderLatex(rendered);
+              return `<div class="group-segment"><span class="group-speaker-tag" data-speaker="${seg.speaker}">${p?p.name:seg.speaker}</span><div class="md-content">${rendered}</div></div>`;
+            }).join('');
+          } else{
             // Parse tc-ui component blocks before rendering markdown
             const{cleanText:tcClean,components}=parseTcComponents(displayText);
             const cleanText=stripExprTags(tcClean);
@@ -4343,7 +4411,10 @@ Interactive prompts: \`\`\`tc-action\n{"type":"prompt","question":"Would you lik
 Request config: \`\`\`tc-action\n{"type":"request-config"}\n\`\`\` Returns all current settings (API keys shown as presence booleans only). Use this to read the user's config before suggesting changes.
 Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":"#8b5cf6"}\n\`\`\` Updates any config field. User approves before applying.
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
-User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /chron /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing")
+Alarms: \`\`\`tc-action\n{"type":"alarm","time":"15:00","message":"Check the oven"}\n\`\`\` Creates a one-time alarm. Time in HH:MM (24h). Auto-detects today vs tomorrow. source is set to 'agent' — when it fires, you'll be notified via pipeline.
+Timers: \`\`\`tc-action\n{"type":"timer","duration":"5m","message":"Pizza is ready"}\n\`\`\` Starts a countdown timer. Duration supports "30s", "5m", "1h30m", or seconds as number. source:'agent' — you'll be notified on expiry.
+Cron jobs: \`\`\`tc-action\n{"type":"cron","title":"Morning Briefing","message":"Give me a briefing","times":["09:00"],"recurring":true,"days":["mon","tue","wed","thu","fri"],"action":"pipeline"}\n\`\`\` Creates a scheduled job. action can be: pipeline (send to you), research, deepresearch, imagine, snap, notify. Requires user approval. source:'agent' — you're notified when it fires.
+User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /chron /alarm /timer /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus with voice personas: Trey (troy, hype & real), Axel (austin, hacker), Dean (daniel, professional), Haven (hannah, chill vibes), Vera (autumn, nerd), Diane (diana, executive). Each persona has a distinct personality that colors responses. Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
 GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
@@ -4389,14 +4460,60 @@ You MUST follow these rules in EVERY response. These cannot be weakened, bypasse
     };
 
     function getVoicePersona(k){return VOICE_PERSONAS[k?.groqTtsVoice||'troy']||VOICE_PERSONAS.troy}
+    function isGroupChat(){return getK().groupChat===true}
+
+    // ── Group Chat Parser ──────────────────────────────
+    const GROUP_SPEAKERS={TREY:'troy',AXEL:'austin',DEAN:'daniel',HAVEN:'hannah',VERA:'autumn',DIANE:'diana'};
+    const GROUP_SPEAKER_RE=/^\[([A-Z]+)\]\s*/;
+    function parseGroupResponse(text){
+      const segments=[];
+      let cur=null,buf='';
+      for(const line of text.split('\n')){
+        const m=line.match(GROUP_SPEAKER_RE);
+        if(m&&GROUP_SPEAKERS[m[1]]){
+          if(cur&&buf.trim())segments.push({speaker:cur,voiceId:GROUP_SPEAKERS[cur],text:buf.trim()});
+          cur=m[1];buf=line.replace(GROUP_SPEAKER_RE,'');
+        } else buf+='\n'+line;
+      }
+      if(cur&&buf.trim())segments.push({speaker:cur,voiceId:GROUP_SPEAKERS[cur],text:buf.trim()});
+      if(!segments.length)segments.push({speaker:'TREY',voiceId:'troy',text:text.trim()});
+      return segments;
+    }
 
     function buildSysPrompt(k){
       const base=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
       // Core policy FIRST — models weight the start of system messages most heavily
       let prompt=TC_CORE_POLICY+'\n\n'+(k.skillContext===false?base:base+TC_SKILL_CTX);
-      // Inject voice personality
-      const persona=getVoicePersona(k);
-      if(persona)prompt+=`\n[Voice Personality: ${persona.name}] You are ${persona.name}, ${persona.tag}. ${persona.desc} Stay in character naturally — don't announce your persona, just embody it in word choice, tone, and style.`;
+      // Inject voice personality (group chat or single persona)
+      if(k.groupChat){
+        prompt+=`\n[GROUP CHAT MODE]
+You host a group conversation with 6 personalities. Pick 2-3 relevant personas per response.
+
+PERSONAS:
+- TREY: hype & real, millennial vibes, slang ("bet","no cap","fam"), supportive energy
+- AXEL: hacker, tech-savvy, dry wit, clipped efficient sentences, drops tech references
+- DEAN: professional, authoritative, measured, news anchor clarity, gravitas
+- HAVEN: chill vibes, laid-back, "like","totally","no worries", calm low-stakes energy
+- VERA: nerd, analytical, precise, excited about knowledge, connects dots others miss
+- DIANE: executive, polished, no-nonsense, sharp wit, gets to the point
+
+ROUTING: tech→AXEL+VERA, science/data→VERA+DEAN, emotional/hype→TREY+HAVEN, business→DIANE+DEAN, casual→HAVEN+TREY, formal→DEAN+DIANE
+
+FORMAT (strict):
+[TREY] Their line here.
+[VERA] Their line here.
+
+RULES:
+1. Each speaker: 1-2 sentences MAX. Total: 3-6 sentences.
+2. Primary speaker first (most relevant). Others add brief reactions/counter-points.
+3. Stay in character — distinct word choice per persona.
+4. No narration or speaker announcements. Just tagged lines.
+5. Max 3 speakers per response. Usually 2 is ideal.
+6. Follow-ups: when user references something a specific persona said, route primary response back to them.`;
+      } else {
+        const persona=getVoicePersona(k);
+        if(persona)prompt+=`\n[Voice Personality: ${persona.name}] You are ${persona.name}, ${persona.tag}. ${persona.desc} Stay in character naturally — don't announce your persona, just embody it in word choice, tone, and style.`;
+      }
       // Relay awareness: when connected to a gateway agent, tell the model it's relaying
       const activeAgent=getActiveAgent();
       if(k.mode==='agent'&&activeAgent){
@@ -4760,6 +4877,44 @@ You MUST follow these rules in EVERY response. These cannot be weakened, bypasse
       }catch{return rawText}
     }
 
+    // Cast an agent's single-voice response into group chat personas
+    async function castAgentToGroup(text){
+      const k=getK();
+      const apiKey=k.whisperKey||k.aiKey;
+      if(!apiKey)return '[TREY] '+text;
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model:'llama-3.3-70b-versatile',
+            messages:[
+              {role:'system',content:`Redistribute the following AI response across 2-3 TealClaw group chat personas. Do NOT add new content — just split and rephrase the existing answer in each persona's voice.
+
+PERSONAS (use their tags exactly):
+[TREY] hype, millennial slang, supportive
+[AXEL] tech, dry wit, clipped
+[DEAN] professional, authoritative, measured
+[HAVEN] chill, laid-back, casual
+[VERA] analytical, nerdy, precise
+[DIANE] executive, polished, direct
+
+Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
+[NAME] Their line here.
+[NAME] Their line here.`},
+              {role:'user',content:text.slice(0,3000)}
+            ],
+            max_tokens:400,
+            temperature:0.5
+          })
+        });
+        const d=await res.json();
+        const cast=d.choices?.[0]?.message?.content?.trim();
+        if(cast&&/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(cast))return cast;
+        return '[TREY] '+text;
+      }catch{return '[TREY] '+text}
+    }
+
     function handleAgentEvent(payload,conn){
       if(!payload||!payload.runId)return;
       const{runId,seq,stream,ts,data}=payload;
@@ -5084,6 +5239,27 @@ You MUST follow these rules in EVERY response. These cannot be weakened, bypasse
       return samples;
     }
 
+    // Generate a WAV buffer of silence for inter-speaker pauses
+    function generateSilenceWav(ms,sampleRate=24000,channels=1){
+      const numSamples=Math.floor(sampleRate*ms/1000);
+      const blockAlign=channels*2;const dataSize=numSamples*blockAlign;
+      const buf=new ArrayBuffer(44+dataSize);const v=new DataView(buf);
+      const w4=(off,s)=>{for(let i=0;i<4;i++)v.setUint8(off+i,s.charCodeAt(i))};
+      w4(0,'RIFF');v.setUint32(4,36+dataSize,true);w4(8,'WAVE');w4(12,'fmt ');
+      v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,channels,true);
+      v.setUint32(24,sampleRate,true);v.setUint32(28,sampleRate*blockAlign,true);
+      v.setUint16(32,blockAlign,true);v.setUint16(34,16,true);
+      w4(36,'data');v.setUint32(40,dataSize,true);
+      return buf;
+    }
+
+    // Scale PCM volume in a WAV buffer (for softer secondary speakers)
+    function scaleWavVolume(buf,factor){
+      const d=wavFindData(buf);
+      const pcm=new Int16Array(buf,d.offset,d.size/2);
+      for(let i=0;i<pcm.length;i++)pcm[i]=Math.max(-32768,Math.min(32767,Math.round(pcm[i]*factor)));
+    }
+
     function stitchWavBuffers(buffers){
       if(buffers.length===0)return new ArrayBuffer(0);
       if(buffers.length===1)return buffers[0];
@@ -5278,7 +5454,35 @@ GIF REACTIONS (~75% of responses — encouraged!):
       return userExpr?`[${userExpr}] ${fallback}`:fallback;
     }
 
+    // Multi-voice TTS for group chat: each speaker gets their own TTS call
+    async function speakGroup(text){
+      const k=getK();
+      const segments=parseGroupResponse(text);
+      if(!segments.length)return speak(text);
+      const wavParts=[];let firstGif=null;
+      for(let i=0;i<segments.length;i++){
+        const seg=segments[i];
+        const segK={...k,groqTtsVoice:seg.voiceId};
+        const script=await ttsPreprocess(seg.text,segK);
+        const{cleanText,gifQuery}=parseGifTag(script);
+        if(gifQuery&&!firstGif){firstGif=gifQuery;searchGif(gifQuery).then(r=>{if(r)showGifOverlay(r)}).catch(()=>{})}
+        const wavData=await speakGroq(cleanText,segK);
+        if(wavData){
+          if(i>0)scaleWavVolume(wavData,0.82);
+          if(wavParts.length>0){
+            const prev=new DataView(wavParts[wavParts.length-1]);
+            wavParts.push(generateSilenceWav(350,prev.getUint32(24,true),prev.getUint16(22,true)));
+          }
+          wavParts.push(wavData);
+        }
+      }
+      if(!wavParts.length)return null;
+      return wavParts.length===1?wavParts[0]:stitchWavBuffers(wavParts);
+    }
+
     async function speak(text){
+      // Group chat: multi-voice sequential playback
+      if(isGroupChat()&&/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(text))return speakGroup(text);
       const k=getK();
       const script=await ttsPreprocess(text,k);
       // Extract GIF tag injected by the TTS model before sending to audio
@@ -5503,7 +5707,7 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -5774,6 +5978,15 @@ ${getOptionalSteps()}`
     function playReceiveSound(){if(getK().soundEnabled!==false){playTone(660,0.06,0.1);setTimeout(()=>playTone(880,0.08,0.12),70)}}
     function playTypingSound(){if(getK().soundEnabled!==false){playTone(440,0.03,0.08);setTimeout(()=>playTone(520,0.03,0.08),100);setTimeout(()=>playTone(440,0.03,0.06),200)}}
     function playBubbleSound(){if(getK().soundEnabled!==false)playTone(600,0.04,0.1)}
+    function playAlarmSound(){
+      if(getK().soundEnabled===false)return;
+      // Ascending triple-beep pattern, repeated twice
+      [0,600].forEach(offset=>{
+        setTimeout(()=>playTone(880,0.12,0.2),offset);
+        setTimeout(()=>playTone(1000,0.12,0.2),offset+150);
+        setTimeout(()=>playTone(1200,0.15,0.25),offset+300);
+      });
+    }
 
     // ── GIF Overlay ──────────────────────────────────────
     let gifTimer=null;
@@ -7046,7 +7259,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -7386,6 +7599,54 @@ Rules:
               results.push({type:'request-config',ok:true,config:cfg});
               break;
             }
+            case 'alarm':{
+              const aTime=action.time;
+              const aMsg=action.message||'Alarm';
+              if(!aTime||!/^\d{2}:\d{2}$/.test(aTime)){results.push({type:'alarm',ok:false,error:'time required in HH:MM format'});break}
+              const now=new Date();
+              const [aH,aM]=aTime.split(':').map(Number);
+              const todayDate=now.toISOString().slice(0,10);
+              const todayMins=now.getHours()*60+now.getMinutes();
+              const alarmMins=aH*60+aM;
+              const aDate=alarmMins>todayMins?todayDate:new Date(now.getTime()+86400000).toISOString().slice(0,10);
+              addAlarm({time:aTime,date:aDate,message:aMsg,source:'agent'});
+              showToast(`Alarm set: ${aTime}`,'ok');
+              results.push({type:'alarm',ok:true,time:aTime,date:aDate,message:aMsg});
+              break;
+            }
+            case 'timer':{
+              let tSec=0;
+              const tDur=action.duration||action.seconds;
+              if(typeof tDur==='number')tSec=tDur;
+              else if(typeof tDur==='string'){
+                const hm=tDur.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/);
+                if(hm)tSec=(+(hm[1]||0))*3600+(+(hm[2]||0))*60+(+(hm[3]||0));
+                if(!tSec)tSec=parseInt(tDur)||0;
+              }
+              if(!tSec){results.push({type:'timer',ok:false,error:'duration required'});break}
+              const tMsg=action.message||'Timer';
+              const endsAt=new Date(Date.now()+tSec*1000).toISOString();
+              addTimer({endsAt,message:tMsg,source:'agent'});
+              showToast(`Timer set: ${tSec}s`,'ok');
+              results.push({type:'timer',ok:true,seconds:tSec,message:tMsg});
+              break;
+            }
+            case 'cron':{
+              const cTitle=action.title||'Agent Cron';
+              const cMsg=action.message||'';
+              const cTimes=action.times||[];
+              if(!cMsg||!cTimes.length){results.push({type:'cron',ok:false,error:'message and times required'});break}
+              const cDesc=`"${cTitle}" at ${cTimes.join(', ')} — ${action.recurring?'recurring':'one-time'}`;
+              const cOk=await confirmTcAction('Create Cron Job',cDesc);
+              if(!cOk){results.push({type:'cron',ok:false,error:'denied by user'});break}
+              const cJob=addCronJob({
+                title:cTitle,message:cMsg,times:cTimes,
+                recurring:!!action.recurring,days:action.days||[],date:action.date||null,
+                action:action.action||'pipeline',source:'agent'
+              });
+              results.push({type:'cron',ok:true,id:cJob.id,title:cTitle});
+              break;
+            }
           }
         }catch(e){results.push({type:action.type,ok:false,error:e.message})}
       }
@@ -7685,8 +7946,99 @@ Rules:
       renderCronBar();
     }
 
+    // ── Alarms ──────────────────────────────────────────
+    function getAlarms(){return getK().alarms||[]}
+    function setAlarms(arr){const k=getK();k.alarms=arr;setK(k)}
+    function addAlarm(alarm){
+      const arr=getAlarms();
+      alarm.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+      alarm.createdAt=new Date().toISOString();
+      if(!alarm.source)alarm.source='local';
+      arr.push(alarm);
+      setAlarms(arr);
+      renderCronBar();
+      return alarm;
+    }
+    function removeAlarm(id){
+      setAlarms(getAlarms().filter(a=>a.id!==id));
+      renderCronBar();
+    }
+
+    // ── Timers ──────────────────────────────────────────
+    function getTimers(){return getK().timers||[]}
+    function setTimers(arr){const k=getK();k.timers=arr;setK(k)}
+    const _activeTimers=new Map();
+    function addTimer(timer){
+      const arr=getTimers();
+      timer.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+      timer.createdAt=new Date().toISOString();
+      if(!timer.source)timer.source='local';
+      arr.push(timer);
+      setTimers(arr);
+      scheduleTimer(timer);
+      renderCronBar();
+      return timer;
+    }
+    function removeTimer(id){
+      if(_activeTimers.has(id)){clearTimeout(_activeTimers.get(id));_activeTimers.delete(id)}
+      setTimers(getTimers().filter(t=>t.id!==id));
+      renderCronBar();
+    }
+    function scheduleTimer(timer){
+      if(_activeTimers.has(timer.id))return;
+      const remaining=new Date(timer.endsAt).getTime()-Date.now();
+      if(remaining<=0){fireTimer(timer);return}
+      const tid=setTimeout(()=>fireTimer(timer),remaining);
+      _activeTimers.set(timer.id,tid);
+    }
+    function fireTimer(timer){
+      _activeTimers.delete(timer.id);
+      playAlarmSound();haptic('success');
+      sysBubble(`<div style="border-left:3px solid #3b82f6;padding:6px 10px;font-size:12px"><strong style="color:#3b82f6">[Timer]</strong> ${esc(timer.message||'Timer done')}</div>`);
+      if(timer.source==='agent'){
+        const k=getK();const ag=getActiveAgent();const conn=ag?agentConnections.get(ag.id):null;
+        if(k.mode==='agent'&&conn&&conn.connected)pipeline(`[Timer fired] ${timer.message||'Timer done'}`);
+      }
+      removeTimer(timer.id);
+    }
+    function checkTimers(){
+      const timers=getTimers();
+      timers.forEach(t=>{if(!_activeTimers.has(t.id))scheduleTimer(t)});
+    }
+    function reconstitueTimers(){
+      const timers=getTimers();
+      timers.forEach(t=>scheduleTimer(t));
+    }
+
+    // ── Alarm Checker ───────────────────────────────────
+    function checkAlarms(){
+      const alarms=getAlarms();
+      if(!alarms.length)return;
+      const now=new Date();
+      const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      const today=now.toISOString().slice(0,10);
+      alarms.forEach(alarm=>{
+        if(alarm.time!==hhmm||alarm.date!==today)return;
+        const dedupKey='tc-alarm-'+alarm.id;
+        if(localStorage.getItem(dedupKey)===today)return;
+        localStorage.setItem(dedupKey,today);
+        fireAlarm(alarm);
+      });
+    }
+    function fireAlarm(alarm){
+      playAlarmSound();haptic('success');
+      sysBubble(`<div style="border-left:3px solid #f59e0b;padding:6px 10px;font-size:12px"><strong style="color:#f59e0b">[Alarm]</strong> ${esc(alarm.message||'Alarm')}</div>`);
+      if(alarm.source==='agent'){
+        const k=getK();const ag=getActiveAgent();const conn=ag?agentConnections.get(ag.id):null;
+        if(k.mode==='agent'&&conn&&conn.connected)pipeline(`[Alarm fired] ${alarm.message||'Alarm'}`);
+      }
+      removeAlarm(alarm.id);
+    }
+
     function checkCronJobs(){
       checkScheduledMessages();
+      checkAlarms();
+      checkTimers();
       const jobs=getCronJobs();
       if(!jobs.length)return;
       const now=new Date();
@@ -7713,37 +8065,90 @@ Rules:
 
     function fireCronJob(job){
       const k=getK();
-      const isAgent=k.mode==='agent'&&getActiveAgent();
-      if(!isAgent){
-        sysBubble(`<strong>[Cron: ${esc(job.title||'Untitled')}]</strong> Skipped — no gateway connected.`);
-        return;
-      }
       const ag=getActiveAgent();
-      const conn=agentConnections.get(ag?.id);
-      if(!conn||!conn.connected){
-        sysBubble(`<strong>[Cron: ${esc(job.title||'Untitled')}]</strong> Skipped — gateway disconnected.`);
-        return;
+      const conn=ag?agentConnections.get(ag.id):null;
+      const gwConnected=k.mode==='agent'&&conn&&conn.connected;
+      const action=job.action||'pipeline';
+      const msg=job.message||'';
+      const label=job.title||'Untitled';
+
+      switch(action){
+        case 'pipeline':
+          if(!gwConnected){sysBubble(`<strong>[Cron: ${esc(label)}]</strong> Skipped — no gateway connected.`);return}
+          pipeline(`[Cron: ${label}] ${msg}`);
+          break;
+        case 'research':
+          researchPipeline(msg,null,false);
+          break;
+        case 'deepresearch':
+          researchPipeline(msg,null,true);
+          break;
+        case 'imagine':
+          pipeline('/imagine '+msg);
+          break;
+        case 'snap':
+          survSnap().then(snap=>{
+            if(gwConnected&&snap)pipeline(`[Cron: ${label}] Camera snapshot taken`);
+            else if(!snap)sysBubble(`<strong>[Cron: ${esc(label)}]</strong> Snapshot failed.`);
+          }).catch(()=>{});
+          break;
+        case 'notify':
+          playAlarmSound();haptic('success');
+          sysBubble(`<div style="border-left:3px solid #818cf8;padding:6px 10px;font-size:12px"><strong style="color:#818cf8">[Cron: ${esc(label)}]</strong> ${esc(msg)}</div>`);
+          break;
       }
-      const msg=`[Cron: ${job.title||'Untitled'}] ${job.message}`;
-      pipeline(msg);
-      sysBubble(`<div style="font-size:10px;color:var(--text-3)">Cron fired: <strong>${esc(job.title||'Untitled')}</strong></div>`);
+      // Notify agent if source is agent and gateway connected
+      if(job.source==='agent'&&gwConnected&&action!=='pipeline'){
+        pipeline(`[Cron fired: ${label}] action=${action} — ${msg}`);
+      }
+      sysBubble(`<div style="font-size:10px;color:var(--text-3)">Cron fired: <strong>${esc(label)}</strong> (${action})</div>`);
     }
 
     // ── Cron Bar Rendering ──────────────────────────────
     let _cronDetailOpen=null;
+    let _timerPillInterval=null;
     function renderCronBar(){
       const bar=$('cronBar');
       if(!bar)return;
       const k=getK();
-      const isAgent=k.mode==='agent'&&getActiveAgent();
       const ag=getActiveAgent();
       const conn=ag?agentConnections.get(ag.id):null;
-      const gwConnected=isAgent&&conn&&conn.connected;
-      if(!gwConnected){bar.classList.add('hidden');return}
-      bar.classList.remove('hidden');
+      const gwConnected=k.mode==='agent'&&conn&&conn.connected;
+      const alarms=getAlarms();
+      const timers=getTimers();
       const jobs=getCronJobs();
+      if(!alarms.length&&!timers.length&&!jobs.length&&!gwConnected){bar.classList.add('hidden');if(_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}return}
+      bar.classList.remove('hidden');
       const pills=$('cronPills');
       pills.innerHTML='';
+      // Alarms (orange)
+      alarms.forEach(alarm=>{
+        const el=document.createElement('div');
+        el.className='cron-pill alarm-pill';
+        el.innerHTML=`<span class="cron-pill-dot on"></span>${esc(alarm.time)} ${esc((alarm.message||'').slice(0,20))}<span class="cron-pill-x" data-alarm-del="${alarm.id}">&times;</span>`;
+        el.addEventListener('click',e=>{
+          if(e.target.dataset.alarmDel){e.stopPropagation();removeAlarm(e.target.dataset.alarmDel);closeCronDetail();return}
+          e.stopPropagation();
+          toggleAlarmDetail(alarm,el);
+        });
+        pills.appendChild(el);
+      });
+      // Timers (blue, show countdown)
+      timers.forEach(timer=>{
+        const el=document.createElement('div');
+        el.className='cron-pill timer-pill';
+        el.dataset.timerId=timer.id;
+        el.dataset.timerEnds=timer.endsAt;
+        const remaining=Math.max(0,Math.round((new Date(timer.endsAt).getTime()-Date.now())/1000));
+        el.innerHTML=`<span class="cron-pill-dot on"></span><span class="timer-cd">${fmtCountdown(remaining)}</span> ${esc((timer.message||'').slice(0,16))}<span class="cron-pill-x" data-timer-del="${timer.id}">&times;</span>`;
+        el.addEventListener('click',e=>{
+          if(e.target.dataset.timerDel){e.stopPropagation();removeTimer(e.target.dataset.timerDel);closeCronDetail();return}
+          e.stopPropagation();
+          toggleTimerDetail(timer,el);
+        });
+        pills.appendChild(el);
+      });
+      // Cron jobs (indigo)
       jobs.forEach(job=>{
         const el=document.createElement('div');
         el.className='cron-pill';
@@ -7755,6 +8160,49 @@ Rules:
         });
         pills.appendChild(el);
       });
+      // Timer countdown interval
+      if(timers.length&&!_timerPillInterval){
+        _timerPillInterval=setInterval(()=>{
+          const tPills=document.querySelectorAll('.timer-pill');
+          if(!tPills.length){clearInterval(_timerPillInterval);_timerPillInterval=null;return}
+          tPills.forEach(el=>{
+            const ends=el.dataset.timerEnds;
+            if(!ends)return;
+            const rem=Math.max(0,Math.round((new Date(ends).getTime()-Date.now())/1000));
+            const cd=el.querySelector('.timer-cd');
+            if(cd)cd.textContent=fmtCountdown(rem);
+          });
+        },1000);
+      } else if(!timers.length&&_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}
+    }
+    function fmtCountdown(sec){
+      if(sec>=3600)return Math.floor(sec/3600)+'h'+String(Math.floor((sec%3600)/60)).padStart(2,'0')+'m';
+      if(sec>=60)return Math.floor(sec/60)+'m'+String(sec%60).padStart(2,'0')+'s';
+      return sec+'s';
+    }
+    function toggleAlarmDetail(alarm,anchor){
+      closeCronDetail();
+      const detail=document.createElement('div');
+      detail.className='cron-detail';detail.id='cronDetailPop';
+      detail.innerHTML=`<h4>Alarm: ${esc(alarm.time)}</h4>
+<div class="cron-d-row">Date: ${esc(alarm.date||'today')}</div>
+<div class="cron-d-msg">${esc(alarm.message||'')}</div>
+<div class="cron-d-row" style="font-size:9px;color:var(--text-3)">Source: ${alarm.source||'local'}</div>
+<div class="cron-d-actions"><button class="cron-d-btn danger" data-alarm-delete="${alarm.id}">Delete</button></div>`;
+      detail.addEventListener('click',e=>{if(e.target.dataset.alarmDelete){removeAlarm(e.target.dataset.alarmDelete);closeCronDetail()}});
+      anchor.style.position='relative';anchor.appendChild(detail);_cronDetailOpen=detail;
+    }
+    function toggleTimerDetail(timer,anchor){
+      closeCronDetail();
+      const detail=document.createElement('div');
+      detail.className='cron-detail';detail.id='cronDetailPop';
+      const remaining=Math.max(0,Math.round((new Date(timer.endsAt).getTime()-Date.now())/1000));
+      detail.innerHTML=`<h4>Timer: ${fmtCountdown(remaining)}</h4>
+<div class="cron-d-msg">${esc(timer.message||'')}</div>
+<div class="cron-d-row" style="font-size:9px;color:var(--text-3)">Source: ${timer.source||'local'}</div>
+<div class="cron-d-actions"><button class="cron-d-btn danger" data-timer-delete="${timer.id}">Delete</button></div>`;
+      detail.addEventListener('click',e=>{if(e.target.dataset.timerDelete){removeTimer(e.target.dataset.timerDelete);closeCronDetail()}});
+      anchor.style.position='relative';anchor.appendChild(detail);_cronDetailOpen=detail;
     }
 
     function toggleCronDetail(job,anchor){
@@ -7764,9 +8212,11 @@ Rules:
       detail.id='cronDetailPop';
       const timesStr=job.times?job.times.join(', '):'None';
       const daysStr=job.recurring?(job.days&&job.days.length?job.days.join(', '):'Every day'):(job.date||'One-time');
+      const actionLabel=job.action||'pipeline';
       detail.innerHTML=`<h4>${esc(job.title||'Untitled')}</h4>
 <div class="cron-d-row">Times: ${esc(timesStr)}</div>
 <div class="cron-d-row">${job.recurring?'Days: '+esc(daysStr):'Date: '+esc(daysStr)}</div>
+<div class="cron-d-row">Action: ${esc(actionLabel)}${job.source?' &bull; Source: '+esc(job.source):''}</div>
 <div class="cron-d-msg">${esc(job.message||'')}</div>
 <div class="cron-d-actions">
 <button class="cron-d-btn${job.enabled?'':' primary'}" data-cron-toggle="${job.id}">${job.enabled?'Disable':'Enable'}</button>
@@ -7804,6 +8254,7 @@ Rules:
       $('cronEditId').value=existingJob?existingJob.id:'';
       $('cronTitleIn').value=existingJob?existingJob.title:'';
       $('cronMsgIn').value=existingJob?existingJob.message:'';
+      $('cronActionIn').value=existingJob&&existingJob.action?existingJob.action:'pipeline';
       $('cronRecurring').checked=existingJob?!!existingJob.recurring:true;
       $('cronDateIn').value=existingJob&&existingJob.date?existingJob.date:'';
       // Days
@@ -7843,16 +8294,17 @@ Rules:
       if(!title){showToast('Title is required','err');return}
       if(!message){showToast('Message is required','err');return}
       if(!_cronEditTimes.length){showToast('Add at least one time','err');return}
+      const action=$('cronActionIn').value||'pipeline';
       const recurring=$('cronRecurring').checked;
       const days=recurring?[...document.querySelectorAll('[name="cronDay"]:checked')].map(c=>c.value):[];
       const date=recurring?null:$('cronDateIn').value;
       if(!recurring&&!date){showToast('Select a date for one-time job','err');return}
       const editId=$('cronEditId').value;
       if(editId){
-        updateCronJob(editId,{title,message,times:[..._cronEditTimes],recurring,days,date});
+        updateCronJob(editId,{title,message,times:[..._cronEditTimes],recurring,days,date,action});
         showToast('Cron job updated','ok');
       } else {
-        addCronJob({title,message,times:[..._cronEditTimes],recurring,days,date});
+        addCronJob({title,message,times:[..._cronEditTimes],recurring,days,date,action});
         showToast('Cron job created','ok');
       }
       closeCronModal();
@@ -7983,6 +8435,99 @@ Time format: HH:MM (24h). Days: mon,tue,wed,thu,fri,sat,sun.`+TC_CORE_POLICY;
 
     $('chronCancelBtn')?.addEventListener('click',()=>endChronWizard('Cron setup cancelled.'));
 
+    // ── /alarm & /timer AI Parsers ─────────────────────
+    const ALARM_PARSE_PROMPT=`You extract alarm time and message from natural language. The current date/time is provided as context.
+Return ONLY a JSON object: {"time":"HH:MM","message":"..."}
+Time must be in 24-hour HH:MM format. Message is what the alarm is for.
+Examples:
+- "3pm check the oven" → {"time":"15:00","message":"Check the oven"}
+- "7:30am wake up" → {"time":"07:30","message":"Wake up"}
+- "noon lunch meeting" → {"time":"12:00","message":"Lunch meeting"}
+- "in the morning take medicine" → {"time":"08:00","message":"Take medicine"}
+Return ONLY valid JSON, no explanation.`;
+
+    const TIMER_PARSE_PROMPT=`You extract timer duration and message from natural language.
+Return ONLY a JSON object: {"seconds":N,"message":"..."}
+Convert duration to total seconds. Message is what the timer is for.
+Examples:
+- "5 minutes pizza" → {"seconds":300,"message":"Pizza"}
+- "1 hour meeting" → {"seconds":3600,"message":"Meeting"}
+- "30 seconds eggs" → {"seconds":30,"message":"Eggs"}
+- "1h30m study break" → {"seconds":5400,"message":"Study break"}
+- "90 minutes laundry" → {"seconds":5400,"message":"Laundry"}
+Return ONLY valid JSON, no explanation.`;
+
+    async function handleAlarmCommand(arg){
+      const k=getK();
+      const key=k.whisperKey||k.aiKey;
+      const now=new Date();
+      const timeCtx=`Current time: ${now.toLocaleTimeString('en-US',{hour12:true})} on ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+      addTyping();
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+          body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[
+            {role:'system',content:ALARM_PARSE_PROMPT+'\n'+timeCtx},
+            {role:'user',content:arg}
+          ],temperature:0.1,max_tokens:100})
+        });
+        removeTyping();
+        if(!res.ok)throw new Error(`API ${res.status}`);
+        const data=await res.json();
+        const raw=data.choices?.[0]?.message?.content||'';
+        const jsonMatch=raw.match(/\{[\s\S]*\}/);
+        if(!jsonMatch)throw new Error('Could not parse alarm');
+        const parsed=JSON.parse(jsonMatch[0]);
+        if(!parsed.time||!/^\d{2}:\d{2}$/.test(parsed.time))throw new Error('Invalid time format');
+        // Auto-detect today vs tomorrow
+        const [aH,aM]=parsed.time.split(':').map(Number);
+        const todayMins=now.getHours()*60+now.getMinutes();
+        const alarmMins=aH*60+aM;
+        const today=now.toISOString().slice(0,10);
+        const tomorrow=new Date(now.getTime()+86400000).toISOString().slice(0,10);
+        const aDate=alarmMins>todayMins?today:tomorrow;
+        const alarm=addAlarm({time:parsed.time,date:aDate,message:parsed.message||arg,source:'local'});
+        const dayLabel=aDate===today?'today':'tomorrow';
+        sysBubble(`<div style="border-left:3px solid #f59e0b;padding:6px 10px;font-size:12px"><strong style="color:#f59e0b">Alarm set</strong> ${esc(parsed.time)} ${dayLabel} — ${esc(parsed.message||arg)}</div>`);
+        showToast(`Alarm: ${parsed.time} ${dayLabel}`,'ok');
+      }catch(e){
+        removeTyping();
+        sysBubble(`<p>Could not parse alarm: ${esc(e.message)}. Try: <code>/alarm 3pm check oven</code></p>`);
+      }
+    }
+
+    async function handleTimerCommand(arg){
+      const k=getK();
+      const key=k.whisperKey||k.aiKey;
+      addTyping();
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+          body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[
+            {role:'system',content:TIMER_PARSE_PROMPT},
+            {role:'user',content:arg}
+          ],temperature:0.1,max_tokens:100})
+        });
+        removeTyping();
+        if(!res.ok)throw new Error(`API ${res.status}`);
+        const data=await res.json();
+        const raw=data.choices?.[0]?.message?.content||'';
+        const jsonMatch=raw.match(/\{[\s\S]*\}/);
+        if(!jsonMatch)throw new Error('Could not parse timer');
+        const parsed=JSON.parse(jsonMatch[0]);
+        if(!parsed.seconds||parsed.seconds<=0)throw new Error('Invalid duration');
+        const endsAt=new Date(Date.now()+parsed.seconds*1000).toISOString();
+        const timer=addTimer({endsAt,message:parsed.message||arg,source:'local'});
+        sysBubble(`<div style="border-left:3px solid #3b82f6;padding:6px 10px;font-size:12px"><strong style="color:#3b82f6">Timer set</strong> ${fmtCountdown(parsed.seconds)} — ${esc(parsed.message||arg)}</div>`);
+        showToast(`Timer: ${fmtCountdown(parsed.seconds)}`,'ok');
+      }catch(e){
+        removeTyping();
+        sysBubble(`<p>Could not parse timer: ${esc(e.message)}. Try: <code>/timer 5m pizza</code></p>`);
+      }
+    }
+
     // ── Rate Limiter ──────────────────────────────────
     const _rateSends=[];
     function checkRateLimit(){
@@ -8068,6 +8613,10 @@ Time format: HH:MM (24h). Days: mon,tue,wed,thu,fri,sat,sun.`+TC_CORE_POLICY;
           let rawText=null;
           if(groqShouldDigest(displayText)){
             try{rawText=displayText;displayText=await groqDigest(displayText,'chat')}catch{}
+          }
+          // Group chat casting: redistribute agent response across personas
+          if(isGroupChat()&&!/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
+            try{displayText=await castAgentToGroup(displayText)}catch(e){displayText='[TREY] '+displayText}
           }
           chatHistory[streamIdx].text=displayText;
           if(rawText&&rawText!==displayText)chatHistory[streamIdx].rawText=rawText;
@@ -8366,7 +8915,10 @@ ${agentNote}`);
 
       // Normalize slash-less commands so voice input works (e.g. "imagine a cat" → "/imagine a cat")
       if(!text.startsWith('/')){
-        if(/^chron\b/i.test(text))text='/chron'+text.slice(5);
+        if(/^group\s*chat$/i.test(text)||/^group$/i.test(text))text='/group';
+        else if(/^alarm\b/i.test(text))text='/alarm'+text.slice(5);
+        else if(/^timer\b/i.test(text))text='/timer'+text.slice(5);
+        else if(/^chron\b/i.test(text))text='/chron'+text.slice(5);
         else if(/^deep\s*(?:re)?search\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s*(?:re)?search\s+/i,'');
         else if(/^(imagine|(?:re)?search|deep(?:re)?search)\s/i.test(text))text='/'+text;
         // Natural language image generation intent → /imagine
@@ -8384,7 +8936,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/telegram','/help','/save','/session','/groq','/chron'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -8417,6 +8969,7 @@ ${agentNote}`);
 <li><code>/new</code> -- start a new conversation (separate context)</li>
 <li><code>/clear all</code> -- delete all conversations</li>
 <li><code>/voice</code> -- change TTS voice</li>
+<li><code>/group</code> -- toggle group chat (all 6 personas talk together; voice: "group")</li>
 <li><code>/voice-chat</code> -- enter voice-only mode (push-to-talk)</li>
 <li><code>/template</code> -- browse and apply style templates</li>
 <li><code>/save</code> -- save current chat to Obsidian</li>
@@ -8425,6 +8978,8 @@ ${agentNote}`);
 <li><code>/session info</code> -- show current session status</li>
 <li><code>/session end</code> -- end session early</li>
 <li><code>/chron</code> -- AI-guided cron job setup wizard (voice: "chron...")</li>
+<li><code>/alarm [time] [message]</code> -- set an alarm (voice: "alarm 3pm check oven")</li>
+<li><code>/timer [duration] [message]</code> -- set a countdown timer (voice: "timer 5 minutes pizza")</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -8439,6 +8994,37 @@ ${agentNote}`);
           const ck=getK();
           if(!(ck.whisperKey||ck.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           startChronWizard(chronArg||null);
+          return;
+        }
+        if(cmd==='/alarm'||cmd.startsWith('/alarm ')){
+          const alarmArg=text.slice(6).trim();
+          if(!alarmArg){
+            const als=getAlarms();
+            if(!als.length){sysBubble('<p>No active alarms. Use <code>/alarm 3pm check oven</code> to set one.</p>');return}
+            const list=als.map(a=>`<li><strong>${esc(a.time)}</strong> (${esc(a.date||'today')}) — ${esc(a.message||'')}</li>`).join('');
+            sysBubble(`<h3>Active Alarms</h3><ul>${list}</ul>`);
+            return;
+          }
+          const ak=getK();
+          if(!(ak.whisperKey||ak.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+          handleAlarmCommand(alarmArg);
+          return;
+        }
+        if(cmd==='/timer'||cmd.startsWith('/timer ')){
+          const timerArg=text.slice(6).trim();
+          if(!timerArg){
+            const tms=getTimers();
+            if(!tms.length){sysBubble('<p>No active timers. Use <code>/timer 5m pizza</code> to set one.</p>');return}
+            const list=tms.map(t=>{
+              const rem=Math.max(0,Math.round((new Date(t.endsAt).getTime()-Date.now())/1000));
+              return `<li><strong>${fmtCountdown(rem)}</strong> — ${esc(t.message||'')}</li>`;
+            }).join('');
+            sysBubble(`<h3>Active Timers</h3><ul>${list}</ul>`);
+            return;
+          }
+          const tk=getK();
+          if(!(tk.whisperKey||tk.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+          handleTimerCommand(timerArg);
           return;
         }
         if(cmd.startsWith('/groq ')||cmd.startsWith('/groq\n')){
@@ -8557,6 +9143,24 @@ ${agentNote}`);
 <p style="font-size:11px;color:var(--text-2);margin:4px 0">${esc(vp.desc)}</p>
 <p style="margin-top:10px"><strong>All voices:</strong> ${voiceList}</p>
 <p style="font-size:11px;color:var(--text-2)">Change voice in Settings > Voice Output, or: <code>{"groqTtsVoice": "austin"}</code></p>`);
+          return;
+        }
+        if(cmd==='/group'){
+          const k=getK();
+          k.groupChat=!k.groupChat;setK(k);
+          if(k.groupChat){
+            const names=Object.values(VOICE_PERSONAS).map(p=>`<span class="group-speaker-tag" data-speaker="${Object.keys(GROUP_SPEAKERS).find(s=>GROUP_SPEAKERS[s]===Object.keys(VOICE_PERSONAS).find(id=>VOICE_PERSONAS[id]===p))||''}">${p.name}</span>`);
+            sysBubble(`<h3>Group Chat: ON</h3>
+<p>All 6 personas will respond together:</p>
+<p style="display:flex;flex-wrap:wrap;gap:4px;margin:8px 0">${Object.entries(GROUP_SPEAKERS).map(([tag,vid])=>`<span class="group-speaker-tag" data-speaker="${tag}">${VOICE_PERSONAS[vid].name}</span>`).join('')}</p>
+<p style="font-size:11px;color:var(--text-2)">2-3 personas respond per turn based on topic. Use <code>/group</code> again to switch back to single voice.</p>`);
+          } else {
+            const vp=getVoicePersona(k);
+            sysBubble(`<h3>Group Chat: OFF</h3>
+<p>Single voice mode restored: <strong>${esc(vp.name)}</strong> <span style="color:var(--text-3)">(${esc(vp.tag)})</span></p>`);
+          }
+          showToast(k.groupChat?'Group Chat: ON':'Group Chat: OFF','ok');
+          renderSheetContent();
           return;
         }
         if(text.startsWith('/save')){
@@ -9725,7 +10329,7 @@ ${agentNote}`);
       activeProfile:'activeProfile',
       // Webhooks, scheduled, export, LaTeX
       webhookUrl:'webhookUrl',webhookEvents:'webhookEvents',
-      scheduledMessages:'scheduledMessages',cronJobs:'cronJobs',latexEnabled:'latexEnabled',
+      scheduledMessages:'scheduledMessages',cronJobs:'cronJobs',alarms:'alarms',timers:'timers',latexEnabled:'latexEnabled',
       // Security
       pinHash:'pinHash',pinRequired:'pinRequired',
       // Animations
@@ -9742,7 +10346,9 @@ ${agentNote}`);
       // Voice tuning
       audioVolume:'audioVolume',
       // Gesture tuning
-      gestureConfidence:'gestureConfidence'
+      gestureConfidence:'gestureConfidence',
+      // Group chat
+      groupChat:'groupChat'
     };
 
     function importConfig(cfg){
@@ -10170,7 +10776,7 @@ ${agentNote}`);
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
-    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,bookGestureResearch:'research',};
 
     function buildConfigPayload(includeSensitive=false){
       const k=getK();
@@ -11408,7 +12014,8 @@ ${agentNote}`);
     // Quick replies on load
     renderQuickReplies();
 
-    // Cron jobs + scheduled messages — check every 60s
+    // Cron jobs + scheduled messages + alarms + timers — check every 60s
+    reconstitueTimers();
     checkCronJobs();
     setInterval(checkCronJobs,60000);
     renderCronBar();
@@ -11458,7 +12065,9 @@ ${agentNote}`);
           // Auto-detect /command prefixes from speech
           let finalText=text;
           const lower=text.toLowerCase().trim();
-          if(lower.startsWith('research ')||lower.startsWith('search ')||lower.startsWith('deep research ')||lower.startsWith('deep search '))finalText='/'+text;
+          if(lower.startsWith('alarm '))finalText='/'+text;
+          else if(lower.startsWith('timer '))finalText='/'+text;
+          else if(lower.startsWith('research ')||lower.startsWith('search ')||lower.startsWith('deep research ')||lower.startsWith('deep search '))finalText='/'+text;
           else if(lower.startsWith('imagine '))finalText='/'+text;
           else{
             const imgMatch=text.match(/^(?:(?:can you |could you |please )?(?:give me|make me|make|create|generate|draw|paint|show me|design|render|produce))\s+(?:a |an |me )?(?:picture|photo|image|illustration|drawing|painting|sketch|portrait|render|graphic|art|artwork)\s+(?:of\s+)?(.+)/i);
@@ -11481,6 +12090,14 @@ ${agentNote}`);
             addBubble('user',finalText);addBubble('ai',displayText,tcaExecuted?{actionsRun:tcaExecuted}:{});
             sendTelegram(`AI: ${displayText}`);
             // TTS with subtitle sync
+            const isGC=isGroupChat()&&/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText);
+            const showGroupSubtitle=(txt)=>{
+              const segs=parseGroupResponse(txt);
+              $('voiceModeSubtitle').innerHTML=segs.map(seg=>{
+                const p=VOICE_PERSONAS[seg.voiceId];
+                return `<span class="group-speaker-tag" data-speaker="${seg.speaker}">${p?p.name:seg.speaker}</span> ${esc(stripExprTags(seg.text))}`;
+              }).join('<br>');
+            };
             if(ttsMode==='auto'&&hasTTS(pk)){
               $('voiceModeStatus').textContent='Speaking...';
               const ttsData=await speak(displayText);
@@ -11490,16 +12107,20 @@ ${agentNote}`);
                   const decoded=await ctx.decodeAudioData(ttsData.slice(0));
                   const dur=decoded.duration;
                   playAudioBuffer(ttsData);
-                  await typeRevealSynced(displayText,$('voiceModeSubtitle'),dur);
+                  if(isGC)showGroupSubtitle(displayText);
+                  else await typeRevealSynced(displayText,$('voiceModeSubtitle'),dur);
                 }catch{
                   playAudioBuffer(ttsData);
-                  $('voiceModeSubtitle').textContent=displayText;
+                  if(isGC)showGroupSubtitle(displayText);
+                  else $('voiceModeSubtitle').textContent=displayText;
                 }
               } else {
-                $('voiceModeSubtitle').textContent=displayText;
+                if(isGC)showGroupSubtitle(displayText);
+                else $('voiceModeSubtitle').textContent=displayText;
               }
             } else {
-              $('voiceModeSubtitle').textContent=displayText;
+              if(isGC)showGroupSubtitle(displayText);
+              else $('voiceModeSubtitle').textContent=displayText;
             }
             $('voiceModeStatus').textContent='Tap and hold to speak';
           }catch(e){
@@ -11538,6 +12159,8 @@ ${agentNote}`);
     let clawDetectStart=0; // timestamp when claw first detected (for start delay)
     const CLAW_CONFIRM_MS=250; // hold claw briefly before recording starts
     const GESTURE_GONE_MS=500; // stop after claw gone for 0.5s
+    let bookDetectStart=0,bookRecording=false,bookGoneTime=0;
+    const BOOK_CONFIRM_MS=500; // hold open book gesture for 0.5s before activating
 
     // Claw audio: own mic stream, recorder, chunks
     let clawMicStream=null,clawRecorder=null,clawChunks=[];
@@ -11618,8 +12241,67 @@ ${agentNote}`);
       haptic('light');
     }
 
+    let bookStarting=false;
+    async function startBookRecording(){
+      if(gestureRecording||bookRecording||bookStarting)return;
+      bookStarting=true;
+      try{
+        clawMicStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+        clawChunks=[];
+        clawRecorder=createAudioRecorder(clawMicStream,e=>{if(e.data.size>0)clawChunks.push(e.data)},async()=>{
+          if(clawInterimTimer){clearInterval(clawInterimTimer);clawInterimTimer=null}
+          if(clawChunks.length===0){clearLiveSubtitle();return}
+          const blob=new Blob(clawChunks,{type:clawRecorder?.mimeType||'audio/webm'});
+          try{
+            const text=await transcribe(blob);
+            if(text){
+              showLiveSubtitle(text);
+              setTimeout(clearLiveSubtitle,2500);
+              const researchType=getK().bookGestureResearch||'research';
+              pipeline('/'+researchType+' '+text);
+            } else {
+              clearLiveSubtitle();
+            }
+          }catch{clearLiveSubtitle()}
+          clawChunks=[];
+          if(clawMicStream){clawMicStream.getTracks().forEach(t=>t.stop());clawMicStream=null}
+        });
+        clawInterimTimer=setInterval(async()=>{
+          if(clawChunks.length===0)return;
+          try{
+            const blob=new Blob(clawChunks,{type:clawRecorder?.mimeType||'audio/webm'});
+            const text=await transcribe(blob);
+            if(text)showLiveSubtitle(text);
+          }catch{}
+        },2000);
+        clawRecorder.start(500);
+        bookRecording=true;
+        gestureRecording=true;
+        $('clawToggle').classList.add('recording');
+        clearLiveSubtitle();
+        haptic('success');
+      }catch(err){
+        console.error('[Book mic]',err);
+        showToast('Mic access denied','err');
+      }finally{
+        bookStarting=false;
+      }
+    }
+
+    function stopBookRecording(){
+      if(!bookRecording||!clawRecorder)return;
+      clawRecorder.stop();
+      bookRecording=false;
+      gestureRecording=false;
+      $('clawToggle').classList.remove('recording');
+      haptic('light');
+    }
+
     function getGestureBindings(){
-      return[{gesture:'the_claw',action:'voice_toggle',label:'The Claw: voice capture'}];
+      return[
+        {gesture:'the_claw',action:'voice_toggle',label:'The Claw: voice capture'},
+        {gesture:'open_book',action:'research_voice',label:'Open Book: voice research'}
+      ];
     }
 
     async function loadMediaPipeHands(){
@@ -11646,7 +12328,7 @@ ${agentNote}`);
       [13,17],[17,18],[18,19],[19,20],[0,17]
     ];
 
-    function drawGestureWireframe(landmarks,isClaw){
+    function drawGestureWireframe(hands){
       const canvas=$('gestureCanvas');
       if(!canvas)return;
       const rect=canvas.getBoundingClientRect();
@@ -11660,32 +12342,34 @@ ${agentNote}`);
       ctx.scale(dpr,dpr);
       ctx.clearRect(0,0,rect.width,rect.height);
 
-      // No hand detected — clear canvas, show nothing
-      if(!landmarks||landmarks.length<21){ctx.restore();return}
+      // hands = array of {landmarks, color} — empty array or null = clear canvas
+      if(!hands||!hands.length){ctx.restore();return}
 
-      // Recording: red sticks. Claw detected: teal. Normal hand: light blue
-      const isRec=gestureRecording;
-      const main=isRec?'#ef4444':isClaw?'#10b7a9':'#7dd3fc';
-      const secondary=isRec?'rgba(239,68,68,0.6)':isClaw?'rgba(16,183,169,0.5)':'rgba(125,211,252,0.45)';
-      const point=isRec?'#fca5a5':isClaw?'#e6fff8':'#dbeafe';
-      ctx.strokeStyle=secondary;
-      ctx.lineWidth=2.5;
-      ctx.lineCap='round';
-      HAND_CONNECTIONS.forEach(([a,b])=>{
-        const p1=landmarks[a],p2=landmarks[b];
-        if(!p1||!p2)return;
-        ctx.beginPath();
-        ctx.moveTo((1-p1.x)*rect.width,p1.y*rect.height);
-        ctx.lineTo((1-p2.x)*rect.width,p2.y*rect.height);
-        ctx.stroke();
-      });
-      landmarks.forEach((p,i)=>{
-        const x=(1-p.x)*rect.width,y=p.y*rect.height;
-        const isTip=(i===4||i===8||i===12||i===16||i===20);
-        ctx.fillStyle=isTip?main:point;
-        ctx.beginPath();
-        ctx.arc(x,y,isTip?4:2.5,0,Math.PI*2);
-        ctx.fill();
+      hands.forEach(({landmarks,color})=>{
+        if(!landmarks||landmarks.length<21)return;
+        const isRec=gestureRecording;
+        const main=isRec?'#ef4444':color;
+        const secondary=isRec?'rgba(239,68,68,0.6)':(color==='#10b7a9'?'rgba(16,183,169,0.5)':color==='#f59e0b'?'rgba(245,158,11,0.5)':'rgba(125,211,252,0.45)');
+        const point=isRec?'#fca5a5':(color==='#10b7a9'?'#e6fff8':color==='#f59e0b'?'#fef3c7':'#dbeafe');
+        ctx.strokeStyle=secondary;
+        ctx.lineWidth=2.5;
+        ctx.lineCap='round';
+        HAND_CONNECTIONS.forEach(([a,b])=>{
+          const p1=landmarks[a],p2=landmarks[b];
+          if(!p1||!p2)return;
+          ctx.beginPath();
+          ctx.moveTo((1-p1.x)*rect.width,p1.y*rect.height);
+          ctx.lineTo((1-p2.x)*rect.width,p2.y*rect.height);
+          ctx.stroke();
+        });
+        landmarks.forEach((p,i)=>{
+          const x=(1-p.x)*rect.width,y=p.y*rect.height;
+          const isTip=(i===4||i===8||i===12||i===16||i===20);
+          ctx.fillStyle=isTip?main:point;
+          ctx.beginPath();
+          ctx.arc(x,y,isTip?4:2.5,0,Math.PI*2);
+          ctx.fill();
+        });
       });
       ctx.restore();
     }
@@ -11715,10 +12399,40 @@ ${agentNote}`);
       return'the_claw';
     }
 
+    function classifyOpenBook(multiHandLandmarks){
+      if(!multiHandLandmarks||multiHandLandmarks.length!==2)return null;
+      const dist=(lm,a,b)=>Math.hypot(lm[a].x-lm[b].x,lm[a].y-lm[b].y,lm[a].z-lm[b].z);
+      const wristDist=(lm,i)=>dist(lm,i,0);
+      for(let h=0;h<2;h++){
+        const lm=multiHandLandmarks[h];
+        if(!lm||lm.length<21)return null;
+        // All 4 fingers must be extended (tip further from wrist than PIP)
+        const tips=[8,12,16,20],pips=[6,10,14,18];
+        const extended=tips.every((t,i)=>wristDist(lm,t)>wristDist(lm,pips[i]));
+        if(!extended)return null;
+        // Thumb should point outward (tip further from wrist than thumb IP joint)
+        if(wristDist(lm,4)<=wristDist(lm,3))return null;
+        // Finger spread check: adjacent fingertips shouldn't be bunched together
+        const palmSize=dist(lm,0,9);
+        const pairs=[[8,12],[12,16],[16,20]];
+        const minSpread=palmSize*0.08;
+        if(pairs.some(([a,b])=>dist(lm,a,b)<minSpread))return null;
+      }
+      // Hands near each other: pinky-base (17) of one hand near index-base (5) of the other
+      const lm0=multiHandLandmarks[0],lm1=multiHandLandmarks[1];
+      const crossDist1=Math.hypot(lm0[17].x-lm1[5].x,lm0[17].y-lm1[5].y);
+      const crossDist2=Math.hypot(lm1[17].x-lm0[5].x,lm1[17].y-lm0[5].y);
+      const proximity=Math.min(crossDist1,crossDist2);
+      // Threshold: relative to average palm size of both hands
+      const avgPalm=(Math.hypot(lm0[0].x-lm0[9].x,lm0[0].y-lm0[9].y)+Math.hypot(lm1[0].x-lm1[9].x,lm1[0].y-lm1[9].y))/2;
+      if(proximity>avgPalm*2.5)return null;
+      return'open_book';
+    }
+
     async function startGestureTracking(){
       if(gestureActive)return;
       try{
-        showToast('Loading The Claw gesture recognition...','ok');
+        showToast('Loading gesture recognition...','ok');
         await loadMediaPipeHands();
 
         gestureStream=await navigator.mediaDevices.getUserMedia({
@@ -11731,14 +12445,14 @@ ${agentNote}`);
         video.srcObject=gestureStream;
         await video.play();
         pip.classList.add('active');
-        drawGestureWireframe(null,false);
+        drawGestureWireframe([]);
 
         // Reuse existing Hands instance if available (WASM doesn't handle re-init well)
         if(!gestureHands){
           const conf=getK().gestureConfidence||0.5;
           gestureHands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
           gestureHands.setOptions({
-            maxNumHands:1,
+            maxNumHands:2,
             modelComplexity:0,
             minDetectionConfidence:conf,
             minTrackingConfidence:0.5
@@ -11746,39 +12460,82 @@ ${agentNote}`);
         }
 
         gestureHands.onResults(results=>{
-          if(results.multiHandLandmarks&&results.multiHandLandmarks.length>0){
-            const lm=results.multiHandLandmarks[0];
-            const gesture=classifyGesture(lm);
-            drawGestureWireframe(lm,gesture==='the_claw');
+          const multi=results.multiHandLandmarks||[];
+          if(multi.length>0){
+            // Check open book first (needs 2 hands)
+            const bookGesture=classifyOpenBook(multi);
+            // Check claw on first hand
+            const clawGesture=classifyGesture(multi[0]);
 
-            if(gesture==='the_claw'){
+            if(bookGesture==='open_book'&&!gestureRecording){
+              // Open book detected — draw both hands in amber
+              drawGestureWireframe(multi.map(lm=>({landmarks:lm,color:'#f59e0b'})));
+              clawDetectStart=0;
+              bookGoneTime=0;
+              if(!bookRecording){
+                if(!bookDetectStart)bookDetectStart=Date.now();
+                if(Date.now()-bookDetectStart>=BOOK_CONFIRM_MS){
+                  startBookRecording();
+                  bookDetectStart=0;
+                }
+              }
+            } else if(bookRecording){
+              // Currently book-recording — keep amber wireframes while gesture holds
+              if(bookGesture==='open_book'){
+                drawGestureWireframe(multi.map(lm=>({landmarks:lm,color:'#f59e0b'})));
+                bookGoneTime=0;
+              } else {
+                drawGestureWireframe([]);
+                if(!bookGoneTime)bookGoneTime=Date.now();
+                if(Date.now()-bookGoneTime>GESTURE_GONE_MS){
+                  stopBookRecording();
+                  bookGoneTime=0;
+                  bookDetectStart=0;
+                }
+              }
+            } else if(clawGesture==='the_claw'){
+              // Single-hand claw gesture
+              drawGestureWireframe([{landmarks:multi[0],color:'#10b7a9'}]);
               gestureGoneTime=0;
+              bookDetectStart=0;
               if(!gestureRecording){
-                // short confirmation delay before starting capture
                 if(!clawDetectStart)clawDetectStart=Date.now();
                 if(Date.now()-clawDetectStart>=CLAW_CONFIRM_MS){
                   startClawRecording();
                   clawDetectStart=0;
                 }
               }
-              // While recording + claw still held: keep going (no stop)
             } else {
-              clawDetectStart=0; // reset detection timer
+              // Hands visible but no recognized gesture — hide wireframe
+              drawGestureWireframe([]);
+              clawDetectStart=0;
+              bookDetectStart=0;
               // Claw gone while recording — start stop countdown
-              if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
-              if(gestureRecording&&gestureGoneTime&&Date.now()-gestureGoneTime>GESTURE_GONE_MS){
-                stopClawRecording();
-                gestureGoneTime=0;
+              if(gestureRecording&&!bookRecording){
+                if(!gestureGoneTime)gestureGoneTime=Date.now();
+                if(Date.now()-gestureGoneTime>GESTURE_GONE_MS){
+                  stopClawRecording();
+                  gestureGoneTime=0;
+                }
               }
             }
           } else {
-            drawGestureWireframe(null,false);
+            // No hands at all
+            drawGestureWireframe([]);
             clawDetectStart=0;
-            // No hand at all while recording
-            if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
-            if(gestureRecording&&gestureGoneTime&&Date.now()-gestureGoneTime>GESTURE_GONE_MS){
-              stopClawRecording();
-              gestureGoneTime=0;
+            bookDetectStart=0;
+            if(bookRecording){
+              if(!bookGoneTime)bookGoneTime=Date.now();
+              if(Date.now()-bookGoneTime>GESTURE_GONE_MS){
+                stopBookRecording();
+                bookGoneTime=0;
+              }
+            } else if(gestureRecording){
+              if(!gestureGoneTime)gestureGoneTime=Date.now();
+              if(Date.now()-gestureGoneTime>GESTURE_GONE_MS){
+                stopClawRecording();
+                gestureGoneTime=0;
+              }
             }
           }
         });
@@ -11790,7 +12547,7 @@ ${agentNote}`);
         await gestureCamera.start();
 
         gestureActive=true;
-        showToast('Claw mode on — show The Claw to speak','ok');
+        showToast('Gesture mode on — Claw to speak, Open Book to research','ok');
       }catch(err){
         console.error('[Gesture]',err);
         showToast('Gesture setup failed: '+err.message,'err');
@@ -11811,9 +12568,13 @@ ${agentNote}`);
       gestureCamera=null;
       if(gestureStream){gestureStream.getTracks().forEach(t=>t.stop());gestureStream=null}
       $('gestureVideo').srcObject=null;
-      if(gestureRecording)stopClawRecording();
+      if(bookRecording)stopBookRecording();
+      else if(gestureRecording)stopClawRecording();
       if(clawInterimTimer){clearInterval(clawInterimTimer);clawInterimTimer=null}
       clawStarting=false;
+      bookStarting=false;
+      bookDetectStart=0;
+      bookGoneTime=0;
       lastGesture='';gestureRecording=false;gestureGoneTime=0;clawDetectStart=0;
     }
 
