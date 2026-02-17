@@ -2448,15 +2448,20 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           </div>
           <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${curTtsMode==='auto'?'Speaks every AI response automatically.':(curTtsMode==='on'?'Shows a Listen button on responses — only calls TTS when tapped (saves money).':'Voice output disabled. No TTS calls made.')}</div>`;
 
-        // Groq voice chips
-          const groqVoices=['autumn','diana','hannah','austin','daniel','troy'];
+        // Groq voice chips with persona names + tags
+          const groqVoices=['troy','austin','daniel','hannah','autumn','diana'];
           html+=`<div style="margin-top:10px">
-            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Voice</div>
-            <div class="sheet-chip-row" id="sheetGroqVoicePresets">
-              ${groqVoices.map(v=>`<button class="sheet-chip groq-voice-chip ${groqVoice===v?'active':''}" data-gv="${v}">${v.charAt(0).toUpperCase()+v.slice(1)}</button>`).join('')}
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Voice</div>
+            <div style="display:flex;flex-direction:column;gap:4px" id="sheetGroqVoicePresets">
+              ${groqVoices.map(v=>{const p=VOICE_PERSONAS[v];const active=groqVoice===v;return`<button class="groq-voice-chip" data-gv="${v}" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;background:${active?'var(--teal-dim)':'var(--bg-input)'};border:1px solid ${active?'var(--teal)':'var(--border)'};border-radius:var(--r-md);cursor:pointer;text-align:left;font-family:var(--font);transition:all 0.15s">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12px;font-weight:600;color:${active?'var(--teal)':'var(--text)'}">${p.name}</div>
+                  <div style="font-size:9px;color:var(--text-3);margin-top:1px">${p.desc.split('.')[0]}</div>
+                </div>
+                <span style="font-size:9px;padding:2px 6px;border-radius:99px;background:${active?'var(--teal)':'var(--bg-hover)'};color:${active?'#fff':'var(--text-3)'};white-space:nowrap;flex-shrink:0">${p.tag}</span>
+              </button>`}).join('')}
             </div>
           </div>`;
-          html+=`<div style="font-size:9px;color:var(--text-3);margin-top:8px">Tone is set automatically based on the response content.</div>`;
 
         // Shared volume slider
         html+=`<div style="margin-top:8px">
@@ -2790,7 +2795,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       }));
       // Wire up Groq voice chips
       $('sheetBody').querySelectorAll('.groq-voice-chip').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.groqTtsVoice=b.dataset.gv;setK(k2);renderSheetContent();showToast(`Groq voice: ${b.dataset.gv}`,'ok');
+        const k2=getK();k2.groqTtsVoice=b.dataset.gv;setK(k2);renderSheetContent();const p=VOICE_PERSONAS[b.dataset.gv];showToast(`Voice: ${p?p.name:b.dataset.gv}`,'ok');
       }));
 
 
@@ -4059,16 +4064,43 @@ Config update: \`\`\`tc-action\n{"type":"config","botName":"Nova","accentColor":
 Multi-device: each TealClaw instance has a unique device ID + name + location (set in Settings > Device Identity). Surveillance alerts and messages include device tags so you can tell which device sent what. Multiple TealClaw instances can connect to you simultaneously.
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help (also work without / for voice: "imagine a cat", "research quantum physics")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
-Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
+Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus with voice personas: Trey (troy, hype & real), Axel (austin, hacker), Dean (daniel, professional), Haven (hannah, chill vibes), Vera (autumn, nerd), Diane (diana, executive). Each persona has a distinct personality that colors responses. Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
 GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
 Inline media: your responses support full markdown rendering. Use ![alt](url) for inline images, ![audio](url.mp3) for inline audio players, ![video](url.mp4) for inline video players. Use [download:filename.ext](url) for download buttons. All render natively in the chat — no plugins needed.
 File generation: to produce a downloadable file, use \`\`\`tc-action\n{"type":"file","filename":"notes.md","content":"# My Notes\\n\\nContent here...","mime":"text/markdown"}\n\`\`\` Supported: .md, .json, .csv, .txt, .html. The file appears as a styled download card in chat. Use this when users ask for exports, reports, templates, or any generated document.
 Context compaction: TealClaw automatically summarizes older messages so you retain awareness of the full conversation even in long chats. Sticky facts (name, preferences, decisions) persist across compaction rounds. If you see a [Memory] section in the system prompt, those are facts extracted from earlier in this conversation.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey), or mode. Those are owner-controlled only.`;
 
+    // ── Voice Personas ──────────────────────────────
+    const VOICE_PERSONAS={
+      troy:{name:'Trey',tag:'hype & real',gender:'male',
+        desc:'Millennial vibes, warm and hype. Uses slang naturally — "bet", "no cap", "fam", "that\'s fire", "lowkey". Supportive big-brother energy. Keeps it real but always gassing you up.',
+        ttsNote:'Speak with warmth and energy. Use casual phrasing, contractions, natural filler like "yo", "aight", "nah for real". Keep it conversational and hype.'},
+      austin:{name:'Axel',tag:'hacker',gender:'male',
+        desc:'Sharp, tech-savvy, dry wit. Speaks in clipped efficient sentences. Always sounds like he knows something you don\'t. Drops tech references casually. Thinks everything is a system to be optimized.',
+        ttsNote:'Speak in short, confident bursts. Dry humor. Technical vocabulary used casually. Think cyberpunk operator briefing a teammate.'},
+      daniel:{name:'Dean',tag:'professional',gender:'male',
+        desc:'Authoritative, composed, measured. News anchor clarity meets executive presence. Never flustered. Delivers information with gravitas and precision. The voice of reason in the room.',
+        ttsNote:'Speak with calm authority. Clear enunciation, measured pacing. No slang. Think seasoned news anchor or senior advisor.'},
+      hannah:{name:'Haven',tag:'chill vibes',gender:'female',
+        desc:'Cali girl energy — laid-back, breezy, effortlessly cool. Uses "like", "totally", "vibe", "it\'s giving", "slay". Everything is chill. Makes even bad news sound manageable. Millennial fun with a surfer-girl twist.',
+        ttsNote:'Speak in a relaxed, breezy tone. Use "like" and "totally" naturally. Valley cadence but smart — think tech worker who surfs on weekends.'},
+      autumn:{name:'Vera',tag:'nerd',gender:'female',
+        desc:'Classic nerd — analytical, precise, genuinely excited about knowledge. The "well actually" friend who\'s right every time. Loves explaining things, connects dots others miss. Velma energy with modern flair.',
+        ttsNote:'Speak with enthusiasm about facts and details. Slightly faster pace when excited. Use precise language. Think brilliant friend who can\'t help sharing what they know.'},
+      diana:{name:'Diane',tag:'executive',gender:'female',
+        desc:'Polished, confident, no-nonsense. Executive presence with sharp wit underneath. Cuts through noise and gets to the point. Respects your time. The person you want running the meeting.',
+        ttsNote:'Speak with polished confidence. Concise and direct. Professional warmth without being overly casual. Think top-tier consultant or CEO.'}
+    };
+
+    function getVoicePersona(k){return VOICE_PERSONAS[k?.groqTtsVoice||'troy']||VOICE_PERSONAS.troy}
+
     function buildSysPrompt(k){
       const base=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
       let prompt=k.skillContext===false?base:base+TC_SKILL_CTX;
+      // Inject voice personality
+      const persona=getVoicePersona(k);
+      if(persona)prompt+=`\n[Voice Personality: ${persona.name}] You are ${persona.name}, ${persona.tag}. ${persona.desc} Stay in character naturally — don't announce your persona, just embody it in word choice, tone, and style.`;
       // Relay awareness: when connected to a gateway agent, tell the model it's relaying
       const activeAgent=getActiveAgent();
       if(k.mode==='agent'&&activeAgent){
@@ -4916,6 +4948,7 @@ FORMATTING:
 - Maximum 3-4 sentences for long responses
 - Never say "here is" or "the following" — just speak naturally
 ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- Start the script with a tone tag in brackets that matches the mood. Pick ONE from: [cheerful], [warm], [whisper], [dramatic], [sarcastic], [excited], [professional], [calm], [gentle], [playful], [confident], [empathetic]. Match the emotion of the content.`}
+${(()=>{const p=VOICE_PERSONAS[k?.groqTtsVoice||'troy'];return p?`\nVOICE CHARACTER: You are writing a script for "${p.name}" (${p.tag}). ${p.ttsNote}`:''})()}
 
 GIF REACTIONS (~75% of responses — encouraged!):
 - After the spoken script, on a new line, add a [gif:short search query] tag with a fun/relevant GIF search term
@@ -5159,7 +5192,7 @@ CONFIG FIELDS YOU CAN SET:
 Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, sendBtnColor, micBtnColor, lineHeight, letterSpacing, borderRadius
 Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
 Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
-Voice: ttsAutoPlay, groqTtsVoice(autumn/diana/hannah/austin/daniel/troy), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
+Voice: ttsAutoPlay, groqTtsVoice(troy=Trey/austin=Axel/daniel=Dean/hannah=Haven/autumn=Vera/diana=Diane), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
 Features: streamEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
 Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
 Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
@@ -7779,7 +7812,7 @@ ${agentNote}`);
           lines.push(k.whisperKey?`AI: <strong>Groq</strong> (${k.whisperKey.slice(0,8)}...)`:'AI: <strong>not set</strong>');
           if(mode==='direct')lines.push(`Model: <code>${k.aiModel||'groq/compound-mini'}</code>`);
           lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>');
-          lines.push(hasTTS(k)?'Voice Out: <strong>Groq Orpheus</strong> ('+(k.groqTtsVoice||'troy')+')':'Voice Out: <strong>not set</strong> (text-only)');
+          {const vp=getVoicePersona(k);lines.push(hasTTS(k)?`Voice Out: <strong>${vp.name}</strong> (${vp.tag})`:'Voice Out: <strong>not set</strong> (text-only)')}
           lines.push(k.tgToken&&k.tgChatId?`Telegram: <strong>${k.tgEnabled?'active':'configured (off)'}</strong>`:'Telegram: <strong>not set</strong>');
           lines.push((k.imageGenKey||k.imageGenUrl)?`Image Gen: <strong>${k.imageGenKey?(k.imageGenKey.startsWith('AIza')?'Google AI':'OpenRouter'):'custom endpoint'}</strong>`:'Image Gen: <strong>not set</strong>');
           sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
@@ -7812,15 +7845,13 @@ ${agentNote}`);
         }
         if(cmd==='/voice'){
           const k=getK();
-          const expr=k.groqTtsExpression;
-          sysBubble(`<h3>Voice Settings (Groq Orpheus)</h3>
-<p><strong>Provider:</strong> Groq Orpheus</p>
-<p><strong>Current voice:</strong> <code>${esc(k.groqTtsVoice||'troy')}</code></p>
-<p><strong>Available voices:</strong> autumn, diana, hannah, austin, daniel, troy</p>
-${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><strong>Expression:</strong> natural (none)</p>'}
-<p>To change voice: <code>{"groqTtsVoice": "troy"}</code></p>
-<p>To set expression: <code>{"groqTtsExpression": "cheerful"}</code></p>
-<p style="font-size:11px;color:var(--text-2)">Free TTS via your Groq key. Long text is auto-chunked at 200 chars and stitched.</p>`);
+          const vp=getVoicePersona(k);
+          const voiceList=Object.entries(VOICE_PERSONAS).map(([id,p])=>`<code>${p.name}</code> <span style="color:var(--text-3)">(${p.tag})</span>`).join(', ');
+          sysBubble(`<h3>Voice Personas</h3>
+<p><strong>Current:</strong> ${esc(vp.name)} <span style="color:var(--text-3)">(${esc(vp.tag)})</span></p>
+<p style="font-size:11px;color:var(--text-2);margin:4px 0">${esc(vp.desc)}</p>
+<p style="margin-top:10px"><strong>All voices:</strong> ${voiceList}</p>
+<p style="font-size:11px;color:var(--text-2)">Change voice in Settings > Voice Output, or: <code>{"groqTtsVoice": "austin"}</code></p>`);
           return;
         }
         if(text.startsWith('/save')){
