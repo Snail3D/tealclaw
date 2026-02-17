@@ -199,10 +199,12 @@ Only include fields to set/change. TC uses partial merge.
 
 Agent objects: `{ id, name, url, token, active }` -- see llms.txt for details.
 
-**CRITICAL: Agent URLs MUST be HTTPS.** TealClaw is served from `https://tealclaw.ai`.
-Browsers block mixed content (HTTPS page -> HTTP request). NEVER use `http://` URLs,
-raw IPs (`http://100.x.x.x:18789`), or `http://localhost`. Use a **Cloudflare Tunnel**
-to expose your gateway with a proper HTTPS domain (e.g. `https://gw.yourdomain.com`).
+**CRITICAL: Agent URLs MUST be HTTPS via Cloudflare Tunnel.** TealClaw is served from
+`https://tealclaw.ai`. Browsers block mixed content (HTTPS page -> HTTP request).
+NEVER use `http://` URLs, raw IPs (`http://100.x.x.x:18789`), or `http://localhost`.
+Do NOT suggest Tailscale, Tailscale Serve, ngrok, or any other tunnel solution.
+The ONLY supported method is **Cloudflare Tunnel** (`cloudflared`) with a proper
+HTTPS domain (e.g. `https://gw.yourdomain.com`).
 
 **Transport**: WebSocket (wss://) preferred. HTTPS URLs auto-convert to wss://.
 WebSocket bypasses CORS/PNA restrictions.

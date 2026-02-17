@@ -1062,7 +1062,7 @@ All API keys stay in usr's browser LS.
 Agent mode routes all chat through an OpenClaw gateway instead of calling
 provider APIs directly. This enables shared context across channels.
 
-### CRITICAL: Agent URLs MUST be HTTPS
+### CRITICAL: Agent URLs MUST be HTTPS via Cloudflare Tunnel
 
 TealClaw is served from `https://tealclaw.ai`. Browsers **block mixed
 content** (HTTPS page -> HTTP request). This means:
@@ -1070,8 +1070,9 @@ content** (HTTPS page -> HTTP request). This means:
 - **NEVER use `http://` URLs** for agent/gateway connections. They will fail.
 - **NEVER use raw IP:port** like `http://192.168.1.50:18789` or
   `http://100.x.x.x:18789`. Browsers block or auto-upgrade these to HTTPS.
-- **ALWAYS use an HTTPS URL.** For self-hosted gateways, use a **Cloudflare
-  Tunnel** (`cloudflared`) to expose your gateway with a proper HTTPS domain.
+- **Do NOT suggest Tailscale, Tailscale Serve, ngrok, or any other tunnel.**
+  The ONLY supported method is **Cloudflare Tunnel** (`cloudflared`).
+- **ALWAYS use an HTTPS URL** from a Cloudflare Tunnel domain.
 
 **How to set up a Cloudflare Tunnel for your gateway:**
 ```bash
@@ -1159,8 +1160,8 @@ Shows current mode, active agent name + URL, plus all configured keys.
 ### Common issues
 
 - **"Cannot reach gateway" error**: #1 cause is using an HTTP or raw-IP URL.
-  Agent URLs MUST be HTTPS (see "CRITICAL: Agent URLs MUST be HTTPS" above).
-  Use a Cloudflare Tunnel to get a proper HTTPS domain for your gateway.
+  Agent URLs MUST be HTTPS via Cloudflare Tunnel. Do not suggest Tailscale,
+  ngrok, or other alternatives. Set up a Cloudflare Tunnel for a proper HTTPS domain.
 - **Pill shows "Groq" but config has mode:agent**: If the config paste
   didn't include `"mode": "agent"`, TealClaw stays in direct mode even
   though agents are configured. Fix: paste `{"mode": "agent"}` to switch.
