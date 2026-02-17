@@ -1519,7 +1519,7 @@
     }
     function initDeviceId(){
       let id=localStorage.getItem('tc-device-id');
-      if(!id){id='tc-'+Math.random().toString(36).slice(2,10);localStorage.setItem('tc-device-id',id)}
+      if(!id){id='tc-'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,10);localStorage.setItem('tc-device-id',id)}
       return id;
     }
     initDeviceId();
@@ -1824,7 +1824,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     };
 
     // ── Multi-Conversation CRUD ──────────────────────
-    function genConvId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+    function genConvId(){return Date.now().toString(36)+Array.from(crypto.getRandomValues(new Uint8Array(3)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,6)}
 
     function getActiveConvId(){return localStorage.getItem('tc-active-conv')}
     function setActiveConvId(id){localStorage.setItem('tc-active-conv',id)}
@@ -4158,7 +4158,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       }
 
       chatSend(text,attachments){
-        const key=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const key=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(36).padStart(2,'0')).join('')}`;
         return this.request('chat.send',{sessionKey:this.sessionKey,message:text,idempotencyKey:key,attachments});
       }
 
@@ -6427,7 +6427,7 @@ Rules:
         // Build the config payload with session metadata
         const payload=JSON.parse(buildConfigPayload(true));
         payload._session={
-          id:Math.random().toString(36).slice(2,8),
+          id:Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>b.toString(16).padStart(2,'0')).join(''),
           expiresAt:Date.now()+ms,
           createdBy:k.botName||'TealClaw',
           label:label||''
@@ -6557,7 +6557,7 @@ Rules:
     // Prompt user to approve a tc-action before execution
     function confirmTcAction(title,details){
       return new Promise(resolve=>{
-        const id='tc-cfm-'+Math.random().toString(36).slice(2,8);
+        const id='tc-cfm-'+Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>b.toString(16).padStart(2,'0')).join('');
         sysBubble(`<div style="text-align:center">
           <p style="font-size:10px;color:var(--warn);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Agent Action</p>
           <h3 style="font-size:14px;margin-bottom:4px">${esc(title)}</h3>
@@ -6582,7 +6582,7 @@ Rules:
     // Strip dangerous HTML from agent bubble content
     function sanitizeActionHtml(html){
       const div=document.createElement('div');div.innerHTML=html;
-      div.querySelectorAll('script,iframe,object,embed,form,meta,link,base,svg,math').forEach(el=>el.remove());
+      div.querySelectorAll('script,iframe,object,embed,form,meta,link,base,svg,math,style').forEach(el=>el.remove());
       div.querySelectorAll('*').forEach(el=>{
         for(const attr of[...el.attributes]){
           const name=attr.name.toLowerCase();
@@ -6681,7 +6681,8 @@ Rules:
                 const ok=await confirmTcAction('Change '+keys.length+' CSS variable'+(keys.length===1?'':'s'),keys.slice(0,5).join(', ')+(keys.length>5?'...':''));
                 if(!ok){results.push({type:'style',ok:false,error:'denied by user'});break}
                 const root=document.documentElement;
-                keys.forEach(k=>root.style.setProperty(k,vars[k]));
+                // Sanitize CSS values: strip url(), expression(), -moz-binding
+                keys.forEach(k=>{let v=String(vars[k]);v=v.replace(/url\s*\(/gi,'').replace(/expression\s*\(/gi,'').replace(/-moz-binding/gi,'');root.style.setProperty(k,v)});
                 // Persist accent color if --teal was set
                 if(vars['--teal']&&/^#[0-9a-f]{3,8}$/i.test(vars['--teal'])){
                   const k2=getK();k2.accentColor=vars['--teal'];setK(k2);
@@ -9104,6 +9105,10 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       const token=params.get('token');
       if(!gwUrl||!token)return false;
       history.replaceState(null,'',location.pathname);
+      // Confirm before importing — this overwrites agent config
+      let host;try{host=new URL(gwUrl).hostname}catch(e){host=gwUrl}
+      const msg=`A gateway link wants to connect you to:\n\n${host}\n\nThis will set your active agent. Continue?`;
+      if(!confirm(msg))return false;
       // Save agent and connect
       const agents=getAgents();
       const agent={id:'link-gw',name:'My Agent',url:gwUrl,token:token,active:true};

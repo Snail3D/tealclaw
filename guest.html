@@ -94,9 +94,18 @@
     .bubble code{font-family:var(--mono);font-size:12px;padding:1px 5px;background:var(--bg-card);border-radius:4px}
     .bubble pre{background:var(--bg-card);border-radius:8px;padding:10px 12px;overflow-x:auto;margin:6px 0;font-size:12px}
     .bubble pre code{padding:0;background:none}
-    .bubble a{color:var(--teal);text-decoration:underline}
+    .bubble a{color:var(--teal);text-decoration:underline;text-underline-offset:2px}
     .bubble ul,.bubble ol{margin:4px 0;padding-left:20px}
+    .bubble li{margin:2px 0}
     .bubble p{margin:4px 0}
+    .bubble h1,.bubble h2,.bubble h3{font-weight:600;margin:8px 0 4px}
+    .bubble h1{font-size:1.2em}.bubble h2{font-size:1.1em}.bubble h3{font-size:1em}
+    .bubble blockquote{border-left:3px solid var(--teal);padding-left:10px;margin:6px 0;color:var(--text-2)}
+    .bubble table{border-collapse:collapse;margin:6px 0;font-size:12px;width:100%;overflow-x:auto;display:block}
+    .bubble th,.bubble td{border:1px solid var(--border);padding:4px 8px;text-align:left}
+    .bubble th{background:var(--bg-card);font-weight:600}
+    .bubble img{max-width:100%;border-radius:8px;margin:6px 0}
+    .bubble hr{border:none;border-top:1px solid var(--border);margin:8px 0}
     .hidden{display:none!important}
   </style>
 </head>
@@ -674,20 +683,46 @@ function escHtml(s){
   return d.innerHTML;
 }
 
-// ── Basic Markdown ───────────────────────────────
+// ── Markdown Renderer ────────────────────────────
 function renderBasicMd(text){
   if(!text)return '';
   let s=escHtml(text);
-  // Code blocks
+  // Code blocks (preserve content, strip lang tag)
   s=s.replace(/```(\w*)\n?([\s\S]*?)```/g,(_,lang,code)=>`<pre><code>${code.trim()}</code></pre>`);
   // Inline code
   s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  // Tables
+  s=s.replace(/(?:^|\n)(\|.+\|)\n(\|[-| :]+\|)\n((?:\|.+\|\n?)+)/g,(_,hdr,sep,body)=>{
+    const thCells=hdr.split('|').filter(c=>c.trim()).map(c=>'<th>'+c.trim()+'</th>').join('');
+    const rows=body.trim().split('\n').map(r=>'<tr>'+r.split('|').filter(c=>c.trim()).map(c=>'<td>'+c.trim()+'</td>').join('')+'</tr>').join('');
+    return '<table><thead><tr>'+thCells+'</tr></thead><tbody>'+rows+'</tbody></table>';
+  });
+  // Headers
+  s=s.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  s=s.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  s=s.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  // Blockquotes
+  s=s.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
+  // Horizontal rule
+  s=s.replace(/^---$/gm,'<hr>');
   // Bold
   s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
   // Italic
   s=s.replace(/\*(.+?)\*/g,'<em>$1</em>');
-  // Links
-  s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // Images
+  s=s.replace(/!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g,'<img src="$2" alt="$1" loading="lazy">');
+  // Links (sanitize: only allow http/https)
+  s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  // Unordered lists
+  s=s.replace(/(?:^|\n)([*\-] .+(?:\n[*\-] .+)*)/g,(_,block)=>{
+    const items=block.split('\n').map(l=>'<li>'+l.replace(/^[*\-] /,'')+'</li>').join('');
+    return '<ul>'+items+'</ul>';
+  });
+  // Ordered lists
+  s=s.replace(/(?:^|\n)(\d+\. .+(?:\n\d+\. .+)*)/g,(_,block)=>{
+    const items=block.split('\n').map(l=>'<li>'+l.replace(/^\d+\. /,'')+'</li>').join('');
+    return '<ol>'+items+'</ol>';
+  });
   // Line breaks
   s=s.replace(/\n/g,'<br>');
   return s;
