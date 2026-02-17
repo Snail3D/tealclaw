@@ -411,7 +411,7 @@
     /* ── GIF Overlay ──────────────────────────────────── */
     .gif-overlay{position:fixed;left:50%;top:22vh;transform:translateX(-50%);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 0.45s ease,visibility 0s linear 0.45s}
     .gif-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
-    .gif-overlay.visible{opacity:1;visibility:visible;transition:opacity 0.45s ease,visibility 0s linear 0s}
+    .gif-overlay.visible{opacity:1;visibility:visible;pointer-events:auto;cursor:pointer;transition:opacity 0.45s ease,visibility 0s linear 0s}
     .gif-overlay.fade-out{opacity:0;visibility:hidden;transition:opacity 0.8s ease,visibility 0s linear 0.8s}
     .gif-overlay img{width:100%;max-width:min(60vw,380px);max-height:50vh;border-radius:var(--r-lg);box-shadow:0 8px 30px rgba(0,0,0,0.45);object-fit:contain}
     @media(max-width:700px){.gif-overlay{top:18vh}.gif-overlay img{max-width:68vw;max-height:42vh}}
@@ -1331,6 +1331,22 @@
         return `<img src="${url}" alt="${alt}" style="max-width:100%;border-radius:var(--r-sm);margin:6px 0;display:block" loading="lazy">`;
       });
 
+      // Audio links — detect audio URLs in ![alt](url) or [text](url.mp3) patterns
+      html=html.replace(/<img src="([^"]+\.(mp3|wav|ogg|m4a|aac|flac)(\?[^"]*)?)" alt="([^"]*)"[^>]*>/gi,(m,url,ext,qs,alt)=>{
+        return `<audio controls preload="none" style="width:100%;max-width:400px;margin:6px 0;display:block;border-radius:var(--r-sm)"><source src="${url}">Your browser does not support audio.</audio>`;
+      });
+
+      // Video links — detect video URLs in ![alt](url) patterns
+      html=html.replace(/<img src="([^"]+\.(mp4|webm|mov|m3u8)(\?[^"]*)?)" alt="([^"]*)"[^>]*>/gi,(m,url,ext,qs,alt)=>{
+        return `<video controls preload="metadata" style="width:100%;max-width:100%;border-radius:var(--r-sm);margin:6px 0;display:block"><source src="${url}">Your browser does not support video.</video>`;
+      });
+
+      // Download links — [download:filename](url) or [download:filename.md](blob:...)
+      html=html.replace(/\[download:([^\]]+)\]\(([^)]+)\)/g,(m,fname,url)=>{
+        if(/^(javascript|vbscript):/i.test(url.replace(/\s/g,'')))return fname;
+        return `<a href="${url}" download="${fname}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);color:var(--teal);font-size:12px;font-weight:500;text-decoration:none;margin:6px 0" target="_blank" rel="noopener">\u2B07 ${fname}</a>`;
+      });
+
       // Links [text](url) — block javascript:/data:/vbscript: protocols
       html=html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,text,url)=>{
         if(/^(javascript|data|vbscript):/i.test(url.replace(/\s/g,'')))return text;
@@ -1366,7 +1382,7 @@
       html=html.split('\n').map(line=>{
         const trimmed=line.trim();
         if(!trimmed)return '';
-        if(/^<(h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|th|td|div|details|summary)/.test(trimmed))return line;
+        if(/^<(h[1-6]|ul|ol|li|pre|blockquote|hr|table|tr|th|td|div|details|summary|audio|video|img)/.test(trimmed))return line;
         return `<p>${trimmed}</p>`;
       }).join('\n');
 
@@ -1386,6 +1402,12 @@
       html=html.replace(/(<hr>)<\/p>/g,'$1');
       html=html.replace(/<p>(<details)/g,'$1');
       html=html.replace(/(<\/details>)<\/p>/g,'$1');
+      html=html.replace(/<p>(<audio)/g,'$1');
+      html=html.replace(/(<\/audio>)<\/p>/g,'$1');
+      html=html.replace(/<p>(<video)/g,'$1');
+      html=html.replace(/(<\/video>)<\/p>/g,'$1');
+      html=html.replace(/<p>(<img )/g,'$1');
+      html=html.replace(/(loading="lazy">)<\/p>/g,'$1');
 
       return html;
     }
@@ -3771,12 +3793,22 @@ Multi-device: each TealClaw instance has a unique device ID + name + location (s
 User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /help (also work without / for voice: "imagine a cat", "research quantum physics")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus (voices: autumn, diana, hannah, austin, daniel, troy). Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
-GIF reactions: when the mood fits, append a [gif:search query] tag at the end of your message (e.g. [gif:thumbs up], [gif:mind blown], [gif:happy dance]). TealClaw will fetch and display a matching GIF overlay. Use sparingly — great for celebrations, jokes, greetings, and emotional moments. Don't use for serious/technical answers.
+GIF reactions: when the mood fits, append a [gif:search query] tag at the end of your message (e.g. [gif:thumbs up], [gif:mind blown], [gif:happy dance]). TealClaw will fetch and display a matching GIF overlay via Klipy. Use sparingly — great for celebrations, jokes, greetings, and emotional moments. Don't use for serious/technical answers. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries. Keep queries short and generic.
+Inline media: your responses support full markdown rendering. Use ![alt](url) for inline images, ![audio](url.mp3) for inline audio players, ![video](url.mp4) for inline video players. Use [download:filename.ext](url) for download buttons. All render natively in the chat — no plugins needed.
+File generation: to produce a downloadable file, use \`\`\`tc-action\n{"type":"file","filename":"notes.md","content":"# My Notes\\n\\nContent here...","mime":"text/markdown"}\n\`\`\` Supported: .md, .json, .csv, .txt, .html. The file appears as a styled download card in chat. Use this when users ask for exports, reports, templates, or any generated document.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey), or mode. Those are owner-controlled only.`;
 
     function buildSysPrompt(k){
       const base=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
-      return k.skillContext===false?base:base+TC_SKILL_CTX;
+      let prompt=k.skillContext===false?base:base+TC_SKILL_CTX;
+      // Relay awareness: when connected to a gateway agent, tell the model it's relaying
+      const activeAgent=getActiveAgent();
+      if(k.mode==='agent'&&activeAgent){
+        const conn=agentConnections.get(activeAgent.id);
+        const connected=conn&&conn.connected;
+        prompt+=`\n[Agent Status] Gateway agent "${activeAgent.name||activeAgent.id}" is ${connected?'CONNECTED and active':'DISCONNECTED'}. ${connected?'You are primarily a relay — route user questions through the gateway agent. Use your Groq capabilities (voice transcription, TTS, /research, /imagine) to enhance the experience, but let the gateway agent handle reasoning and complex tasks. When summarizing agent responses for TTS, keep it natural and concise.':'The gateway agent is offline. You are the primary responder — answer questions directly using Groq compound models.'}`;
+      }
+      return prompt;
     }
 
     // ── AI Call ─────────────────────────────────────────
@@ -6462,6 +6494,18 @@ Rules:
               results.push({type:'bubble',ok:true});
               break;
             }
+            case 'file':{
+              const fname=action.filename||action.name||'download.txt';
+              const content=action.content||action.text||'';
+              if(!content){results.push({type:'file',ok:false,error:'no content'});break}
+              const mime=action.mime||(/\.json$/i.test(fname)?'application/json':/\.md$/i.test(fname)?'text/markdown':/\.csv$/i.test(fname)?'text/csv':/\.html?$/i.test(fname)?'text/html':'text/plain');
+              const blob=new Blob([content],{type:mime});
+              const url=URL.createObjectURL(blob);
+              const sizeKB=(content.length/1024).toFixed(1);
+              setTimeout(()=>sysBubble(`<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md)"><div style="font-size:24px">\uD83D\uDCC4</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text-1)">${esc(fname)}</div><div style="font-size:10px;color:var(--text-3)">${sizeKB} KB &bull; ${mime}</div></div><a href="${url}" download="${esc(fname)}" style="padding:6px 14px;background:var(--teal);color:#fff;border-radius:var(--r-sm);font-size:11px;font-weight:600;text-decoration:none">Download</a></div>`),200);
+              results.push({type:'file',ok:true,filename:fname});
+              break;
+            }
             case 'video':{
               const url=action.url;
               if(!url){results.push({type:'video',ok:false,error:'no url'});break}
@@ -6922,8 +6966,12 @@ Rules:
           if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            const query=gifQuery||autoDetectGif(displayText);
-            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
+            // If TTS will run, let the Groq TTS model pick the GIF (avoids double-GIF flash)
+            const willTTS=ttsMode==='auto'&&hasTTS(pk);
+            if(!willTTS){
+              const query=gifQuery||autoDetectGif(displayText);
+              if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
+            }
           }
           // Groq narrator: digest verbose agent output
           let rawText=null;
@@ -6985,8 +7033,11 @@ Rules:
           if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            const query=gifQuery||autoDetectGif(displayText);
-            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
+            const willTTS=ttsMode==='auto'&&hasTTS(pk);
+            if(!willTTS){
+              const query=gifQuery||autoDetectGif(displayText);
+              if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
+            }
           }
           chatHistory[streamIdx].text=displayText;
           const executed=tcResults.filter(r=>r&&r.ok).length;
@@ -7033,10 +7084,13 @@ Rules:
           const executed2=tcResults2.filter(r=>r&&r.ok).length;
 
           // GIF overlay
+          const wantTTS=ttsMode==='auto'&&hasTTS(pk);
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            const query=gifQuery||autoDetectGif(displayText);
-            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
+            if(!wantTTS){
+              const query=gifQuery||autoDetectGif(displayText);
+              if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
+            }
           }
 
           sendTelegram(`AI: ${displayText}`);
@@ -7044,7 +7098,6 @@ Rules:
 
           // TTS (fetch audio while preparing UI)
           let audioUrl=null;
-          const wantTTS=ttsMode==='auto'&&hasTTS(pk);
           const ttsPromise=wantTTS?speak(displayText):Promise.resolve(null);
 
           // Typing animation: reveal character by character, synced to audio if available
