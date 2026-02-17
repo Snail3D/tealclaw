@@ -119,12 +119,14 @@ client: {
 }</code></pre>
 
 <h3>WebSocket Protocol Flow</h3>
+<p><strong>Auto-provisioned users</strong> (most common): TealClaw calls <code>POST /connect</code> on the gateway to get a stateless HMAC token (<code>tc1.*</code>) automatically on first visit. No manual token setup needed.</p>
+<p><strong>Custom gateway users</strong>: Use a static gateway token from <code>openclaw config get gateway.token</code>.</p>
 <p>The full handshake sequence:</p>
 <pre><code>1. Client connects to wss://&lt;gateway-host&gt;:&lt;port&gt;
 2. Gateway sends: { type: "connect.challenge" }
 3. Client responds: {
      type: "connect",
-     token: "&lt;gateway-auth-token&gt;",
+     token: "&lt;gateway-auth-token or tc1.* tenant token&gt;",
      client: { id: "webchat", ... }
    }
 4. Gateway validates: client schema + origin + auth token
@@ -295,14 +297,22 @@ client: {
 <!-- ═══════════════════════════════════════════════════════ -->
 <h2 id="cloudflare-tunnel">9. Cloudflare Tunnel + TLS <span class="tag tag-ws">Network</span></h2>
 
-<h3>How TealClaw connects to the gateway</h3>
+<h3>Default: Auto-provisioned gateway</h3>
+<p>New users auto-connect to <code>gw.tealclaw.ai</code> on first visit. TealClaw calls <code>POST /connect</code> to get a stateless HMAC token — no signup, no token pasting. Users just need a Groq key (<code>gsk_...</code>) for voice + chat.</p>
+<p>To enable auto-provisioning on your own gateway:</p>
+<pre><code>openclaw config set gateway.tenant.enabled true
+openclaw config set gateway.tenant.hmacSecret "$(openssl rand -hex 32)"
+openclaw config set gateway.tenant.corsOrigins '["https://tealclaw.ai"]'
+# Then restart the gateway</code></pre>
+
+<h3>Custom gateway: Cloudflare Tunnel</h3>
+<p>For users running their own OpenClaw gateway, Cloudflare Tunnel provides HTTPS. No port forwarding needed.</p>
 <pre><code>TealClaw (browser on any device)
   → wss://gw.yourdomain.com:443  (TLS terminated by Cloudflare)
   → cloudflared tunnel → 127.0.0.1:18789
   → OpenClaw gateway processes the WebSocket</code></pre>
 
 <h3>Cloudflare Tunnel setup</h3>
-<p>Cloudflare Tunnel provides automatic TLS and proxies HTTPS traffic to your local gateway. No port forwarding needed.</p>
 <pre><code># One-time setup
 cloudflared tunnel create openclaw-gw
 cloudflared tunnel route dns openclaw-gw gw.yourdomain.com
