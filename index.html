@@ -308,14 +308,14 @@
     .voice-mode-subtitle{max-width:80%;min-height:60px;font-size:16px;color:#fff;font-family:var(--font);line-height:1.6;text-align:center;overflow-y:auto;max-height:40vh;padding:0 16px}
     .voice-mode-subtitle .typing-cursor{display:inline-block;width:2px;height:1em;background:var(--teal);margin-left:2px;animation:blink 0.8s infinite}
     /* ── Gesture Pip (Hand Tracking Camera) ────────────── */
-    .gesture-pip{position:fixed;bottom:calc(140px + var(--sab,0px));right:16px;width:120px;height:160px;border-radius:var(--r-lg);overflow:hidden;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:2px solid var(--border);background:#000;display:none;cursor:grab;touch-action:none;transition:border-color 0.3s,box-shadow 0.3s}
+    .gesture-pip{position:fixed;bottom:calc(140px + var(--sab,0px));right:16px;width:116px;height:140px;border-radius:var(--r-lg);overflow:hidden;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:2px solid var(--border);background:linear-gradient(160deg,#070b10,#0f172a);display:none;touch-action:none;transition:border-color 0.3s,box-shadow 0.3s}
     .gesture-pip.active{display:block}
     .gesture-pip.recognized{border-color:var(--teal);box-shadow:0 0 20px rgba(13,148,136,0.5)}
     .gesture-pip.recording{border-color:var(--err);box-shadow:0 0 20px rgba(239,68,68,0.4);animation:gesture-pulse 1.5s ease-in-out infinite}
-    @keyframes gesture-pulse{0%,100%{box-shadow:0 0 20px rgba(239,68,68,0.4)}50%{box-shadow:0 0 30px rgba(239,68,68,0.6)}}
-    .gesture-pip video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-    .gesture-pip canvas{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1);pointer-events:none}
-    .gesture-pip-label{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8);pointer-events:none;transition:opacity 0.2s}
+    @keyframes gesture-pulse{0%,100%{box-shadow:0 0 20px rgba(239,68,68,0.4)}50%{box-shadow:0 0 30px rgba(239,68,68,0.62)}}
+    .gesture-pip video{display:none}
+    .gesture-pip canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    .gesture-pip-label{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:9px;font-weight:600;color:#e2fdf8;text-shadow:0 1px 4px rgba(0,0,0,0.8);pointer-events:none;transition:opacity 0.2s}
     .gesture-pip-close{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}
     .gesture-pip-close:hover{background:var(--err)}
 
@@ -1153,13 +1153,8 @@
       <div class="file-stack" id="fileStack"></div>
       <div class="input-row">
         <button class="claw-toggle" id="clawToggle" title="Toggle Claw mode" aria-label="Toggle Claw mode">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M7 18c0-2 1.2-3.4 2.8-3.4S12.6 16 12.6 18"/>
-            <path d="M11.4 18c0-2 1.2-3.4 2.8-3.4S17 16 17 18"/>
-            <path d="M8.7 12.2l-1.9-4.6"/>
-            <path d="M12 11.2V6.1"/>
-            <path d="M15.3 12.2l1.9-4.6"/>
-            <path d="M6.4 20.1h11.2"/>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="transform:rotate(45deg)">
+            <path fill-rule="evenodd" d="M4.2 8.5c1.6-3.3 5.4-5.4 9.5-5.4 5 0 8.4 3.8 8.4 8.6 0 4.9-3.7 8.7-8.8 8.7-4.4 0-8-2.3-9.3-6-.6-1.5-.5-3.8.2-5.9Zm5.8 5.6c.9-.4 1.8-1.1 2.9-1.9 1.6-1 3.2-1.6 5.1-1.6 1.4 0 2.5.5 3.3 1.3-.6 3.1-3.3 5.2-6.3 5.2-1.9 0-3.8-.7-5-1.8Z" clip-rule="evenodd"/>
           </svg>
         </button>
         <button class="circle-btn attach-btn" id="attachBtn" title="Attach file" aria-label="Attach file">
@@ -2256,10 +2251,10 @@
           <button class="mode-btn gesture-mode-btn ${gestureOn?'active':''}" data-gesture="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${gestureOn?'var(--teal)':'transparent'};border:none;color:${gestureOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
           <button class="mode-btn gesture-mode-btn ${!gestureOn?'active':''}" data-gesture="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!gestureOn?'var(--teal)':'transparent'};border:none;color:${!gestureOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show The Claw to start voice capture. Lower your hand to send. No camera preview — detection runs in background.</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Show The Claw to start voice capture. Lower your hand to send. Tiny wireframe preview only (no live camera video).</div>
         ${gestureOn?`<div style="margin-top:10px">
-          <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="gestConfVal">${k.gestureConfidence||0.6}</span></div>
-          <input type="range" id="sheetGestureConf" min="0.3" max="0.95" step="0.05" value="${k.gestureConfidence||0.6}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
+          <div style="display:flex;justify-content:space-between"><div style="font-size:11px;font-weight:500;color:var(--text-2)">Detection Confidence</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="gestConfVal">${k.gestureConfidence||0.5}</span></div>
+          <input type="range" id="sheetGestureConf" min="0.25" max="0.95" step="0.05" value="${k.gestureConfidence||0.5}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
           <div style="font-size:9px;color:var(--text-3);margin-top:2px">Lower = more sensitive, higher = more precise</div>
         </div>`:''}
       </div>`;
@@ -2654,11 +2649,14 @@
       });
 
       $('sheetBody').querySelector('#sheetAudioVolume')?.addEventListener('input',e=>{
-        const el=$('sheetBody').querySelector('#audioVolVal');if(el)el.textContent=e.target.value;
-        audio.volume=+e.target.value;
+        const v=applyPlaybackVolume(e.target.value,false);
+        const el=$('sheetBody').querySelector('#audioVolVal');
+        if(el)el.textContent=v.toFixed(2).replace(/\.00$/,'');
       });
       $('sheetBody').querySelector('#sheetAudioVolume')?.addEventListener('change',e=>{
-        const k2=getK();k2.audioVolume=+e.target.value;setK(k2);audio.volume=+e.target.value;
+        const v=applyPlaybackVolume(e.target.value,true);
+        const el=$('sheetBody').querySelector('#audioVolVal');
+        if(el)el.textContent=v.toFixed(2).replace(/\.00$/,'');
       });
 
       // Wire up AI configuration
@@ -3343,6 +3341,31 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     // Play audio buffer reliably on all platforms
     let activeTTSSource=null;
     let activeTTSGain=null;
+    function clampVolume(v){
+      const n=Number(v);
+      if(!Number.isFinite(n))return 0.8;
+      return Math.min(1,Math.max(0,n));
+    }
+    function getConfiguredVolume(){
+      const k=getK();
+      return clampVolume(k.audioVolume!==undefined?k.audioVolume:0.8);
+    }
+    function applyPlaybackVolume(vol,persist){
+      const v=clampVolume(vol);
+      audio.volume=v;
+      if(activeTTSGain){
+        const ctx=activeTTSGain.context;
+        activeTTSGain.gain.cancelScheduledValues(ctx.currentTime);
+        activeTTSGain.gain.setValueAtTime(activeTTSGain.gain.value,ctx.currentTime);
+        activeTTSGain.gain.linearRampToValueAtTime(v,ctx.currentTime+0.03);
+      }
+      if(persist){
+        const k2=getK();
+        k2.audioVolume=v;
+        setK(k2);
+      }
+      return v;
+    }
     async function playAudioBuffer(arrayBuffer){
       const ctx=ensureAudioCtx();
       try{
@@ -3351,11 +3374,12 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         source.buffer=decoded;
         // Gain node with ramp to prevent start/end clicks
         const gain=ctx.createGain();
+        const targetVol=getConfiguredVolume();
         gain.gain.setValueAtTime(0,ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(1,ctx.currentTime+0.015); // 15ms fade-in
+        gain.gain.linearRampToValueAtTime(targetVol,ctx.currentTime+0.015); // 15ms fade-in
         // Schedule fade-out 30ms before end
         const dur=decoded.duration;
-        if(dur>0.06)gain.gain.setValueAtTime(1,ctx.currentTime+dur-0.03);
+        if(dur>0.06)gain.gain.setValueAtTime(targetVol,ctx.currentTime+dur-0.03);
         gain.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
         source.connect(gain);
         gain.connect(ctx.destination);
@@ -3371,6 +3395,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const blob=ttsBlob(arrayBuffer);
         const blobUrl=URL.createObjectURL(blob);
         audio.src=blobUrl;
+        audio.volume=getConfiguredVolume();
         audio.onended=()=>{URL.revokeObjectURL(blobUrl);hideStopTTS();activeTTSSource=null};
         audio.onpause=()=>{hideStopTTS();activeTTSSource=null};
         showStopTTS();
@@ -3413,7 +3438,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     // Tap anywhere on overlay to enable
     $('overlay').addEventListener('click',enableAudio);
     $('enableBtn').addEventListener('click',enableAudio);
-    audio.volume=getK().audioVolume!==undefined?getK().audioVolume:0.8;
+    audio.volume=getConfiguredVolume();
 
     // Restore TTS mode from config (auto/on/off, default auto if TTS available)
     // Restore TTS mode: ttsMode > legacy ttsAutoPlay > default (auto if TTS available)
@@ -9826,9 +9851,9 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     // ── Gesture Control (MediaPipe Hands) ────────────
     let gestureStream=null,gestureHands=null,gestureRAF=null,gestureCamera=null,gestureActive=false;
     let lastGesture='',gestureGoneTime=0,gestureRecording=false;
-    let clawDetectStart=0; // timestamp when claw first detected (for 1s delay)
-    const CLAW_CONFIRM_MS=1000; // hold claw 1s before recording starts
-    const GESTURE_GONE_MS=800; // ms after claw gone before stopping recording
+    let clawDetectStart=0; // timestamp when claw first detected (for start delay)
+    const CLAW_CONFIRM_MS=250; // hold claw briefly before recording starts
+    const GESTURE_GONE_MS=500; // stop after claw gone for 0.5s
 
     // Claw audio: own mic stream, recorder, chunks
     let clawMicStream=null,clawRecorder=null,clawChunks=[];
@@ -9933,27 +9958,93 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       });
     }
 
+    const HAND_CONNECTIONS=[
+      [0,1],[1,2],[2,3],[3,4],
+      [0,5],[5,6],[6,7],[7,8],
+      [5,9],[9,10],[10,11],[11,12],
+      [9,13],[13,14],[14,15],[15,16],
+      [13,17],[17,18],[18,19],[19,20],[0,17]
+    ];
+
+    function drawGestureWireframe(landmarks,isClaw){
+      const canvas=$('gestureCanvas');
+      if(!canvas)return;
+      const rect=canvas.getBoundingClientRect();
+      if(!rect.width||!rect.height)return;
+      const dpr=window.devicePixelRatio||1;
+      const wantW=Math.round(rect.width*dpr),wantH=Math.round(rect.height*dpr);
+      if(canvas.width!==wantW||canvas.height!==wantH){canvas.width=wantW;canvas.height=wantH}
+      const ctx=canvas.getContext('2d');
+      if(!ctx)return;
+      ctx.save();
+      ctx.scale(dpr,dpr);
+      ctx.clearRect(0,0,rect.width,rect.height);
+
+      // Small idle claw glyph when no hand is detected.
+      if(!landmarks||landmarks.length<21){
+        ctx.translate(rect.width*0.5,rect.height*0.46);
+        ctx.rotate(Math.PI/4);
+        ctx.fillStyle='rgba(148,163,184,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0,-3,30,22,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.globalCompositeOperation='destination-out';
+        ctx.beginPath();
+        ctx.moveTo(-2,-5);
+        ctx.quadraticCurveTo(14,-2,20,7);
+        ctx.quadraticCurveTo(10,13,-5,9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalCompositeOperation='source-over';
+        ctx.restore();
+        return;
+      }
+
+      const main=isClaw?'#10b7a9':'#7dd3fc';
+      const secondary=isClaw?'rgba(16,183,169,0.5)':'rgba(125,211,252,0.45)';
+      const point=isClaw?'#e6fff8':'#dbeafe';
+      ctx.strokeStyle=secondary;
+      ctx.lineWidth=2.1;
+      HAND_CONNECTIONS.forEach(([a,b])=>{
+        const p1=landmarks[a],p2=landmarks[b];
+        if(!p1||!p2)return;
+        ctx.beginPath();
+        ctx.moveTo((1-p1.x)*rect.width,p1.y*rect.height);
+        ctx.lineTo((1-p2.x)*rect.width,p2.y*rect.height);
+        ctx.stroke();
+      });
+      landmarks.forEach((p,i)=>{
+        const x=(1-p.x)*rect.width,y=p.y*rect.height;
+        ctx.fillStyle=(i===4||i===8||i===12||i===16||i===20)?main:point;
+        ctx.beginPath();
+        ctx.arc(x,y,i===4||i===8||i===12||i===16||i===20?2.7:1.9,0,Math.PI*2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
     function classifyGesture(landmarks){
       if(!landmarks||landmarks.length<21)return'unknown';
-      // The Claw: index+middle paired, ring+pinky paired, clear gap between pairs
-      // Open palm (all fingers spread) must NOT trigger
+      // The Claw: paired fingers with a visible center gap (tuned to be forgiving)
       const dist=(a,b)=>Math.hypot(landmarks[a].x-landmarks[b].x,landmarks[a].y-landmarks[b].y,landmarks[a].z-landmarks[b].z);
       const wristDist=(i)=>dist(i,0);
       const tips=[8,12,16,20];
       const pips=[6,10,14,18];
       const extended=tips.map((t,i)=>wristDist(t)>wristDist(pips[i]));
       const [indexUp,middleUp,ringUp,pinkyUp]=extended;
-      if(!indexUp||!middleUp||!ringUp||!pinkyUp)return'unknown';
+      const upCount=extended.filter(Boolean).length;
+      if(!indexUp||!middleUp||upCount<3)return'unknown';
       const palmSize=dist(0,9);
       const imDist=dist(8,12);
       const rpDist=dist(16,20);
       const mrGap=dist(12,16);
-      const closeThresh=palmSize*0.42;
-      const gapThresh=palmSize*0.35;
+      const closeThresh=palmSize*0.58;
+      const gapThresh=palmSize*0.22;
       if(imDist>=closeThresh||rpDist>=closeThresh||mrGap<=gapThresh)return'unknown';
-      if(mrGap<imDist*1.4||mrGap<rpDist*1.4)return'unknown';
+      if(mrGap<imDist*1.15||mrGap<rpDist*1.15)return'unknown';
       const irDist=dist(8,16);
-      if(irDist<palmSize*0.45)return'unknown';
+      if(irDist<palmSize*0.25)return'unknown';
+      if(ringUp===false&&pinkyUp===false)return'unknown';
       return'the_claw';
     }
 
@@ -9974,8 +10065,9 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         await video.play();
         pip.classList.add('active');
         pipLabel.textContent='Listening for claw...';
+        drawGestureWireframe(null,false);
 
-        const conf=getK().gestureConfidence||0.6;
+        const conf=getK().gestureConfidence||0.5;
         gestureHands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
         gestureHands.setOptions({
           maxNumHands:1,
@@ -9990,13 +10082,14 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           if(results.multiHandLandmarks&&results.multiHandLandmarks.length>0){
             const lm=results.multiHandLandmarks[0];
             const gesture=classifyGesture(lm);
+            drawGestureWireframe(lm,gesture==='the_claw');
 
             if(gesture==='the_claw'){
               pip.classList.add('recognized');
               pipLabel.textContent=gestureRecording?'Recording...':'Claw detected...';
               gestureGoneTime=0;
               if(!gestureRecording){
-                // 1-second confirmation delay
+                // short confirmation delay before starting capture
                 if(!clawDetectStart)clawDetectStart=Date.now();
                 if(Date.now()-clawDetectStart>=CLAW_CONFIRM_MS){
                   startClawRecording();
@@ -10016,6 +10109,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
               }
             }
           } else {
+            drawGestureWireframe(null,false);
             pip.classList.remove('recognized');
             if(!gestureRecording)pipLabel.textContent='Listening for claw...';
             clawDetectStart=0;
@@ -10048,6 +10142,11 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       $('clawToggle').classList.remove('on','recording');
       $('gesturePip').classList.remove('active','recognized','recording');
       $('gesturePipLabel').textContent='';
+      const gCanvas=$('gestureCanvas');
+      if(gCanvas){
+        const gctx=gCanvas.getContext('2d');
+        if(gctx)gctx.clearRect(0,0,gCanvas.width,gCanvas.height);
+      }
       if(gestureCamera&&gestureCamera.stop){try{gestureCamera.stop()}catch{}}
       gestureCamera=null;
       if(gestureStream){gestureStream.getTracks().forEach(t=>t.stop());gestureStream=null}
