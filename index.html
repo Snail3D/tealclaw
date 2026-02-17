@@ -698,6 +698,9 @@
     .mermaid-error{text-align:left}
     .mermaid-err-msg{font-size:11px;color:var(--err);margin-top:6px;text-align:center}
     .tc-action-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 10px;font-size:10px;font-weight:500;border-radius:100px;background:rgba(13,148,136,0.1);color:var(--teal);letter-spacing:0.02em}
+    .redacted{display:inline;padding:1px 4px;background:var(--bg-hover);border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:0.9em;letter-spacing:0.5px;user-select:none;border-bottom:1px dashed var(--text-3)}
+    .redacted:hover{background:var(--teal-dim);color:var(--teal)}
+    .redacted:active::after{content:' copied!';font-size:9px;color:var(--ok)}
 
     /* ── Collapsible Details in Markdown ─────────────── */
     .chat-bubble .md-content details{border:1px solid var(--border);border-radius:var(--r-md);margin:6px 0;overflow:hidden}
@@ -1587,6 +1590,54 @@
       _notifyTimer=setTimeout(()=>{el.classList.add('hide');setTimeout(()=>el.classList.remove('show','hide'),400)},dur);
     }
     function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+    // ── Sensitive Data Redaction (display-only) ─────────
+    function redactSensitive(text){
+      // Operates on raw text, returns HTML with redacted spans
+      // Patterns: API keys, emails, phone numbers
+      const patterns=[
+        // Known API key prefixes (Groq, OpenAI, Anthropic, Google AI, xAI, OpenRouter, Together, etc.)
+        {re:/\b(gsk_|sk-|sk-ant-|sk-or-|AIza|xai-|key-|whsec_|pk_live_|sk_live_|rk_live_)[A-Za-z0-9_-]{8,}\b/g,
+         mask:m=>{const prefix=m.slice(0,6);return prefix+'...'+(m.length>10?m.slice(-4):'')}},
+        // Generic long tokens (40+ alphanumeric chars, likely keys/tokens)
+        {re:/\b[A-Za-z0-9_-]{40,}\b/g,
+         mask:m=>m.slice(0,6)+'...'+m.slice(-4)},
+        // Email addresses — show first 3 chars + @domain
+        {re:/\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Z|a-z]{2,})\b/g,
+         mask:(m,local,domain)=>{const show=local.slice(0,3);const hide='\u2022'.repeat(Math.min(local.length-3,5));return show+hide+'@'+domain}},
+        // Phone numbers (US and international formats)
+        {re:/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+         mask:m=>{const digits=m.replace(/\D/g,'');if(digits.length<7)return m;return digits.slice(0,3)+'\u2022'.repeat(digits.length-3)}}
+      ];
+      let result=esc(text);
+      // We need to work on the escaped HTML but match against original text positions
+      // Simpler: run patterns on raw text, build output
+      let segments=[];
+      let lastIdx=0;
+      let matches=[];
+      for(const p of patterns){
+        let m;p.re.lastIndex=0;
+        while((m=p.re.exec(text))!==null){
+          matches.push({start:m.index,end:m.index+m[0].length,full:m[0],masked:p.mask(...m)});
+        }
+      }
+      // Sort by position, remove overlaps
+      matches.sort((a,b)=>a.start-b.start);
+      const filtered=[];
+      let maxEnd=0;
+      for(const m of matches){
+        if(m.start>=maxEnd){filtered.push(m);maxEnd=m.end}
+      }
+      if(!filtered.length)return esc(text);
+      let out='';
+      for(const m of filtered){
+        out+=esc(text.slice(lastIdx,m.start));
+        out+=`<span class="redacted" title="Click to copy" data-full="${esc(m.full)}">${esc(m.masked)}</span>`;
+        lastIdx=m.end;
+      }
+      out+=esc(text.slice(lastIdx));
+      return out;
+    }
 
     // ── Markdown Renderer ───────────────────────────────
     function renderMd(text){
@@ -4292,7 +4343,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
             }}catch{}}
           }
         } else {
-          content+=esc(displayText);
+          content+=redactSensitive(displayText);
         }
         // Action badge for messages that executed tc-action blocks
         if(m.actionsRun)content+=`<div class="tc-action-badge">\u26A1 ${m.actionsRun} action${m.actionsRun>1?'s':''} executed</div>`;
@@ -4336,6 +4387,13 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
           }).catch(()=>{});
         });
         wrap.appendChild(btn);
+      });
+
+      // Redacted text click-to-copy
+      s.querySelectorAll('.redacted[data-full]').forEach(el=>{
+        el.addEventListener('click',()=>{
+          navigator.clipboard.writeText(el.dataset.full).then(()=>showToast('Copied to clipboard','ok')).catch(()=>{});
+        });
       });
 
       // Render mermaid diagrams
@@ -7728,7 +7786,21 @@ Rules:
                 const record={id:payload.id,name,hint,encBlob:blob,instructions,presets,commands,maxChars,rateLimit,expires:exp?new Date(exp).toISOString().slice(0,10):null,created:new Date().toISOString().slice(0,10),enabled:true};
                 const links=getGuestLinks();links.push(record);setGuestLinks(links);
                 const fullUrl=location.origin+'/guest.html#'+hintPrefix+blob;
-                setTimeout(()=>sysBubble(`<div style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><div style="margin:8px 0;padding:8px;background:var(--bg-card);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);word-break:break-all;cursor:pointer" onclick="navigator.clipboard.writeText('${fullUrl.replace(/'/g,"\\'")}').then(()=>showToast('Copied','ok'))">${esc(fullUrl.slice(0,80))}...</div><div style="margin:4px 0;padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer" onclick="navigator.clipboard.writeText('${passphrase}').then(()=>showToast('Copied','ok'))">${passphrase}</div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:4px">Tap to copy. Share the passphrase separately from the link.</div></div>`),200);
+                setTimeout(()=>{
+                  const b=sysBubble(`<div style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><button style="width:100%;margin:8px 0;padding:10px;font-size:12px;font-weight:600;font-family:var(--font);border:1.5px solid var(--teal);border-radius:var(--r-md);background:transparent;color:var(--teal);cursor:pointer" class="gl-inline-copy-link">Copy Link</button><button style="width:100%;padding:8px;font-size:11px;font-weight:600;font-family:var(--font);border:1.5px dashed var(--warn);border-radius:var(--r-md);background:transparent;color:var(--warn);cursor:pointer" class="gl-inline-reveal">Reveal Passphrase</button><div class="gl-inline-pass-area" style="margin-top:6px"></div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:6px">Share the passphrase separately from the link.</div></div>`);
+                  b.querySelector('.gl-inline-copy-link').addEventListener('click',function(){
+                    navigator.clipboard.writeText('${fullUrl.replace(/'/g,"\\'")}').then(()=>{this.textContent='Copied!';showToast('Link copied','ok');setTimeout(()=>this.textContent='Copy Link',2000)}).catch(()=>showToast('Copy failed','err'));
+                  });
+                  const revealBtn=b.querySelector('.gl-inline-reveal');
+                  const passArea=b.querySelector('.gl-inline-pass-area');
+                  revealBtn.addEventListener('click',function showPass(){
+                    passArea.innerHTML='<div style="padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer;margin-bottom:4px" class="gl-pp">${passphrase}</div><div style="font-size:9px;color:var(--text-3);text-align:center">Hiding in <span class="gl-timer">10</span>s</div>';
+                    passArea.querySelector('.gl-pp').addEventListener('click',()=>{navigator.clipboard.writeText('${passphrase}').then(()=>showToast('Passphrase copied','ok'))});
+                    let sec=10;const iv=setInterval(()=>{sec--;const t=passArea.querySelector('.gl-timer');if(t)t.textContent=sec;if(sec<=0){clearInterval(iv);passArea.innerHTML='';revealBtn.textContent='Reveal Passphrase'}},1000);
+                    revealBtn.textContent='Hiding in 10s';revealBtn.disabled=true;
+                    setTimeout(()=>{revealBtn.disabled=false},10000);
+                  });
+                },200);
                 results.push({type:'guest-link',ok:true,action:'create',id:payload.id});
               } else if(glAction==='list'){
                 const links=getGuestLinks();
