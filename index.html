@@ -4378,13 +4378,18 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
         } else {
           const label=data?.label||`Run ${builderRuns.size+1}`;
           builderRuns.set(runId,{
-            label,lines:[],state:'running',
+            label,lines:[],state:'running',_seenSeqs:new Set(),
             startedAt:ts||Date.now(),sessionKey:conn?.sessionKey,agentId
           });
           if(!activeBuilderRun)activeBuilderRun=runId;
         }
       }
       const run=builderRuns.get(runId);
+      // Dedup by seq number (events can replay on WS reconnect)
+      if(seq!=null&&run._seenSeqs){
+        if(run._seenSeqs.has(seq))return;
+        run._seenSeqs.add(seq);
+      }
       // Detect lifecycle end
       if(stream==='lifecycle'&&data?.event==='end'){
         run.state='done';
@@ -4502,8 +4507,9 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
     // WebSocket-based agent call (OpenClaw protocol)
     async function callAgentWS(conn,text,imageBase64,onToken){
       return new Promise((resolve,reject)=>{
-        let full='',runId=null,usage=null,settled=false;
+        let full='',runId=null,usage=null,settled=false,lastActivity=Date.now();
         const onChat=(payload)=>{
+          lastActivity=Date.now();
           if(!runId&&payload.runId)runId=payload.runId;
           if(payload.state==='delta'&&payload.message){
             // payload.message can be string, {content:string}, or {content:[{type,text}]}
@@ -4530,14 +4536,35 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
           }
         };
         conn.on('chat',onChat);
+        // Also listen for agent events to keep the timeout alive (agent is working)
+        const onAgent=()=>{lastActivity=Date.now()};
+        conn.on('agent',onAgent);
         // Build message with image if needed
         let msg=text||'';
         if(imageBase64)msg=(text||'What do you see?')+`\n[image attached]`;
         conn.chatSend(msg,imageBase64?[{type:'image',data:imageBase64}]:undefined).catch(e=>{
-          if(!settled){settled=true;conn.off('chat',onChat);reject(e)}
+          if(!settled){settled=true;conn.off('chat',onChat);conn.off('agent',onAgent);reject(e)}
         });
-        // Timeout: 120s
-        setTimeout(()=>{if(!settled){settled=true;conn.off('chat',onChat);reject(new Error('Agent response timeout'))}},120000);
+        // Activity-based timeout: 5 min max, but resets on any agent/chat activity
+        const checkTimeout=()=>{
+          if(settled)return;
+          const idle=Date.now()-lastActivity;
+          if(idle>120000){
+            // 2 min of silence — resolve with partial text if any, otherwise timeout error
+            settled=true;conn.off('chat',onChat);conn.off('agent',onAgent);
+            if(full)resolve({text:full,usage:null});
+            else reject(new Error('Agent response timeout'));
+          } else if(Date.now()-startTime>600000){
+            // Hard 10 min cap
+            settled=true;conn.off('chat',onChat);conn.off('agent',onAgent);
+            if(full)resolve({text:full,usage:null});
+            else reject(new Error('Agent response timeout'));
+          } else {
+            setTimeout(checkTimeout,10000);
+          }
+        };
+        const startTime=Date.now();
+        setTimeout(checkTimeout,10000);
       });
     }
 
