@@ -422,8 +422,10 @@
     .gif-overlay.visible{opacity:1;visibility:visible;pointer-events:auto;transition:opacity 0.45s ease,visibility 0s linear 0s}
     .gif-overlay.fade-out{opacity:0;visibility:hidden;transition:opacity 0.8s ease,visibility 0s linear 0.8s}
     .gif-overlay.dragging{cursor:grabbing;transition:none}
-    .gif-overlay img{width:100%;max-width:min(30vw,190px);max-height:25vh;border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.4);object-fit:contain}
-    @media(max-width:700px){.gif-overlay img{max-width:35vw;max-height:22vh}}
+    .gif-overlay.resizing{cursor:nwse-resize;transition:none}
+    .gif-overlay img{display:block;border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.4);object-fit:contain;pointer-events:none}
+    .gif-resize{position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;cursor:nwse-resize;z-index:2;touch-action:none}
+    .gif-resize::after{content:'';position:absolute;bottom:2px;right:2px;width:12px;height:12px;border-bottom:2px solid rgba(255,255,255,0.5);border-right:2px solid rgba(255,255,255,0.5);border-radius:0 0 4px 0}
 
     /* ── Config Apply Button (in-chat) ─────────────── */
     .config-apply-card{margin-top:10px;padding:10px 14px;background:var(--teal-dim);border:1px solid rgba(13,148,136,0.25);border-radius:var(--r-md);display:flex;align-items:center;gap:10px}
@@ -1000,6 +1002,7 @@
   <div class="gif-overlay hidden" id="gifOverlay">
     <img id="gifImg" src="" alt="" draggable="false">
     <button id="gifClose" style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,0.65);color:#fff;border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;line-height:1">&times;</button>
+    <div class="gif-resize" id="gifResize"></div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="tc-notify" id="tcNotify"><div class="tc-notify-card" id="tcNotifyCard"></div></div>
@@ -5516,61 +5519,103 @@ ${getOptionalSteps()}`
       return null;
     }
 
+    var _gifUserMoved=false;
+    var _gifW=0,_gifH=0;
+    const GIF_MIN_W=100,GIF_MAX_W=500;
+
     function showGifOverlay(gifUrl){
       const overlay=$('gifOverlay'),img=$('gifImg');
       if(!gifUrl)return;
       if(gifTimer){clearTimeout(gifTimer);gifTimer=null}
       if(gifFadeTimer){clearTimeout(gifFadeTimer);gifFadeTimer=null}
       img.src=gifUrl;
-      // Reset position to default top-right
-      overlay.style.left='';overlay.style.top='';overlay.style.right='';
-      overlay.classList.remove('hidden','fade-out','dragging');
+      // Only reset position if user hasn't dragged it
+      if(!_gifUserMoved){
+        overlay.style.left='';overlay.style.top='';overlay.style.right='';
+      }
+      // Set initial size if not yet resized
+      if(!_gifW){img.style.width='';img.style.height=''}
+      else{img.style.width=_gifW+'px';img.style.height='auto'}
+      overlay.classList.remove('hidden','fade-out','dragging','resizing');
       void overlay.offsetWidth;
       overlay.classList.add('visible');
+      // Auto-fade after 10s
+      gifFadeTimer=setTimeout(hideGifOverlay,10000);
     }
 
     function hideGifOverlay(){
       const overlay=$('gifOverlay');
-      overlay.classList.remove('visible','dragging');
+      overlay.classList.remove('visible','dragging','resizing');
       overlay.classList.add('fade-out');
       if(gifTimer){clearTimeout(gifTimer);gifTimer=null}
       if(gifFadeTimer){clearTimeout(gifFadeTimer);gifFadeTimer=null}
-      gifTimer=setTimeout(()=>{overlay.classList.add('hidden');overlay.classList.remove('fade-out')},850);
+      gifTimer=setTimeout(()=>{
+        overlay.classList.add('hidden');overlay.classList.remove('fade-out');
+        // Reset position and size for next GIF
+        _gifUserMoved=false;_gifW=0;_gifH=0;
+        overlay.style.left='';overlay.style.top='';overlay.style.right='';
+        $('gifImg').style.width='';$('gifImg').style.height='';
+      },850);
     }
 
     $('gifClose').addEventListener('click',e=>{e.stopPropagation();hideGifOverlay()});
 
-    // Drag support for GIF overlay
+    // Drag + resize support for GIF overlay
     (function(){
       const el=$('gifOverlay');
-      let dragging=false,startX=0,startY=0,origX=0,origY=0,moved=false;
-      function onStart(cx,cy){
+      const img=$('gifImg');
+      const handle=$('gifResize');
+      let dragging=false,resizing=false,startX=0,startY=0,origX=0,origY=0,origW=0;
+
+      // ── Drag ──
+      function dragStart(cx,cy){
         const r=el.getBoundingClientRect();
-        dragging=true;moved=false;
-        startX=cx;startY=cy;origX=r.left;origY=r.top;
+        dragging=true;startX=cx;startY=cy;origX=r.left;origY=r.top;
         el.classList.add('dragging');
       }
-      function onMove(cx,cy){
+      function dragMove(cx,cy){
         if(!dragging)return;
         const dx=cx-startX,dy=cy-startY;
-        if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;
+        if(Math.abs(dx)>4||Math.abs(dy)>4)_gifUserMoved=true;
         el.style.left=(origX+dx)+'px';
         el.style.top=(origY+dy)+'px';
         el.style.right='auto';
       }
-      function onEnd(){
-        if(!dragging)return;
-        dragging=false;
-        el.classList.remove('dragging');
-      }
+      function dragEnd(){dragging=false;el.classList.remove('dragging')}
+
       el.addEventListener('pointerdown',e=>{
-        if(e.target.id==='gifClose')return;
+        if(e.target.id==='gifClose'||e.target.id==='gifResize')return;
         e.preventDefault();el.setPointerCapture(e.pointerId);
-        onStart(e.clientX,e.clientY);
+        dragStart(e.clientX,e.clientY);
       });
-      el.addEventListener('pointermove',e=>{if(dragging){e.preventDefault();onMove(e.clientX,e.clientY)}});
-      el.addEventListener('pointerup',e=>{onEnd()});
-      el.addEventListener('pointercancel',()=>onEnd());
+      el.addEventListener('pointermove',e=>{
+        if(dragging){e.preventDefault();dragMove(e.clientX,e.clientY)}
+      });
+      el.addEventListener('pointerup',()=>dragEnd());
+      el.addEventListener('pointercancel',()=>dragEnd());
+
+      // ── Resize ──
+      function resizeStart(cx){
+        origW=img.getBoundingClientRect().width;
+        startX=cx;resizing=true;
+        el.classList.add('resizing');
+      }
+      function resizeMove(cx){
+        if(!resizing)return;
+        const newW=Math.max(GIF_MIN_W,Math.min(GIF_MAX_W,origW+(cx-startX)));
+        img.style.width=newW+'px';img.style.height='auto';
+        _gifW=newW;
+      }
+      function resizeEnd(){resizing=false;el.classList.remove('resizing')}
+
+      handle.addEventListener('pointerdown',e=>{
+        e.preventDefault();e.stopPropagation();
+        handle.setPointerCapture(e.pointerId);
+        resizeStart(e.clientX);
+      });
+      handle.addEventListener('pointermove',e=>{if(resizing){e.preventDefault();resizeMove(e.clientX)}});
+      handle.addEventListener('pointerup',()=>resizeEnd());
+      handle.addEventListener('pointercancel',()=>resizeEnd());
     })();
 
     // ── Research Pipeline (ORNOT-style) ─────────────────
