@@ -577,6 +577,14 @@
     .guest-passphrase{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-card);border:1.5px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:15px;letter-spacing:2px;color:var(--teal);cursor:pointer;user-select:all;margin-bottom:8px;justify-content:center;font-weight:600}
     .guest-link-url{display:block;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);color:var(--text-2);word-break:break-all;cursor:pointer;user-select:all;margin-bottom:8px;max-height:60px;overflow-y:auto}
     .guest-qr{display:flex;justify-content:center;margin:12px 0}
+    .gm-cmd-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+    .gm-cmd-label{width:35%!important;flex-shrink:0}
+    .gm-cmd-msg{flex:1!important}
+    .gm-cmd-del{width:28px;height:28px;border:none;border-radius:6px;background:rgba(239,68,68,0.12);color:var(--err);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.2s}
+    .gm-cmd-del:hover{background:rgba(239,68,68,0.25)}
+    .gm-add-cmd-btn{width:100%;padding:8px;font-size:12px;font-family:var(--font);border:1.5px dashed var(--border);border-radius:var(--r-md);background:transparent;color:var(--text-2);cursor:pointer;transition:all 0.2s}
+    .gm-add-cmd-btn:hover{border-color:var(--teal);color:var(--teal)}
+    .guest-supplement{display:block;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);color:var(--text-2);word-break:break-all;cursor:pointer;user-select:all;margin-bottom:8px;max-height:80px;overflow-y:auto}
     .guest-qr canvas,.guest-qr img{border-radius:8px;background:#fff;padding:8px}
 
     /* ── Decrypt Prompt ────────────────────────────────── */
@@ -3410,6 +3418,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <label>Preset Actions (comma-separated)</label>
           <input class="gm-input" id="gmPresets" type="text" placeholder="Add to calendar, Check schedule, Message Eric" value="${esc(prefill?.presets?.join(', ')||'')}">
         </div>
+        <div class="gm-field">
+          <label>Commands (fire directly to bot)</label>
+          <div id="gmCmdList"></div>
+          <button type="button" class="gm-add-cmd-btn" id="gmAddCmd">+ Add Command</button>
+        </div>
         <div class="gm-row">
           <div class="gm-field">
             <label>Max Characters</label>
@@ -3418,6 +3431,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <div class="gm-field">
             <label>Rate Limit/hr</label>
             <input class="gm-input" id="gmRateLimit" type="number" value="${prefill?.rateLimit||10}" min="1" max="100">
+          </div>
+          <div class="gm-field">
+            <label>Command Cost</label>
+            <input class="gm-input" id="gmCmdCost" type="number" value="10" min="1" max="100">
           </div>
         </div>
         <div class="gm-field">
@@ -3438,6 +3455,16 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       $('gmCancelBtn').addEventListener('click',()=>closeGuestModal());
       modal.addEventListener('click',e=>{if(e.target===modal)closeGuestModal()});
       $('gmCreateBtn').addEventListener('click',()=>createGuestLink());
+      // Command rows
+      $('gmAddCmd').addEventListener('click',()=>{
+        const row=document.createElement('div');
+        row.className='gm-cmd-row';
+        row.innerHTML='<input class="gm-input gm-cmd-label" placeholder="Button label" maxlength="40"><input class="gm-input gm-cmd-msg" placeholder="Message to send" maxlength="300"><button class="gm-cmd-del" type="button">\u00d7</button>';
+        $('gmCmdList').appendChild(row);
+      });
+      $('gmCmdList').addEventListener('click',e=>{
+        if(e.target.classList.contains('gm-cmd-del'))e.target.parentElement.remove();
+      });
       $('gmName').focus();
     }
 
@@ -3451,7 +3478,16 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const presets=presetsRaw?presetsRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
       const maxChars=+$('gmMaxChars').value||280;
       const rateLimit=+$('gmRateLimit').value||10;
+      const cmdCost=+($('gmCmdCost')?.value)||10;
       const expiryVal=$('gmExpiry').value;
+
+      // Collect commands
+      const commands=[];
+      document.querySelectorAll('#gmCmdList .gm-cmd-row').forEach(row=>{
+        const label=row.querySelector('.gm-cmd-label')?.value?.trim();
+        const msg=row.querySelector('.gm-cmd-msg')?.value?.trim();
+        if(label&&msg)commands.push({label,msg});
+      });
 
       // Calculate expiry timestamp
       let exp=null;
@@ -3467,7 +3503,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const ownerName=k.deviceName||'Owner';
 
       const payload={
-        v:1,
+        v:2,
         id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),
         gw:agent?.url||null,
         tk:agent?.token||null,
@@ -3481,6 +3517,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         rl:rateLimit,
         exp:exp
       };
+      if(commands.length){payload.cmd=commands;payload.cmdCost=cmdCost}
 
       // Encrypt
       const passphrase=generatePassphrase();
@@ -3497,6 +3534,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         encBlob:blob,
         instructions:instructions,
         presets:presets,
+        commands:commands,
         maxChars:maxChars,
         rateLimit:rateLimit,
         expires:expiresStr,
@@ -3507,13 +3545,31 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       links.push(record);
       setGuestLinks(links);
 
-      // Show share view
+      // QR overflow detection — split if too large and commands exist
+      const QR_SAFE_LIMIT=2900;
       const fullUrl=location.origin+'/guest.html#'+blob;
-      showGuestShareView(fullUrl,passphrase,name);
+      if(blob.length>QR_SAFE_LIMIT&&commands.length){
+        const corePayload={...payload};
+        delete corePayload.cmd;
+        delete corePayload.cmdCost;
+        const coreBlob=await encryptConfig(JSON.stringify(corePayload),passphrase);
+        const coreUrl=location.origin+'/guest.html#'+coreBlob;
+        const supBlob=await encryptConfig(JSON.stringify({cmd:commands,cmdCost}),passphrase);
+        showGuestShareView(coreUrl,passphrase,name,supBlob);
+      } else {
+        showGuestShareView(fullUrl,passphrase,name,null);
+      }
     }
 
-    function showGuestShareView(url,passphrase,name){
+    function showGuestShareView(url,passphrase,name,supplementBlob){
       const card=$('guestModalCard');
+      const supHtml=supplementBlob?`
+        <div class="gm-field">
+          <label>Command Config (paste into guest chat once)</label>
+          <div class="guest-supplement" id="gmSupBlob">TCCFG:${supplementBlob}</div>
+        </div>
+        <div style="font-size:10px;color:var(--warn);text-align:center;margin:4px 0">Link was too large for QR. Send this config separately — guest pastes it once to unlock commands.</div>
+      `:'';
       card.innerHTML=`
         <h3>Guest Link Created</h3>
         <div class="gm-sub">Share this link and passphrase with ${esc(name)}</div>
@@ -3526,6 +3582,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <div class="guest-passphrase" id="gmPassphrase">${esc(passphrase)}</div>
         </div>
         <div style="font-size:10px;color:var(--warn);text-align:center;margin:8px 0">Share the passphrase separately from the link for security</div>
+        ${supHtml}
         <div class="guest-qr"><div id="gmQrTarget"></div></div>
         <button class="gm-create-btn" id="gmDoneBtn" style="margin-top:12px">Done</button>
       `;
@@ -3537,6 +3594,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       $('gmPassphrase').addEventListener('click',()=>{
         navigator.clipboard.writeText(passphrase).then(()=>showToast('Passphrase copied','ok')).catch(()=>showToast('Copy failed','err'));
       });
+      if(supplementBlob){
+        $('gmSupBlob').addEventListener('click',()=>{
+          navigator.clipboard.writeText('TCCFG:'+supplementBlob).then(()=>showToast('Config copied','ok')).catch(()=>showToast('Copy failed','err'));
+        });
+      }
       $('gmDoneBtn').addEventListener('click',()=>{
         closeGuestModal();
         renderSheetContent();
@@ -7608,10 +7670,13 @@ Rules:
                 else if(expiry==='1y')exp=now+365*86400000;
                 const agent=getAgents().find(a=>a.active)||getAgents()[0];
                 const k2=getK();
-                const payload={v:1,id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),gw:agent?.url||null,tk:agent?.token||null,ak:k2.whisperKey||null,prov:'groq',nm:name,own:k2.deviceName||'Owner',ins:instructions,pre:presets,mc:maxChars,rl:rateLimit,exp,tgToken:(k2.tgEnabled&&k2.tgToken)?k2.tgToken:null,tgChat:(k2.tgEnabled&&k2.tgChatId)?k2.tgChatId:null};
+                const commands=Array.isArray(action.commands)?action.commands.filter(c=>c.label&&c.msg):[];
+                const cmdCost=action.cmdCost||10;
+                const payload={v:2,id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),gw:agent?.url||null,tk:agent?.token||null,ak:k2.whisperKey||null,prov:'groq',nm:name,own:k2.deviceName||'Owner',ins:instructions,pre:presets,mc:maxChars,rl:rateLimit,exp,tgToken:(k2.tgEnabled&&k2.tgToken)?k2.tgToken:null,tgChat:(k2.tgEnabled&&k2.tgChatId)?k2.tgChatId:null};
+                if(commands.length){payload.cmd=commands;payload.cmdCost=cmdCost}
                 const passphrase=generatePassphrase();
                 const blob=await encryptConfig(JSON.stringify(payload),passphrase);
-                const record={id:payload.id,name,encBlob:blob,instructions,presets,maxChars,rateLimit,expires:exp?new Date(exp).toISOString().slice(0,10):null,created:new Date().toISOString().slice(0,10),enabled:true};
+                const record={id:payload.id,name,encBlob:blob,instructions,presets,commands,maxChars,rateLimit,expires:exp?new Date(exp).toISOString().slice(0,10):null,created:new Date().toISOString().slice(0,10),enabled:true};
                 const links=getGuestLinks();links.push(record);setGuestLinks(links);
                 const fullUrl=location.origin+'/guest.html#'+blob;
                 setTimeout(()=>sysBubble(`<div style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><div style="margin:8px 0;padding:8px;background:var(--bg-card);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);word-break:break-all;cursor:pointer" onclick="navigator.clipboard.writeText('${fullUrl.replace(/'/g,"\\'")}').then(()=>showToast('Copied','ok'))">${esc(fullUrl.slice(0,80))}...</div><div style="margin:4px 0;padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer" onclick="navigator.clipboard.writeText('${passphrase}').then(()=>showToast('Copied','ok'))">${passphrase}</div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:4px">Tap to copy. Share the passphrase separately from the link.</div></div>`),200);

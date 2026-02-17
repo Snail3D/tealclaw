@@ -101,20 +101,38 @@ Guest links include a **Groq-powered AI security filter** that screens all guest
 
 **How it works:**
 
-```
-Guest clicks preset → Groq Filter (free, multi-turn, 100 char limit)
-                        ↓ conversation to clarify request
-                      Guest clicks "Send to Bot"
-                        ↓
-                      Groq summarizes conversation into clean request
-                        ↓
-                      Security envelope wraps summary with context
-                        ↓
-                      Agent receives filtered, scoped message
-                        ↓
-                      Agent response shown to guest
-                        ↓
-                      Filter state resets (new conversation)
+```mermaid
+flowchart TD
+    A[Guest opens link] --> B[Enter passphrase]
+    B --> C{Valid?}
+    C -->|No| D[Error]
+    C -->|Yes| E{Expired?}
+    E -->|Yes| F[Expired screen]
+    E -->|No| G{Attack blocked?}
+    G -->|Yes| H[Blocked banner — wait 1hr]
+    G -->|No| I[Guest UI]
+
+    I --> J{Action type}
+    J -->|Chat Preset| K[Groq filter conversation]
+    J -->|Command Button| L[Direct to agent]
+    J -->|Config Paste| M[One-time config update]
+
+    K --> N{Filter verdict}
+    N -->|Attack detected| O[Terminate + 1hr block + silent agent alert]
+    N -->|Out-of-scope ×3| O
+    N -->|Safe| P[Send to Bot button]
+    P --> Q[Summarize → envelope → agent]
+
+    L --> R{Rate OK? cost=cmdCost}
+    R -->|No| S[Rate limit error]
+    R -->|Yes| T[Command envelope → agent]
+
+    Q --> U[Agent response → reset filter]
+    T --> U
+
+    M --> V{Already applied?}
+    V -->|Yes| W[Reject]
+    V -->|No| X[Decrypt + merge → render buttons]
 ```
 
 **Scoped input:** Guests can only initiate conversations by clicking owner-defined preset buttons. Free text input (capped at 100 characters) is only available after the first preset click, and only for follow-up conversation with the filter — never sent directly to the agent.
@@ -151,6 +169,10 @@ Guest clicks preset → Groq Filter (free, multi-turn, 100 char limit)
 | Security envelope | Agent instructed to protect credentials |
 | Rate limiting (bot sends) | Limits actual agent interactions per hour |
 | Summarization | Raw guest text never reaches agent — only a distilled request |
+| Owner-defined commands | Trusted text bypasses filter — owner authored, not guest |
+| Higher command cost | Commands consume 10 tokens per fire vs 1 for chat sends |
+| One-time config update | Supplemental config can only be applied once per session |
+| QR overflow split | Large payloads split into core link + separate config paste |
 | Legacy fallback | Old links without filter still work via sandwich prompt |
 
 ## PIN Code Lock
