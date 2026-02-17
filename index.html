@@ -7199,12 +7199,9 @@ Rules:
           if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            // If TTS will run, let the Groq TTS model pick the GIF (avoids double-GIF flash)
-            const willTTS=ttsMode==='auto'&&hasTTS(pk);
-            if(!willTTS){
-              const query=gifQuery||autoDetectGif(displayText);
-              if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
-            }
+            // Show GIF immediately; TTS may override with a better one later
+            const query=gifQuery||autoDetectGif(displayText);
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
           }
           // Groq narrator: digest verbose agent output
           let rawText=null;
@@ -7267,11 +7264,8 @@ Rules:
           if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            const willTTS=ttsMode==='auto'&&hasTTS(pk);
-            if(!willTTS){
-              const query=gifQuery||autoDetectGif(displayText);
-              if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
-            }
+            const query=gifQuery||autoDetectGif(displayText);
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
           }
           chatHistory[streamIdx].text=displayText;
           const executed=tcResults.filter(r=>r&&r.ok).length;
@@ -7322,10 +7316,8 @@ Rules:
           const wantTTS=ttsMode==='auto'&&hasTTS(pk);
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
-            if(!wantTTS){
-              const query=gifQuery||autoDetectGif(displayText);
-              if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
-            }
+            const query=gifQuery||autoDetectGif(displayText);
+            if(query)searchGif(query).then(url=>{if(url)showGifOverlay(url)}).catch(()=>{});
           }
 
           sendTelegram(`AI: ${displayText}`);
