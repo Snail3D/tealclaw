@@ -8813,15 +8813,15 @@ RULES:
 5. After the 4 exchanges, the judge delivers a verdict in 1-2 casual sentences. No mention of "debate rules" or "as judge" — just a chill take on who made the better case and why.
 6. The winner then gives a brief 1-sentence hat tip / thanks.
 
-FORMAT (use EXACTLY this — each speaker on their own line with their tag):
-[NAME] Their argument here.
-[NAME] Their counter here.
-[NAME] Their rebuttal here.
-[NAME] Their final point here.
-[NAME] Their casual verdict here.
-[NAME] Their brief thanks.
+FORMAT — use EXACTLY this structure. Each line MUST start with [UPPERCASE_NAME]. Example:
+[VERA] Opening argument in 2-3 sentences.
+[AXEL] Counter-argument in 2-3 sentences.
+[VERA] Rebuttal in 2-3 sentences.
+[AXEL] Final point in 2-3 sentences.
+[DEAN] Chill 1-2 sentence verdict on who won and why.
+[VERA] Brief one-sentence thanks.
 
-Output ONLY the formatted debate lines. No intro, no explanation, no markdown headers.`+TC_CORE_POLICY;
+CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VERA] [DIANE]. Each on its own line. No markdown headers, no bold, no intro text, no numbering. Start directly with the first [SPEAKER] line.`+TC_CORE_POLICY;
 
     let _debateActive=false;
     async function handleDebateCommand(topic,source){
@@ -8845,11 +8845,19 @@ Output ONLY the formatted debate lines. No intro, no explanation, no markdown he
         removeTyping();
         if(!res.ok)throw new Error(`API ${res.status}`);
         const data=await res.json();
-        const reply=data.choices?.[0]?.message?.content||'';
-        if(!reply.trim()){throw new Error('Empty response')}
-        // Store in chat history and render as group chat
-        chatHistory.push({role:'ai',text:reply,ts:Date.now()});
-        renderChat();
+        let reply=(data.choices?.[0]?.message?.content||'').trim();
+        if(!reply){throw new Error('Empty response')}
+        // Normalize speaker tags: [Trey] → [TREY], [trey] → [TREY], **[TREY]** → [TREY]
+        reply=reply.replace(/\*{0,2}\[(Trey|TREY|trey)\]\*{0,2}/gi,'[TREY]');
+        reply=reply.replace(/\*{0,2}\[(Axel|AXEL|axel)\]\*{0,2}/gi,'[AXEL]');
+        reply=reply.replace(/\*{0,2}\[(Dean|DEAN|dean)\]\*{0,2}/gi,'[DEAN]');
+        reply=reply.replace(/\*{0,2}\[(Haven|HAVEN|haven)\]\*{0,2}/gi,'[HAVEN]');
+        reply=reply.replace(/\*{0,2}\[(Vera|VERA|vera)\]\*{0,2}/gi,'[VERA]');
+        reply=reply.replace(/\*{0,2}\[(Diane|DIANE|diane)\]\*{0,2}/gi,'[DIANE]');
+        // Strip any markdown headers the model might add
+        reply=reply.replace(/^#{1,4}\s+.*\n?/gm,'').trim();
+        // Add to chat + render
+        addBubble('ai',reply);
         if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
         // TTS — use group speaker system
         try{await speakGroup(reply)}catch(e){console.warn('Debate TTS error:',e)}
