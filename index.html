@@ -308,15 +308,13 @@
     .voice-mode-subtitle{max-width:80%;min-height:60px;font-size:16px;color:#fff;font-family:var(--font);line-height:1.6;text-align:center;overflow-y:auto;max-height:40vh;padding:0 16px}
     .voice-mode-subtitle .typing-cursor{display:inline-block;width:2px;height:1em;background:var(--teal);margin-left:2px;animation:blink 0.8s infinite}
     /* ── Gesture Pip (Hand Tracking Camera) ────────────── */
-    .gesture-pip{position:fixed;bottom:calc(140px + var(--sab,0px));right:16px;width:116px;height:140px;border-radius:var(--r-lg);overflow:hidden;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,0.4);border:2px solid var(--border);background:linear-gradient(160deg,#070b10,#0f172a);display:none;touch-action:none;transition:border-color 0.3s,box-shadow 0.3s}
+    .gesture-pip{position:fixed;bottom:calc(140px + var(--sab,0px));right:16px;width:116px;height:140px;border-radius:var(--r-lg);overflow:visible;z-index:400;background:transparent;border:none;box-shadow:none;display:none;touch-action:none}
     .gesture-pip.active{display:block}
-    .gesture-pip.recognized{border-color:var(--teal);box-shadow:0 0 20px rgba(13,148,136,0.5)}
-    .gesture-pip.recording{border-color:var(--err);box-shadow:0 0 20px rgba(239,68,68,0.4);animation:gesture-pulse 1.5s ease-in-out infinite}
-    @keyframes gesture-pulse{0%,100%{box-shadow:0 0 20px rgba(239,68,68,0.4)}50%{box-shadow:0 0 30px rgba(239,68,68,0.62)}}
     .gesture-pip video{display:none}
     .gesture-pip canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-    .gesture-pip-label{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:9px;font-weight:600;color:#e2fdf8;text-shadow:0 1px 4px rgba(0,0,0,0.8);pointer-events:none;transition:opacity 0.2s}
-    .gesture-pip-close{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}
+    .gesture-pip-label{display:none}
+    .gesture-pip-close{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1;opacity:0;transition:opacity 0.2s}
+    .gesture-pip:hover .gesture-pip-close{opacity:1}
     .gesture-pip-close:hover{background:var(--err)}
 
     /* ── Cards (Settings/Agent pages) ──────────────────── */
@@ -10218,8 +10216,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         },2000);
         clawRecorder.start(500); // 500ms timeslice for interim chunks
         gestureRecording=true;
-        $('gesturePip').classList.add('recording');
-        $('gesturePipLabel').textContent='Recording...';
         $('clawToggle').classList.add('recording');
         clearLiveSubtitle();
         haptic('success');
@@ -10235,8 +10231,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       if(!gestureRecording||!clawRecorder)return;
       clawRecorder.stop();
       gestureRecording=false;
-      $('gesturePip').classList.remove('recording');
-      $('gesturePipLabel').textContent=gestureActive?'Listening for claw...':'';
       $('clawToggle').classList.remove('recording');
       haptic('light');
     }
@@ -10283,29 +10277,14 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       ctx.scale(dpr,dpr);
       ctx.clearRect(0,0,rect.width,rect.height);
 
-      // Small idle claw glyph when no hand is detected.
-      if(!landmarks||landmarks.length<21){
-        ctx.translate(rect.width*0.5,rect.height*0.46);
-        ctx.rotate(Math.PI/4);
-        ctx.fillStyle='rgba(148,163,184,0.35)';
-        ctx.beginPath();
-        ctx.ellipse(0,-3,30,22,0,0,Math.PI*2);
-        ctx.fill();
-        ctx.globalCompositeOperation='destination-out';
-        ctx.beginPath();
-        ctx.moveTo(-2,-5);
-        ctx.quadraticCurveTo(14,-2,20,7);
-        ctx.quadraticCurveTo(10,13,-5,9);
-        ctx.closePath();
-        ctx.fill();
-        ctx.globalCompositeOperation='source-over';
-        ctx.restore();
-        return;
-      }
+      // No hand detected — clear canvas, show nothing
+      if(!landmarks||landmarks.length<21){ctx.restore();return}
 
-      const main=isClaw?'#10b7a9':'#7dd3fc';
-      const secondary=isClaw?'rgba(16,183,169,0.5)':'rgba(125,211,252,0.45)';
-      const point=isClaw?'#e6fff8':'#dbeafe';
+      // Recording: red sticks. Claw detected: teal. Normal hand: light blue
+      const isRec=gestureRecording;
+      const main=isRec?'#ef4444':isClaw?'#10b7a9':'#7dd3fc';
+      const secondary=isRec?'rgba(239,68,68,0.6)':isClaw?'rgba(16,183,169,0.5)':'rgba(125,211,252,0.45)';
+      const point=isRec?'#fca5a5':isClaw?'#e6fff8':'#dbeafe';
       ctx.strokeStyle=secondary;
       ctx.lineWidth=2.1;
       HAND_CONNECTIONS.forEach(([a,b])=>{
@@ -10367,7 +10346,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
         video.srcObject=gestureStream;
         await video.play();
         pip.classList.add('active');
-        pipLabel.textContent='Listening for claw...';
         drawGestureWireframe(null,false);
 
         const conf=getK().gestureConfidence||0.5;
@@ -10388,8 +10366,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             drawGestureWireframe(lm,gesture==='the_claw');
 
             if(gesture==='the_claw'){
-              pip.classList.add('recognized');
-              pipLabel.textContent=gestureRecording?'Recording...':'Claw detected...';
               gestureGoneTime=0;
               if(!gestureRecording){
                 // short confirmation delay before starting capture
@@ -10401,8 +10377,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
               }
               // While recording + claw still held: keep going (no stop)
             } else {
-              pip.classList.remove('recognized');
-              if(!gestureRecording)pipLabel.textContent='Listening for claw...';
               clawDetectStart=0; // reset detection timer
               // Claw gone while recording — start stop countdown
               if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
@@ -10413,8 +10387,6 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
             }
           } else {
             drawGestureWireframe(null,false);
-            pip.classList.remove('recognized');
-            if(!gestureRecording)pipLabel.textContent='Listening for claw...';
             clawDetectStart=0;
             // No hand at all while recording
             if(gestureRecording&&!gestureGoneTime)gestureGoneTime=Date.now();
@@ -10443,8 +10415,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     function stopGestureTracking(){
       gestureActive=false;
       $('clawToggle').classList.remove('on','recording');
-      $('gesturePip').classList.remove('active','recognized','recording');
-      $('gesturePipLabel').textContent='';
+      $('gesturePip').classList.remove('active');
       const gCanvas=$('gestureCanvas');
       if(gCanvas){
         const gctx=gCanvas.getContext('2d');
