@@ -38,8 +38,8 @@
       --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
       --mono: 'SF Mono', 'Fira Code', Menlo, monospace;
       --teal: #0d9488; --teal-dim: rgba(13,148,136,0.12); --teal-hover: #0f766e;
-      --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom);
-      --sal: env(safe-area-inset-left); --sar: env(safe-area-inset-right);
+      --sat: env(safe-area-inset-top, 0px); --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px); --sar: env(safe-area-inset-right, 0px);
     }
     [data-theme="dark"] {
       --bg-root: #171717; --bg-1: #212121; --bg-2: #1c1c1c; --bg-card: #2a2a2a;
@@ -64,7 +64,8 @@
     body{background:var(--bg-root);color:var(--text);font-family:var(--font);height:100vh;height:100dvh;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding-left:var(--sal);padding-right:var(--sar)}
 
     /* ── Topbar ────────────────────────────────────────── */
-    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:var(--sat) 16px 0;height:calc(52px + var(--sat));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden}
+    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:env(safe-area-inset-top, 0px) 16px 0;height:calc(52px + env(safe-area-inset-top, 0px));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden}
+    @supports(padding:max(0px)){@media all and (display-mode:standalone){.topbar{padding-top:max(env(safe-area-inset-top,20px),20px);height:calc(52px + max(env(safe-area-inset-top,20px),20px))}}}
     .logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);user-select:none;letter-spacing:-0.01em;min-width:0;flex-shrink:1;overflow:hidden}
     .logo svg{width:18px;height:18px}
     .topbar-r{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
@@ -149,6 +150,12 @@
     .tts-mute-btn[data-tts="off"]{color:var(--err);border-color:var(--err)}
     .tts-mute-btn[data-tts="off"]:hover{color:var(--err)}
     .tts-mute-btn[data-tts="off"] .tts-off{display:block}
+    /* Volume slider overlay (long-press on TTS button) */
+    .vol-slider{position:absolute;right:6px;bottom:40px;width:44px;height:160px;background:var(--bg-card);border:1px solid var(--border);border-radius:22px;box-shadow:0 4px 16px rgba(0,0,0,0.25);z-index:50;display:none;flex-direction:column;align-items:center;justify-content:flex-end;padding:8px 0;touch-action:none;user-select:none}
+    .vol-slider.active{display:flex}
+    .vol-slider-track{width:6px;height:120px;background:var(--border);border-radius:3px;position:relative;overflow:hidden}
+    .vol-slider-fill{position:absolute;bottom:0;left:0;width:100%;background:var(--teal);border-radius:3px;transition:height 0.05s}
+    .vol-slider-label{font-size:10px;font-weight:700;color:var(--text-2);margin-top:6px;line-height:1}
 
     .scroll-anchor{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;width:40px;height:40px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
     .scroll-anchor.visible{opacity:1;pointer-events:auto}
@@ -672,7 +679,7 @@
     .research-section ul{padding-left:16px;margin:4px 0}
     .research-section li{margin-bottom:2px}
     .research-section li::marker{color:var(--teal)}
-    .research-processing{display:flex;flex-direction:column;gap:6px;padding:4px 0}
+    .research-processing{display:flex;flex-direction:column;gap:6px;padding:4px 0;align-items:center}
     .research-step{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-3);transition:color 0.3s}
     .research-step.done{color:var(--ok)}
     .research-step .step-icon{width:14px;height:14px;flex-shrink:0}
@@ -1124,6 +1131,7 @@
       <svg class="tts-ico tts-on" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       <svg class="tts-ico tts-off" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
     </button>
+    <div class="vol-slider" id="volSlider"><div class="vol-slider-track"><div class="vol-slider-fill" id="volSliderFill"></div></div><div class="vol-slider-label" id="volSliderLabel">80%</div></div>
     <div class="chat-scroll" id="chatScroll" role="log" aria-live="polite" aria-label="Chat messages">
       <div class="chat-empty" id="chatEmpty"></div>
     </div>
@@ -1232,7 +1240,7 @@
     </div>
   </div>
 
-  <audio id="audio" style="display:none"></audio>
+  <audio id="audio" playsinline style="display:none"></audio>
   <button id="ttsStop" class="tts-stop-btn hidden" aria-label="Stop voice playback">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop
   </button>
@@ -3482,7 +3490,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         audioCtx=new(window.AudioContext||window.webkitAudioContext)();
       }
       // Resume if suspended (mobile browsers suspend until gesture)
-      if(audioCtx.state==='suspended')audioCtx.resume();
+      if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});
       return audioCtx;
     }
 
@@ -3527,40 +3535,47 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       return v;
     }
     async function playAudioBuffer(arrayBuffer){
-      const ctx=ensureAudioCtx();
+      // Prefer <audio> element — routes correctly to speaker/Bluetooth on iOS/Android/Mac
+      // Web Audio API routes to earpiece on iOS and can pick up AirPlay devices on Mac
       try{
-        const decoded=await ctx.decodeAudioData(arrayBuffer.slice(0));
-        const source=ctx.createBufferSource();
-        source.buffer=decoded;
-        // Gain node with ramp to prevent start/end clicks
-        const gain=ctx.createGain();
-        const targetVol=getConfiguredVolume();
-        gain.gain.setValueAtTime(0,ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(targetVol,ctx.currentTime+0.015); // 15ms fade-in
-        // Schedule fade-out 30ms before end
-        const dur=decoded.duration;
-        if(dur>0.06)gain.gain.setValueAtTime(targetVol,ctx.currentTime+dur-0.03);
-        gain.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
-        source.connect(gain);
-        gain.connect(ctx.destination);
-        source.onended=()=>{hideStopTTS();activeTTSSource=null;activeTTSGain=null;try{gain.disconnect()}catch{}};
-        activeTTSSource=source;
-        activeTTSGain=gain;
-        showStopTTS();
-        source.start(0);
-        return source;
-      }catch(e){
-        // Fallback to <audio> element if Web Audio fails
-        console.warn('Web Audio fallback:',e);
         const blob=ttsBlob(arrayBuffer);
-        const blobUrl=URL.createObjectURL(blob);
-        audio.src=blobUrl;
+        const url=URL.createObjectURL(blob);
+        audio.src=url;
         audio.volume=getConfiguredVolume();
-        audio.onended=()=>{URL.revokeObjectURL(blobUrl);hideStopTTS();activeTTSSource=null};
-        audio.onpause=()=>{hideStopTTS();activeTTSSource=null};
+        audio.onended=()=>{URL.revokeObjectURL(url);hideStopTTS();activeTTSSource=null;activeTTSGain=null};
+        audio.onpause=()=>{hideStopTTS();activeTTSSource=null;activeTTSGain=null};
+        activeTTSSource={stop(){audio.pause();audio.currentTime=0}};
+        activeTTSGain=null;
         showStopTTS();
-        audio.play().catch(()=>{});
+        await audio.play();
         return null;
+      }catch(e){
+        // Fallback: Web Audio API (handles cases where <audio> element is blocked)
+        console.warn('Audio element failed, falling back to Web Audio:',e);
+        const ctx=ensureAudioCtx();
+        try{
+          const decoded=await ctx.decodeAudioData(arrayBuffer.slice(0));
+          const source=ctx.createBufferSource();
+          source.buffer=decoded;
+          const gain=ctx.createGain();
+          const targetVol=getConfiguredVolume();
+          gain.gain.setValueAtTime(0,ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(targetVol,ctx.currentTime+0.015);
+          const dur=decoded.duration;
+          if(dur>0.06)gain.gain.setValueAtTime(targetVol,ctx.currentTime+dur-0.03);
+          gain.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          source.onended=()=>{hideStopTTS();activeTTSSource=null;activeTTSGain=null;try{gain.disconnect()}catch{}};
+          activeTTSSource=source;
+          activeTTSGain=gain;
+          showStopTTS();
+          source.start(0);
+          return source;
+        }catch(e2){
+          console.warn('Web Audio also failed:',e2);
+          return null;
+        }
       }
     }
 
@@ -3592,8 +3607,11 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     function enableAudio(){
       $('overlay').classList.add('hidden');
       ensureAudioCtx();
+      // Prime with near-silent playback to establish iOS media session (speaker route)
+      const prevVol=audio.volume;
+      audio.volume=0.01;
       audio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-      audio.play().catch(()=>{});
+      audio.play().then(()=>{audio.volume=prevVol}).catch(()=>{audio.volume=prevVol});
     }
     audio.volume=getConfiguredVolume();
 
@@ -3602,7 +3620,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     {const _k=getK();ttsMode=_k.ttsMode||(_k.ttsAutoPlay===false?'on':(hasTTS()?'auto':'off'))}
 
     // Silently unlock audio on first user interaction (no blocking overlay)
-    ['touchstart','mousedown','keydown'].forEach(evt=>{
+    ['touchstart','mousedown','keydown','click'].forEach(evt=>{
       document.addEventListener(evt,function unlock(){enableAudio();document.removeEventListener(evt,unlock)},{once:true});
     });
 
@@ -3613,14 +3631,94 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       btn.dataset.tts=ttsMode;
       btn.title=ttsMode==='auto'?'Voice: Auto (tap to switch to On)':ttsMode==='on'?'Voice: On demand (tap to switch to Off)':'Voice: Off (tap to switch to Auto)';
     }
-    $('ttsMuteBtn').addEventListener('click',()=>{
-      ttsMode=ttsMode==='auto'?'on':ttsMode==='on'?'off':'auto';
-      if(ttsMode!=='off')ensureAudioCtx();
-      const k2=getK();k2.ttsMode=ttsMode;setK(k2);
-      updateMuteBtn();renderChat();
-      const labels={auto:'Voice: Auto',on:'Voice: On demand',off:'Voice: Off'};
-      showToast(labels[ttsMode],'ok');
-    });
+    // Long-press volume slider + tap to toggle TTS mode
+    (function(){
+      const btn=$('ttsMuteBtn'),slider=$('volSlider'),fill=$('volSliderFill'),label=$('volSliderLabel');
+      const HOLD_MS=350,MOVE_THRESH=6;
+      let holdTimer=null,inSlider=false,startY=0,startVol=0,didMove=false;
+
+      function showSlider(vol){
+        inSlider=true;
+        slider.classList.add('active');
+        btn.style.transform='scale(1.15)';
+        updateSliderUI(vol);
+      }
+      function hideSlider(){
+        inSlider=false;
+        slider.classList.remove('active');
+        btn.style.transform='';
+      }
+      function updateSliderUI(vol){
+        const pct=Math.round(vol*100);
+        fill.style.height=pct+'%';
+        label.textContent=pct+'%';
+      }
+      function volFromDelta(dy){
+        // 120px track height, map drag distance to volume change
+        return clampVolume(startVol+dy/120);
+      }
+
+      function onStart(y){
+        didMove=false;startY=y;startVol=getConfiguredVolume();
+        holdTimer=setTimeout(()=>{
+          showSlider(startVol);
+          // Haptic feedback if available
+          if(navigator.vibrate)navigator.vibrate(20);
+        },HOLD_MS);
+      }
+      function onMove(y){
+        if(!inSlider){
+          // Cancel hold if finger moves before threshold
+          if(Math.abs(y-startY)>MOVE_THRESH){clearTimeout(holdTimer);holdTimer=null}
+          return;
+        }
+        didMove=true;
+        const dy=startY-y; // up = positive = louder
+        const vol=volFromDelta(dy);
+        updateSliderUI(vol);
+        applyPlaybackVolume(vol,false);
+      }
+      function onEnd(){
+        clearTimeout(holdTimer);holdTimer=null;
+        if(inSlider){
+          // Persist the volume (audio.volume was set during drag)
+          applyPlaybackVolume(audio.volume,true);
+          hideSlider();
+          return;
+        }
+        // Short tap — toggle TTS mode (only if finger didn't move much)
+        if(!didMove){
+          ttsMode=ttsMode==='auto'?'on':ttsMode==='on'?'off':'auto';
+          if(ttsMode!=='off')ensureAudioCtx();
+          const k2=getK();k2.ttsMode=ttsMode;setK(k2);
+          updateMuteBtn();renderChat();
+          const labels={auto:'Voice: Auto',on:'Voice: On demand',off:'Voice: Off'};
+          showToast(labels[ttsMode],'ok');
+        }
+      }
+
+      // Touch events
+      btn.addEventListener('touchstart',e=>{
+        e.preventDefault();
+        onStart(e.touches[0].clientY);
+      },{passive:false});
+      btn.addEventListener('touchmove',e=>{
+        e.preventDefault();
+        onMove(e.touches[0].clientY);
+      },{passive:false});
+      btn.addEventListener('touchend',e=>{e.preventDefault();onEnd()},{passive:false});
+      btn.addEventListener('touchcancel',()=>{clearTimeout(holdTimer);holdTimer=null;hideSlider()});
+
+      // Mouse events (desktop fallback)
+      btn.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        onStart(e.clientY);
+        const mm=e2=>onMove(e2.clientY);
+        const mu=()=>{onEnd();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu)};
+        document.addEventListener('mousemove',mm);
+        document.addEventListener('mouseup',mu);
+      });
+    })();
     updateMuteBtn();
 
     // ── Token Usage Display ─────────────────────────────
@@ -3799,7 +3897,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       s.querySelectorAll('.del-msg-btn').forEach(b=>b.addEventListener('click',()=>deleteMessage(+b.dataset.idx)));
 
       if(getK().autoScroll!==false){
-        if(isNearBottom(s,150)||chatHistory.length<=1)smoothScrollToBottom(s);
+        if((!_userScrolledUp&&!_userIsTouching)||chatHistory.length<=1)smoothScrollToBottom(s);
       }
 
       // Wire up Play/Replay buttons
@@ -3942,7 +4040,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), toast(show notification), style(CSS vars), navigate(settings|new-chat), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style require user approval.
+When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Video: \`\`\`tc-action\n{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}\n\`\`\` Supports HLS, MP4, WebM. Auto-PiP on scroll.
 Camera grid: \`\`\`tc-action\n{"type":"video-grid","title":"Security","cols":2,"feeds":[{"url":"...","label":"Front"},{"url":"...","label":"Back"}]}\n\`\`\` 1-4 cols, each feed has url+label+live.
 Photo gallery: \`\`\`tc-action\n{"type":"gallery","title":"Photos","images":[{"url":"...","caption":"Sunset"},{"url":"..."}]}\n\`\`\` Beautiful grid, lightbox on tap, keyboard nav.
@@ -5129,7 +5228,7 @@ RULES:
               if(md)md.innerHTML=rendered+'<span class="typing-cursor"></span>';
               else last.innerHTML='<div class="md-content">'+rendered+'<span class="typing-cursor"></span></div><div class="chat-meta">'+(chatHistory[streamIdx].time||'')+'</div>';
             }
-            if(pk.autoScroll!==false)snapScrollToBottom(scroll2);
+            if(pk.autoScroll!==false&&!_userScrolledUp)snapScrollToBottom(scroll2);
           }).then(async aiResult=>{
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
             if(aiText==='__NO_KEY__'){chatHistory.pop();sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free direct chat</li></ul>`);return}
@@ -5931,6 +6030,16 @@ Rules:
             });
           },100);
         }
+        // "Dive Deeper" button on regular (non-deep) research
+        if(!deep&&query){
+          const ddId='dive-deeper-'+Date.now();
+          resultHtml+=`<button class="btn btn-ghost" id="${ddId}" style="margin-top:8px;font-size:11px;display:inline-flex;align-items:center;gap:4px;color:var(--teal)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg> Dive Deeper</button>`;
+          setTimeout(()=>{
+            document.getElementById(ddId)?.addEventListener('click',()=>{
+              researchPipeline(query,null,true);
+            });
+          },100);
+        }
         addBubble('ai',resultHtml,{raw:true});
         playReceiveSound();haptic('success');
 
@@ -6636,7 +6745,8 @@ Rules:
               if(cmd.startsWith('/')){
                 const ok=await confirmTcAction('Run command',cmd);
                 if(!ok){results.push({type:'command',ok:false,error:'denied by user'});break}
-                setTimeout(()=>{$('textIn').value=cmd;send()},300);
+                // Call pipeline directly — send() would be blocked by _sending guard
+                setTimeout(()=>pipeline(cmd,null),300);
                 results.push({type:'command',ok:true,command:cmd});
               }
               break;
@@ -6652,11 +6762,20 @@ Rules:
               results.push({type:'save',ok:true,name});
               break;
             }
-            case 'research':{
+            case 'research':case 'deepresearch':{
               const query=action.query||action.text||'';
+              const isDeep=action.type==='deepresearch'||action.deep===true;
               if(query){
-                setTimeout(()=>researchPipeline(query,null),300);
-                results.push({type:'research',ok:true,query});
+                setTimeout(()=>researchPipeline(query,null,isDeep),300);
+                results.push({type:action.type,ok:true,query,deep:isDeep});
+              }
+              break;
+            }
+            case 'imagine':{
+              const prompt=action.prompt||action.query||action.text||'';
+              if(prompt){
+                setTimeout(()=>pipeline('/imagine '+prompt,null),300);
+                results.push({type:'imagine',ok:true,prompt});
               }
               break;
             }
@@ -7121,9 +7240,8 @@ Rules:
       if(pk.inputPrefix&&text&&!text.startsWith('/'))text=pk.inputPrefix+' '+text;
 
       addBubble('user',text||'[Image]',imageBase64?{image:imageBase64}:{});
-      // User sent a message — always scroll to bottom, reset scroll state
-      _userScrolledUp=false;
-      _scrollBtn.classList.remove('visible');
+      // User sent a message — scroll to bottom unless user is actively touching
+      if(!_userIsTouching){_userScrolledUp=false;_scrollBtn.classList.remove('visible')}
       smoothScrollToBottom($('chatScroll'),300);
       playSendSound();
       fireWebhook('message.send',{text:text||'[Image]',hasImage:!!imageBase64});
@@ -7158,7 +7276,7 @@ Rules:
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
             }
-            if(pk.autoScroll!==false&&isNearBottom(scroll,150))snapScrollToBottom(scroll);
+            if(pk.autoScroll!==false&&!_userScrolledUp)snapScrollToBottom(scroll);
           });
           const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
           const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
@@ -7218,7 +7336,7 @@ Rules:
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
             }
-            if(pk.autoScroll!==false&&isNearBottom(scroll,150))snapScrollToBottom(scroll);
+            if(pk.autoScroll!==false&&!_userScrolledUp)snapScrollToBottom(scroll);
           });
           const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
           const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
@@ -7444,16 +7562,24 @@ ${agentNote}`);
 
       // Normalize slash-less commands so voice input works (e.g. "imagine a cat" → "/imagine a cat")
       if(!text.startsWith('/')){
-        if(/^deep\s+research\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s+research\s+/i,'');
-        else if(/^(imagine|research|deepresearch)\s/i.test(text))text='/'+text;
+        if(/^deep\s*(?:re)?search\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s*(?:re)?search\s+/i,'');
+        else if(/^(imagine|(?:re)?search|deep(?:re)?search)\s/i.test(text))text='/'+text;
+        // Natural language image generation intent → /imagine
+        else{
+          const imgMatch=text.match(/^(?:(?:can you |could you |please )?(?:give me|make me|make|create|generate|draw|paint|show me|design|render|produce))\s+(?:a |an |me )?(?:picture|photo|image|illustration|drawing|painting|sketch|portrait|render|graphic|art|artwork)\s+(?:of\s+)?(.+)/i);
+          if(imgMatch)text='/imagine '+imgMatch[1];
+        }
       }
+      // Normalize /search → /research, /deepsearch → /deepresearch
+      if(text.startsWith('/deepsearch'))text='/deepresearch'+text.slice(11);
+      else if(/^\/search(?:\s|$)/.test(text))text='/research'+text.slice(7);
 
       // Chat commands
       if(text.startsWith('/')){
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/deepresearch','/imagine','/telegram','/help','/save','/session','/groq'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/telegram','/help','/save','/session','/groq'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -7467,8 +7593,8 @@ ${agentNote}`);
           const helpHtml=`<h3>TealClaw Commands</h3>
 <ul>
 <li><code>/setup</code> -- restart the setup wizard</li>
-<li><code>/research [query]</code> -- research report (works by voice: "research...")</li>
-<li><code>/deepresearch [query]</code> -- deep multi-tool research (works by voice: "deepresearch...")</li>
+<li><code>/research [query]</code> -- research report (alias: /search; voice: "research..." or "search...")</li>
+<li><code>/deepresearch [query]</code> -- deep multi-tool research (alias: /deepsearch; voice: "deep research..." or "deep search...")</li>
 <li><code>/imagine [prompt]</code> -- generate an image (attach a photo to edit/remix it; works by voice: "imagine...")</li>
 <li><code>/export</code> -- export current chat (encrypted JSON, re-importable)</li>
 <li><code>/export json</code> -- export as portable JSON (drag-droppable)</li>
@@ -7510,7 +7636,7 @@ ${agentNote}`);
           if(!gKey){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           // Bypass agent — call Groq directly
           addBubble('user',groqMsg);
-          _userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
+          if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
           addTyping();
           const gModel=gk.aiModel||'groq/compound-mini';
           const gSys=buildSysPrompt(gk);
@@ -8534,15 +8660,22 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           if(match)parts.push({inline_data:{mime_type:match[1],data:match[2]}});
         }
         if(!parts.length)parts.push({text:'Generate a creative image'});
-        const res=await fetch(url,{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            contents:[{parts}],
-            generationConfig:{responseModalities:['TEXT','IMAGE']}
-          })
-        });
-        if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`Gemini: ${res.status}`)}
+        const geminiBody=JSON.stringify({contents:[{parts}],generationConfig:{responseModalities:['TEXT','IMAGE']}});
+        let res;
+        for(let attempt=0;attempt<3;attempt++){
+          res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:geminiBody});
+          if(res.status!==429)break;
+          // Retry with backoff for rate limits
+          const wait=(attempt+1)*2000;
+          showToast(`Rate limited — retrying in ${(wait/1000)}s...`,'err');
+          await new Promise(r=>setTimeout(r,wait));
+        }
+        if(!res.ok){
+          const err=await res.json().catch(()=>({}));
+          const msg=err.error?.message||`Gemini: ${res.status}`;
+          if(res.status===429)throw new Error('Gemini rate limit — free tier allows ~10 requests/min. Wait a moment and try again.');
+          throw new Error(msg);
+        }
         const d=await res.json();
         const resParts=d.candidates?.[0]?.content?.parts||[];
         const img=resParts.find(p=>p.inline_data);
@@ -9934,6 +10067,7 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
     // ── Smooth Scroll System (init before loadUI) ─────
     var _scrollRafId=null;
     var _userScrolledUp=false;
+    var _userIsTouching=false;
     var _scrollBtn=$('scrollAnchor');
     var _chatScroll=$('chatScroll');
     loadUI();
@@ -10055,8 +10189,12 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
           // Auto-detect /command prefixes from speech
           let finalText=text;
           const lower=text.toLowerCase().trim();
-          if(lower.startsWith('research ')||lower.startsWith('deep research '))finalText='/'+text;
+          if(lower.startsWith('research ')||lower.startsWith('search ')||lower.startsWith('deep research ')||lower.startsWith('deep search '))finalText='/'+text;
           else if(lower.startsWith('imagine '))finalText='/'+text;
+          else{
+            const imgMatch=text.match(/^(?:(?:can you |could you |please )?(?:give me|make me|make|create|generate|draw|paint|show me|design|render|produce))\s+(?:a |an |me )?(?:picture|photo|image|illustration|drawing|painting|sketch|portrait|render|graphic|art|artwork)\s+(?:of\s+)?(.+)/i);
+            if(imgMatch)finalText='/imagine '+imgMatch[1];
+          }
           // Send to AI
           const pk=getK();
           const imageBase64=null;
@@ -10467,10 +10605,22 @@ ${expr?`<p><strong>Expression:</strong> <code>[${esc(expr)}]</code></p>`:'<p><st
       return el.scrollHeight-el.scrollTop-el.clientHeight<(threshold||150);
     }
 
+    // Touch tracking — know when user is actively touching the chat scroll
+    _chatScroll.addEventListener('touchstart',()=>{_userIsTouching=true},{passive:true});
+    _chatScroll.addEventListener('touchend',()=>{_userIsTouching=false},{passive:true});
+    _chatScroll.addEventListener('touchcancel',()=>{_userIsTouching=false},{passive:true});
+
     // Scroll-to-bottom button (wiring)
+    // Only mark _userScrolledUp when user is actively interacting (touch/wheel)
     _chatScroll.addEventListener('scroll',()=>{
-      _userScrolledUp=!isNearBottom(_chatScroll,150);
-      _scrollBtn.classList.toggle('visible',_userScrolledUp);
+      const nearBottom=isNearBottom(_chatScroll,150);
+      if(_userIsTouching&&!nearBottom)_userScrolledUp=true;
+      else if(nearBottom)_userScrolledUp=false;
+      _scrollBtn.classList.toggle('visible',!nearBottom);
+    },{passive:true});
+    // Mouse wheel also counts as user intent to scroll away
+    _chatScroll.addEventListener('wheel',()=>{
+      if(!isNearBottom(_chatScroll,150))_userScrolledUp=true;
     },{passive:true});
 
     _scrollBtn.addEventListener('click',()=>{
