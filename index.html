@@ -4705,10 +4705,11 @@ tc-action blocks let you control TealClaw directly:
 Examples:
 \`\`\`tc-action {"type":"video-grid","title":"Cameras","cols":2,"feeds":[{"url":"...","label":"Front Door"},{"url":"...","label":"Backyard"}]} \`\`\`
 \`\`\`tc-action {"type":"gallery","title":"Photos","images":[{"url":"...","caption":"View"}]} \`\`\`
-Gateway: HTTPS only via Cloudflare Tunnel (e.g. https://gw.yourdomain.com). Agent URLs MUST be HTTPS -- browsers block mixed content. Never use http://, raw IPs, localhost, Tailscale, or ngrok. Cloudflare Tunnel is the ONLY supported method.
-To connect TealClaw: {"mode":"agent","agents":[{"id":"home","name":"Home","url":"https://gw.yourdomain.com","token":"YOUR_TOKEN","active":true}]}
+Gateway: TealClaw auto-connects to gw.tealclaw.ai on first visit (zero-config). No signup, no token. Users just paste a Groq key (gsk_...) for voice + chat.
+For own gateway (full tool access): HTTPS only via Cloudflare Tunnel. Agent URLs MUST be HTTPS. Never use http://, raw IPs, localhost, Tailscale, or ngrok.
+Own gateway config: {"mode":"agent","agents":[{"id":"home","name":"Home","url":"https://gw.yourdomain.com","token":"YOUR_TOKEN","active":true}]}
 Token: openclaw config get gateway.token</code><span style="position:absolute;bottom:4px;right:8px;font-size:10px;color:var(--text-3)">click to copy</span></pre>
-<p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> In TealClaw Settings → Agent Mode, add your gateway:</p>
+<p style="font-size:12px;margin-top:8px"><strong>Step 2:</strong> Most users are already connected via the public gateway. For your own OpenClaw gateway:</p>
 <ul style="font-size:12px;margin:4px 0">
 <li><strong>URL:</strong> <code>https://gw.yourdomain.com</code> (HTTPS via Cloudflare Tunnel — required)</li>
 <li><strong>Token:</strong> run <code>openclaw config get gateway.token</code> and paste it</li>
