@@ -17,9 +17,9 @@ All values are stored in browser localStorage. No server, no database.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| aiProvider | "openrouter" / "groq" / "anthropic" | AI provider for chat completions |
-| aiKey | string | API key for chat. Prefixes: sk-or-v1-* (OpenRouter), gsk_* (Groq), sk-ant-* (Anthropic) |
-| aiModel | string | Model ID. Default: google/gemini-2.5-flash-preview. Examples: llama-3.3-70b-versatile (Groq), claude-sonnet-4-5-20250929 (Anthropic) |
+| aiProvider | "groq" | AI provider for chat completions |
+| aiKey | string | API key for chat. Prefixes: gsk_* (Groq) |
+| aiModel | string | Model ID. Default: groq/compound-mini |
 | whisperKey | string | Groq API key for Whisper voice transcription, Orpheus TTS, AND /research command. Get free at console.groq.com |
 | groqTtsVoice | string | Groq Orpheus TTS voice name. Options: autumn, diana, hannah, austin, daniel, troy. Default: troy |
 | ttsAutoPlay | boolean | Auto-speak AI responses. Default: true. Set false for on-demand playback (tap to hear) |
@@ -47,7 +47,7 @@ All values are stored in browser localStorage. No server, no database.
 |-------|------|-------------|
 | imageGenUrl | string | Image gen API endpoint (e.g. https://api.together.xyz/v1/images/generations) |
 | imageGenKey | string | Image gen API key. Falls back to aiKey if not set |
-| imageGenModel | string | Image gen model name (e.g. black-forest-labs/FLUX.1-schnell) |
+| imageGenModel | string | Image gen model name. Default: gemini-2.5-flash-image |
 | imageGenSize | string | Image dimensions (e.g. "1024x1024") |
 
 ## GIF Reactions
@@ -56,8 +56,7 @@ All values are stored in browser localStorage. No server, no database.
 |-------|------|-------------|
 | gifEnabled | boolean | Show fullscreen GIF overlay on AI responses. Default: true |
 
-When enabled, AI responses with `[gif:search term]` trigger a Klipy GIF via server-side proxy. No API key needed.
-Without a tag, auto-searches based on response text.
+GIFs use Klipy via server proxy — no API key needed. When enabled, AI responses with `[gif:search term]` trigger a fullscreen GIF overlay. Without a tag, auto-searches based on response text.
 
 ## Visual Customization — Colors
 
@@ -115,7 +114,6 @@ Without a tag, auto-searches based on response text.
 | hideTopbar | boolean | Hide the top navigation bar entirely |
 | hideAttachBtn | boolean | Hide the file attach button |
 | hideCameraBtn | boolean | Hide the camera button |
-| hideBmc | boolean | Hide the Buy Me a Coffee link |
 
 ## Visual Customization — Custom Button Images
 
@@ -230,10 +228,10 @@ Use `/profile save name` and `/profile load name` in chat. Profiles save and res
 
 | Field | Type | Description |
 |-------|------|-------------|
-| pinCode | string | 4-6 digit PIN code to lock message sending |
+| pinHash | string | SHA-256 hash of the PIN, set automatically via Settings > Password Lock |
 | pinRequired | boolean | Whether PIN is required to send messages. Default: false |
 
-PIN codes protect your TealClaw from unauthorized use on shared or unlocked devices. API keys are never included in QR code exports.
+PIN supports 4-8 characters (alphanumeric). Set the PIN via Settings > Password Lock — TealClaw stores only the SHA-256 hash, never the plaintext. Protects against unauthorized use on shared or unlocked devices. API keys are never included in QR code exports.
 
 ## Gesture Control
 
@@ -241,10 +239,7 @@ Camera-based hand gesture recognition using MediaPipe Hands. Detects hand landma
 
 | Field | Type | Description |
 |-------|------|-------------|
-| gestureEnabled | boolean | Enable gesture control. Shows a floating pip with camera feed and hand tracking overlay |
-| gestureBindings | string | JSON string of gesture binding array. Each binding: {gesture, action, label}. Gestures: victory, fist, open_palm, thumbs_up, thumbs_down, pointing_up. Actions: voice_start, voice_stop, stop_agent, send_message, toggle_mute, send_thumbsup, send:custom text |
-
-Default bindings: victory=voice_start, fist=voice_stop, open_palm=stop_agent, thumbs_up=send_thumbsup. Agents can override these to build custom gesture-driven workflows.
+| gestureEnabled | boolean | Enable The Claw hand gesture mode. Shows a floating pip with camera feed and hand tracking overlay |
 
 ## Rate Limiting
 
@@ -264,8 +259,9 @@ Example: `{"rateLimitPerMin": 10}` — allows 10 messages per minute, blocks add
 ## Key Auto-Detection Prefixes
 
 When a bare key is pasted (no JSON), TealClaw auto-detects:
-- sk-or-v1-* → aiKey (OpenRouter)
 - gsk_* → whisperKey (Groq — also enables Orpheus TTS)
+- sk-or-v1-* → imageGenKey (OpenRouter)
+- AIza* → imageGenKey (Google AI / Nano Banana)
 - 123456:ABC-* → tgToken (Telegram bot)
 - Negative or 6+ digit number → tgChatId
 - http(s)://...:port → gateway URL

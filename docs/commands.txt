@@ -9,7 +9,7 @@
 |---------|-------------|
 | `/help` | Show all available commands |
 | `/setup` | Restart the setup wizard with links to get API keys |
-| `/research query` | Deep research report (GROQ-powered, ORNOT-style segmented results) |
+| `/research query` | Deep research report (GROQ-powered, uses groq/compound-mini) |
 | `/research` + image | Visual analysis — attach an image and type `/research` |
 | `/imagine prompt` | Generate an image using the configured image gen API |
 | `/export` | Export current conversation as encrypted JSON (re-importable) |
@@ -25,6 +25,11 @@
 | `/clear` | Clear current conversation |
 | `/clear all` | Delete all conversations and start fresh |
 | `/clear keys` | Remove all API keys and reset to blank state |
+| `/deepresearch query` | Extended deep research report (GROQ-powered, uses groq/compound) |
+| `/groq [message]` | Send directly to Groq, bypassing agent |
+| `/voice-chat` | Push-to-talk voice-only mode (alias: `/vc`) |
+| `/new` | Start new conversation |
+| `/export json` | Export as portable JSON |
 | `/telegram` | Show Telegram setup instructions (BotFather + Chat ID) |
 | `/telegram on` | Enable Telegram message forwarding |
 | `/telegram off` | Disable Telegram message forwarding |
@@ -45,9 +50,8 @@ Shows the full command list in a formatted card. Always available.
 
 ### /setup
 Displays the setup wizard with direct links to get API keys:
-- OpenRouter (sk-or-v1-*) — recommended for chat
-- Groq (gsk_*) — free, enables voice input, Orpheus TTS, and /research
-- Telegram setup instructions
+- Groq (gsk_*) — free, enables chat, voice input, Orpheus TTS, and /research
+- OpenClaw gateway — connect your own agent via Cloudflare Tunnel
 
 ### /research
 Deep research powered by Groq API. Returns a structured report with:
@@ -147,10 +151,10 @@ The passphrase is never included in the URL. Without the passphrase, the link is
 Also available via the "Encrypted Share Link" button in Settings > Share.
 
 ### /qr
-Generates a QR code containing your current TealClaw configuration. The QR code:
-- Encodes a `tealclaw.ai/#config=BASE64` URL
+Generates an ENCRYPTED QR code containing your current TealClaw configuration. Uses the same AES-256-GCM encryption as /share. The QR code:
+- Encodes an encrypted `tealclaw.ai/#config=enc:ENCRYPTED_BLOB` URL
 - Can be scanned by any phone camera
-- Instantly applies the entire configuration on the scanned device
+- Prompts for the passphrase before applying configuration
 - Includes a "Copy Link" button for sharing as a URL
 - Includes a "Download QR" button to save the QR image
 
@@ -161,8 +165,9 @@ bot configuration with someone else. The QR code uses your accent color for bran
 
 ### Bare API Key Paste
 Paste any API key directly — TealClaw auto-detects by prefix:
-- `sk-or-v1-*` → OpenRouter AI key
 - `gsk_*` → Groq key (Whisper + Orpheus TTS)
+- `sk-or-v1-*` → imageGenKey (OpenRouter — image generation)
+- `AIza*` → imageGenKey (Google AI / Nano Banana)
 - `123456:ABC-*` → Telegram bot token
 
 ### JSON Config Paste

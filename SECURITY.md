@@ -7,7 +7,7 @@ TealClaw is built on one principle: **your data is yours**.
 TealClaw is a static single-page application. One HTML file. No server. No database. No backend logic. The domain `tealclaw.ai` serves static files via Cloudflare Pages — it cannot execute code, store data, or intercept requests.
 
 ```
-Your Browser ←→ AI Provider (Groq / OpenRouter / Anthropic)
+Your Browser ←→ AI Provider (Groq)
 Your Browser ←→ Groq Orpheus (text-to-speech)
 Your Browser ←→ Google Gemini (image generation)
 Your Browser ←→ Klipy (GIF reactions, via server proxy)
@@ -29,7 +29,7 @@ All API keys and configuration are stored in your browser's `localStorage`. This
 
 - **Gemini API key** is sent via the `x-goog-api-key` HTTP header, never as a URL query parameter. This keeps it out of server logs, browser history, and network inspection tools.
 - **Referrer policy** is set to `no-referrer` — your API keys and page URLs are never leaked via the Referer header to third-party services.
-- **Blocked config keys** — AI agents cannot modify sensitive fields (`aiKey`, `whisperKey`, `gwToken`, `pinCode`, `pinHash`, `tgToken`, `imageGenKey`, `webhookUrl`, `webhookEvents`, `customCSS`) through tc-action config blocks. Only the user can set these.
+- **Blocked config keys** — AI agents cannot modify sensitive fields (`aiKey`, `whisperKey`, `gwToken`, `gwUrl`, `mode`, `pinCode`, `pinHash`, `tgToken`, `tgChatId`, `imageGenKey`, `webhookUrl`, `webhookEvents`, `customCSS`) through tc-action config blocks. Only the user can set these.
 - **Config redaction** — When the AI requests your current config (via `request-config` tc-action), sensitive keys are replaced with `keySet: true` flags. The AI knows a key is configured but never sees the actual value.
 
 ## Agent Action Confirmation
@@ -139,6 +139,7 @@ TealClaw is fully open source and intentionally simple to audit:
   - **pdf.js** (cdnjs) — PDF file preview when attaching PDFs
   - **Mammoth** (cdnjs) — Word document preview when attaching .docx files
   - **MediaPipe Hands** (jsdelivr) — gesture control when camera gesture mode is enabled
+  - **hls.js** (jsdelivr) — HLS video streaming for tc-action video feeds
   - **Chart.js** (jsdelivr) — usage statistics charts in `stats.html`
 - **View Source works.** Right-click the page and read every line of code that runs on your device.
 

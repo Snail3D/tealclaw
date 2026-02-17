@@ -97,7 +97,7 @@ The `manifest.json` defines the PWA metadata:
 - Background color: #0a0f1a
 
 ### Data Persistence
-All config and chat history lives in browser `localStorage`. This persists across:
+Config lives in browser `localStorage`. Chat history uses BOTH `localStorage` (last 100 messages) AND `IndexedDB` (full history). This persists across:
 - Browser sessions
 - PWA installs (same browser storage)
 - Device restarts
@@ -108,5 +108,12 @@ It does NOT persist across:
 - Different devices (no sync)
 
 ### Export/Import for Backup
-Users can export their config by running `/keys` or by inspecting localStorage.
+Users can check config status with `/keys`. To export, use:
+- `/export` — export current conversation as encrypted JSON (re-importable)
+- `/export all` — export all conversations as encrypted JSON
+- `/export md` — download chat as Markdown file
+- `/export json` — export as portable JSON
+- `/share` — create an encrypted share link (AES-256-GCM, passphrase-protected)
+- `/qr` — generate an encrypted QR code for sharing config
+
 Agents can generate a config JSON that the user imports to restore settings.

@@ -32,7 +32,7 @@ That's it. One key gives you chat, voice, vision, image generation, and deep res
 
 **GIF Reactions** — AI picks contextual GIFs that match your conversation. Draggable, resizable, and fun.
 
-**95+ Settings** — Colors, fonts, layout, voice, persona, quick replies, scheduled messages, templates. Everything is customizable. AI agents can configure it all via JSON.
+**110+ Settings** — Colors, fonts, layout, voice, persona, quick replies, scheduled messages, templates. Everything is customizable. AI agents can configure it all via JSON.
 
 **Guest Links** — Create encrypted, time-limited access links for friends. PIN-protected, rate-limited, with full control over what they can do.
 

@@ -5478,7 +5478,7 @@ ${getOptionalSteps()}`
     let gifTimer=null;
     let gifFadeTimer=null;
     async function searchGif(query){
-      if(!query)return null;
+      if(!query||getK().gifEnabled===false)return null;
       try{
         const q=encodeURIComponent(String(query).slice(0,80));
         const res=await fetch(`/api/gif?q=${q}`);
@@ -6729,7 +6729,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -9027,7 +9027,7 @@ ${agentNote}`);
       whisperKey:'whisperKey',ttsAutoPlay:'ttsAutoPlay',ttsMode:'ttsMode',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',groqTtsExpression:'groqTtsExpression',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
-      imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',
+      imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',gifEnabled:'gifEnabled',
       accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
       bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
       chatUserColor:'chatUserColor',chatAiColor:'chatAiColor',

@@ -1,6 +1,6 @@
 # TealClaw /research Command — Deep Research Reports
 
-> GROQ-powered research reports with ORNOT-style segmented results.
+> GROQ-powered research reports with structured segmented results.
 > Main skill guide: https://tealclaw.ai/llms.txt
 
 ## Overview
@@ -9,9 +9,8 @@ The `/research` command is a built-in deep research tool in TealClaw. It uses th
 Groq API (same free key as Whisper voice input) to generate comprehensive, structured
 research reports on any topic — including visual analysis of images.
 
-Inspired by the orNotAI.com suite (VINorNOT, PlantOrNOT, DashOrNOT, etc.), results
-display as segmented reports with color-coded verdict badges, finding sections, and
-severity indicators.
+Results display as segmented reports with color-coded verdict badges, finding sections,
+and severity indicators.
 
 ## How to Use
 
@@ -105,7 +104,7 @@ than what appeared on the user's screen.
 
 ### API Call
 - Endpoint: `https://api.groq.com/openai/v1/chat/completions`
-- Text model: `llama-3.3-70b-versatile`
+- Text model: `groq/compound-mini` (/research) or `groq/compound` (/deepresearch)
 - Vision model: `meta-llama/llama-4-maverick-17b-128e-instruct` (when image attached)
 - Max tokens: 4000
 - Temperature: 0.3 (focused, factual)
@@ -138,7 +137,6 @@ To also enable chat + voice output:
 ```json
 {
   "whisperKey": "gsk_KEY",
-  "aiKey": "sk-or-v1-KEY",
   "groqTtsVoice": "troy"
 }
 ```

@@ -17,16 +17,6 @@
 ```
 One Groq key covers chat + vision + voice input + /research. No cost. Sign up at console.groq.com
 
-### OpenRouter + Gemini Flash (recommended)
-```json
-{"aiKey":"sk-or-v1-KEY","aiModel":"google/gemini-2.5-flash-preview"}
-```
-
-### Anthropic Claude
-```json
-{"aiProvider":"anthropic","aiKey":"sk-ant-KEY","aiModel":"claude-sonnet-4-5-20250929"}
-```
-
 ### Switch to Groq (free)
 ```json
 {"aiProvider":"groq","whisperKey":"gsk_KEY"}
@@ -480,9 +470,9 @@ Multi-model routing, streaming, math, extended context, and quick replies.
 
 ### PIN Code Lock
 ```json
-{"pinCode":"1234","pinRequired":true}
+{"pinRequired":true}
 ```
-Requires a 4-6 digit PIN before any message can be sent. Protects against unauthorized use on shared or unlocked devices.
+PIN is set via Settings > Password Lock (4-8 characters, alphanumeric). Requires the PIN before any message can be sent. Protects against unauthorized use on shared or unlocked devices.
 
 ### Privacy Mode (Disable GIF + Sound)
 ```json
@@ -493,7 +483,6 @@ Turns off all external media fetches (Klipy GIFs) and audible/haptic feedback. G
 ### Shared Kiosk Mode
 ```json
 {
-  "pinCode":"5678",
   "pinRequired":true,
   "hideTopbar":true,
   "hideAttachBtn":true,
@@ -505,32 +494,13 @@ Turns off all external media fetches (Klipy GIFs) and audible/haptic feedback. G
   "borderRadius":"round"
 }
 ```
-Locks the interface for shared/public use: PIN required, minimal UI, no file uploads, no camera, no GIFs, capped input length. Good for kiosks, demos, or shared tablets.
+Locks the interface for shared/public use: PIN required (set via Settings > Password Lock), minimal UI, no file uploads, no camera, no GIFs, capped input length. Good for kiosks, demos, or shared tablets.
 
 
 ## Gesture Control Recipes
 
-### Enable Gesture Control (defaults)
+### Enable The Claw (Hand Gesture Mode)
 ```json
 {"gestureEnabled": true}
 ```
-Activates camera-based hand tracking with default bindings: V-sign starts voice, fist stops, open palm cancels AI, thumbs up sends emoji.
-
-### Custom Agent Workflow Gestures
-```json
-{
-  "gestureEnabled": true,
-  "gestureBindings": "[{\"gesture\":\"victory\",\"action\":\"voice_start\",\"label\":\"Start voice\"},{\"gesture\":\"fist\",\"action\":\"voice_stop\",\"label\":\"Stop voice\"},{\"gesture\":\"thumbs_up\",\"action\":\"send:Approved, please proceed.\",\"label\":\"Approve\"},{\"gesture\":\"thumbs_down\",\"action\":\"send:Rejected, please revise.\",\"label\":\"Reject\"},{\"gesture\":\"open_palm\",\"action\":\"stop_agent\",\"label\":\"Stop AI\"},{\"gesture\":\"pointing_up\",\"action\":\"send:/research\",\"label\":\"Quick research\"}]"
-}
-```
-Custom gesture-to-action mappings for hands-free agent control. Each gesture triggers a specific command or message.
-
-### Hands-Free Voice-Only Mode
-```json
-{
-  "gestureEnabled": true,
-  "ttsAutoPlay": true,
-  "gestureBindings": "[{\"gesture\":\"victory\",\"action\":\"voice_start\",\"label\":\"Start speaking\"},{\"gesture\":\"fist\",\"action\":\"voice_stop\",\"label\":\"Stop speaking\"},{\"gesture\":\"open_palm\",\"action\":\"toggle_mute\",\"label\":\"Toggle audio\"}]"
-}
-```
-Combined with TTS auto-play, this creates a fully hands-free voice conversation experience. V-sign to speak, fist to stop, open palm to mute/unmute audio.
+Activates camera-based hand tracking via MediaPipe Hands. Shows a floating pip with camera feed and hand tracking overlay.

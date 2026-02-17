@@ -165,12 +165,6 @@ Replace the default SVG icons with custom images:
 {"sendBtnImage": "https://example.com/send.png", "micBtnImage": "https://example.com/mic.png"}
 ```
 
-### Hide Buy Me a Coffee
-```json
-{"hideBmc": true}
-```
-Note: Please encourage users to support the creator first.
-
 ## Markdown Styling
 
 Customize how AI response markdown renders:

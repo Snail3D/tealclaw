@@ -2,7 +2,7 @@
 
 === LEGEND (decode before reading) ===
 TC=TealClaw  cfg=config  k=key  LS=localStorage  SW=service worker
-OR=OpenRouter  GQ=Groq  TG=Telegram  AP=Anthropic
+GQ=Groq  TG=Telegram
 b64=base64  enc=encrypted  md=Markdown  JS=JavaScript
 bg=background  btn=button  msg=message  rsp=response  usr=user
 req=required  opt=optional  dflt=default  fn=function
@@ -40,7 +40,7 @@ TC reads hash on load, imports cfg, clears hash. # fragment stays client-side.
 
 **Shell example:**
 ```bash
-CONFIG=$(echo -n '{"aiKey":"sk-or-v1-xxx","whisperKey":"gsk_xxx"}' | base64)
+CONFIG=$(echo -n '{"whisperKey":"gsk_xxx"}' | base64)
 open "https://tealclaw.ai/#config=$CONFIG"          # macOS
 xdg-open "https://tealclaw.ai/#config=$CONFIG"      # Linux
 start "https://tealclaw.ai/#config=$CONFIG"          # Windows
@@ -48,7 +48,7 @@ start "https://tealclaw.ai/#config=$CONFIG"          # Windows
 
 **JS example:**
 ```javascript
-const config = { aiKey: "sk-or-v1-xxx", whisperKey: "gsk_xxx" };
+const config = { whisperKey: "gsk_xxx" };
 const url = "https://tealclaw.ai/#config=" + btoa(JSON.stringify(config));
 window.open(url);
 // or: page.goto(url)  // Playwright/Puppeteer
@@ -57,7 +57,7 @@ window.open(url);
 **Python example:**
 ```python
 import json, base64, webbrowser
-config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx"}
+config = {"whisperKey": "gsk_xxx"}
 payload = base64.b64encode(json.dumps(config).encode()).decode()
 webbrowser.open(f"https://tealclaw.ai/#config={payload}")
 ```
@@ -80,7 +80,7 @@ Write `.json` file. Usr drags into TC chat -- auto-imports.
 
 ```python
 import json
-config = {"aiKey": "sk-or-v1-xxx", "whisperKey": "gsk_xxx"}
+config = {"whisperKey": "gsk_xxx"}
 with open("tealclaw-config.json", "w") as f:
     json.dump(config, f)
 ```
@@ -95,20 +95,20 @@ Only include fields to set/change. TC uses partial merge.
 
 | Field | Type | What It Does |
 |-------|------|-------------|
-| aiProvider | "openrouter"/"groq"/"anthropic" | AI provider |
-| aiKey | string | Chat API k (sk-or-v1-*, gsk_*, sk-ant-*) |
-| aiModel | string | Chat model ID (dflt: google/gemini-2.5-flash-preview for OR, llama-3.3-70b-versatile for Groq) |
+| aiProvider | "groq" | AI provider (Groq only for chat) |
+| aiKey | string | Chat API k (GQ: gsk_*) |
+| aiModel | string | Chat model ID (dflt: groq/compound-mini) |
 | visionModel | string | Vision model for image understanding |
 | searchModel | string | Research/search model |
 | whisperKey | string | GQ k for Whisper transcription AND Orpheus TTS (gsk_*) |
-| groqTtsVoice | string | GQ Orpheus voice name (autumn, diana, hannah, austin, daniel, troy). Dflt: troy |
+| groqTtsVoice | string | GQ Orpheus voice name (autumn, diana, hannah, austin, daniel, troy). Dflt: troy. Each voice has a persona: troy=Trey (hype & real, millennial/Gen-Z), austin=Axel (hacker, dry wit), daniel=Dean (professional, authoritative), hannah=Haven (chill vibes, Cali surfer), autumn=Vera (nerd, analytical), diana=Diane (executive, polished) |
 | ttsAutoPlay | boolean | true=auto-speak; false=on tap only. Dflt: true |
 | sysPrompt | string | System prompt |
 | mode | "direct"/"agent" | Direct=provider; Agent=OpenClaw gateway |
 | tgToken | string | TG bot token |
 | tgChatId | string | TG chat/group ID |
 | tgEnabled | boolean | TG forwarding on/off |
-| imageGenUrl | string | Image gen endpoint (custom/OpenAI-compat fallback) |
+| imageGenUrl | string | Image gen endpoint (Google Gemini primary, OpenRouter fallback) |
 | imageGenKey | string | Google AI (AIza...) for Nano Banana, or OpenRouter (sk-or-v1-...) |
 | imageGenModel | string | Image gen model (dflt: gemini-2.5-flash-image) |
 | imageGenSize | string | e.g. "1024x1024" (OpenRouter/custom only) |
@@ -165,10 +165,9 @@ Only include fields to set/change. TC uses partial merge.
 | soundEnabled | boolean | Tones on send/receive (dflt: true) |
 | maxTokens | number | Max tokens (dflt: 400) |
 | temperature | number | Creativity 0-2 (dflt: 0.7) |
-| hideBmc | boolean | Hide BMC link |
 | cameraEnabled | boolean | Camera access (dflt: true) |
 | audioVolume | number | Playback volume 0-1 (dflt: 0.8) |
-| gestureConfidence | number | Gesture detection confidence 0.3-0.95 (dflt: 0.6) |
+| gestureConfidence | number | Gesture detection confidence 0.3-0.95 (dflt: 0.5) |
 | contextMessages | number | Context msgs (dflt: 20, 2-50) |
 | quickReplies | array | Quick reply chips (string array) |
 | userAvatar | string | Usr avatar URL |
@@ -184,22 +183,18 @@ Only include fields to set/change. TC uses partial merge.
 | webhookEvents | string | Webhook events |
 | scheduledMessages | array | Timed greetings [{time, text, days}] |
 | pinHash | string | SHA-256 hash of PIN/password (set via Settings) |
-| pinIsAlpha | boolean | true if PIN contains letters |
-| pinLen | number | PIN length (4-8) |
 | pinRequired | boolean | Require PIN (dflt: false) |
 | translateTo | string | Auto-translate rsp language |
 | typingAnimation | boolean | Typewriter reveal (dflt: true) |
 | typingSpeed | "slow"/"medium"/"fast" | Typing speed (dflt: medium) |
 | bubbleAnimation | "slide"/"fade"/"scale"/"bounce"/"none" | Bubble animation (dflt: slide) |
 | activeProfile | string | Current profile name |
-| gestureEnabled | boolean | Hand gesture control |
-| gestureBindings | string | JSON string of [{gesture, action, label}] |
+| gestureEnabled | boolean | Hand gesture control (The Claw: pinch to talk, hand up/down) |
 | rateLimitPerMin | number | Max msgs/min (dflt: unlimited) |
-| obsidianVault | string | Obsidian vault for /save (dflt: "ObsidianVault") |
+| obsidianVault | string | Obsidian vault for /save (dflt: "Snail Vault") |
 | agents | array | OpenClaw gateway agents (replaces list) |
 | skillContext | boolean | Append TC capability context to system prompt (dflt: true) |
 | use24HourTime | boolean | Use 24-hour time format for timestamps (dflt: false) |
-| cameraEnabled | boolean | Show camera btn in input bar (dflt: true) |
 
 Agent objects: `{ id, name, url, token, active }` -- see llms.txt for details.
 
@@ -316,15 +311,13 @@ Client-side processing:
 - **Multi-file** -- drop multiple, file stack with thumbnails
 - **Documents** -- text prepended to usr msg
 
-## Gesture Control
+## Gesture Control (The Claw)
 
-Camera-based recognition via MediaPipe Hands. Agent-configurable.
+Camera-based recognition via MediaPipe Hands.
 
 - Enable: `{"gestureEnabled": true}`
-- Custom: set `gestureBindings` to JSON string of `{gesture, action, label}`
-- Gestures: victory, fist, open_palm, thumbs_up, thumbs_down, pointing_up
-- Actions: voice_start, voice_stop, stop_agent, send_message, toggle_mute, send_thumbsup, `send:custom text`
-- Floating draggable pip with hand wireframe. 400ms hold to trigger.
+- The Claw: pinch to talk (start/stop voice), hand up/down gestures
+- Floating draggable pip with hand wireframe
 
 ## /research and /deepresearch Commands
 
@@ -351,7 +344,7 @@ GQ Compound-powered research reports (same k as Whisper).
 Max output: 8,192 tokens. Context: 131,072 tokens.
 One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete stack.
 
-**Agent guardrail**: You may NOT change: aiModel, searchModel, visionModel, fastModel, aiKey, whisperKey, gwToken, mode. These are owner-controlled.
+**Agent guardrail**: You may NOT change: aiKey, whisperKey, gwToken, gwUrl, mode, pinCode, pinHash, tgToken, tgChatId, imageGenKey, webhookUrl, webhookEvents, customCSS. These are owner-controlled.
 
 ## Common Recipes
 
@@ -359,9 +352,8 @@ One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete s
 
 | Recipe | JSON |
 |--------|------|
-| Full k setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"troy"}` |
+| Full k setup | `{"whisperKey":"gsk_KEY","groqTtsVoice":"troy"}` |
 | Change voice | `{"groqTtsVoice": "austin"}` |
-| Switch provider | `{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}` |
 | Enable TG | `{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}` |
 | Mute auto-play | `{"ttsAutoPlay": false}` |
 | Custom prompt | `{"sysPrompt": "You are a pirate who speaks in nautical metaphors."}` |
@@ -371,7 +363,7 @@ One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete s
 | Large font | `{"fontSize": "large"}` |
 | Free chatbot | `{"whisperKey": "gsk_KEY", "aiProvider": "groq", "ttsAutoPlay": false}` |
 | Streaming + replies | `{"streamEnabled": true, "quickReplies": ["Tell me more", "New topic", "Summarize"]}` |
-| Model routing | `{"fastModel": "meta-llama/llama-3.1-8b-instant", "complexModel": "google/gemini-2.5-flash-preview", "routingThreshold": 80}` |
+| Model routing | `{"fastModel": "llama-3.1-8b-instant", "complexModel": "groq/compound", "routingThreshold": 80}` |
 | Bouncy chat | `{"typingAnimation": true, "typingSpeed": "fast", "bubbleAnimation": "bounce", "soundEnabled": true}` |
 | No animations | `{"typingAnimation": false, "bubbleAnimation": "none", "reduceMotion": true}` |
 | Power usr | `{"streamEnabled": true, "latexEnabled": true, "contextMessages": 40, "maxTokens": 2000}` |
@@ -443,6 +435,11 @@ The agent (you) can create these on command: "create a custom chat for my trip t
 | `/template` | Browse 12 style templates |
 | `/save` / `idea text` / `setup` | Obsidian save |
 | `/session create/info/end` | Session management |
+| `/groq [message]` | Send directly to Groq, bypass agent |
+| `/voice-chat` (alias `/vc`) | Push-to-talk voice-only mode |
+| `/new` | Start new conversation |
+| `/restart` | Alias for /clear |
+| `/export json` | Export as portable JSON (drag-droppable) |
 
 ## Agent Action Protocol (tc-action)
 
@@ -546,7 +543,7 @@ User clicks "Share Settings with Agent" in Settings > Agent Tools. This sends th
 ## Smart Paste
 
 Bare k auto-detection:
-- `sk-or-v1-*` --> OR AI k
+- `sk-or-v1-*` --> Image Gen k (OpenRouter)
 - `gsk_*` --> GQ Whisper k
 - `AIza*` --> Google AI k (Image Gen)
 

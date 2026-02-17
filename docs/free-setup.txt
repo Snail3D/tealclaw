@@ -84,17 +84,13 @@ To change the TTS voice:
 ```
 Available voices: autumn, diana, hannah, austin, daniel, troy.
 
-## Adding Premium AI Later
+## Adding Image Generation
 
-For better models (Gemini Flash, Claude, GPT-4), add an OpenRouter key:
-1. Go to https://openrouter.ai/keys
-2. Create an API key (starts with `sk-or-v1-`)
-3. Paste in TealClaw or:
-```json
-{"aiKey": "sk-or-v1-KEY"}
-```
+Want image generation? Add a Google AI key or OpenRouter key for the `/imagine` command:
+- **Google AI key** (`AIza...`) — paste in TealClaw or: `{"imageGenKey": "AIza_KEY"}`
+- **OpenRouter key** (`sk-or-v1-...`) — paste in TealClaw or: `{"imageGenKey": "sk-or-v1-KEY"}`
 
-OpenRouter gives access to 200+ models. Gemini Flash (default) is very cheap.
+These keys are used for image generation only, not chat.
 
 ## Groq Free Tier Limits
 
