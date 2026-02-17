@@ -1201,6 +1201,36 @@
     </div>
   </div>
 
+  <!-- ═══ Share Modal ═══ -->
+  <div class="export-modal hidden" id="shareModal">
+    <div class="export-modal-card" style="max-width:380px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0;display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Share
+        </h3>
+        <button class="btn btn-ghost btn-sm" id="shareModalClose" style="padding:4px 8px;font-size:16px;line-height:1">&times;</button>
+      </div>
+      <div id="shareModalBody" style="display:flex;flex-direction:column;gap:8px">
+        <button class="sheet-btn" id="smEncrypted" style="background:var(--teal);color:#fff;border-color:var(--teal)">
+          <span style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Encrypted Share Link
+          </span>
+        </button>
+        <div style="font-size:10px;color:var(--text-3);text-align:center;margin:-4px 0 2px">AES-256 encrypted with passphrase. Includes all keys.</div>
+        <button class="sheet-btn sheet-btn-ghost" id="smQR">Generate QR Code</button>
+        <button class="sheet-btn sheet-btn-ghost" id="smShareAgent">
+          <span style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            Share Settings with Agent
+          </span>
+        </button>
+        <button class="sheet-btn sheet-btn-ghost" id="smExportJSON">Export Conversation (JSON)</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ Settings Bottom Sheet ═══ -->
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="sheet" id="settingsSheet">
@@ -2624,7 +2654,6 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       // Accessibility
       html+=`<div class="sheet-section"><div class="sheet-section-title">Accessibility</div>`;
       const a11yToggles=[
-        {key:'reduceMotion',label:'Reduce Motion',desc:'Disable animations and transitions'},
         {key:'highContrast',label:'High Contrast',desc:'Boost text and border contrast'},
         {key:'dyslexiaFont',label:'Dyslexia-Friendly Font',desc:'Use OpenDyslexic font for better readability'},
         {key:'focusHighlight',label:'Focus Indicators',desc:'Show visible outlines on focused elements',def:true},
@@ -2682,34 +2711,15 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       }
       html+=`</div>`;
 
-      // Sharing
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Share</div>
-        <button class="sheet-btn" id="sheetShareEncrypted" style="margin-bottom:8px;background:var(--teal);color:#fff;border-color:var(--teal)">
+      // Actions — two buttons: Share and Clear All
+      html+=`<div class="sheet-section" style="display:flex;gap:8px">
+        <button class="sheet-btn" id="sheetShareOpen" style="flex:1;background:var(--teal);color:#fff;border-color:var(--teal)">
           <span style="display:flex;align-items:center;justify-content:center;gap:6px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Encrypted Share Link
+            Share
           </span>
         </button>
-        <div style="font-size:10px;color:var(--text-3);text-align:center;margin-bottom:10px">Creates an AES-256 encrypted link with a passphrase. Includes all keys.</div>
-        <button class="sheet-btn sheet-btn-ghost" id="sheetShareQR">Generate QR Code</button>
-      </div>`;
-
-      // Share config with agent
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Agent Tools</div>
-        <div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Send your current settings to the agent so it can read and modify them</div>
-        <button class="sheet-btn" id="shareConfigBtn" style="background:var(--teal-dim);color:var(--teal);border-color:var(--teal);margin-bottom:0">
-          <span style="display:flex;align-items:center;justify-content:center;gap:6px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-            Share Settings with Agent
-          </span>
-        </button>
-      </div>`;
-
-      // Actions
-      html+=`<div class="sheet-section">
-        <button class="sheet-btn sheet-btn-ghost" id="sheetExportJSON" style="margin-bottom:8px">Export Conversation (JSON)</button>
-        <button class="sheet-btn sheet-btn-ghost" id="sheetClearChat" style="margin-bottom:8px">Clear Chat History</button>
-        <button class="sheet-btn sheet-btn-danger" id="sheetWipeKeys">Clear All Keys &amp; Reset</button>
+        <button class="sheet-btn sheet-btn-danger" id="sheetClearAll" style="flex:1">Clear All</button>
       </div>`;
 
       // Privacy & Security
@@ -2941,29 +2951,19 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       // Wire up agent row
       $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
 
-      // Wire up actions
-      $('sheetBody').querySelector('#sheetExportJSON')?.addEventListener('click',()=>{
-        closeSheet();openExportModal();
+      // Wire up Share button — opens share sub-modal
+      $('sheetBody').querySelector('#sheetShareOpen')?.addEventListener('click',()=>{
+        openShareModal();
       });
-      $('sheetBody').querySelector('#sheetClearChat')?.addEventListener('click',()=>{
-        chatHistory=[];clearCompaction();setChat([]);renderChat();closeSheet();showToast('Chat cleared','ok');
-      });
-      $('sheetBody').querySelector('#sheetShareEncrypted')?.addEventListener('click',()=>{
-        closeSheet();generateEncryptedLink();
-      });
-      $('sheetBody').querySelector('#sheetShareQR')?.addEventListener('click',()=>{
-        closeSheet();generateQR();
-      });
-      $('sheetBody').querySelector('#sheetWipeKeys')?.addEventListener('click',()=>{
-        if(!confirm('Clear all keys and reset?'))return;
+      // Wire up Clear All button
+      $('sheetBody').querySelector('#sheetClearAll')?.addEventListener('click',()=>{
+        if(!confirm('Clear all chat history, keys, and settings? This cannot be undone.'))return;
         localStorage.removeItem('tc-keys');localStorage.removeItem('tc-agents');localStorage.removeItem('tc-active-conv');
         ConvDB.clearAll().catch(()=>{});
         try{indexedDB.deleteDatabase('tealclaw')}catch{}
-        // Reset visual customizations
         const root=document.documentElement;
         ['--teal','--teal-dim','--teal-hover','--chat-font','--font','--bg-root','--text','--user-bg','--ai-bg','--input-font','--btn-size','--r-sm','--r-md','--r-lg','--border','--md-heading','--md-bold','--md-link','--md-code-bg','--md-code','--md-bq-border','--md-bq-bg','--user-text','--ai-text','--bubble-radius','--bubble-pad'].forEach(p=>root.style.removeProperty(p));
         document.body.style.backgroundImage='';document.body.classList.remove('has-bg-image');
-        // Reset dynamic UI changes
         const topbar2=document.querySelector('.topbar');if(topbar2)topbar2.style.cssText='';
         document.querySelectorAll('#attachBtn,#cameraBtn,.send-btn,.mic-circle,.input-bar,.main').forEach(el=>el.style.cssText='');
         const ti=document.querySelector('#textIn');if(ti)ti.placeholder='Message...';
@@ -2999,8 +2999,6 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         setGuestLinks(links);renderSheetContent();showToast('Link deleted','ok');
       }));
 
-      // Wire up share config button
-      $('sheetBody').querySelector('#shareConfigBtn')?.addEventListener('click',()=>shareConfigWithAgent());
     }
 
     // ── Guest Link Modal ─────────────────────────────
@@ -6333,6 +6331,21 @@ Rules:
     $('exportModal').addEventListener('click',e=>{
       if(e.target===$('exportModal'))closeExportModal();
     });
+
+    // ── Share Modal ─────────────────────────────────
+    function openShareModal(){
+      closeSheet();
+      $('shareModal').classList.remove('hidden');
+    }
+    function closeShareModal(){
+      $('shareModal').classList.add('hidden');
+    }
+    $('shareModalClose').addEventListener('click',closeShareModal);
+    $('shareModal').addEventListener('click',e=>{if(e.target===$('shareModal'))closeShareModal()});
+    $('smEncrypted').addEventListener('click',()=>{closeShareModal();generateEncryptedLink()});
+    $('smQR').addEventListener('click',()=>{closeShareModal();generateQR()});
+    $('smShareAgent').addEventListener('click',()=>{closeShareModal();shareConfigWithAgent()});
+    $('smExportJSON').addEventListener('click',()=>{closeShareModal();openExportModal()});
 
     async function importConvJSON(payload){
       try{
