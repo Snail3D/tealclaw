@@ -4695,19 +4695,24 @@ ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- S
 <pre class="onboard-copy-block" style="background:var(--bg-2);border:1px solid var(--border);border-radius:8px;padding:10px 10px 28px;font-size:11px;overflow-x:auto;position:relative;white-space:pre-wrap;word-break:break-word;line-height:1.5;cursor:pointer" title="Click to copy"><code>TealClaw is a voice+chat web UI at https://tealclaw.ai that connects to your gateway.
 Docs: https://tealclaw.ai/llms.txt | Config: Settings gear (top right) or paste JSON in chat.
 
-SETUP — To connect TealClaw to this gateway:
-1. Enable tenant auto-provisioning:
+SETUP — When the user says "set up TealClaw" or "connect TealClaw", just do it. Don't ask questions — check the system yourself.
+1. Check if gateway.tenant is already configured: openclaw config get gateway.tenant
+   If not set up yet, enable it:
    openclaw config set gateway.tenant.enabled true
    openclaw config set gateway.tenant.hmacSecret "$(openssl rand -hex 32)"
    openclaw config set gateway.tenant.corsOrigins '["https://tealclaw.ai"]'
-2. Expose gateway via HTTPS (Cloudflare Tunnel — the ONLY supported method):
+2. Check if cloudflared is installed: which cloudflared (install via brew install cloudflared if missing)
+   Check if a tunnel already exists: cloudflared tunnel list
+   If no tunnel, create one. Ask the user ONLY for the hostname (e.g. gw.tealclaw.ai) — they must have the domain in Cloudflare.
    cloudflared tunnel create openclaw-gw
-   cloudflared tunnel route dns openclaw-gw gw.yourdomain.com
+   cloudflared tunnel route dns openclaw-gw &lt;hostname&gt;
    cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
+   If a tunnel config already exists (check ~/.cloudflared/), just start it: cloudflared tunnel run
 3. Restart the gateway so tenant config takes effect.
-4. Tell the user to open https://tealclaw.ai — it auto-connects on first visit. No token pasting needed.
+4. Verify: curl -s https://&lt;hostname&gt;/health should return OK.
+5. Tell the user to open https://tealclaw.ai — it auto-connects on first visit. No token pasting needed.
    They just need a Groq key (gsk_...) for voice + chat.
-If already set up, TealClaw users auto-provision tokens via POST /connect (stateless HMAC, zero-config).
+If already set up (gateway.tenant.enabled is true + tunnel running), just tell the user it's ready.
 
 FEATURES: voice I/O, streaming, Obsidian save (/save), sessions, vision, GIFs, image gen (/imagine), tc-action blocks.
 tc-action blocks let you control TealClaw directly:
