@@ -32,6 +32,7 @@
     .pass-btn:hover{background:var(--teal-hover)}
     .pass-btn:disabled{opacity:0.5;cursor:not-allowed}
     .pass-err{font-size:11px;color:var(--err);margin-top:10px;min-height:16px}
+    .pass-hint{font-size:11px;color:var(--teal);background:var(--teal-dim);padding:6px 12px;border-radius:8px;margin-bottom:12px;text-align:center}
     @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 
     /* ── Expired Screen ────────────────────────────────── */
@@ -148,6 +149,7 @@
       </div>
       <div class="pass-title">Guest Access</div>
       <div class="pass-sub">Enter the passphrase to continue</div>
+      <div id="passHint" class="pass-hint hidden"></div>
       <input type="text" id="passInput" class="pass-input" placeholder="Passphrase" autocomplete="off" autocapitalize="off" spellcheck="false">
       <button id="passBtn" class="pass-btn">Unlock</button>
       <div id="passErr" class="pass-err"></div>
@@ -258,8 +260,29 @@ async function decrypt(blob,passphrase){
 
 // ── Passphrase Flow ──────────────────────────────
 function init(){
-  const hash=location.hash.slice(1);
-  if(!hash){showExpired('No guest link data found.');return}
+  const rawHash=location.hash.slice(1);
+  if(!rawHash){showExpired('No guest link data found.');return}
+
+  // Parse optional hint prefix (format: BASE64_HINT.ENCRYPTED_BLOB)
+  let hash=rawHash;
+  let hintText='';
+  const dotIdx=rawHash.indexOf('.');
+  if(dotIdx>0){
+    try{
+      const hintB64=rawHash.slice(0,dotIdx).replace(/-/g,'+').replace(/_/g,'/');
+      hintText=decodeURIComponent(escape(atob(hintB64)));
+      hash=rawHash.slice(dotIdx+1);
+    }catch{
+      hash=rawHash; // failed to decode hint, treat entire hash as blob
+    }
+  }
+
+  // Show hint if present
+  if(hintText){
+    const hintEl=$('passHint');
+    hintEl.textContent=hintText;
+    hintEl.classList.remove('hidden');
+  }
 
   const passInput=$('passInput');
   const passBtn=$('passBtn');

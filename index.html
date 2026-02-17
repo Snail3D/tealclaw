@@ -3415,6 +3415,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <textarea class="gm-input" id="gmInstructions" placeholder="What can they do? (e.g. Manage calendar, ask questions)" rows="3">${esc(prefill?.instructions||'')}</textarea>
         </div>
         <div class="gm-field">
+          <label>Passphrase Hint</label>
+          <input class="gm-input" id="gmHint" type="text" placeholder="Hint shown on lock screen (e.g. &quot;Ask Sarah for the code&quot;)" value="${esc(prefill?.hint||'')}" maxlength="80">
+        </div>
+        <div class="gm-field">
           <label>Preset Actions (comma-separated)</label>
           <input class="gm-input" id="gmPresets" type="text" placeholder="Add to calendar, Check schedule, Message Eric" value="${esc(prefill?.presets?.join(', ')||'')}">
         </div>
@@ -3474,6 +3478,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const name=$('gmName').value.trim();
       if(!name){showToast('Name is required','err');$('gmName').focus();return}
       const instructions=$('gmInstructions').value.trim();
+      const hint=$('gmHint').value.trim();
       const presetsRaw=$('gmPresets').value.trim();
       const presets=presetsRaw?presetsRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
       const maxChars=+$('gmMaxChars').value||280;
@@ -3531,6 +3536,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const record={
         id:payload.id,
         name:name,
+        hint:hint,
         encBlob:blob,
         instructions:instructions,
         presets:presets,
@@ -3545,15 +3551,18 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       links.push(record);
       setGuestLinks(links);
 
+      // Hint prefix (base64-encoded, separated by '.' — never appears in URL-safe base64)
+      const hintPrefix=hint?btoa(unescape(encodeURIComponent(hint))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')+'.':'';
+
       // QR overflow detection — split if too large and commands exist
       const QR_SAFE_LIMIT=2900;
-      const fullUrl=location.origin+'/guest.html#'+blob;
-      if(blob.length>QR_SAFE_LIMIT&&commands.length){
+      const fullUrl=location.origin+'/guest.html#'+hintPrefix+blob;
+      if(fullUrl.length>QR_SAFE_LIMIT&&commands.length){
         const corePayload={...payload};
         delete corePayload.cmd;
         delete corePayload.cmdCost;
         const coreBlob=await encryptConfig(JSON.stringify(corePayload),passphrase);
-        const coreUrl=location.origin+'/guest.html#'+coreBlob;
+        const coreUrl=location.origin+'/guest.html#'+hintPrefix+coreBlob;
         const supBlob=await encryptConfig(JSON.stringify({cmd:commands,cmdCost}),passphrase);
         showGuestShareView(coreUrl,passphrase,name,supBlob);
       } else {
@@ -7672,13 +7681,15 @@ Rules:
                 const k2=getK();
                 const commands=Array.isArray(action.commands)?action.commands.filter(c=>c.label&&c.msg):[];
                 const cmdCost=action.cmdCost||10;
+                const hint=action.hint||'';
                 const payload={v:2,id:'g_'+Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>b.toString(36).padStart(2,'0')).join('').slice(0,8),gw:agent?.url||null,tk:agent?.token||null,ak:k2.whisperKey||null,prov:'groq',nm:name,own:k2.deviceName||'Owner',ins:instructions,pre:presets,mc:maxChars,rl:rateLimit,exp,tgToken:(k2.tgEnabled&&k2.tgToken)?k2.tgToken:null,tgChat:(k2.tgEnabled&&k2.tgChatId)?k2.tgChatId:null};
                 if(commands.length){payload.cmd=commands;payload.cmdCost=cmdCost}
                 const passphrase=generatePassphrase();
                 const blob=await encryptConfig(JSON.stringify(payload),passphrase);
-                const record={id:payload.id,name,encBlob:blob,instructions,presets,commands,maxChars,rateLimit,expires:exp?new Date(exp).toISOString().slice(0,10):null,created:new Date().toISOString().slice(0,10),enabled:true};
+                const hintPrefix=hint?btoa(unescape(encodeURIComponent(hint))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')+'.':'';
+                const record={id:payload.id,name,hint,encBlob:blob,instructions,presets,commands,maxChars,rateLimit,expires:exp?new Date(exp).toISOString().slice(0,10):null,created:new Date().toISOString().slice(0,10),enabled:true};
                 const links=getGuestLinks();links.push(record);setGuestLinks(links);
-                const fullUrl=location.origin+'/guest.html#'+blob;
+                const fullUrl=location.origin+'/guest.html#'+hintPrefix+blob;
                 setTimeout(()=>sysBubble(`<div style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><div style="margin:8px 0;padding:8px;background:var(--bg-card);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);word-break:break-all;cursor:pointer" onclick="navigator.clipboard.writeText('${fullUrl.replace(/'/g,"\\'")}').then(()=>showToast('Copied','ok'))">${esc(fullUrl.slice(0,80))}...</div><div style="margin:4px 0;padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer" onclick="navigator.clipboard.writeText('${passphrase}').then(()=>showToast('Copied','ok'))">${passphrase}</div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:4px">Tap to copy. Share the passphrase separately from the link.</div></div>`),200);
                 results.push({type:'guest-link',ok:true,action:'create',id:payload.id});
               } else if(glAction==='list'){
