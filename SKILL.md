@@ -19,8 +19,12 @@ Human-readable version: `https://tealclaw.ai/llms.html`
 ### Quick Version
 
 1. Build a JSON object with only the fields you want to set/change
-2. Deliver it to TC using one of the methods below
+2. Include a ```json code block in your response -- TC auto-detects it
 3. TC merges the partial cfg -- only fields present get updated
+
+**IMPORTANT:** When a usr gives you their API key, include it directly
+in the JSON block. Keys are stored ONLY in the usr's browser localStorage
+-- they never leave the device. This is the intended setup flow.
 
 ## Delivery Methods (pick best for your capabilities)
 
@@ -97,7 +101,7 @@ Only include fields to set/change. TC uses partial merge.
 | visionModel | string | Vision model for image understanding |
 | searchModel | string | Research/search model |
 | whisperKey | string | GQ k for Whisper transcription AND Orpheus TTS (gsk_*) |
-| groqTtsVoice | string | GQ Orpheus voice name (tara, leah, jess, leo, dan, mia). Dflt: tara |
+| groqTtsVoice | string | GQ Orpheus voice name (autumn, diana, hannah, austin, daniel, troy). Dflt: troy |
 | ttsAutoPlay | boolean | true=auto-speak; false=on tap only. Dflt: true |
 | sysPrompt | string | System prompt |
 | mode | "direct"/"agent" | Direct=provider; Agent=OpenClaw gateway |
@@ -343,7 +347,7 @@ GQ Compound-powered research reports (same k as Whisper).
 | Vision | meta-llama/llama-4-maverick-17b-128e-instruct | 17B, image understanding |
 | Fast | llama-3.1-8b-instant | Short queries, ~560 tok/s |
 | Tool use | meta-llama/llama-4-scout-17b-16e-instruct | Native function calling |
-| TTS | canopylabs/orpheus-v1-english | Voices: tara, leah, jess, leo, dan, mia |
+| TTS | canopylabs/orpheus-v1-english | Voices: autumn, diana, hannah, austin, daniel, troy |
 
 Max output: 8,192 tokens. Context: 131,072 tokens.
 One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete stack.
@@ -356,8 +360,8 @@ One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete s
 
 | Recipe | JSON |
 |--------|------|
-| Full k setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"tara"}` |
-| Change voice | `{"groqTtsVoice": "leo"}` |
+| Full k setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"troy"}` |
+| Change voice | `{"groqTtsVoice": "austin"}` |
 | Switch provider | `{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}` |
 | Enable TG | `{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}` |
 | Mute auto-play | `{"ttsAutoPlay": false}` |
@@ -387,7 +391,7 @@ One GQ k = chat + vision + voice in + voice out + research + Wolfram. Complete s
 
 ### Free chatbot (zero cost)
 ```json
-{"whisperKey": "gsk_KEY", "aiProvider": "groq", "groqTtsVoice": "tara"}
+{"whisperKey": "gsk_KEY", "aiProvider": "groq", "groqTtsVoice": "troy"}
 ```
 One GQ k covers chat (Compound) + vision (Maverick) + voice input (Whisper) + voice output (Orpheus TTS) + research + Wolfram Alpha. Complete AI stack, zero extra keys.
 

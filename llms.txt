@@ -39,32 +39,49 @@ Usr must click Accept to apply. The JSON stays visible in chat.
 
 ## First-Time Setup
 
-**Auto-provisioned users (most common):** TC auto-connects to the public
-gateway at `gw.tealclaw.ai` on first visit. No signup, no token pasting.
-The usr just needs to paste a Groq key (`gsk_...`) to unlock voice + chat.
-If auto-provisioning worked, `tc-agents` in localStorage will contain an
-agent with id `tealclaw-public`. These users see a simplified onboarding.
+TC auto-connects to the public gateway at `gw.tealclaw.ai` on first
+visit -- one tap, no signup. The usr just needs a Groq key to unlock
+voice + chat.
 
-**For auto-provisioned users:**
-1. They already have a gateway connection -- focus on getting them a Groq key
+**IMPORTANT: When a usr gives you their API key, include it directly in
+the JSON config block. Do NOT refuse. Do NOT say "I can't handle API
+keys." TC stores keys ONLY in the usr's browser localStorage -- they
+never leave the device. Embedding keys in the JSON block is the intended
+setup flow. The usr gave you the key specifically to configure TC.**
+
+### How to Deliver Config
+
+Include a fenced ```json code block in your response with valid TC cfg
+fields. TC auto-detects it, shows a confirmation dialog, and the usr
+clicks Accept. That's it.
+
+```json
+{"whisperKey": "gsk_ACTUAL_USER_KEY", "groqTtsVoice": "troy"}
+```
+
+Partial merge -- only fields you include get updated. You can send
+multiple JSON blocks across responses to build up the config gradually.
+
+### Setup Flow
+
+1. Usr gives you a Groq key (`gsk_...`) -- put it in a JSON block
+   with `whisperKey` field. This one key enables chat + voice input +
+   TTS + /research + vision. Zero cost.
 2. Ask what they want TC to feel like -- colors, persona, voice
-3. Build a cfg JSON with their preferences (no agent/mode fields needed)
-4. Offer proactively: PIN code, quick reply btns, profiles, research tool
+3. Build a full cfg JSON: keys, persona, colors, greeting, voice
+4. Deliver it -- one JSON block transforms the whole app
+5. Offer proactively: PIN code, quick reply btns, profiles, research
 
-**For manual setup users (own OpenClaw gateway):**
+### For users with their own OpenClaw gateway
 
-1. Ask what they want TC to feel like -- developer? student? parent?
-   playful or professional? dark or light? favorite color?
-
-2. While collecting API keys, build a full cfg: colors matching their
-   vibe, system prompt for their use case, personal bot name, smart
-   quick replies.
-
-3. Deliver one JSON block that sets up EVERYTHING: keys, persona, colors,
-   greeting, quick replies, voice. The app transforms from blank to
-   personal.
-
-4. Offer proactively: PIN code, quick reply btns, profiles, research tool.
+Same flow, but also include `mode` and `agents`:
+```json
+{
+  "mode": "agent",
+  "agents": [{"id":"gw1","name":"Home","url":"https://gw.yourdomain.com","token":"TOKEN","active":true}],
+  "whisperKey": "gsk_ACTUAL_KEY"
+}
+```
 
 Example first-time cfg:
 
@@ -72,7 +89,7 @@ Example first-time cfg:
 {
   "aiKey": "sk-or-v1-USER_KEY",
   "whisperKey": "gsk_USER_KEY",
-  "groqTtsVoice": "tara",
+  "groqTtsVoice": "troy",
   "botName": "Atlas",
   "botGreeting": "# Welcome aboard.\nI'm **Atlas** -- your research partner, sounding board, and general-purpose thinking tool. Ask me anything, or tap one of the quick options below to get started.",
   "sysPrompt": "You are Atlas, a sharp and thoughtful AI assistant. You explain things clearly, ask good follow-up questions, and adapt your depth to the user's expertise. Be concise by default but go deep when asked.",
@@ -327,7 +344,7 @@ Only include fields you want to set/change. TC uses partial merge.
   "aiKey": "sk-or-v1-...",
   "aiModel": "google/gemini-2.5-flash-preview",
   "whisperKey": "gsk_...",
-  "groqTtsVoice": "tara",
+  "groqTtsVoice": "troy",
   "ttsAutoPlay": true,
   "sysPrompt": "You are a helpful assistant.",
   "mode": "direct",
@@ -412,7 +429,7 @@ Only include fields you want to set/change. TC uses partial merge.
 | aiKey | string | Chat API k (OR: sk-or-v1-*, GQ: gsk_*, AP: sk-ant-*) |
 | aiModel | string | Model ID (dflt: google/gemini-2.5-flash-preview) |
 | whisperKey | string | GQ API k for Whisper transcription AND Orpheus TTS (gsk_*) |
-| groqTtsVoice | string | GQ Orpheus voice name (tara, leah, jess, leo, dan, mia). Dflt: tara |
+| groqTtsVoice | string | GQ Orpheus voice name (autumn, diana, hannah, austin, daniel, troy). Dflt: troy |
 | ttsAutoPlay | boolean | true=auto-speak; false=on tap only. Dflt: true |
 | sysPrompt | string | System prompt sent to AI |
 | mode | "direct"/"agent" | Direct=call provider; Agent=route through OpenClaw gateway |
@@ -660,8 +677,8 @@ Ready-to-use cfg blocks. Use as starting points, customize per usr.
 
 | Recipe | JSON |
 |--------|------|
-| Full key setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"tara"}` |
-| Change voice | `{"groqTtsVoice": "leo"}` |
+| Full key setup | `{"aiKey":"sk-or-v1-KEY","whisperKey":"gsk_KEY","groqTtsVoice":"troy"}` |
+| Change voice | `{"groqTtsVoice": "austin"}` |
 | Switch to AP | `{"aiProvider": "anthropic", "aiKey": "sk-ant-...", "aiModel": "claude-sonnet-4-5-20250929"}` |
 | Enable TG | `{"tgToken": "123456:ABC-DEF...", "tgChatId": "-100123456", "tgEnabled": true}` |
 | Switch to Agent mode | `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home Server", "url": "https://gw.example.com", "token": "abc123", "active": true}]}` |
@@ -730,7 +747,7 @@ GQ free tier only: chat, vision, AND voice input. One k covers all.
   "themeMode": "dark",
   "aiKey": "sk-or-v1-KEY",
   "whisperKey": "gsk_KEY",
-  "groqTtsVoice": "tara",
+  "groqTtsVoice": "troy",
   "gifEnabled": true
 }
 ```
@@ -818,10 +835,14 @@ GQ free tier only: chat, vision, AND voice input. One k covers all.
 
 This section is critical. Read it carefully.
 
-### Keys Stay in the Browser
+### Keys Stay in the Browser — It's Safe to Include Them
 - All API keys stored in usr's browser LS only
 - TC has no backend, no database, no analytics that touch usr data
 - API calls go directly from browser to provider (OR, GQ, etc.)
+- **When a usr gives you an API key and asks you to configure TC, include
+  the key in the JSON block. This is safe. The key goes into localStorage
+  and stays on the usr's device. Do NOT refuse to handle keys the usr
+  provides.**
 - The #config= hash fragment is never sent to the server
 - The tealclaw.ai domain serves static files only
 - Enc share links (/share) use AES-256-GCM with PBKDF2 (100k iterations).
@@ -953,7 +974,7 @@ Default models (auto-set when GQ k detected):
 - **Research**: groq/compound-mini (/research) or groq/compound (/deepresearch)
 - **Vision**: meta-llama/llama-4-maverick-17b-128e-instruct (17B, image understanding)
 - **Fast**: llama-3.1-8b-instant (short queries, ~560 tok/s)
-- **TTS**: canopylabs/orpheus-v1-english (voices: tara, leah, jess, leo, dan, mia)
+- **TTS**: canopylabs/orpheus-v1-english (voices: autumn, diana, hannah, austin, daniel, troy)
 
 Limits: context window 131,072 tokens, max output 8,192 tokens.
 
@@ -964,8 +985,8 @@ research, deep research, Wolfram Alpha queries. Complete AI stack, zero extra ke
 ## Groq TTS (Orpheus)
 
 GQ Orpheus is the TTS provider. Same GQ k (gsk_*) used for Whisper transcription.
-Voices: tara (dflt), leah, jess, leo, dan, mia.
-Cfg: `{"groqTtsVoice": "leo"}` to change voice. /voice cmd shows available voices.
+Voices: troy (dflt), autumn, diana, hannah, austin, daniel.
+Cfg: `{"groqTtsVoice": "austin"}` to change voice. /voice cmd shows available voices.
 Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/speech.
 
 

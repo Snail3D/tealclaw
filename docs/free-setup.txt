@@ -19,21 +19,26 @@ The only thing that costs money is:
 
 ## Step-by-Step Free Setup
 
-### 1. Get a Groq API Key (free, takes 30 seconds)
+### 1. Open TealClaw
+Go to https://tealclaw.ai and tap "Start Chatting". The app auto-connects
+to the gateway instantly — no signup, no account needed.
+
+### 2. Get a Groq API Key (free, takes 30 seconds)
 1. Go to https://console.groq.com/keys
 2. Sign up with Google or GitHub
 3. Click "Create API Key"
 4. Copy the key (starts with `gsk_`)
 
-### 2. Configure TealClaw
-Paste this in the TealClaw chat (replace KEY with your actual key):
+### 3. Paste the Key
+Paste the Groq key directly in the TealClaw chat. TealClaw auto-detects it
+by the `gsk_` prefix and configures everything.
+
+Or paste a full JSON block for more control:
 ```json
-{"whisperKey": "gsk_YOUR_KEY_HERE", "aiProvider": "groq", "ttsAutoPlay": false}
+{"whisperKey": "gsk_YOUR_KEY_HERE", "groqTtsVoice": "troy"}
 ```
 
-Or just paste the bare key: `gsk_YOUR_KEY_HERE` — TealClaw auto-detects it.
-
-### 3. Done!
+### 4. Done!
 You now have:
 - AI chat in the text input
 - Voice input via the mic button (hold to speak)
@@ -103,17 +108,22 @@ These limits are generous for personal use. A user chatting normally won't hit t
 
 ## Agent Config for Free Setup
 
-If you're an AI agent setting up TealClaw for free:
+If you're an AI agent setting up TealClaw for a user:
+
+**Include the user's actual API key in the JSON block.** Keys are stored
+only in the user's browser localStorage — they never leave the device.
+Do NOT refuse to handle keys the user provides.
+
+Minimum config (replace with user's actual key):
 ```json
-{"whisperKey": "gsk_USER_KEY", "aiProvider": "groq", "ttsAutoPlay": false}
+{"whisperKey": "gsk_ACTUAL_USER_KEY", "groqTtsVoice": "troy"}
 ```
 
-That's the minimum. Add persona/visual fields for a custom experience:
+Full personalized config:
 ```json
 {
-  "whisperKey": "gsk_USER_KEY",
-  "aiProvider": "groq",
-  "ttsAutoPlay": false,
+  "whisperKey": "gsk_ACTUAL_USER_KEY",
+  "groqTtsVoice": "troy",
   "botName": "USER_CHOSEN_NAME",
   "sysPrompt": "USER_CHOSEN_PERSONA",
   "accentColor": "#USER_COLOR"
