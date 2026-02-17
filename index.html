@@ -1325,6 +1325,12 @@
       // Horizontal rules
       html=html.replace(/^---$/gm,'<hr>');
 
+      // Images ![alt](url) — must be before links to avoid ![alt] matching as [alt]
+      html=html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,(m,alt,url)=>{
+        if(/^(javascript|data|vbscript):/i.test(url.replace(/\s/g,'')))return alt;
+        return `<img src="${url}" alt="${alt}" style="max-width:100%;border-radius:var(--r-sm);margin:6px 0;display:block" loading="lazy">`;
+      });
+
       // Links [text](url) — block javascript:/data:/vbscript: protocols
       html=html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,text,url)=>{
         if(/^(javascript|data|vbscript):/i.test(url.replace(/\s/g,'')))return text;
@@ -4140,11 +4146,26 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
       if(!payload||!payload.runId)return;
       const{runId,seq,stream,ts,data}=payload;
       if(!builderRuns.has(runId)){
-        builderRuns.set(runId,{
-          label:`Run ${builderRuns.size+1}`,lines:[],state:'running',
-          startedAt:ts||Date.now(),sessionKey:conn?.sessionKey,agentId:conn?.agentId
-        });
-        if(!activeBuilderRun)activeBuilderRun=runId;
+        // Reuse existing active running tab for same agent instead of spawning a new one
+        const agentId=conn?.agentId;
+        let reuseId=null;
+        if(agentId){
+          builderRuns.forEach((r,id)=>{if(r.agentId===agentId&&r.state==='running')reuseId=id});
+        }
+        if(reuseId){
+          // Map new runId to existing run so future events still route correctly
+          const existing=builderRuns.get(reuseId);
+          builderRuns.set(runId,existing);
+          if(activeBuilderRun===reuseId)activeBuilderRun=runId;
+          builderRuns.delete(reuseId);
+        } else {
+          const label=data?.label||`Run ${builderRuns.size+1}`;
+          builderRuns.set(runId,{
+            label,lines:[],state:'running',
+            startedAt:ts||Date.now(),sessionKey:conn?.sessionKey,agentId
+          });
+          if(!activeBuilderRun)activeBuilderRun=runId;
+        }
       }
       const run=builderRuns.get(runId);
       // Detect lifecycle end
@@ -4271,7 +4292,7 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
             // payload.message can be string, {content:string}, or {content:[{type,text}]}
             const chunk=typeof payload.message==='string'?payload.message:
               (Array.isArray(payload.message.content)?payload.message.content.map(c=>c.text||'').join(''):(payload.message.content||''));
-            full+=chunk;
+            full=chunk;
             if(onToken)onToken(full);
           } else if(payload.state==='final'){
             if(payload.usage)usage={prompt:payload.usage.prompt_tokens||0,completion:payload.usage.completion_tokens||0,total:payload.usage.total_tokens||0,model:'agent'};
