@@ -120,7 +120,7 @@ Example first-time cfg:
 
 - **STYLE TEMPLATES** -- 12 built-in themes via /template: Midnight Purple, Sunset Orange, Ocean Blue, Forest Green, Rose Pink, Golden Hour, Arctic White, Cotton Candy, Neon Cyber, Minimal Zen, Retro Terminal, Cozy Warm.
 
-- **GIF REACTIONS** -- AI includes [gif:search term] tags, TC shows fullscreen GIF overlay. Requires Tenor API k (AIza* prefix).
+- **GIF REACTIONS** -- AI includes [gif:search term] tags, TC shows fullscreen GIF overlay via Klipy. No API key needed (server-side proxy).
 
 - **INTERACTIVE COMPONENTS (tc-ui)** -- ```tc-ui fenced blocks render buttons, cards, chips, status indicators, and collapsible sections in chat. Usr clicks a btn and it auto-sends as next msg. Selections persist across reloads.
 
@@ -349,7 +349,6 @@ Only include fields you want to set/change. TC uses partial merge.
   "imageGenModel": "black-forest-labs/FLUX.1-schnell",
   "imageGenSize": "1024x1024",
   "gifEnabled": true,
-  "gifTenorKey": "AIza...",
   "accentColor": "#0d9488",
   "fontSize": "medium",
   "fontFamily": "system-ui, sans-serif",
@@ -434,7 +433,6 @@ Only include fields you want to set/change. TC uses partial merge.
 | imageGenModel | string | Image gen model (dflt: gemini-2.5-flash-image) |
 | imageGenSize | string | e.g. "1024x1024" (OpenRouter/custom only) |
 | gifEnabled | boolean | Fullscreen GIF overlay on AI rsp (dflt: true). AI uses [gif:term] |
-| gifTenorKey | string | Tenor/Google API k (AIza*). Free at console.cloud.google.com |
 | accentColor | string | Hex UI accent (dflt: #0d9488 teal). Cascades everywhere |
 | fontSize | "small"/"medium"/"large"/CSS | small=11px, medium=13px (dflt), large=16px |
 | fontFamily | string | Custom font family (dflt: system-ui) |
@@ -933,7 +931,7 @@ names so you can rebuild their cfg without asking them to repeat everything.
 ## AI GIF Tags
 
 When gifEnabled is true (dflt), AI can include [gif:happy dance] in rsp.
-TC searches Tenor and shows fullscreen GIF overlay 10s. Tag stripped from
+TC searches Klipy (via server proxy) and shows fullscreen GIF overlay 10s. Tag stripped from
 text. If no tag, TC auto-searches first ~60 chars. Tap to dismiss.
 
 To enable AI usage, add to system prompt:

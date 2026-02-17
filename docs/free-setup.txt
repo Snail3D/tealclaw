@@ -12,7 +12,7 @@ With ONE free Groq API key, TealClaw gives you:
 - /research command — deep research reports, free
 - All visual customization — free
 - PWA installation — free
-- GIF reactions — free (uses baked-in Tenor key)
+- GIF reactions — free (server-side Klipy proxy, no key needed)
 
 The only thing that costs money is:
 - Premium AI models via OpenRouter — optional, Groq is excellent

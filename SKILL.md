@@ -113,7 +113,6 @@ Only include fields to set/change. TC uses partial merge.
 | imageGenModel | string | Image gen model (dflt: gemini-2.5-flash-image) |
 | imageGenSize | string | e.g. "1024x1024" (OpenRouter/custom only) |
 | gifEnabled | boolean | GIF overlay on AI rsp (dflt: true) |
-| gifTenorKey | string | Tenor/Google API k (AIza*) |
 | accentColor | string | Hex UI accent (dflt: #0d9488). Cascades everywhere |
 | fontSize | string | "small"/"medium"/"large" or CSS value |
 | fontFamily | string | Custom font family |
@@ -549,7 +548,7 @@ User clicks "Share Settings with Agent" in Settings > Agent Tools. This sends th
 Bare k auto-detection:
 - `sk-or-v1-*` --> OR AI k
 - `gsk_*` --> GQ Whisper k
-- `AIza*` --> Tenor/Google API k
+- `AIza*` --> Google AI k (Image Gen)
 
 ## Architecture
 

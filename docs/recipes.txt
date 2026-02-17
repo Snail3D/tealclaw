@@ -488,7 +488,7 @@ Requires a 4-6 digit PIN before any message can be sent. Protects against unauth
 ```json
 {"gifEnabled":false,"soundEnabled":false,"hapticFeedback":false}
 ```
-Turns off all external media fetches (Tenor GIFs) and audible/haptic feedback. Good for private or quiet environments.
+Turns off all external media fetches (Klipy GIFs) and audible/haptic feedback. Good for private or quiet environments.
 
 ### Shared Kiosk Mode
 ```json

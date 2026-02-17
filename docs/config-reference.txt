@@ -55,9 +55,8 @@ All values are stored in browser localStorage. No server, no database.
 | Field | Type | Description |
 |-------|------|-------------|
 | gifEnabled | boolean | Show fullscreen GIF overlay on AI responses. Default: true |
-| gifTenorKey | string | Tenor/Google API key (AIza* prefix). Required for GIF reactions to work. Get free at console.cloud.google.com (enable Tenor API) |
 
-When enabled and a Tenor key is set, AI responses with `[gif:search term]` trigger a specific Tenor GIF.
+When enabled, AI responses with `[gif:search term]` trigger a Klipy GIF via server-side proxy. No API key needed.
 Without a tag, auto-searches based on response text.
 
 ## Visual Customization — Colors
