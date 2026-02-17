@@ -1,83 +1,125 @@
 # TealClaw
 
-![TealClaw — Private AI Control](og-image.png)
+![TealClaw](og-image.png)
 
-**BYOK voice dashboard at [tealclaw.ai](https://tealclaw.ai).** Your keys never leave your browser. We see nothing.
+**Private AI chat with voice.** One file. No server. Your keys never leave your browser.
 
----
-
-## Highlights
-
-**Zero Server, Total Privacy** — Static files on Cloudflare Pages. No backend, no database, no tracking. Your browser talks directly to AI providers.
-
-**Voice Chat** — Hold-to-speak with Groq Whisper transcription. Groq Orpheus TTS for voice responses. Full push-to-talk with live subtitles.
-
-**The Claw** — MediaPipe hand-tracking gesture control. Pinch to talk, wave to clear, point to scroll. Hands-free everything.
-
-**Deep Research** — `/research` generates segmented, source-cited reports powered by Groq. Entire research pipelines in one command.
-
-**Vision** — Drag, paste, snap from camera, or attach. Multi-image support across providers.
-
-**Single HTML File** — No build step, no framework, no dependencies. View Source and read every line. `npx serve .` and you're developing.
-
-**95+ Config Fields** — Colors, fonts, layout, animations, persona, system prompt, accessibility, quick replies, scheduled messages, and more. Style templates let you transform the entire UI in one click.
-
-**Agent-Configurable** — AI agents read [llms.txt](https://tealclaw.ai/llms.txt), generate a JSON config, and deliver it via URL hash, file drop, or chat paste. Partial merge — only fields present get updated. See the [tc-action protocol](SKILL.md) for full agent control.
+**[tealclaw.ai](https://tealclaw.ai)**
 
 ---
 
-## Quick Start (Free)
+## Get Started in 30 Seconds
 
-1. Get a free Groq key at [console.groq.com/keys](https://console.groq.com/keys)
-2. Open [tealclaw.ai](https://tealclaw.ai)
-3. Paste your `gsk_` key in the chat
+1. Open **[tealclaw.ai](https://tealclaw.ai)**
+2. Grab a free key from [console.groq.com/keys](https://console.groq.com/keys)
+3. Paste it and start talking
 
-One free key gives you chat, voice input, vision, and `/research`.
+That's it. One key gives you chat, voice, vision, image generation, and deep research.
 
-## Bring Your Own Keys
+---
 
-| Key | Provider | Unlocks |
-|-----|----------|---------|
-| AI Key | OpenRouter, Groq, or Anthropic | Chat completions |
-| Whisper Key | Groq | Voice transcription + TTS + research |
-| Gateway | OpenClaw via Cloudflare Tunnel | Agent mode |
-| Telegram | Bot token + Chat ID | Message forwarding |
+## What You Get
 
-All keys stored in `localStorage`. Nothing sent to tealclaw.ai. Full details in **[Security Philosophy](SECURITY.md)**.
+**Voice Chat** — Hold to speak, get spoken replies. Six voice personas with distinct personalities: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive). Powered by Groq Whisper + Orpheus TTS.
+
+**Deep Research** — Type `/research` and get a full sourced report. `/deepresearch` goes deeper with multi-tool analysis.
+
+**Image Generation** — `/imagine` creates images via Google Gemini. Attach a photo and say "make this a watercolor" for image-to-image editing.
+
+**The Claw** — Hand gesture control via your camera. Show The Claw to start voice capture. Lower your hand to send. Hands-free everything.
+
+**Vision** — Snap from camera, paste, or drag files in. Multi-image support.
+
+**GIF Reactions** — AI picks contextual GIFs that match your conversation. Draggable, resizable, and fun.
+
+**95+ Settings** — Colors, fonts, layout, voice, persona, quick replies, scheduled messages, templates. Everything is customizable. AI agents can configure it all via JSON.
+
+**Guest Links** — Create encrypted, time-limited access links for friends. PIN-protected, rate-limited, with full control over what they can do.
+
+**Obsidian Integration** — Save conversations and AI notes directly to your vault.
+
+---
+
+## Privacy First
+
+TealClaw has **no backend**. The site is static files on Cloudflare Pages.
+
+- Your browser talks directly to AI providers. No middleman. No proxy.
+- All keys stored in your browser's `localStorage`. We literally cannot see them.
+- No analytics, no cookies, no fingerprinting, no telemetry.
+- Encrypted sharing uses AES-256-GCM with a separate passphrase.
+- The entire app is one HTML file. View Source and read every line.
+
+Full details: **[Security Philosophy](SECURITY.md)**
+
+---
 
 ## Commands
 
 | Command | What It Does |
 |---------|-------------|
-| `/research query` | Deep research report |
+| `/research query` | Sourced research report |
+| `/deepresearch query` | Multi-tool deep analysis |
 | `/imagine prompt` | Generate an image |
-| `/save` | Save chat to Obsidian |
-| `/template` | Browse and apply style templates |
-| `/session create` | Time-limited encrypted share link |
-| `/share` | Encrypted config link (passphrase-protected) |
-| `/profile save/load` | Manage config profiles |
-| `/help` | Show all commands |
+| `/voice` | Voice settings and personas |
+| `/save` | Save to Obsidian |
+| `/template` | Browse style templates |
+| `/share` | Encrypted config link |
+| `/session create` | Time-limited guest access |
+| `/profile save name` | Save/load config profiles |
+| `/help` | All commands |
 
-## Privacy
+Works by voice too — just say "research quantum physics" or "imagine a sunset over mars".
 
-- **No backend** — Static files only. No server, no database, no way to see your keys.
-- **Direct API calls** — Browser to provider. No middleman.
-- **No tracking** — No analytics, no cookies, no fingerprinting.
-- **Encrypted sharing** — AES-256-GCM config links with separate passphrase.
-- **Fully auditable** — One HTML file. No build step.
+---
+
+## Connect Your Own Agent
+
+TealClaw connects to **[OpenClaw](https://github.com/openclaw/openclaw)** gateways via WebSocket for full agent mode — shared context across Telegram, Discord, Signal, and more.
+
+```
+Your Browser ←→ Cloudflare Tunnel ←→ OpenClaw Gateway ←→ Your AI Agent
+```
+
+Paste a gateway URL + token, or let your agent generate a one-click connection link.
+
+---
 
 ## For AI Agents
 
-- **[tealclaw.ai/llms.txt](https://tealclaw.ai/llms.txt)** — Complete agent skill (raw text)
-- **[tealclaw.ai/llms.html](https://tealclaw.ai/llms.html)** — Human-readable with copy button
-- **[SKILL.md](SKILL.md)** — tc-action protocol docs
+Build tools that configure TealClaw automatically:
+
+- **[tealclaw.ai/llms.txt](https://tealclaw.ai/llms.txt)** — Full skill guide (raw text, agent-ready)
+- **[tealclaw.ai/llms.html](https://tealclaw.ai/llms.html)** — Human-readable version
+- **[SKILL.md](SKILL.md)** — tc-action protocol reference
+
+Agents read the skill guide, emit `tc-action` JSON blocks, and TealClaw executes them — config changes, commands, navigation, file generation, and more.
+
+---
 
 ## Stack
 
-Single HTML file on Cloudflare Pages. PWA with service worker. CSS custom properties for theming.
+Single HTML file. No build step. No framework. No dependencies.
 
-## Creator
+- PWA with service worker for offline support
+- CSS custom properties for theming
+- Hosted on Cloudflare Pages
+
+```bash
+# Run locally
+npx serve .
+```
+
+---
+
+## Support
 
 Made by **Snail** — [YouTube](https://www.youtube.com/@RealSnail3D) / [MakerWorld](https://makerworld.com/en/@Snail)
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/snail3d)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/snail3d)
+
+---
+
+<p align="center">
+  <a href="https://tealclaw.ai">tealclaw.ai</a>
+</p>
