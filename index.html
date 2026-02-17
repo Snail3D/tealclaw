@@ -99,7 +99,11 @@
     .group-speaker-tag[data-speaker="HAVEN"]{background:rgba(168,85,247,0.15);color:#a855f7}
     .group-speaker-tag[data-speaker="VERA"]{background:rgba(236,72,153,0.15);color:#ec4899}
     .group-speaker-tag[data-speaker="DIANE"]{background:rgba(245,158,11,0.15);color:#f59e0b}
-    .group-segment{margin-bottom:8px}.group-segment:last-child{margin-bottom:0}
+    .group-segment{margin-bottom:12px;padding:8px 12px;border-radius:var(--r-md);max-width:88%}.group-segment:last-child{margin-bottom:0}
+    .group-segment.seg-left{align-self:flex-start;text-align:left}
+    .group-segment.seg-right{align-self:flex-end;text-align:right}
+    .group-segment.seg-right .group-speaker-tag{margin-left:auto}
+    .group-segment.seg-right .md-content{text-align:left}
 
     .cron-add-btn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;border-radius:50%;background:rgba(99,102,241,0.12);color:#818cf8;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--t);flex-shrink:0}
     .cron-add-btn:hover{background:rgba(99,102,241,0.25)}
@@ -4150,15 +4154,16 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
         if(m.role==='ai'){
           if(m.raw)content+=displayText;
-          else if(isGroupChat()&&/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
-            // Group chat: render each speaker segment with colored labels
+          else if(/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
+            // Group chat: render each speaker segment with colored labels, alternating L/R
             const segs=parseGroupResponse(displayText);
-            content+=segs.map(seg=>{
+            content+='<div style="display:flex;flex-direction:column;gap:0;width:100%">'+segs.map((seg,si)=>{
               const p=VOICE_PERSONAS[seg.voiceId];
               const clean=stripExprTags(seg.text);
               let rendered=renderMd(clean);rendered=renderLatex(rendered);
-              return `<div class="group-segment"><span class="group-speaker-tag" data-speaker="${seg.speaker}">${p?p.name:seg.speaker}</span><div class="md-content">${rendered}</div></div>`;
-            }).join('');
+              const side=si%2===0?'seg-left':'seg-right';
+              return `<div class="group-segment ${side}"><span class="group-speaker-tag" data-speaker="${seg.speaker}">${p?p.name:seg.speaker}</span><div class="md-content">${rendered}</div></div>`;
+            }).join('')+'</div>';
           } else{
             // Parse tc-ui component blocks before rendering markdown
             const{cleanText:tcClean,components}=parseTcComponents(displayText);
@@ -4457,7 +4462,8 @@ Alarms: \`\`\`tc-action\n{"type":"alarm","time":"15:00","message":"Check the ove
 Timers: \`\`\`tc-action\n{"type":"timer","duration":"5m","message":"Pizza is ready"}\n\`\`\` Starts a countdown timer. Duration supports "30s", "5m", "1h30m", or seconds as number. source:'agent' — you'll be notified on expiry.
 Cron jobs: \`\`\`tc-action\n{"type":"cron","title":"Morning Briefing","message":"Give me a briefing","times":["09:00"],"recurring":true,"days":["mon","tue","wed","thu","fri"],"action":"pipeline"}\n\`\`\` Creates a scheduled job. action can be: pipeline (send to you), research, deepresearch, imagine, snap, notify. Requires user approval. source:'agent' — you're notified when it fires.
 Pomodoro: \`\`\`tc-action\n{"type":"pomodoro","duration":25,"breakDuration":5,"rounds":4,"tasks":["Task 1","Task 2"]}\n\`\`\` Starts a Pomodoro focus timer with task checklist. You're notified on phase changes (focus_start, break_start) and completion. Control: {"type":"pomodoro","action":"pause|resume|stop"}.
-User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /chron /alarm /timer /pomodoro /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza")
+Debate: \`\`\`tc-action\n{"type":"debate","topic":"cats vs dogs"}\n\`\`\` Triggers a mini-debate between 2 TealClaw personas (auto-selected by topic). A 3rd persona judges. Short 4-exchange debate + verdict + winner thanks. If you trigger it, you receive the full debate transcript when it completes.
+User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /save /session /chron /alarm /timer /pomodoro /debate /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza", "debate AI vs humans")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus with voice personas: Trey (troy, hype & real), Axel (austin, hacker), Dean (daniel, professional), Haven (hannah, chill vibes), Vera (autumn, nerd), Diane (diana, executive). Each persona has a distinct personality that colors responses. Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
 GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
@@ -5239,7 +5245,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       while(off+8<=buf.byteLength){
         const id=String.fromCharCode(dv.getUint8(off),dv.getUint8(off+1),dv.getUint8(off+2),dv.getUint8(off+3));
         const sz=dv.getUint32(off+4,true);
-        if(id==='data')return{offset:off+8,size:sz};
+        if(id==='data')return{offset:off+8,size:Math.min(sz,buf.byteLength-(off+8))};
         off+=8+sz;
         if(off%2)off++; // WAV chunks are word-aligned
       }
@@ -5750,7 +5756,7 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -6052,7 +6058,7 @@ ${getOptionalSteps()}`
       const m=text.match(/\[gif:\s*([^\]\n]+)\]?/i);
       if(m){
         const gifQuery=(m[1]||'').trim().slice(0,80);
-        const cleanText=text.replace(m[0],'').replace(/\s{2,}/g,' ').trim();
+        const cleanText=text.replace(m[0],'').replace(/[^\S\n]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
         return{cleanText,gifQuery:gifQuery||null};
       }
       return{cleanText:text,gifQuery:null};
@@ -7302,7 +7308,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron','pomodoro']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron','pomodoro','debate']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -7704,6 +7710,13 @@ Rules:
                 });
               }
               results.push({type:'pomodoro',ok:true});
+              break;
+            }
+            case 'debate':{
+              const dTopic=action.topic||action.text||'';
+              if(!dTopic){results.push({type:'debate',ok:false,error:'topic required'});break}
+              handleDebateCommand(dTopic,'agent');
+              results.push({type:'debate',ok:true,topic:dTopic});
               break;
             }
           }
@@ -8781,6 +8794,80 @@ Keep tasks short and actionable. Duration in minutes. Rounds 1-8.`+TC_CORE_POLIC
       if(taskEl)togglePomoTask(parseInt(taskEl.dataset.pomoTask));
     });
 
+    // ── Debate Mode ────────────────────────────────────
+    const DEBATE_PROMPT=`You are generating a short, punchy debate between two TealClaw personas on a given topic. You must also pick a judge.
+
+PERSONAS (each has a tag and strengths):
+- TREY: hype, millennial, supportive, pop culture, social topics
+- AXEL: tech, hacker, systems thinking, dry wit, science
+- DEAN: professional, authoritative, politics, business, history
+- HAVEN: chill, philosophical, lifestyle, wellness, relationships
+- VERA: analytical, nerdy, science, data, precise arguments
+- DIANE: executive, strategic, economics, leadership, direct
+
+RULES:
+1. Pick the 2 personas whose strengths best fit the topic as debaters. Pick a 3rd as judge. All 3 must be different.
+2. The debate is exactly 4 exchanges: Debater A opens, Debater B counters, A rebuts, B gives final point.
+3. Each exchange is 2-3 sentences. Short and punchy — no essays.
+4. They should make real arguments with actual reasoning, not just opinions.
+5. After the 4 exchanges, the judge delivers a verdict in 1-2 casual sentences. No mention of "debate rules" or "as judge" — just a chill take on who made the better case and why.
+6. The winner then gives a brief 1-sentence hat tip / thanks.
+
+FORMAT (use EXACTLY this — each speaker on their own line with their tag):
+[NAME] Their argument here.
+[NAME] Their counter here.
+[NAME] Their rebuttal here.
+[NAME] Their final point here.
+[NAME] Their casual verdict here.
+[NAME] Their brief thanks.
+
+Output ONLY the formatted debate lines. No intro, no explanation, no markdown headers.`+TC_CORE_POLICY;
+
+    let _debateActive=false;
+    async function handleDebateCommand(topic,source){
+      if(_debateActive){showToast('Debate already in progress','err');return}
+      _debateActive=true;
+      const k=getK();
+      const key=k.whisperKey||k.aiKey;
+      if(!key){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');_debateActive=false;return}
+      addBubble('user','/debate '+topic);
+      if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
+      addTyping();
+      try{
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
+          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[
+            {role:'system',content:DEBATE_PROMPT},
+            {role:'user',content:`Topic: ${topic}`}
+          ],temperature:0.7,max_tokens:1200})
+        });
+        removeTyping();
+        if(!res.ok)throw new Error(`API ${res.status}`);
+        const data=await res.json();
+        const reply=data.choices?.[0]?.message?.content||'';
+        if(!reply.trim()){throw new Error('Empty response')}
+        // Store in chat history and render as group chat
+        chatHistory.push({role:'ai',text:reply,ts:Date.now()});
+        renderChat();
+        if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
+        // TTS — use group speaker system
+        try{await speakGroup(reply)}catch(e){console.warn('Debate TTS error:',e)}
+        // Notify agent if debate was triggered by agent
+        if(source==='agent'){
+          const ag=getActiveAgent();
+          const conn=ag?agentConnections.get(ag.id):null;
+          if(k.mode==='agent'&&conn&&conn.connected){
+            pipeline(`[Debate completed: ${topic}]\n${reply}`);
+          }
+        }
+      }catch(e){
+        removeTyping();
+        sysBubble(`<p>Debate error: ${esc(e.message)}</p>`);
+      }
+      _debateActive=false;
+    }
+
     // ── /alarm & /timer AI Parsers ─────────────────────
     const ALARM_PARSE_PROMPT=`You extract alarm time and message from natural language. The current date/time is provided as context.
 Return ONLY a JSON object: {"time":"HH:MM","message":"..."}
@@ -9276,6 +9363,7 @@ ${agentNote}`);
         else if(/^timer\b/i.test(text))text='/timer'+text.slice(5);
         else if(/^chron\b/i.test(text))text='/chron'+text.slice(5);
         else if(/^pomodoro\b/i.test(text))text='/pomodoro '+text.replace(/^pomodoro\s*/i,'');
+        else if(/^debate\b/i.test(text))text='/debate '+text.replace(/^debate\s*/i,'');
         else if(/^deep\s*(?:re)?search\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s*(?:re)?search\s+/i,'');
         else if(/^(imagine|(?:re)?search|deep(?:re)?search)\s/i.test(text))text='/'+text;
         // Natural language image generation intent → /imagine
@@ -9293,7 +9381,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro','/debate'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -9339,6 +9427,7 @@ ${agentNote}`);
 <li><code>/timer [duration] [message]</code> -- set a countdown timer (voice: "timer 5 minutes pizza")</li>
 <li><code>/pomodoro 25m task1, task2</code> -- quick-start Pomodoro with tasks (voice: "pomodoro...")</li>
 <li><code>/pomodoro</code> -- AI-guided Pomodoro setup wizard</li>
+<li><code>/debate [topic]</code> -- mini-debate between personas with a judge (voice: "debate cats vs dogs")</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -9401,6 +9490,12 @@ ${agentNote}`);
             if(!(pk.whisperKey||pk.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
             startPomoWizard(pomoArg||null);
           }
+          return;
+        }
+        if(cmd==='/debate'||cmd.startsWith('/debate ')){
+          const debateArg=text.slice(7).trim();
+          if(!debateArg){sysBubble('<p>Usage: <code>/debate cats vs dogs</code> or just say <em>"debate whether AI will replace programmers"</em></p>');return}
+          handleDebateCommand(debateArg,'local');
           return;
         }
         if(cmd.startsWith('/groq ')||cmd.startsWith('/groq\n')){
