@@ -5972,16 +5972,15 @@ Rules:
         const fullPayload=`RESEARCH REPORT\n\nQuery: ${query||'[Image analysis]'}\nVerdict: ${data.verdict?.label||'N/A'}\n\n--- SUMMARY ---\n${data.summary||''}\n\n--- SECTIONS ---\n${(data.sections||[]).map(s=>`[${s.title}] ${s.content||''}\n${(s.bullets||[]).map(b=>'  - '+b).join('\n')}`).join('\n\n')}\n\n--- FULL CONTEXT (Agent-only) ---\n${data.fullContext||''}\n\n--- SOURCES ---\n${(data.sources||[]).join('\n')}`;
         sendTelegram(fullPayload);
 
-        // Also forward to agent if in agent mode
+        // Forward full research context to agent via WebSocket (FYI only, no reply expected)
         const mode=k.mode||'direct';
         if(mode==='agent'&&getActiveAgent()){
           try{
             const agent=getActiveAgent();
-            await fetch(`${gwUrl(agent.url)}/v1/chat/completions`,{
-              method:'POST',
-              headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
-              body:JSON.stringify({messages:[{role:'user',content:`[RESEARCH CONTEXT - User researched: "${query||'image'}"]\n\n${fullPayload}\n\nRemember this research context for follow-up questions.`}],max_tokens:100})
-            });
+            const conn=agentConnections.get(agent.id);
+            if(conn&&conn.connected){
+              conn.chatSend(`[RESEARCH FYI — NO ACTION NEEDED]\nThe user just ran /research on: "${query||'image analysis'}"\nThis is for your awareness only. Do NOT reply to this message in chat. The user is reviewing the results and may have follow-up questions — only respond when they ask.\n\n${fullPayload}`);
+            }
           }catch{}
         }
 
