@@ -577,6 +577,37 @@ Give the usr a JSON code block to paste into TC chat input -- auto-detected.
 Give the usr a tealclaw.ai/#config=BASE64 link to tap/click.
 Build: "https://tealclaw.ai/#config=" + btoa(JSON.stringify(config))
 
+**CRITICAL: Config Link JSON Rules**
+1. The entire config MUST be ONE valid JSON object — all fields at the same level
+2. Use ONLY the exact key names from the Config Key Reference above
+3. `agents` is an array of objects with: id, name, url, token, active
+4. Agent `url` MUST be HTTPS (e.g. `https://gw.example.com`). HTTP/raw IPs WILL FAIL.
+5. TTS voice key is `groqTtsVoice` (NOT `ttsVoice`, NOT `ttsKey`)
+6. Whisper/TTS both use the same Groq key: `whisperKey`
+7. There is NO `ttsKey` field — it does not exist
+8. Test your JSON with JSON.parse() before base64-encoding
+
+**Complete working example:**
+```json
+{
+  "mode": "agent",
+  "agents": [{"id": "home", "name": "MyBot", "url": "https://gw.example.com", "token": "gateway-token-here", "active": true}],
+  "whisperKey": "gsk_xxx",
+  "groqTtsVoice": "troy",
+  "ttsAutoPlay": true,
+  "botName": "MyBot",
+  "accentColor": "#0d9488",
+  "themeMode": "dark"
+}
+```
+Then: `https://tealclaw.ai/#config=` + btoa(JSON.stringify(config))
+
+**WRONG — DO NOT DO THIS:**
+```json
+{"mode":"agent","whisperKey":"gsk_xxx","ttsKey":"sk_xxx","ttsVoice":"id"},"botName":"X"}
+```
+^^^ BROKEN: ttsKey/ttsVoice are not valid keys, extra closing brace makes invalid JSON
+
 ### Encrypted Share Links (REQUIRED when cfg contains API keys)
 
 If cfg contains ANY API keys (aiKey, whisperKey, tgToken,

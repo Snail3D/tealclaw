@@ -89,6 +89,20 @@ with open("tealclaw-config.json", "w") as f:
 
 Give usr JSON code block to paste into TC chat input, or a tealclaw.ai/#config=b64 URL.
 
+**Config Link Rules — READ BEFORE BUILDING:**
+1. ALL config fields in ONE flat JSON object. No extra closing braces.
+2. Use ONLY valid config keys from the schema below.
+3. There is NO `ttsKey` or `ttsVoice` field. TTS uses the same Groq key as `whisperKey`. Voice is `groqTtsVoice`.
+4. `agents` array: `[{"id":"x","name":"X","url":"https://...","token":"tok","active":true}]`
+5. Agent `url` MUST be HTTPS. HTTP and raw IPs WILL FAIL (mixed content).
+6. Always validate your JSON before base64-encoding.
+
+**Complete example:**
+```json
+{"mode":"agent","agents":[{"id":"home","name":"Bot","url":"https://gw.example.com","token":"tok","active":true}],"whisperKey":"gsk_xxx","groqTtsVoice":"troy","ttsAutoPlay":true,"botName":"Bot","accentColor":"#0d9488","themeMode":"dark"}
+```
+Then: `https://tealclaw.ai/#config=` + base64(above JSON)
+
 ## Config Schema
 
 Only include fields to set/change. TC uses partial merge.
