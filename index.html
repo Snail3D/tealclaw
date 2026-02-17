@@ -589,6 +589,16 @@
     #aboutBtn svg{animation:heartbeat var(--hb-speed,1s) ease-in-out infinite;transform-origin:center;color:var(--hb-color,var(--text-3))}
     #aboutBtn:hover svg{color:var(--err)}
 
+    /* ── Context Compaction ─────────────────────────── */
+    @keyframes hb-compact{0%{filter:drop-shadow(0 0 4px var(--teal))}50%{filter:drop-shadow(0 0 12px var(--teal))}100%{filter:drop-shadow(0 0 4px var(--teal))}}
+    .heartbeat-compacting #aboutBtn svg{animation:hb-compact 2s ease-in-out infinite;color:var(--teal)}
+    .chat-compaction-divider{display:flex;align-items:center;gap:10px;margin:8px 0 14px;cursor:pointer;user-select:none}
+    .chat-compaction-divider::before,.chat-compaction-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    .chat-compaction-divider span{font-size:10px;color:var(--text-3);white-space:nowrap;padding:2px 8px;background:var(--bg-2);border-radius:100px}
+    .chat-compaction-divider:hover span{color:var(--teal)}
+    .chat-bubble.compacted,.chat-bubble-wrap.compacted .chat-bubble{opacity:0.5;transition:opacity 0.2s}
+    .chat-bubble.compacted:hover,.chat-bubble-wrap.compacted:hover .chat-bubble{opacity:0.8}
+
     /* ── About Modal ─────────────────────────────────── */
     .about-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity 0.3s;overflow-y:auto;padding:20px 0}
     .about-overlay.hidden{opacity:0;pointer-events:none;display:none}
@@ -1521,11 +1531,171 @@
     function fmtTime(d){d=d||new Date();return d.toLocaleTimeString([],getK().use24HourTime?{hour:'2-digit',minute:'2-digit',hour12:false}:{})}
     function getChat(){try{return JSON.parse(localStorage.getItem('tc-chat')||'[]')}catch{return[]}}
     function setChat(c){
+      // Store last 100 in localStorage (size limit), full history lives in memory + IndexedDB
       localStorage.setItem('tc-chat',JSON.stringify(c.slice(-100)));
       // Async dual-write to IndexedDB
       const id=localStorage.getItem('tc-active-conv');
       if(id)ConvDB.save(id,c).catch(()=>{});
     }
+    // ── Context Compaction ──────────────────────────────
+    let _compacting=false;
+    function estimateTokens(text){return text?Math.ceil(text.length/3.5):0}
+    function getCompaction(){
+      try{
+        const stored=localStorage.getItem('tc-compaction');
+        return stored?JSON.parse(stored):null;
+      }catch{return null}
+    }
+    function setCompaction(data){
+      try{localStorage.setItem('tc-compaction',JSON.stringify(data))}catch{}
+    }
+    function clearCompaction(){
+      try{localStorage.removeItem('tc-compaction')}catch{}
+    }
+
+    function shouldCompact(){
+      const k=getK();
+      const modelLimit=128000;
+      const threshold=Math.floor(modelLimit*0.8);
+      const comp=getCompaction();
+      const start=comp?.compactedUpTo||0;
+      const recent=chatHistory.slice(start).filter(m=>m.role==='user'||m.role==='ai');
+      if(recent.length<25)return false; // not enough messages to bother
+      let tokens=estimateTokens(comp?.summary||'')+estimateTokens(buildSysPrompt(k));
+      for(const m of recent)tokens+=estimateTokens(m.text);
+      return tokens>threshold;
+    }
+
+    async function compactConversation(){
+      if(_compacting)return;
+      const k=getK();
+      const apiKey=k.whisperKey||k.aiKey;
+      if(!apiKey)return;
+      _compacting=true;
+      document.documentElement.classList.add('heartbeat-compacting');
+      try{
+        const comp=getCompaction();
+        const keepRecent=20;
+        const cutoff=Math.max(0,chatHistory.length-keepRecent);
+        if(cutoff<5)return; // nothing meaningful to compact
+        const start=comp?.compactedUpTo||0;
+        const toCompact=chatHistory.slice(start,cutoff).filter(m=>m.role==='user'||m.role==='ai');
+        if(toCompact.length<5)return;
+        const prevSummary=comp?.summary?`PREVIOUS SUMMARY:\n${comp.summary}\n\n`:'';
+        const transcript=toCompact.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.text}`).join('\n\n');
+        const input=prevSummary+transcript;
+        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model:'llama-3.3-70b-versatile',
+            messages:[
+              {role:'system',content:`You are compacting a conversation for context continuity.
+
+STICKY FACTS — Extract and list these separately (one per line, prefix with •):
+• User's name, nicknames, pronouns
+• Stated preferences and opinions
+• Decisions made and commitments
+• Key numbers, dates, deadlines
+• Ongoing tasks or projects
+• People/relationships mentioned
+• Technical setup details (tools, configs, accounts)
+
+Only include facts actually present. Omit categories with nothing to report.
+
+CONVERSATION SUMMARY (max 500 words):
+Capture the flow of topics discussed, questions asked, answers given, and conclusions reached. Preserve unresolved threads and action items. Lead with the most recent/important context.`},
+              {role:'user',content:input.slice(0,12000)}
+            ],
+            max_tokens:1024
+          })
+        });
+        const d=await res.json();
+        const raw=d.choices?.[0]?.message?.content;
+        if(!raw)return;
+        // Parse sticky facts and summary
+        let stickyFacts='',summary=raw;
+        const sumIdx=raw.indexOf('CONVERSATION SUMMARY');
+        if(sumIdx>0){
+          stickyFacts=raw.slice(0,sumIdx).replace(/^STICKY FACTS[^\n]*\n?/i,'').trim();
+          summary=raw.slice(sumIdx).replace(/^CONVERSATION SUMMARY[^\n]*\n?/i,'').trim();
+        } else {
+          // Try to split on first blank line after bullet points
+          const lines=raw.split('\n');
+          const factLines=[],summaryLines=[];
+          let inFacts=true;
+          for(const line of lines){
+            if(inFacts&&line.startsWith('•'))factLines.push(line);
+            else{inFacts=false;summaryLines.push(line)}
+          }
+          if(factLines.length){stickyFacts=factLines.join('\n');summary=summaryLines.join('\n').trim()}
+        }
+        const compData={summary,stickyFacts,compactedUpTo:cutoff,ts:Date.now(),msgCount:toCompact.length+(comp?.msgCount||0)};
+        setCompaction(compData);
+        // Also persist to IndexedDB with the conversation
+        const convId=getActiveConvId();
+        if(convId){
+          const record=await ConvDB.get(convId).catch(()=>null);
+          if(record){record.compaction=compData;const db=await ConvDB.open();await new Promise((resolve,reject)=>{const tx=db.transaction('conversations','readwrite');tx.objectStore('conversations').put(record);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
+        }
+        if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
+        renderChat();
+      }catch(e){
+        console.warn('Compaction failed:',e);
+      }finally{
+        _compacting=false;
+        document.documentElement.classList.remove('heartbeat-compacting');
+      }
+    }
+
+    function buildContextMessages(){
+      const comp=getCompaction();
+      const msgs=[];
+      // Compaction summary as context preamble
+      if(comp?.summary){
+        msgs.push({role:'user',content:'[Conversation so far — summarized]'});
+        msgs.push({role:'assistant',content:comp.summary});
+      }
+      // Recent messages (after compaction point)
+      const start=comp?.compactedUpTo||0;
+      const recent=chatHistory.slice(start)
+        .filter(m=>m.role==='user'||m.role==='ai')
+        .map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
+      // Dynamic trim: if still over budget, drop oldest recent msgs
+      const budget=100000;
+      let tokens=estimateTokens(comp?.summary||'');
+      const kept=[];
+      for(let i=recent.length-1;i>=0;i--){
+        const t=estimateTokens(recent[i].content);
+        if(tokens+t>budget)break;
+        kept.unshift(recent[i]);
+        tokens+=t;
+      }
+      return [...msgs,...kept];
+    }
+
+    function triggerCompactionCheck(){
+      if(_compacting)return;
+      if(shouldCompact())compactConversation().catch(()=>{});
+    }
+
+    function showCompactionSummary(){
+      const comp=getCompaction();
+      if(!comp)return;
+      const overlay=document.createElement('div');
+      overlay.className='about-overlay';
+      overlay.style.zIndex='510';
+      overlay.innerHTML=`<div class="about-card" style="max-width:520px;max-height:80vh;overflow-y:auto">
+        <button style="position:absolute;top:12px;right:12px;background:var(--bg-hover);border:none;border-radius:50%;width:28px;height:28px;color:var(--text-2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center" onclick="this.closest('.about-overlay').remove()">&times;</button>
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Conversation Memory</h3>
+        ${comp.stickyFacts?`<div style="margin-bottom:16px"><div style="font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Sticky Facts</div><div style="font-size:12px;line-height:1.6;color:var(--text-2);white-space:pre-wrap">${esc(comp.stickyFacts)}</div></div>`:''}
+        <div><div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Summary</div><div style="font-size:12px;line-height:1.6;color:var(--text-2);white-space:pre-wrap">${esc(comp.summary)}</div></div>
+        <div style="margin-top:12px;font-size:10px;color:var(--text-3)">${comp.msgCount||0} messages compacted &middot; ${new Date(comp.ts).toLocaleString()}</div>
+      </div>`;
+      overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+      document.body.appendChild(overlay);
+    }
+
     function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
     function setAgents(a){localStorage.setItem('tc-agents',JSON.stringify(a))}
 
@@ -1579,7 +1749,8 @@
           title:existing?.title||'New Chat',
           createdAt:existing?.createdAt||Date.now(),
           updatedAt:Date.now(),
-          messages:messages.slice(-100)
+          messages:messages.slice(-500),
+          compaction:existing?.compaction||null
         };
         return new Promise((resolve,reject)=>{
           const tx=db.transaction('conversations','readwrite');
@@ -1661,13 +1832,14 @@
     function setActiveConvId(id){localStorage.setItem('tc-active-conv',id)}
 
     async function newConversation(){
-      // Save current conversation first
+      // Save current conversation first (including compaction state)
       const curId=getActiveConvId();
       if(curId)await ConvDB.save(curId,chatHistory).catch(()=>{});
       // Create new
       const id=genConvId();
       setActiveConvId(id);
       chatHistory=[];
+      clearCompaction();
       setChat([]);
       await ConvDB.save(id,[]).catch(()=>{});
       renderChat();
@@ -1681,14 +1853,24 @@
       if(id===getActiveConvId())return;
       // Flush auto-save for current conversation before switching
       await ObsidianSync.flush().catch(()=>{});
-      // Save current
+      // Save current (including compaction state)
       const curId=getActiveConvId();
-      if(curId)await ConvDB.save(curId,chatHistory).catch(()=>{});
+      if(curId){
+        const curComp=getCompaction();
+        await ConvDB.save(curId,chatHistory).catch(()=>{});
+        if(curComp){
+          const curRec=await ConvDB.get(curId).catch(()=>null);
+          if(curRec){curRec.compaction=curComp;const db=await ConvDB.open();await new Promise((r,j)=>{const tx=db.transaction('conversations','readwrite');tx.objectStore('conversations').put(curRec);tx.oncomplete=()=>r();tx.onerror=()=>j(tx.error)}).catch(()=>{})}
+        }
+      }
       // Load target
       const record=await ConvDB.get(id).catch(()=>null);
       setActiveConvId(id);
       chatHistory=record?.messages||[];
-      localStorage.setItem('tc-chat',JSON.stringify(chatHistory));
+      // Restore compaction state
+      if(record?.compaction)setCompaction(record.compaction);
+      else clearCompaction();
+      localStorage.setItem('tc-chat',JSON.stringify(chatHistory.slice(-100)));
       renderChat();
       if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
       updateConvTitle(record?.title||'New Chat');
@@ -1889,6 +2071,20 @@
       renderAgentSelector();
       chatHistory=getChat();
       renderChat();
+      // Restore full history + compaction from IndexedDB (async, enhances localStorage snapshot)
+      const activeId=getActiveConvId();
+      if(activeId){
+        ConvDB.get(activeId).then(record=>{
+          if(record?.messages?.length>chatHistory.length){
+            chatHistory=record.messages;
+            if(record.compaction)setCompaction(record.compaction);
+            renderChat();
+            if(typeof updateHeartbeatBpm==='function')updateHeartbeatBpm();
+          } else if(record?.compaction){
+            setCompaction(record.compaction);
+          }
+        }).catch(()=>{});
+      }
       // Auto-provision TealClaw public gateway token if no agents configured
       const existingAgents=getAgents();
       if(existingAgents.length===0){
@@ -2124,10 +2320,13 @@
 
     // ── Heartbeat BPM (context-aware) ───────────────
     // Resting: 60 BPM (0 messages). Marathon: 180 BPM (~300+ messages)
+    // Uses effective (un-compacted) message count — BPM drops after compaction
     function calcHeartbeatBpm(){
-      const msgs=chatHistory.length;
+      const comp=getCompaction();
+      const start=comp?.compactedUpTo||0;
+      const msgs=chatHistory.length-start;
       const MIN_BPM=60,MAX_BPM=180,MAX_MSGS=300;
-      const ratio=Math.min(msgs/MAX_MSGS,1);
+      const ratio=Math.min(Math.max(msgs,0)/MAX_MSGS,1);
       // Ease-in curve so it accelerates as context fills
       return Math.round(MIN_BPM+(MAX_BPM-MIN_BPM)*ratio*ratio);
     }
@@ -2784,7 +2983,7 @@
         closeSheet();openExportModal();
       });
       $('sheetBody').querySelector('#sheetClearChat')?.addEventListener('click',()=>{
-        chatHistory=[];setChat([]);renderChat();closeSheet();showToast('Chat cleared','ok');
+        chatHistory=[];clearCompaction();setChat([]);renderChat();closeSheet();showToast('Chat cleared','ok');
       });
       $('sheetBody').querySelector('#sheetShareEncrypted')?.addEventListener('click',()=>{
         closeSheet();generateEncryptedLink();
@@ -2813,7 +3012,7 @@
         const logo=document.querySelector('.logo');if(logo){const img=logo.querySelector('img');if(img)img.src='/icon-192.png'}
         const titleEl2=document.querySelector('#convTitleText');if(titleEl2)titleEl2.textContent='TealClaw';
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#0d9488');
-        updateStatus();chatHistory=[];setChat([]);renderChat();closeSheet();
+        updateStatus();chatHistory=[];clearCompaction();setChat([]);renderChat();closeSheet();
         setTimeout(()=>runOnboarding(),300);showToast('Reset complete','ok');
       });
 
@@ -3503,7 +3702,15 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       if(chatHistory.length===0){/* onboarding will fill this */return}
       const ck=getK();
       const hasTts=hasTTS(ck)&&ttsMode!=='off';
+      const comp=getCompaction();
+      const compactedUpTo=comp?.compactedUpTo||0;
       s.innerHTML=chatHistory.map((m,i)=>{
+        // Insert compaction divider between compacted and recent messages
+        let divider='';
+        if(comp&&i===compactedUpTo){
+          divider=`<div class="chat-compaction-divider" onclick="showCompactionSummary()"><span>Earlier conversation summarized &bull; ${comp.msgCount||compactedUpTo} messages</span></div>`;
+        }
+        const isCompacted=comp&&i<compactedUpTo;
         const displayText=(m.rawText&&m._showRaw)?m.rawText:m.text;
         let content='';
         if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
@@ -3547,9 +3754,9 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const digestBtn=(m.rawText&&m.rawText!==m.text)?` <button class="digest-toggle" onclick="toggleDigest(${i})">${m._showRaw?'View summary':'View original'}</button>`:'';
         const metaHtml=`<div class="chat-meta"><span>${m.time||''}</span>${deviceBadge}${digestBtn}${fmtTokens(m.usage)}</div>`;
         if(avatarUrl){
-          return `<div class="chat-bubble-wrap ${m.role}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${actionsHtml}${content}${metaHtml}</div></div>`;
+          return divider+`<div class="chat-bubble-wrap ${m.role}${isCompacted?' compacted':''}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${actionsHtml}${content}${metaHtml}</div></div>`;
         }
-        return `<div class="chat-bubble ${m.role}" data-msg-idx="${i}">${actionsHtml}${content}${metaHtml}</div>`;
+        return divider+`<div class="chat-bubble ${m.role}${isCompacted?' compacted':''}" data-msg-idx="${i}">${actionsHtml}${content}${metaHtml}</div>`;
       }).join('');
 
       // Wrap code blocks with copy button
@@ -3796,6 +4003,7 @@ Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /
 GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
 Inline media: your responses support full markdown rendering. Use ![alt](url) for inline images, ![audio](url.mp3) for inline audio players, ![video](url.mp4) for inline video players. Use [download:filename.ext](url) for download buttons. All render natively in the chat — no plugins needed.
 File generation: to produce a downloadable file, use \`\`\`tc-action\n{"type":"file","filename":"notes.md","content":"# My Notes\\n\\nContent here...","mime":"text/markdown"}\n\`\`\` Supported: .md, .json, .csv, .txt, .html. The file appears as a styled download card in chat. Use this when users ask for exports, reports, templates, or any generated document.
+Context compaction: TealClaw automatically summarizes older messages so you retain awareness of the full conversation even in long chats. Sticky facts (name, preferences, decisions) persist across compaction rounds. If you see a [Memory] section in the system prompt, those are facts extracted from earlier in this conversation.
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey), or mode. Those are owner-controlled only.`;
 
     function buildSysPrompt(k){
@@ -3807,6 +4015,11 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
         const conn=agentConnections.get(activeAgent.id);
         const connected=conn&&conn.connected;
         prompt+=`\n[Agent Status] Gateway agent "${activeAgent.name||activeAgent.id}" is ${connected?'CONNECTED and active':'DISCONNECTED'}. ${connected?'You are primarily a relay — route user questions through the gateway agent. Use your Groq capabilities (voice transcription, TTS, /research, /imagine) to enhance the experience, but let the gateway agent handle reasoning and complex tasks. When summarizing agent responses for TTS, keep it natural and concise.':'The gateway agent is offline. You are the primary responder — answer questions directly using Groq compound models.'}`;
+      }
+      // Inject sticky facts from context compaction
+      const comp=getCompaction();
+      if(comp?.stickyFacts){
+        prompt+=`\n[Memory] Key facts from this conversation:\n${comp.stickyFacts}`;
       }
       return prompt;
     }
@@ -3828,11 +4041,8 @@ IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), AP
 
       const sys=buildSysPrompt(k);
 
-      // Build messages with conversation history
-      const ctxLimit=k.contextMessages||100;
-      const histMsgs=chatHistory.slice(-ctxLimit).filter(m=>m.role==='user'||m.role==='ai').map(m=>({
-        role:m.role==='user'?'user':'assistant',content:m.text
-      }));
+      // Build messages with conversation history (compaction-aware)
+      const histMsgs=buildContextMessages();
 
       let userContent;
       if(imageBase64){
@@ -6848,8 +7058,7 @@ Rules:
       const url='https://api.groq.com/openai/v1/chat/completions';
       let model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.aiModel||'groq/compound-mini');
       const sys=buildSysPrompt(k);
-      const ctxLimit=k.contextMessages||100;
-      const histMsgs=chatHistory.slice(-ctxLimit).filter(m=>m.role==='user'||m.role==='ai').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
+      const histMsgs=buildContextMessages();
       let userContent=imageBase64?[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}]:userText;
       const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
       let maxTok=k.maxTokens||(k.skillContext===false?400:1024);if(maxTok>8192)maxTok=8192;
@@ -6994,6 +7203,7 @@ Rules:
             if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);evictTTSCache();setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
           playReceiveSound();haptic('receive');renderQuickReplies();
+          triggerCompactionCheck();
         }catch(e){
           chatHistory[streamIdx].text=`Error: ${e.message}`;setChat(chatHistory);renderChat();
           showToast(e.message,'err');haptic('error');
@@ -7056,6 +7266,7 @@ Rules:
             if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);evictTTSCache();setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
           playReceiveSound();haptic('receive');renderQuickReplies();
+          triggerCompactionCheck();
         }catch(e){
           chatHistory[streamIdx].text=`Error: ${e.message}`;setChat(chatHistory);renderChat();
           showToast(e.message,'err');haptic('error');
@@ -7152,6 +7363,7 @@ Rules:
           // Auto-detect and apply TealClaw config in AI response
           detectAndApplyConfig(displayText);
           playReceiveSound();haptic('receive');renderQuickReplies();
+          triggerCompactionCheck();
         }catch(e){
           removeTyping();stopTypeReveal();
           addBubble('ai',`Error: ${e.message}`);
@@ -7390,7 +7602,7 @@ ${agentNote}`);
           showToast('All conversations cleared','ok');return;
         }
         if(cmd==='/clear'||cmd==='/restart'){
-          chatHistory=[];setChat([]);renderChat();
+          chatHistory=[];clearCompaction();setChat([]);renderChat();
           sysBubble('<p>Context cleared. Starting fresh.</p>');
           showToast('Chat cleared','ok');return;
         }
