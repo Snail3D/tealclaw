@@ -10570,16 +10570,17 @@ ${agentNote}`);
         pip.classList.add('active');
         drawGestureWireframe(null,false);
 
-        const conf=getK().gestureConfidence||0.5;
-        gestureHands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
-        gestureHands.setOptions({
-          maxNumHands:1,
-          modelComplexity:0,
-          minDetectionConfidence:conf,
-          minTrackingConfidence:0.5
-        });
-
-        // PiP shows via .active class from CSS
+        // Reuse existing Hands instance if available (WASM doesn't handle re-init well)
+        if(!gestureHands){
+          const conf=getK().gestureConfidence||0.5;
+          gestureHands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
+          gestureHands.setOptions({
+            maxNumHands:1,
+            modelComplexity:0,
+            minDetectionConfidence:conf,
+            minTrackingConfidence:0.5
+          });
+        }
 
         gestureHands.onResults(results=>{
           if(results.multiHandLandmarks&&results.multiHandLandmarks.length>0){
