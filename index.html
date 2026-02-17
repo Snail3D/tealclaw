@@ -577,6 +577,16 @@
     .guest-passphrase{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-card);border:1.5px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:15px;letter-spacing:2px;color:var(--teal);cursor:pointer;user-select:all;margin-bottom:8px;justify-content:center;font-weight:600}
     .guest-link-url{display:block;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);font-size:10px;font-family:var(--mono);color:var(--text-2);word-break:break-all;cursor:pointer;user-select:all;margin-bottom:8px;max-height:60px;overflow-y:auto}
     .guest-qr{display:flex;justify-content:center;margin:12px 0}
+    .gm-copy-btn{width:100%;padding:12px;font-size:13px;font-weight:600;font-family:var(--font);border:1.5px solid var(--teal);border-radius:var(--r-md);background:transparent;color:var(--teal);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+    .gm-copy-btn:hover{background:var(--teal);color:#fff}
+    .gm-copy-btn svg{width:14px;height:14px}
+    .gm-reveal-btn{width:100%;padding:10px;font-size:12px;font-weight:600;font-family:var(--font);border:1.5px dashed var(--warn);border-radius:var(--r-md);background:transparent;color:var(--warn);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+    .gm-reveal-btn:hover{background:rgba(245,158,11,0.1)}
+    .gm-reveal-btn svg{width:14px;height:14px}
+    .gm-pass-reveal{text-align:center;animation:fade-in 0.2s ease-out}
+    .gm-pass-reveal .guest-passphrase{margin-bottom:4px}
+    .gm-pass-timer{font-size:9px;color:var(--text-3);margin-top:2px}
+    @keyframes fade-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
     .gm-cmd-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
     .gm-cmd-label{width:35%!important;flex-shrink:0}
     .gm-cmd-msg{flex:1!important}
@@ -3573,41 +3583,69 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     function showGuestShareView(url,passphrase,name,supplementBlob){
       const card=$('guestModalCard');
       const supHtml=supplementBlob?`
-        <div class="gm-field">
-          <label>Command Config (paste into guest chat once)</label>
-          <div class="guest-supplement" id="gmSupBlob">TCCFG:${supplementBlob}</div>
-        </div>
-        <div style="font-size:10px;color:var(--warn);text-align:center;margin:4px 0">Link was too large for QR. Send this config separately — guest pastes it once to unlock commands.</div>
+        <button class="gm-copy-btn" id="gmSupCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Command Config</button>
+        <div style="font-size:10px;color:var(--warn);text-align:center;margin:4px 0 12px">Link was too large for QR. Send this config separately — guest pastes it once to unlock commands.</div>
       `:'';
       card.innerHTML=`
         <h3>Guest Link Created</h3>
-        <div class="gm-sub">Share this link and passphrase with ${esc(name)}</div>
-        <div class="gm-field">
-          <label>Link (click to copy)</label>
-          <div class="guest-link-url" id="gmLinkUrl">${esc(url)}</div>
+        <div class="gm-sub">Share link and passphrase separately with ${esc(name)}</div>
+        <button class="gm-copy-btn" id="gmCopyLink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copy Link</button>
+        <div id="gmPassArea">
+          <button class="gm-reveal-btn" id="gmRevealBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Reveal Passphrase</button>
         </div>
-        <div class="gm-field">
-          <label>Passphrase (click to copy)</label>
-          <div class="guest-passphrase" id="gmPassphrase">${esc(passphrase)}</div>
-        </div>
-        <div style="font-size:10px;color:var(--warn);text-align:center;margin:8px 0">Share the passphrase separately from the link for security</div>
         ${supHtml}
         <div class="guest-qr"><div id="gmQrTarget"></div></div>
+        <div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:4px">QR contains link only — passphrase must be shared separately</div>
         <button class="gm-create-btn" id="gmDoneBtn" style="margin-top:12px">Done</button>
       `;
 
-      // Copy handlers
-      $('gmLinkUrl').addEventListener('click',()=>{
-        navigator.clipboard.writeText(url).then(()=>showToast('Link copied','ok')).catch(()=>showToast('Copy failed','err'));
+      // Copy link
+      $('gmCopyLink').addEventListener('click',()=>{
+        navigator.clipboard.writeText(url).then(()=>{
+          $('gmCopyLink').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+          setTimeout(()=>{$('gmCopyLink').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copy Link'},2000);
+          showToast('Link copied','ok');
+        }).catch(()=>showToast('Copy failed','err'));
       });
-      $('gmPassphrase').addEventListener('click',()=>{
-        navigator.clipboard.writeText(passphrase).then(()=>showToast('Passphrase copied','ok')).catch(()=>showToast('Copy failed','err'));
-      });
+
+      // Reveal passphrase (auto-hides after 10s)
+      function revealPass(){
+        const area=$('gmPassArea');
+        area.innerHTML=`
+          <div class="gm-pass-reveal">
+            <div class="guest-passphrase" id="gmPassphrase">${esc(passphrase)}</div>
+            <button class="gm-copy-btn" id="gmCopyPass" style="margin-top:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Passphrase</button>
+            <div class="gm-pass-timer" id="gmPassTimer">Hiding in 10s</div>
+          </div>
+        `;
+        $('gmCopyPass').addEventListener('click',()=>{
+          navigator.clipboard.writeText(passphrase).then(()=>showToast('Passphrase copied','ok')).catch(()=>showToast('Copy failed','err'));
+        });
+        let sec=10;
+        const timer=setInterval(()=>{
+          sec--;
+          const el=$('gmPassTimer');
+          if(el)el.textContent='Hiding in '+sec+'s';
+          if(sec<=0){
+            clearInterval(timer);
+            hidePass();
+          }
+        },1000);
+      }
+      function hidePass(){
+        const area=$('gmPassArea');
+        area.innerHTML='<button class="gm-reveal-btn" id="gmRevealAgain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Reveal Passphrase</button>';
+        $('gmRevealAgain').addEventListener('click',revealPass);
+      }
+      $('gmRevealBtn').addEventListener('click',revealPass);
+
+      // Supplement config copy
       if(supplementBlob){
-        $('gmSupBlob').addEventListener('click',()=>{
+        $('gmSupCopy').addEventListener('click',()=>{
           navigator.clipboard.writeText('TCCFG:'+supplementBlob).then(()=>showToast('Config copied','ok')).catch(()=>showToast('Copy failed','err'));
         });
       }
+
       $('gmDoneBtn').addEventListener('click',()=>{
         closeGuestModal();
         renderSheetContent();
