@@ -3476,6 +3476,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <textarea class="gm-input" id="gmInstructions" placeholder="What can they do? (e.g. Manage calendar, ask questions)" rows="3">${esc(prefill?.instructions||'')}</textarea>
         </div>
         <div class="gm-field">
+          <label>Passphrase <span style="font-weight:400;color:var(--text-3)">(leave blank to auto-generate)</span></label>
+          <input class="gm-input" id="gmPass" type="text" placeholder="Custom passphrase or leave blank for random" value="" maxlength="40" autocomplete="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:1px">
+        </div>
+        <div class="gm-field">
           <label>Passphrase Hint</label>
           <input class="gm-input" id="gmHint" type="text" placeholder="Hint shown on lock screen (e.g. &quot;Ask Sarah for the code&quot;)" value="${esc(prefill?.hint||'')}" maxlength="80">
         </div>
@@ -3585,8 +3589,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       };
       if(commands.length){payload.cmd=commands;payload.cmdCost=cmdCost}
 
-      // Encrypt
-      const passphrase=generatePassphrase();
+      // Encrypt — use custom passphrase if provided, otherwise auto-generate
+      const customPass=$('gmPass')?.value?.trim();
+      const passphrase=customPass||generatePassphrase();
       const json=JSON.stringify(payload);
       const blob=await encryptConfig(json,passphrase);
 

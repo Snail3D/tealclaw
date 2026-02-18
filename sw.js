@@ -1,4 +1,4 @@
-const CACHE = 'tealclaw-v148';
+const CACHE = 'tealclaw-v149';
 const ASSETS = ['/', '/index.html', '/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png'];
 
 self.addEventListener('install', e => {
