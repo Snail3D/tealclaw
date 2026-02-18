@@ -620,6 +620,13 @@
     .chat-bubble.system{align-self:center;text-align:center;background:var(--teal-dim);color:var(--text-2);font-size:12px;max-width:90%;border-radius:12px;padding:10px 18px;margin:8px auto}
     .chat-scroll.locked{opacity:0.5;pointer-events:none}
 
+    /* ── BLE Full Lockdown ─────────────────────────────── */
+    body.ble-locked .chat-scroll{filter:blur(12px);pointer-events:none;user-select:none}
+    body.ble-locked .input-bar{pointer-events:none;opacity:0.3}
+    body.ble-locked .topbar .icon-btn{pointer-events:none;opacity:0.3}
+    body.ble-locked .sheet{transform:translateY(100%)!important}
+    body.ble-locked .sheet-backdrop{opacity:0!important;pointer-events:none!important}
+
     /* ── Typing Animation ──────────────────────────────── */
     .typing-cursor{display:inline-block;width:2px;height:1.1em;background:var(--teal);margin-left:1px;vertical-align:text-bottom;border-radius:1px;animation:cursor-blink 0.7s step-end infinite}
     @keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
@@ -2715,7 +2722,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     // ── Bottom Sheet ───────────────────────────────────
     const sheetBackdrop=$('sheetBackdrop'), settingsSheet=$('settingsSheet');
 
-    function openSheet(){settingsSheet.classList.add('open');sheetBackdrop.classList.add('open');renderSheetContent()}
+    function openSheet(){if(document.body.classList.contains('ble-locked')){showToast('BLE beacon required','err');return}settingsSheet.classList.add('open');sheetBackdrop.classList.add('open');renderSheetContent()}
     function closeSheet(){settingsSheet.classList.remove('open');sheetBackdrop.classList.remove('open')}
 
     // Long-press settings gear → Motion & Alarms modal; normal tap → settings sheet
@@ -3070,14 +3077,15 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           </div>`;
         if(blePaired){
           const dotColor=bleConnected?'var(--ok)':'var(--err, #e74c3c)';
-          const statusText=bleConnected?'Connected':'Disconnected';
+          const statusText=bleConnected?'Connected':'Waiting for beacon...';
           html+=`<div style="margin-top:10px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;gap:8px">
             <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;font-weight:500;color:var(--text-1)">${esc(bleName)}</div>
               <div style="font-size:10px;color:var(--text-3)">${statusText}</div>
             </div>
-            <button class="btn" id="bleUnpairBtn" style="font-size:11px;padding:4px 10px;background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer">Unpair</button>
+            ${bleConnected?`<button class="btn" id="bleChangeBtn" style="font-size:11px;padding:4px 10px;background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer">Change</button>
+            <button class="btn" id="bleUnpairBtn" style="font-size:11px;padding:4px 10px;background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer">Unpair</button>`:''}
           </div>`;
         }else{
           html+=`<div style="margin-top:8px"><button class="btn btn-teal" id="blePairBtn" style="width:100%;padding:10px;font-size:12px;font-weight:600">Pair BLE Beacon</button></div>`;
@@ -3366,6 +3374,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         showToast(on?'BLE gate enabled':'BLE gate disabled','ok');
       }));
       $('sheetBody').querySelector('#blePairBtn')?.addEventListener('click',async()=>{
+        await blePairDevice();
+        renderSheetContent();
+      });
+      $('sheetBody').querySelector('#bleChangeBtn')?.addEventListener('click',async()=>{
         await blePairDevice();
         renderSheetContent();
       });
@@ -11902,6 +11914,8 @@ ${agentNote}`);
         k.bleDeviceId=device.id;
         k.bleDeviceName=device.name||'BLE Device';
         setK(k);
+        document.body.classList.remove('ble-locked');
+        $('textIn').disabled=false;$('textIn').placeholder='';
         showToast(`Paired: ${k.bleDeviceName}`,'ok');
         updateStatus();
         if(typeof renderSheetContent==='function'){try{renderSheetContent()}catch(e){}}
@@ -11918,14 +11932,19 @@ ${agentNote}`);
       const k=getK();
       delete k.bleEnabled;delete k.bleDeviceId;delete k.bleDeviceName;
       setK(k);
+      document.body.classList.remove('ble-locked');
+      $('textIn').disabled=false;$('textIn').placeholder='';
       updateStatus();
       showToast('BLE beacon unpaired','ok');
     }
 
     function _onBleDisconnect(){
       bleConnected=false;
-      showToast('BLE beacon lost — messaging locked','err');
-      addSystemBubble('BLE beacon disconnected. Messaging is locked until the beacon is back in range.');
+      document.body.classList.add('ble-locked');
+      closeSheet();
+      $('textIn').disabled=true;$('textIn').placeholder='BLE beacon required...';
+      showToast('BLE beacon lost — locked','err');
+      addSystemBubble('BLE beacon disconnected. App locked until beacon reconnects.');
       updateStatus();
       _bleScheduleReconnect();
     }
@@ -11943,8 +11962,10 @@ ${agentNote}`);
         bleConnected=true;
         saved.addEventListener('gattserverdisconnected',_onBleDisconnect);
         if(_bleReconnectTimer){clearInterval(_bleReconnectTimer);_bleReconnectTimer=null}
+        document.body.classList.remove('ble-locked');
+        $('textIn').disabled=false;$('textIn').placeholder='';
         showToast('BLE beacon reconnected','ok');
-        addSystemBubble('BLE beacon reconnected. Messaging unlocked.');
+        addSystemBubble('BLE beacon reconnected. App unlocked.');
         updateStatus();
       }catch(e){/* retry next tick */}
     }
@@ -11956,6 +11977,8 @@ ${agentNote}`);
 
     function initBleGate(){
       if(!bleSupported()||!bleGateActive())return;
+      document.body.classList.add('ble-locked');
+      $('textIn').disabled=true;$('textIn').placeholder='BLE beacon required...';
       _bleAttemptReconnect();
       _bleScheduleReconnect();
     }
