@@ -368,6 +368,11 @@
     .send-btn.hidden{display:none}
     .stop-stream-btn{background:#e04040;color:#fff} .stop-stream-btn:hover{background:#c53030}
     .stop-stream-btn.hidden{display:none}
+    .debate-skip-wrap{display:flex;justify-content:flex-end;max-width:760px;margin:8px auto 0}
+    .debate-skip-wrap.hidden{display:none}
+    .debate-skip-btn{padding:7px 14px;border:1px solid rgba(239,68,68,0.35);border-radius:999px;background:rgba(239,68,68,0.12);color:#ef4444;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all var(--t)}
+    .debate-skip-btn:hover{background:rgba(239,68,68,0.2);border-color:#ef4444}
+    .debate-skip-btn:disabled{opacity:0.6;cursor:default}
     .send-btn.claw-active{background:#e04040;animation:claw-pulse 2s ease-in-out infinite}
     @keyframes claw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,64,64,0.4)}50%{box-shadow:0 0 0 8px rgba(224,64,64,0)}}
     .claw-wrap{position:relative;flex-shrink:0}
@@ -1454,6 +1459,9 @@
         <button class="circle-btn stop-stream-btn hidden" id="stopStreamBtn" title="Stop generating">
           <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
         </button>
+      </div>
+      <div class="debate-skip-wrap hidden" id="debateSkipWrap">
+        <button class="debate-skip-btn" id="debateSkipBtn" type="button" title="Skip to final debate output">Skip to end</button>
       </div>
       <div class="quick-replies" id="quickReplies" style="display:none"></div>
       <div class="input-hint" id="inputHint"></div>
@@ -9307,23 +9315,81 @@ FORMAT — use EXACTLY this structure. Each line MUST start with [UPPERCASE_NAME
 CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VERA] [DIANE]. Each on its own line. No markdown headers, no bold, no intro text, no numbering. Start directly with the first [SPEAKER] line.`+TC_CORE_POLICY;
 
     let _debateActive=false;
+    let _debateSkipRequested=false;
+    let _debateSleepCancel=null;
+    let _debateAbortCtrl=null;
+
+    function setDebateSkipUI(active,working){
+      const wrap=$('debateSkipWrap');
+      const btn=$('debateSkipBtn');
+      if(wrap)wrap.classList.toggle('hidden',!active);
+      if(btn){
+        btn.disabled=!!working;
+        btn.textContent=working?'Skipping...':'Skip to end';
+      }
+    }
+
+    function debateSleep(ms){
+      if(_debateSkipRequested)return Promise.resolve();
+      return new Promise(resolve=>{
+        let settled=false;
+        let cancelFn=null;
+        const done=()=>{
+          if(settled)return;
+          settled=true;
+          if(_debateSleepCancel===cancelFn)_debateSleepCancel=null;
+          resolve();
+        };
+        const t=setTimeout(done,ms);
+        cancelFn=()=>{clearTimeout(t);done()};
+        _debateSleepCancel=cancelFn;
+      });
+    }
+
+    function requestDebateSkip(){
+      if(!_debateActive||_debateSkipRequested)return;
+      _debateSkipRequested=true;
+      setDebateSkipUI(true,true);
+      stopTTSPlayback();
+      if(_debateSleepCancel)_debateSleepCancel();
+    }
+
+    function resetDebateState(){
+      _debateActive=false;
+      _debateSkipRequested=false;
+      if(_debateSleepCancel)_debateSleepCancel();
+      _debateSleepCancel=null;
+      _debateAbortCtrl=null;
+      setDebateSkipUI(false,false);
+    }
+
+    $('debateSkipBtn')?.addEventListener('click',requestDebateSkip);
+
     async function handleDebateCommand(topic,source){
       if(_debateActive){showToast('Debate already in progress','err');return}
       _debateActive=true;
+      _debateSkipRequested=false;
+      setDebateSkipUI(true,false);
       const k=getK();
       const key=k.whisperKey||k.aiKey;
-      if(!key){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');_debateActive=false;return}
+      if(!key){
+        sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');
+        resetDebateState();
+        return;
+      }
       addBubble('user','/debate '+topic);
       if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
       addTyping();
       try{
+        _debateAbortCtrl=new AbortController();
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
           headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
           body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[
             {role:'system',content:DEBATE_PROMPT},
             {role:'user',content:`Topic: ${topic}`}
-          ],temperature:0.7,max_tokens:1200})
+          ],temperature:0.7,max_tokens:1200}),
+          signal:_debateAbortCtrl.signal
         });
         removeTyping();
         if(!res.ok)throw new Error(`API ${res.status}`);
@@ -9342,19 +9408,21 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
 
         // Progressive reveal: show each speaker one at a time
         const segments=parseGroupResponse(reply);
-        const chatIdx=chatHistory.length;
+        let bubbleIdx=null;
         let revealedText='';
         const doTTS=ttsMode==='auto'&&hasTTS(k);
         const scroll=$('chatScroll');
 
         for(let i=0;i<segments.length;i++){
+          if(_debateSkipRequested)break;
           const seg=segments[i];
           revealedText+=(i>0?'\n':'')+`[${seg.speaker}] ${seg.text}`;
 
-          if(i===0){
+          if(bubbleIdx===null){
             addBubble('ai',revealedText);
+            bubbleIdx=chatHistory.length-1;
           } else {
-            chatHistory[chatIdx].text=revealedText;
+            chatHistory[bubbleIdx].text=revealedText;
             setChat(chatHistory);renderChat();
           }
           if(!_userIsTouching)_userScrolledUp=false;
@@ -9368,26 +9436,34 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
               const wavData=await speakGroq(cleanText,segK);
               if(wavData){
                 await new Promise(resolve=>{
+                  let done=false;
+                  const finish=()=>{if(done)return;done=true;resolve()};
                   const blob=ttsBlob(wavData);
                   const url=URL.createObjectURL(blob);
                   audio.src=url;audio.volume=getConfiguredVolume();
-                  audio.onended=()=>{URL.revokeObjectURL(url);hideStopTTS();activeTTSSource=null;activeTTSGain=null;resolve()};
-                  audio.onerror=()=>resolve();
-                  activeTTSSource={stop(){audio.pause();audio.currentTime=0;resolve()}};
+                  audio.onended=()=>{URL.revokeObjectURL(url);hideStopTTS();activeTTSSource=null;activeTTSGain=null;finish()};
+                  audio.onerror=finish;
+                  activeTTSSource={stop(){audio.pause();audio.currentTime=0;finish()}};
                   showStopTTS();
-                  audio.play().catch(()=>resolve());
+                  audio.play().catch(finish);
                 });
               }
             }catch(e){console.warn('Debate TTS segment error:',e)}
           } else {
             // No TTS — pause between segments so they don't dump all at once
-            await new Promise(r=>setTimeout(r,1200));
+            await debateSleep(1200);
           }
         }
 
-        // Ensure final complete text is stored
-        chatHistory[chatIdx].text=reply;
-        setChat(chatHistory);renderChat();
+        // Ensure final complete text is stored once (skip fast-forwards here)
+        if(bubbleIdx===null){
+          addBubble('ai',reply);
+        } else {
+          chatHistory[bubbleIdx].text=reply;
+          setChat(chatHistory);renderChat();
+        }
+        if(!_userIsTouching)_userScrolledUp=false;
+        smoothScrollToBottom(scroll,300);
         playReceiveSound();haptic('receive');
 
         // Notify agent if debate was triggered by agent
@@ -9400,9 +9476,10 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
         }
       }catch(e){
         removeTyping();
-        sysBubble(`<p>Debate error: ${esc(e.message)}</p>`);
+        if(e?.name!=='AbortError')sysBubble(`<p>Debate error: ${esc(e.message)}</p>`);
+      }finally{
+        resetDebateState();
       }
-      _debateActive=false;
     }
 
     // ── /alarm & /timer AI Parsers ─────────────────────
