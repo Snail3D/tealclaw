@@ -292,6 +292,8 @@
     .chat-bubble.ai{background:var(--ai-bg);margin-right:auto;border-bottom-left-radius:6px;border:none;color:var(--ai-text,var(--text));position:relative}
     .chat-bubble .chat-meta{font-size:10px;color:var(--text-3);margin-top:6px;font-family:var(--mono);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .chat-meta .token-info{opacity:0.7;cursor:help}
+    .chat-provider-tag{font-size:8px;background:var(--teal-dim);color:var(--teal);padding:1px 6px;border-radius:100px;border:1px solid rgba(13,148,136,0.25);text-transform:uppercase;letter-spacing:0.04em}
+    .chat-provider-tag.agent{background:rgba(59,130,246,0.15);color:#60a5fa;border-color:rgba(96,165,250,0.35)}
     .chat-bubble .chat-img{max-width:100%;max-height:200px;border-radius:var(--r-sm);margin-bottom:6px;display:block}
     .tts-stop-btn{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:600;display:flex;align-items:center;gap:6px;padding:10px 24px;background:var(--err);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);transition:opacity 0.2s}
     .tts-stop-btn.hidden{display:none}
@@ -2570,11 +2572,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         if(ag?.url&&ag?.token)ensureAgentConnection(ag);
         setK(k);
       } else {
-        // Switch to direct mode (Groq)
+        // Switch to direct mode (Groq) but keep WS alive for inbound agent replies
         k.mode='direct';
         k.aiProvider='groq';
-        // Disconnect any agent WS
-        for(const [aid] of agentConnections)disconnectAgent(aid);
+        const active=getAgents().find(a=>a.active)||getAgents()[0];
+        if(active?.url&&active?.token)ensureAgentConnection(active);
         setK(k);
       }
       updateStatus();
@@ -4465,9 +4467,10 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const delBtn=`<button class="chat-action-btn del-msg-btn" data-idx="${i}" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>`;
         const actionsHtml=`<div class="chat-actions"><button class="chat-action-btn share-msg-btn" data-idx="${i}" title="Share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>${editBtn}${delBtn}${obsBtn}</div>`;
         const avatarUrl=m.role==='user'?ck.userAvatar:ck.aiAvatar;
+        const providerBadge=m.providerTag?`<span class="chat-provider-tag ${m.providerType==='agent'?'agent':''}">${esc(m.providerTag)}</span>`:'';
         const deviceBadge=m.device?`<span style="font-size:8px;background:var(--bg-2);padding:1px 5px;border-radius:100px;color:var(--text-3);margin-left:4px">${esc(m.device)}</span>`:'';
         const digestBtn=(m.rawText&&m.rawText!==m.text)?` <button class="digest-toggle" onclick="toggleDigest(${i})">${m._showRaw?'View summary':'View original'}</button>`:'';
-        const metaHtml=`<div class="chat-meta"><span>${m.time||''}</span>${deviceBadge}${digestBtn}${fmtTokens(m.usage)}</div>`;
+        const metaHtml=`<div class="chat-meta"><span>${m.time||''}</span>${providerBadge}${deviceBadge}${digestBtn}${fmtTokens(m.usage)}</div>`;
         if(avatarUrl){
           return divider+`<div class="chat-bubble-wrap ${m.role}${isCompacted?' compacted':''}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${actionsHtml}${content}${metaHtml}</div></div>`;
         }
@@ -4897,6 +4900,47 @@ RULES:
 
     // ── OpenClaw WebSocket Transport ─────────────────────
     const agentConnections=new Map(); // agentId → OpenClawWS
+    const _localAgentRunIds=new Set();
+    let _localAgentInflight=0;
+    const _agentInboxBuffers=new Map(); // `${agentId}:${runId}` → latest text chunk
+
+    function chatPayloadText(msg){
+      if(!msg)return '';
+      if(typeof msg==='string')return msg;
+      if(Array.isArray(msg.content))return msg.content.map(c=>c?.text||'').join('');
+      return msg.content||msg.text||'';
+    }
+
+    function agentBadgeLabel(agentId){
+      const ag=getAgents().find(a=>a.id===agentId);
+      const base=(ag?.name||'OpenClaw').trim();
+      return /agent$/i.test(base)?base:`${base} agent`;
+    }
+
+    function handlePassiveAgentReply(payload,conn){
+      if(!payload||!conn)return;
+      if((getK().mode||'direct')==='agent')return; // Active agent mode uses the normal request flow
+      if(payload.runId&&_localAgentRunIds.has(payload.runId))return;
+      if(!payload.runId&&_localAgentInflight>0)return;
+
+      const key=payload.runId?`${conn.agentId}:${payload.runId}`:null;
+      if(payload.state==='delta'){
+        const chunk=chatPayloadText(payload.message);
+        if(key&&chunk)_agentInboxBuffers.set(key,chunk);
+        return;
+      }
+      if(payload.state!=='final'&&payload.state!=='aborted')return;
+
+      let text=chatPayloadText(payload.message);
+      if(!text&&key)text=_agentInboxBuffers.get(key)||'';
+      if(key)_agentInboxBuffers.delete(key);
+      if(!text||!text.trim())return;
+
+      const tag=agentBadgeLabel(conn.agentId);
+      addBubble('ai',text.trim(),{providerTag:tag,providerType:'agent',agentId:conn.agentId,inbound:true});
+      playReceiveSound();haptic('receive');
+      showToast(`${tag} replied`,'ok');
+    }
 
     // ── Device Identity (Ed25519) ─────────────────────
     const _b64url=(buf)=>{const b=btoa(String.fromCharCode(...new Uint8Array(buf)));return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'')};
@@ -5086,10 +5130,8 @@ RULES:
       if(conn)conn.stop();
       conn=new OpenClawWS(agent.url,agent.token,agent.id);
       agentConnections.set(agent.id,conn);
-      // Listen for chat events
-      conn.on('chat',(payload)=>{
-        // Handled by callAgentWS promise flow
-      });
+      // Listen for chat events (including agent-initiated replies while in direct mode)
+      conn.on('chat',(payload)=>{handlePassiveAgentReply(payload,conn)});
       // Listen for agent (builder) events
       conn.on('agent',(payload)=>{handleAgentEvent(payload,conn)});
       // Listen for cross-device sync events
@@ -5131,10 +5173,11 @@ RULES:
       const dev=getDeviceTag();
       // Same-device sync (other tabs)
       _syncChannel?.postMessage({type:'chat-update',deviceId:dev.id});
-      // Cross-device sync via WS (fire-and-forget)
+      // Cross-device sync via WS (fire-and-forget) — only in agent mode
+      const k=getK();
       const agent=getActiveAgent();
       const conn=agent?agentConnections.get(agent.id):null;
-      if(conn?.connected&&msg){
+      if(k.mode==='agent'&&conn?.connected&&msg){
         conn.request('chat.sync',{
           deviceId:dev.id,
           deviceName:dev.name,
@@ -5367,6 +5410,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
     function disconnectAgent(agentId){
       const conn=agentConnections.get(agentId);
       if(conn){conn.stop();agentConnections.delete(agentId)}
+      for(const key of _agentInboxBuffers.keys())if(key.startsWith(agentId+':'))_agentInboxBuffers.delete(key);
       agentContext.agentName='';agentContext.recentEvents=[];
     }
 
@@ -5398,31 +5442,31 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
     // WebSocket-based agent call (OpenClaw protocol)
     async function callAgentWS(conn,text,imageBase64,onToken){
       return new Promise((resolve,reject)=>{
-        let full='',runId=null,usage=null,settled=false,lastActivity=Date.now();
+        let full='',runId=null,usage=null,settled=false,finished=false;
+        _localAgentInflight++;
+        const clearRun=()=>{
+          if(finished)return;
+          finished=true;
+          if(runId)_localAgentRunIds.delete(runId);
+          _localAgentInflight=Math.max(0,_localAgentInflight-1);
+        };
         const onChat=(payload)=>{
-          lastActivity=Date.now();
-          if(!runId&&payload.runId)runId=payload.runId;
+          if(!runId&&payload.runId){runId=payload.runId;_localAgentRunIds.add(runId)}
           if(payload.state==='delta'&&payload.message){
-            // payload.message can be string, {content:string}, or {content:[{type,text}]}
-            const chunk=typeof payload.message==='string'?payload.message:
-              (Array.isArray(payload.message.content)?payload.message.content.map(c=>c.text||'').join(''):(payload.message.content||''));
-            full=chunk;
+            full=chatPayloadText(payload.message);
             if(onToken)onToken(full);
           } else if(payload.state==='final'){
             if(payload.usage)usage={prompt:payload.usage.prompt_tokens||0,completion:payload.usage.completion_tokens||0,total:payload.usage.total_tokens||0,model:'agent'};
-            if(payload.message){
-              const finalText=typeof payload.message==='string'?payload.message:
-                (Array.isArray(payload.message.content)?payload.message.content.map(c=>c.text||'').join(''):(payload.message.content||''));
-              if(finalText&&!full)full=finalText;
-              else if(finalText&&full.length<finalText.length)full=finalText;
-            }
-            settled=true;conn.off('chat',onChat);
+            const finalText=chatPayloadText(payload.message);
+            if(finalText&&!full)full=finalText;
+            else if(finalText&&full.length<finalText.length)full=finalText;
+            settled=true;conn.off('chat',onChat);clearRun();
             resolve({text:full,usage});
           } else if(payload.state==='error'){
-            settled=true;conn.off('chat',onChat);
+            settled=true;conn.off('chat',onChat);clearRun();
             reject(new Error(payload.errorMessage||'Agent error'));
           } else if(payload.state==='aborted'){
-            settled=true;conn.off('chat',onChat);
+            settled=true;conn.off('chat',onChat);clearRun();
             resolve({text:full||'(aborted)',usage:null});
           }
         };
@@ -5430,8 +5474,10 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         // Build message with image if needed
         let msg=text||'';
         if(imageBase64)msg=(text||'What do you see?')+`\n[image attached]`;
-        conn.chatSend(msg,imageBase64?[{type:'image',data:imageBase64}]:undefined).catch(e=>{
-          if(!settled){settled=true;conn.off('chat',onChat);reject(e)}
+        conn.chatSend(msg,imageBase64?[{type:'image',data:imageBase64}]:undefined).then(ack=>{
+          if(!runId&&ack?.runId){runId=ack.runId;_localAgentRunIds.add(runId)}
+        }).catch(e=>{
+          if(!settled){settled=true;conn.off('chat',onChat);clearRun();reject(e)}
         });
         // No timeout — agent reports when done (long-horizon tasks can run indefinitely)
       });
@@ -9495,13 +9541,16 @@ Return ONLY valid JSON, no explanation.`;
 
       const curModel=pk.aiModel||'groq/compound-mini';
       const isCompound=/compound/i.test(curModel);
-      const isAgentMode=pk.mode==='agent'&&getActiveAgent();
+      const activeAgent=getActiveAgent();
+      const isAgentMode=pk.mode==='agent'&&activeAgent;
       const useStream=pk.streamEnabled!==false&&!imageBase64&&!isAgentMode&&!isCompound;
+      const agentMeta={providerTag:agentBadgeLabel(activeAgent?.id),providerType:'agent',agentId:activeAgent?.id};
+      const directMeta={providerTag:'Groq',providerType:'direct'};
 
       if(isAgentMode){
         // Agent mode: route through OpenClaw gateway WebSocket
         const streamIdx=chatHistory.length;
-        addBubble('ai','...');
+        addBubble('ai','...',agentMeta);
         const scroll=$('chatScroll');
         try{
           const aiResult=await callAgent(text,imageBase64,(partial)=>{
@@ -9567,7 +9616,7 @@ Return ONLY valid JSON, no explanation.`;
       } else if(useStream){
         // Streaming mode: show tokens as they arrive with cursor
         const streamIdx=chatHistory.length;
-        addBubble('ai','...');
+        addBubble('ai','...',directMeta);
         const scroll=$('chatScroll');
         try{
           const aiResult=await callAIStream(text,imageBase64,(partial)=>{
@@ -9647,7 +9696,7 @@ Return ONLY valid JSON, no explanation.`;
 </ul>`);
             return;
           }
-          if(!aiText){addBubble('ai','(No response)');return}
+          if(!aiText){addBubble('ai','(No response)',directMeta);return}
 
           // Parse and execute agent actions
           let displayText=aiText;
@@ -9674,7 +9723,7 @@ Return ONLY valid JSON, no explanation.`;
           // Typing animation: reveal character by character, synced to audio if available
           if(pk.typingAnimation!==false){
             const bubbleIdx=chatHistory.length;
-            addBubble('ai','',aiUsage?{usage:aiUsage}:{});
+            addBubble('ai','',{...directMeta,...(aiUsage?{usage:aiUsage}:{})});
             const scroll=$('chatScroll');
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const lastBubble=bubbles[bubbles.length-1];
@@ -9716,6 +9765,7 @@ Return ONLY valid JSON, no explanation.`;
             const extra=audioUrl?{audioUrl}:{};
             if(aiUsage)extra.usage=aiUsage;
             if(executed2)extra.actionsRun=executed2;
+            extra.providerTag=directMeta.providerTag;extra.providerType=directMeta.providerType;
             addBubble('ai',displayText,extra);
           }
           // Auto-detect and apply TealClaw config in AI response
@@ -9724,7 +9774,7 @@ Return ONLY valid JSON, no explanation.`;
           triggerCompactionCheck();
         }catch(e){
           removeTyping();stopTypeReveal();
-          addBubble('ai',`Error: ${e.message}`);
+          addBubble('ai',`Error: ${e.message}`,directMeta);
           showToast(e.message,'err');haptic('error');
         }
       }
