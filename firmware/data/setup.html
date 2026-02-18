@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TealClaw Vault Setup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #171717; color: #e5e5e5;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .card {
+    background: #262626; border-radius: 12px; padding: 2rem;
+    max-width: 420px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  h1 { color: #0d9488; font-size: 1.5rem; margin-bottom: 0.25rem; }
+  .subtitle { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .step { margin-bottom: 1.5rem; }
+  .step-title {
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: #0d9488; margin-bottom: 0.5rem; font-weight: 600;
+  }
+  label { display: block; font-size: 0.85rem; color: #d4d4d4; margin-bottom: 0.25rem; }
+  input, textarea, select {
+    width: 100%; padding: 0.6rem 0.75rem; border-radius: 8px;
+    border: 1px solid #404040; background: #1a1a1a; color: #e5e5e5;
+    font-size: 0.9rem; margin-bottom: 0.75rem; outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #0d9488; }
+  textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+  select { cursor: pointer; }
+  .required::after { content: ' *'; color: #ef4444; }
+  button {
+    width: 100%; padding: 0.75rem; border-radius: 8px; border: none;
+    background: #0d9488; color: #fff; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+  }
+  button:hover { background: #0f766e; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { text-align: center; padding: 0.5rem; border-radius: 6px; margin-top: 0.75rem; font-size: 0.85rem; }
+  .msg.ok { background: #052e16; color: #4ade80; }
+  .msg.err { background: #450a0a; color: #f87171; }
+  .hint { font-size: 0.75rem; color: #737373; margin-top: -0.5rem; margin-bottom: 0.75rem; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>TealClaw Vault</h1>
+  <p class="subtitle">ESP32-S3 Hardware Key Vault — First-Time Setup</p>
+
+  <form id="setupForm">
+    <div class="step">
+      <div class="step-title">1. WiFi (Internet Access)</div>
+      <label for="wifi_ssid">WiFi Network Name</label>
+      <input type="text" id="wifi_ssid" placeholder="Your home/office WiFi" autocomplete="off">
+      <label for="wifi_pass_sta">WiFi Password</label>
+      <input type="password" id="wifi_pass_sta" placeholder="WiFi password" autocomplete="off">
+      <p class="hint">Optional — needed for the ESP32 to reach API servers</p>
+    </div>
+
+    <div class="step">
+      <div class="step-title">2. API Keys</div>
+      <label for="groq_key" class="required">Groq API Key</label>
+      <input type="password" id="groq_key" placeholder="gsk_..." required autocomplete="off">
+      <label for="gemini_key">Google AI (Gemini) Key</label>
+      <input type="password" id="gemini_key" placeholder="AIza..." autocomplete="off">
+      <p class="hint">Gemini key is optional — needed for image generation</p>
+    </div>
+
+    <div class="step">
+      <div class="step-title">3. Preferences</div>
+      <label for="ai_model">Chat Model</label>
+      <input type="text" id="ai_model" value="llama-3.3-70b-versatile" autocomplete="off">
+      <label for="tts_voice">TTS Voice</label>
+      <select id="tts_voice">
+        <option value="tara">Tara</option>
+        <option value="leah">Leah</option>
+        <option value="jess">Jess</option>
+        <option value="leo">Leo</option>
+        <option value="dan">Dan</option>
+        <option value="mara">Mara</option>
+        <option value="zac">Zac</option>
+      </select>
+      <label for="sys_prompt">System Prompt</label>
+      <textarea id="sys_prompt" placeholder="You are a helpful assistant..."></textarea>
+    </div>
+
+    <div class="step">
+      <div class="step-title">4. Device Security</div>
+      <label for="wifi_pass">AP Password</label>
+      <input type="password" id="wifi_pass" placeholder="Min 8 characters" minlength="8" autocomplete="off">
+      <p class="hint">Password for the TealClaw WiFi network (default: tealclaw)</p>
+    </div>
+
+    <button type="submit" id="saveBtn">Save &amp; Start Gateway</button>
+  </form>
+  <div id="msg" class="msg" style="display:none"></div>
+</div>
+
+<script>
+document.getElementById('setupForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  const msg = document.getElementById('msg');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  msg.style.display = 'none';
+
+  const fields = ['wifi_ssid', 'wifi_pass_sta', 'groq_key', 'gemini_key',
+                   'ai_model', 'tts_voice', 'sys_prompt', 'wifi_pass'];
+  const config = {};
+  for (const f of fields) {
+    const v = document.getElementById(f).value.trim();
+    if (v) config[f] = v;
+  }
+
+  if (!config.groq_key) {
+    msg.className = 'msg err';
+    msg.textContent = 'Groq API key is required';
+    msg.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Save & Start Gateway';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msg.className = 'msg ok';
+      msg.textContent = 'Saved! Rebooting into gateway mode...';
+      msg.style.display = 'block';
+      btn.textContent = 'Rebooting...';
+      // Trigger reboot after short delay
+      setTimeout(async () => {
+        try { await fetch('/api/reset', { method: 'POST' }); } catch(e) {}
+      }, 1000);
+    } else {
+      throw new Error(data.error || 'Save failed');
+    }
+  } catch (err) {
+    msg.className = 'msg err';
+    msg.textContent = err.message;
+    msg.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Save & Start Gateway';
+  }
+});
+</script>
+</body>
+</html>
