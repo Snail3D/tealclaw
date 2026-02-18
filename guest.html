@@ -1202,14 +1202,16 @@ function sendViaWS(text){
 
     const onChat=(payload)=>{
       if(payload.state==='delta'&&payload.message){
-        const chunk=typeof payload.message==='string'?payload.message:(payload.message.content||'');
-        full+=chunk;
+        const chunk=typeof payload.message==='string'?payload.message:
+          (Array.isArray(payload.message.content)?payload.message.content.map(c=>c.text||'').join(''):(payload.message.content||''));
+        full=chunk;
         // Update last AI bubble for streaming
         updateStreamBubble(full);
       } else if(payload.state==='final'){
         reqMap.delete('__chat__');
         if(payload.message){
-          const finalText=typeof payload.message==='string'?payload.message:(payload.message.content||'');
+          const finalText=typeof payload.message==='string'?payload.message:
+            (Array.isArray(payload.message.content)?payload.message.content.map(c=>c.text||'').join(''):(payload.message.content||''));
           if(finalText&&!full)full=finalText;
           else if(finalText&&full.length<finalText.length)full=finalText;
         }

@@ -5066,8 +5066,8 @@ RULES:
 
     function groqShouldDigest(text){
       if(!text||text.length<200)return false;
+      // Only digest genuinely technical/tool output — not regular conversational responses
       if((text.match(/```/g)||[]).length>=4)return true;
-      if(text.length>800&&text.split('\n').length>15)return true;
       if(/\[tool:|Tool result:|<tool_result>|executed_results/i.test(text))return true;
       return false;
     }
@@ -9049,11 +9049,57 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
         reply=reply.replace(/\*{0,2}\[(Diane|DIANE|diane)\]\*{0,2}/gi,'[DIANE]');
         // Strip any markdown headers the model might add
         reply=reply.replace(/^#{1,4}\s+.*\n?/gm,'').trim();
-        // Add to chat + render
-        addBubble('ai',reply);
-        if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
-        // TTS — use group speaker system
-        try{await speakGroup(reply)}catch(e){console.warn('Debate TTS error:',e)}
+
+        // Progressive reveal: show each speaker one at a time
+        const segments=parseGroupResponse(reply);
+        const chatIdx=chatHistory.length;
+        let revealedText='';
+        const doTTS=ttsMode==='auto'&&hasTTS(k);
+        const scroll=$('chatScroll');
+
+        for(let i=0;i<segments.length;i++){
+          const seg=segments[i];
+          revealedText+=(i>0?'\n':'')+`[${seg.speaker}] ${seg.text}`;
+
+          if(i===0){
+            addBubble('ai',revealedText);
+          } else {
+            chatHistory[chatIdx].text=revealedText;
+            setChat(chatHistory);renderChat();
+          }
+          if(!_userIsTouching)_userScrolledUp=false;
+          smoothScrollToBottom(scroll,300);
+
+          // TTS: speak actual debate text directly (no summarization)
+          if(doTTS){
+            try{
+              const segK={...k,groqTtsVoice:seg.voiceId};
+              const cleanText=ttsQuickClean(stripExprTags(seg.text))||seg.text;
+              const wavData=await speakGroq(cleanText,segK);
+              if(wavData){
+                await new Promise(resolve=>{
+                  const blob=ttsBlob(wavData);
+                  const url=URL.createObjectURL(blob);
+                  audio.src=url;audio.volume=getConfiguredVolume();
+                  audio.onended=()=>{URL.revokeObjectURL(url);hideStopTTS();activeTTSSource=null;activeTTSGain=null;resolve()};
+                  audio.onerror=()=>resolve();
+                  activeTTSSource={stop(){audio.pause();audio.currentTime=0;resolve()}};
+                  showStopTTS();
+                  audio.play().catch(()=>resolve());
+                });
+              }
+            }catch(e){console.warn('Debate TTS segment error:',e)}
+          } else {
+            // No TTS — pause between segments so they don't dump all at once
+            await new Promise(r=>setTimeout(r,1200));
+          }
+        }
+
+        // Ensure final complete text is stored
+        chatHistory[chatIdx].text=reply;
+        setChat(chatHistory);renderChat();
+        playReceiveSound();haptic('receive');
+
         // Notify agent if debate was triggered by agent
         if(source==='agent'){
           const ag=getActiveAgent();
@@ -9243,15 +9289,12 @@ Return ONLY valid JSON, no explanation.`;
             const query=gifQuery||autoDetectGif(displayText);
             if(query)searchGif(query).then(r=>{if(r)showGifOverlay(r)}).catch(()=>{});
           }
-          // Groq narrator: digest verbose agent output
+          // Groq narrator: digest only tool/code-heavy agent output
           let rawText=null;
           if(groqShouldDigest(displayText)){
             try{rawText=displayText;displayText=await groqDigest(displayText,'chat')}catch{}
           }
-          // Group chat casting: redistribute agent response across personas
-          if(isGroupChat()&&!/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
-            try{displayText=await castAgentToGroup(displayText)}catch(e){displayText='[TREY] '+displayText}
-          }
+          // Agent responses stay as-is — don't rewrite into group personas
           chatHistory[streamIdx].text=displayText;
           if(rawText&&rawText!==displayText)chatHistory[streamIdx].rawText=rawText;
           const executed=tcResults.filter(r=>r&&r.ok).length;
@@ -10082,6 +10125,34 @@ ${agentNote}`);
       });
     }
 
+    // ── HEIC/HEIF Conversion (lazy-loaded) ──────────────
+    let _heicLoaded=false;
+    function loadHeic2Any(){
+      if(_heicLoaded)return Promise.resolve();
+      return new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
+        s.onload=()=>{_heicLoaded=true;resolve()};
+        s.onerror=reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function convertHeicToBlob(file){
+      try{
+        await loadHeic2Any();
+        const blob=await window.heic2any({blob:file,toType:'image/jpeg',quality:0.8});
+        return Array.isArray(blob)?blob[0]:blob;
+      }catch(e){
+        console.warn('HEIC conversion failed:',e);
+        return null;
+      }
+    }
+
+    function isHeic(file,ext){
+      return file.type==='image/heic'||file.type==='image/heif'||ext==='heic'||ext==='heif';
+    }
+
     // ── PDF to Markdown (lazy-load pdf.js) ──────────────
     let pdfjsLoaded=false;
     function loadPdfJs(){
@@ -10473,21 +10544,31 @@ ${agentNote}`);
         return;
       }
 
-      // Images — compress, extract EXIF, and add to file stack
+      // Images — auto-convert and optimize on import
       if(file.type?.startsWith('image/')){
         const idx=pendingFiles.length;
         pendingFiles.push({name,type:'image',processing:true,origSize:file.size,dataUrl:null});
         renderFileStack();updateActionBtn();
-        // Extract EXIF in parallel with compression
+        // Extract EXIF in parallel
         const exifPromise=(ext==='jpg'||ext==='jpeg'||ext==='tiff'||ext==='tif')?extractExif(file):Promise.resolve(null);
+
+        // Convert HEIC/HEIF to JPEG blob first
+        let imgFile=file;
+        if(isHeic(file,ext)){
+          const converted=await convertHeicToBlob(file);
+          if(converted)imgFile=converted;
+        }
+
         const reader=new FileReader();
         reader.onload=async e=>{
           const raw=e.target.result;
           let dataUrl,compSize;
-          if(file.size<102400||ext==='gif'||ext==='svg'||ext==='svg+xml'){
+          if(ext==='gif'||ext==='svg'||ext==='svg+xml'){
+            // Keep animated/vector formats as-is
             dataUrl=raw;compSize=file.size;
           } else {
-            const comp=await compressImage(raw,file);
+            // Always convert to optimized JPEG
+            const comp=await compressImage(raw,imgFile);
             dataUrl=comp.dataUrl;compSize=comp.compSize;
           }
           const exif=await exifPromise;
@@ -10495,8 +10576,9 @@ ${agentNote}`);
           pendingFiles[idx]={name,type:'image',dataUrl,origSize:file.size,compSize,processing:false,exifText:exifMd||null};
           renderFileStack();updateActionBtn();
           if(exif)showToast(`EXIF extracted: ${Object.keys(exif).length} fields`,'ok');
+          if(isHeic(file,ext))showToast('HEIC → JPEG converted','ok');
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(imgFile);
         return;
       }
 
@@ -12066,26 +12148,47 @@ ${agentNote}`);
         prompt+=` Previous summary: "${prevNarrative}" — note any changes.`;
       }
 
-      // Send to AI
+      // Always use direct Groq vision API — agents can't process images
       try{
         const k=getK();
-        const mode=k.mode||'direct';
+        const groqKey=k.whisperKey||k.aiKey;
         let responseText='';
 
-        if(mode==='agent'&&getActiveAgent()){
-          const agent=getActiveAgent();
-          const conn=agent?agentConnections.get(agent.id):null;
-          if(conn?.connected){
-            const result=await callAgentWS(conn,prompt,collageData);
-            responseText=result?.text||result||'';
-          } else {
-            responseText=(await callAI(prompt,collageData))?.text||'';
-          }
+        if(groqKey){
+          const visionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
+          const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+            method:'POST',
+            headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+            body:JSON.stringify({
+              model:visionModel,
+              messages:[
+                {role:'system',content:'You are a concise visual observer for a photo log. Describe what you see factually.'+TC_CORE_POLICY},
+                {role:'user',content:[
+                  {type:'text',text:prompt},
+                  {type:'image_url',image_url:{url:collageData}}
+                ]}
+              ],
+              max_tokens:300
+            })
+          });
+          const d=await res.json();
+          if(d.error)throw new Error(d.error.message||'Vision API error');
+          responseText=d.choices?.[0]?.message?.content||'';
         } else {
-          responseText=(await callAI(prompt,collageData))?.text||'';
+          responseText='(No API key configured for vision)';
         }
 
         if(_plState)_plState.narrative=responseText;
+
+        // Notify connected agent of the photo log result
+        if(responseText&&k.mode==='agent'){
+          const agent=getActiveAgent();
+          const conn=agent?agentConnections.get(agent.id):null;
+          if(conn?.connected){
+            conn.request('chat.inject',{sessionKey:conn.sessionKey,message:`[Photo Log — Pass ${pass}] ${responseText}`,label:'photo-log'}).catch(()=>{});
+          }
+        }
+
         // Show text-only summary in chat
         sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">\uD83D\uDCF7</span><div><strong style="color:var(--teal)">Photo Log — Pass ${pass}</strong><div style="font-size:11px;color:var(--text-2);margin-top:2px">${esc(responseText)}</div><div style="font-size:9px;color:var(--text-3);margin-top:2px">${new Date().toLocaleTimeString()}</div></div></div>`);
       }catch(e){
