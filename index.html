@@ -8443,23 +8443,31 @@ Rules:
       let maxTok=k.maxTokens||(k.skillContext===false?400:1024);if(maxTok>8192)maxTok=8192;
       const body={model,messages:msgs,max_tokens:maxTok,stream:true};
       if(k.temperature!==undefined)body.temperature=Number(k.temperature);
-      const ctrl=new AbortController();window._tcAbort=ctrl;
-      const res=await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal});
-      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`API error: ${res.status}`)}
-      const reader=res.body.getReader();window._tcActiveReader=reader;const decoder=new TextDecoder();
-      let full='',buffer='',streamUsage=null;
-      while(true){
-        const{done,value}=await reader.read();if(done)break;
-        buffer+=decoder.decode(value,{stream:true});
-        const lines=buffer.split('\n');buffer=lines.pop()||'';
-        for(const line of lines){
-          if(!line.startsWith('data: '))continue;
-          const data=line.slice(6);if(data==='[DONE]')continue;
-          try{const j=JSON.parse(data);const delta=j.choices?.[0]?.delta?.content;if(delta){full+=delta;onToken(full)}if(j.usage)streamUsage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model}}catch{}
+      const ctrl=new AbortController();
+      window._tcAbort=ctrl;
+      let reader=null;
+      try{
+        const res=await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal});
+        if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`API error: ${res.status}`)}
+        reader=res.body.getReader();
+        window._tcActiveReader=reader;
+        const decoder=new TextDecoder();
+        let full='',buffer='',streamUsage=null;
+        while(true){
+          const{done,value}=await reader.read();if(done)break;
+          buffer+=decoder.decode(value,{stream:true});
+          const lines=buffer.split('\n');buffer=lines.pop()||'';
+          for(const line of lines){
+            if(!line.startsWith('data: '))continue;
+            const data=line.slice(6);if(data==='[DONE]')continue;
+            try{const j=JSON.parse(data);const delta=j.choices?.[0]?.delta?.content;if(delta){full+=delta;onToken(full)}if(j.usage)streamUsage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model}}catch{}
+          }
         }
+        return {text:full,usage:streamUsage};
+      } finally {
+        window._tcActiveReader=null;
+        if(window._tcAbort===ctrl)window._tcAbort=null;
       }
-      window._tcActiveReader=null;window._tcAbort=null;
-      return {text:full,usage:streamUsage};
     }
 
     // ── Scheduled Messages ──────────────────────────────
@@ -9871,11 +9879,31 @@ Return ONLY valid JSON, no explanation.`;
       if(window._tcAbort){try{window._tcAbort.abort()}catch{}}
       _sending=false;
       updateActionBtn();
+      flushQueuedAutoSend();
     }
     $('stopStreamBtn').addEventListener('click',()=>stopStreaming());
 
     // ── Send ───────────────────────────────────────────
     let _sending=false;
+    const _queuedAutoSends=[];
+
+    function queueAutoSendText(text){
+      const t=(text||'').trim();
+      if(!t)return;
+      _queuedAutoSends.push(t);
+      flushQueuedAutoSend();
+    }
+
+    function flushQueuedAutoSend(){
+      if(_sending||recording||recorder?.state==='recording')return;
+      if(!_queuedAutoSends.length)return;
+      const next=_queuedAutoSends.shift();
+      if(!next)return;
+      $('textIn').value=next;
+      $('textIn').dispatchEvent(new Event('input'));
+      send();
+    }
+
     function send(){
       if(_sending)return;
       let text=$('textIn').value.trim();
@@ -10420,7 +10448,11 @@ ${agentNote}`);
       if(docs.length>0)attachNote.push(`${docs.length} document${docs.length>1?'s':''}`);
       const noteStr=attachNote.length?` [${attachNote.join(' + ')} attached]`:'';
       _sending=true;updateActionBtn();
-      pipeline(text+noteStr,firstImage).finally(()=>{_sending=false;updateActionBtn()});
+      pipeline(text+noteStr,firstImage).finally(()=>{
+        _sending=false;
+        updateActionBtn();
+        flushQueuedAutoSend();
+      });
     }
 
     // Programmatic send (used by tc-ui button/chip callbacks)
@@ -11137,7 +11169,7 @@ ${agentNote}`);
                   $('textIn').dispatchEvent(new Event('input'));
                   if(inputVal.startsWith('/'))send();
                 } else {
-                  pipeline(text);
+                  queueAutoSendText(text);
                 }
               }
             }catch(e){showToast('Transcription failed','err')}
