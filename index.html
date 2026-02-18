@@ -4267,6 +4267,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       audio.pause();audio.currentTime=0;
       hideStopTTS();
       stopTypeReveal();
+      // If user tapped send while response/TTS was still finishing, deliver queued draft now.
+      try{flushQueuedAutoSend()}catch{}
       // Update voice mode subtitle if active
       if($('voiceMode')&&!$('voiceMode').classList.contains('hidden')){
         $('voiceModeStatus').textContent='Tap and hold to speak';
@@ -9890,6 +9892,7 @@ Return ONLY valid JSON, no explanation.`;
     function queueAutoSendText(text){
       const t=(text||'').trim();
       if(!t)return;
+      if(_queuedAutoSends[_queuedAutoSends.length-1]===t)return;
       _queuedAutoSends.push(t);
       flushQueuedAutoSend();
     }
@@ -9905,7 +9908,12 @@ Return ONLY valid JSON, no explanation.`;
     }
 
     function send(){
-      if(_sending)return;
+      if(_sending){
+        const draft=$('textIn').value.trim();
+        // Don't drop quick sends while prior response is still finalizing (e.g., right after TTS Stop)
+        if(draft)queueAutoSendText(draft);
+        return;
+      }
       let text=$('textIn').value.trim();
       const imageFiles=pendingFiles.filter(f=>f.dataUrl&&f.type==='image');
       const images=imageFiles.map(f=>f.dataUrl);
