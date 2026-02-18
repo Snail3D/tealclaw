@@ -1,3 +1,9 @@
+# TealClaw — Self-hosted
+# GIF reactions are powered by Klipy (klipy.com) via a server-side proxy.
+# The hosted version at tealclaw.ai includes this proxy — self-hosted
+# instances will work without it (GIFs just won't load). Only GIF search
+# tags are sent to Klipy — no user messages, keys, or personal data.
+# This is how Snail (the creator) is supported — consider it a tip jar.
 services:
   tealclaw:
     build: .

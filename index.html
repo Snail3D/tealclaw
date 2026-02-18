@@ -553,7 +553,7 @@
     .gif-overlay.fade-out{opacity:0;visibility:hidden;transition:opacity 0.8s ease,visibility 0s linear 0.8s}
     .gif-overlay.dragging{cursor:grabbing;transition:none}
     .gif-overlay.resizing{cursor:nwse-resize;transition:none}
-    .gif-overlay img{display:block;border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.4);object-fit:contain;pointer-events:none}
+    .gif-overlay img{display:block;border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.4);object-fit:contain;pointer-events:none;max-width:500px;max-height:70vh}
     .gif-resize{position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;cursor:nwse-resize;z-index:2;touch-action:none}
     .gif-resize::after{content:'';position:absolute;bottom:2px;right:2px;width:12px;height:12px;border-bottom:2px solid rgba(255,255,255,0.5);border-right:2px solid rgba(255,255,255,0.5);border-radius:0 0 4px 0}
 
@@ -6416,7 +6416,7 @@ ${getOptionalSteps()}`
     }
 
     var _gifUserMoved=false;
-    var _gifW=0,_gifH=0;
+    var _gifW=parseInt(localStorage.getItem('tc_gifW'))||180,_gifH=0;
     const GIF_MIN_W=100,GIF_MAX_W=500;
 
     function showGifOverlay(result){
@@ -6427,11 +6427,13 @@ ${getOptionalSteps()}`
       // Reset both display modes
       img.style.display='';adFrame.style.display='none';adFrame.srcdoc='';
       if(result.ad){
-        // Render Klipy ad HTML in sandboxed iframe
+        // Render Klipy ad HTML in sandboxed iframe (cap to GIF_MAX_W)
         img.style.display='none';
         adFrame.style.display='block';
-        adFrame.style.width=(result.ad.width||320)+'px';
-        adFrame.style.height=(result.ad.height||100)+'px';
+        const adW=Math.min(result.ad.width||320,GIF_MAX_W);
+        const adH=result.ad.height?(result.ad.height*adW/(result.ad.width||320)):100;
+        adFrame.style.width=adW+'px';
+        adFrame.style.height=Math.round(adH)+'px';
         adFrame.srcdoc=result.ad.content;
       }else if(result.url){
         img.src=result.url;
@@ -6440,10 +6442,9 @@ ${getOptionalSteps()}`
       if(!_gifUserMoved){
         overlay.style.left='';overlay.style.top='';overlay.style.right='';
       }
-      // Set initial size if not yet resized (only for GIF images)
+      // Apply persisted size (only for GIF images)
       if(!result.ad){
-        if(!_gifW){img.style.width='';img.style.height=''}
-        else{img.style.width=_gifW+'px';img.style.height='auto'}
+        img.style.width=_gifW+'px';img.style.height='auto';
       }
       overlay.classList.remove('hidden','fade-out','dragging','resizing');
       void overlay.offsetWidth;
@@ -6460,10 +6461,10 @@ ${getOptionalSteps()}`
       if(gifFadeTimer){clearTimeout(gifFadeTimer);gifFadeTimer=null}
       gifTimer=setTimeout(()=>{
         overlay.classList.add('hidden');overlay.classList.remove('fade-out');
-        // Reset position and size for next GIF
-        _gifUserMoved=false;_gifW=0;_gifH=0;
+        // Reset position for next GIF (size persists via localStorage)
+        _gifUserMoved=false;
         overlay.style.left='';overlay.style.top='';overlay.style.right='';
-        $('gifImg').style.width='';$('gifImg').style.height='';$('gifImg').style.display='';
+        $('gifImg').style.display='';
         // Clean up ad iframe
         const adFrame=$('gifAd');adFrame.srcdoc='';adFrame.style.display='none';
       },850);
@@ -6517,7 +6518,10 @@ ${getOptionalSteps()}`
         img.style.width=newW+'px';img.style.height='auto';
         _gifW=newW;
       }
-      function resizeEnd(){resizing=false;el.classList.remove('resizing')}
+      function resizeEnd(){
+        resizing=false;el.classList.remove('resizing');
+        if(_gifW)localStorage.setItem('tc_gifW',String(Math.round(_gifW)));
+      }
 
       handle.addEventListener('pointerdown',e=>{
         e.preventDefault();e.stopPropagation();
@@ -6527,6 +6531,32 @@ ${getOptionalSteps()}`
       handle.addEventListener('pointermove',e=>{if(resizing){e.preventDefault();resizeMove(e.clientX)}});
       handle.addEventListener('pointerup',()=>resizeEnd());
       handle.addEventListener('pointercancel',()=>resizeEnd());
+
+      // Pinch-to-resize (mobile)
+      let pinchDist=0,pinchW=0;
+      el.addEventListener('touchstart',e=>{
+        if(e.touches.length===2){
+          e.preventDefault();
+          pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+          pinchW=img.getBoundingClientRect().width||_gifW;
+          el.classList.add('resizing');
+        }
+      },{passive:false});
+      el.addEventListener('touchmove',e=>{
+        if(e.touches.length===2&&pinchDist){
+          e.preventDefault();
+          const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+          const newW=Math.max(GIF_MIN_W,Math.min(GIF_MAX_W,pinchW*(d/pinchDist)));
+          img.style.width=newW+'px';img.style.height='auto';
+          _gifW=newW;
+        }
+      },{passive:false});
+      el.addEventListener('touchend',e=>{
+        if(pinchDist&&e.touches.length<2){
+          pinchDist=0;el.classList.remove('resizing');
+          if(_gifW)localStorage.setItem('tc_gifW',String(Math.round(_gifW)));
+        }
+      });
     })();
 
     // ── Research Pipeline (ORNOT-style) ─────────────────
