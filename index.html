@@ -4879,7 +4879,7 @@ RULES:
               // Challenge → respond with connect
               if(frame.event==='connect.challenge'){
                 const nonce=frame.payload?.nonce||'';
-                this._sendConnect(nonce);
+                this._sendConnect(nonce).catch(err=>console.error('device auth failed:',err));
               } else if(frame.event==='tick'){
                 this._resetTick();
               } else {
@@ -4919,11 +4919,20 @@ RULES:
       _send(obj){if(this.ws?.readyState===1)this.ws.send(JSON.stringify(obj))}
       _nextId(){return `tc-${++this._reqId}-${Date.now().toString(36)}`}
 
-      _sendConnect(nonce){
+      async _sendConnect(nonce){
+        const identity=await ensureDeviceIdentity();
+        const signedAtMs=Date.now();
+        const role='operator';
+        const scopes=['operator.admin'];
+        const sig=await signDeviceAuth(identity,{
+          clientId:'webchat',clientMode:'webchat',role,
+          scopes,signedAtMs,token:this.token,nonce:nonce||''
+        });
         this._send({type:'req',id:this._nextId(),method:'connect',params:{
           minProtocol:3,maxProtocol:3,
-          role:'operator',scopes:['operator.admin'],
+          role,scopes,
           auth:{token:this.token},
+          device:{id:identity.deviceId,publicKey:identity.publicKeyB64,signature:sig,signedAt:signedAtMs,nonce:nonce||undefined},
           client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
         }});
       }
@@ -10045,6 +10054,17 @@ ${agentNote}`);
         if(cmd==='/template'||cmd==='/templates'){
           showTemplateGallery();return;
         }
+      }
+
+      // YouTube auto-research: detect YT links and trigger deep research
+      const ytRegex=/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/i;
+      const ytMatch=text.match(ytRegex);
+      if(ytMatch){
+        const ytUrl=text.match(/https?:\/\/[^\s]+/i)?.[0]||`https://youtu.be/${ytMatch[1]}`;
+        const userContext=text.replace(/https?:\/\/[^\s]+/gi,'').trim();
+        const query=userContext?`${ytUrl}\n\nUser's question/context: ${userContext}`:ytUrl;
+        researchPipeline(query,firstImage,true);
+        return;
       }
 
       // Normal message

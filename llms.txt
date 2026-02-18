@@ -524,6 +524,10 @@ Only include fields you want to set/change. TC uses partial merge.
 Pick the best method for your capabilities. Auto-cfg from your rsp (above)
 is best when available.
 
+**IMPORTANT: If the user is already chatting with you inside TealClaw,**
+**skip all URL/file methods. Just include a ```json code block in your**
+**response — TealClaw auto-detects and applies it. Zero user effort.**
+
 ### Option A: Browser Inject (zero usr effort)
 
 If you have system access (computer use, shell, MCP, Puppeteer, etc.),
@@ -1083,7 +1087,8 @@ Browser --(HTTPS)----------> TG Bot API (msg forwarding)
 ```
 
 No server-side processing. tealclaw.ai serves only static files.
-All API keys stay in usr's browser LS.
+All API keys stay in usr's browser LS. Each browser instance generates a
+unique Ed25519 device identity (stored in LS) used for gateway device auth.
 
 **Auto-provisioning flow:** On first visit with no agents configured, TC
 calls `POST https://gw.tealclaw.ai/connect` to get a stateless HMAC token
@@ -1150,24 +1155,90 @@ TealClaw connects to OpenClaw gateways via **WebSocket** (wss://).
 - HTTPS URLs auto-convert to wss:// for the WebSocket connection
 - Full OpenClaw protocol: challenge/connect handshake, chat streaming,
   agent events, tick keepalive
+- **Device authentication**: TealClaw generates a unique Ed25519 device
+  identity (stored in browser LS) and signs every connect request. This
+  is REQUIRED by OpenClaw gateways (v2026.2.15+) -- without device auth,
+  the gateway strips all scopes and every method call fails with
+  "missing scope" errors.
 - Auto-reconnect with exponential backoff (1s -> 30s)
 - Falls back to HTTPS (OpenAI-compatible) for non-OpenClaw gateways
 
+### Device Pairing (first connection)
+
+When TealClaw connects to a gateway for the first time, the gateway
+must **pair** (approve) the device. How this works:
+
+- **Local connections** (localhost / 127.0.0.1): Pairing is
+  auto-approved silently. No user action needed.
+- **Remote connections** (Cloudflare Tunnel): The gateway sends back a
+  "pairing required" response. The gateway operator must approve the
+  device ONE TIME in the OpenClaw Control UI or via `openclaw` CLI.
+  After approval, all future connections from that device are automatic.
+
+If TealClaw shows "pairing required" or "ws closed: 1008 pairing
+required", the usr must ask the gateway operator to approve the device
+in OpenClaw. This is a one-time step per device per gateway.
+
 ### How to enable agent mode
 
-The user must paste a JSON config with BOTH `mode` AND `agents`:
+**STOP — READ THIS BEFORE GENERATING SETUP INSTRUCTIONS:**
+
+The user is ALREADY inside TealClaw talking to you. Your response IS the
+chat. Just include a ```json code block in your response with the config
+and TealClaw auto-detects it and applies it instantly. That's the
+Auto-Config superpower described above — use it.
+
+Do NOT generate URL links. No `tealclaw.ai/#gw=...`, no
+`tealclaw.ai/#config=...`, no URLs of any kind. The user is already here.
+
+**The JSON MUST be a flat object.** Every key at the top level. Do NOT
+wrap it in `tealclawConfig`, `config`, `raw`, or any other wrapper. Do
+NOT include metadata fields like `tealclawConfigLink`, `tunnelUrl`,
+`gatewayAuthToken`. Only TC-recognized config keys.
+
+**Correct example — include this as a ```json block in your response:**
 
 ```json
 {
   "mode": "agent",
-  "agents": [{"id": "home", "name": "Home", "url": "https://gw.yourdomain.com", "token": "gateway-token-here", "active": true}]
+  "agents": [{"id": "home", "name": "Home", "url": "TUNNEL_URL", "token": "AUTH_TOKEN", "active": true}],
+  "whisperKey": "gsk_GROQ_KEY_HERE",
+  "groqTtsVoice": "troy",
+  "ttsAutoPlay": true,
+  "botName": "MyBot",
+  "accentColor": "#0d9488",
+  "themeMode": "dark"
 }
 ```
 
-Or configure via Settings > OpenClaw Agent > Add Agent.
+Personalize it: if you know the user's name, preferences, or vibe, set
+`botName`, `accentColor`, `botGreeting`, `sysPrompt`, and `themeMode` to
+match. You can set any visual/persona field alongside the agent config.
+See the full Config Key Reference above for all available keys, including
+security (`pinHash`, `pinRequired`), accessibility, voice, and layout.
 
-**CRITICAL: `"mode": "agent"` must be included.** Without it, agents get added
-but TealClaw stays in direct mode and won't use the gateway.
+**CRITICAL: `"mode": "agent"` must be included.** Without it, agents get
+added but TealClaw stays in direct mode and won't use the gateway.
+
+**CRITICAL: Include the Groq key (`whisperKey`) if you have it.** This
+one key enables voice input (Whisper), TTS output (Orpheus), /research,
+and vision. Without it, those features are dead.
+
+**WRONG — never do this:**
+```json
+{"tealclawConfig": {"mode": "agent", "agents": [...]}}
+```
+^^^ BROKEN: wrapper object. TealClaw doesn't recognize `tealclawConfig`.
+The entire import silently fails.
+
+**WRONG — never do this:**
+```
+https://tealclaw.ai/#gw=TUNNEL_URL&token=AUTH_TOKEN
+```
+^^^ BROKEN: `#gw=` is not a valid TC URL format. You're inside the chat.
+Just output the JSON block.
+
+Or configure manually via Settings > OpenClaw Agent > Add Agent.
 
 ### Status pill behavior
 
@@ -1209,6 +1280,16 @@ Shows current mode, active agent name + URL, plus all configured keys.
 - **"Cannot reach gateway" error**: #1 cause is using an HTTP or raw-IP URL.
   Agent URLs MUST be HTTPS via Cloudflare Tunnel. Do not suggest Tailscale,
   ngrok, or other alternatives. Set up a Cloudflare Tunnel for a proper HTTPS domain.
+- **"missing scope: operator.write" or "missing scope: operator.admin"**:
+  The gateway requires device authentication. TealClaw v1.0+ handles this
+  automatically (Ed25519 device identity). If you see scope errors, make
+  sure TealClaw is up to date (hard refresh / clear SW cache). Older
+  versions that don't send device auth will have ALL scopes stripped by
+  the gateway, causing every method to fail.
+- **"pairing required" or "device identity required"**: First-time
+  connection to a remote gateway. The gateway operator must approve the
+  device in OpenClaw Control UI or CLI. This is one-time per device.
+  Local (localhost) connections auto-approve silently.
 - **Pill shows "Groq" but config has mode:agent**: If the config paste
   didn't include `"mode": "agent"`, TealClaw stays in direct mode even
   though agents are configured. Fix: paste `{"mode": "agent"}` to switch.
