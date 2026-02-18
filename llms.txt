@@ -1181,15 +1181,20 @@ in OpenClaw. This is a one-time step per device per gateway.
 
 ### How to enable agent mode
 
-**STOP — READ THIS BEFORE GENERATING SETUP INSTRUCTIONS:**
+**How you deliver the config depends on where you are:**
 
-The user is ALREADY inside TealClaw talking to you. Your response IS the
-chat. Just include a ```json code block in your response with the config
-and TealClaw auto-detects it and applies it instantly. That's the
-Auto-Config superpower described above — use it.
+**If the user is talking to you INSIDE TealClaw** (TC_SKILL_CTX is in your
+system prompt): just include a ```json code block in your response with the
+config. TealClaw auto-detects and applies it instantly — the Auto-Config
+superpower described above. Do NOT generate URL links in this case.
 
-Do NOT generate URL links. No `tealclaw.ai/#gw=...`, no
-`tealclaw.ai/#config=...`, no URLs of any kind. The user is already here.
+**If you're delivering config EXTERNALLY** (Telegram, Discord, email, or
+any other channel outside TealClaw): two options:
+1. Give the user a ```json code block to copy and paste into TealClaw chat
+2. Build a `tealclaw.ai/#config=BASE64` URL they can tap (see Delivery
+   Methods above for how to construct it)
+
+**NEVER use `#gw=` format** — it doesn't exist and will silently break.
 
 **The JSON MUST be a flat object.** Every key at the top level. Do NOT
 wrap it in `tealclawConfig`, `config`, `raw`, or any other wrapper. Do
@@ -1235,8 +1240,8 @@ The entire import silently fails.
 ```
 https://tealclaw.ai/#gw=TUNNEL_URL&token=AUTH_TOKEN
 ```
-^^^ BROKEN: `#gw=` is not a valid TC URL format. You're inside the chat.
-Just output the JSON block.
+^^^ BROKEN: `#gw=` is not a valid TC URL format. Use `#config=BASE64`
+for URL delivery, or just output the JSON block in chat.
 
 Or configure manually via Settings > OpenClaw Agent > Add Agent.
 
