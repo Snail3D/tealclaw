@@ -1163,6 +1163,15 @@
     <div class="decrypt-hint">Ask the person who sent you this link for the passphrase</div>
   </div>
 
+  <div class="decrypt-overlay hidden" id="qrOnboardOverlay">
+    <h2>QR Config Received</h2>
+    <div id="qrVerifyCode" style="font-size:32px;font-weight:800;font-family:var(--mono);letter-spacing:0.2em;color:var(--teal);margin:4px 0"></div>
+    <p>Tell your agent this verification code.<br>They'll give you the passphrase to unlock.</p>
+    <input class="decrypt-input" id="qrPassInput" type="text" maxlength="8" placeholder="A1b2C3d4" autocomplete="off" spellcheck="false">
+    <button class="decrypt-btn" id="qrUnlockBtn">Unlock</button>
+    <div class="decrypt-hint" id="qrHint">Passphrase is 8 characters</div>
+  </div>
+
   <div class="guest-modal hidden" id="guestModal">
     <div class="guest-modal-card" id="guestModalCard"></div>
   </div>
@@ -5017,6 +5026,12 @@ RULES:
         agentContext.agentName=agent.name||'';
         updateStatus();
         if(hello.server?.version)console.log(`[OpenClaw] Connected to ${agent.name} v${hello.server.version}`);
+        // QR onboarding confirmation
+        if(typeof _qrOnboardImage!=='undefined'&&_qrOnboardImage){
+          const img=_qrOnboardImage;_qrOnboardImage=null;
+          const dev=navigator.userAgent.includes('Mobile')?'mobile':'desktop';
+          conn.chatSend(`[ONBOARDING] TealClaw connected via secure QR transfer. Device: ${dev}`,[{type:'image',data:img}]).catch(()=>{});
+        }
       }).catch(e=>{
         console.warn(`[OpenClaw] ${agent.name} connect failed:`,e.message);
         updateStatus();
@@ -5813,20 +5828,59 @@ GIF REACTIONS (~75% of responses — encouraged!):
         return;
       }
 
-      // Build the agent prompt for copy-paste
-      const agentPrompt='Set up TealClaw for me.\n\n'
+      // Build the agent prompt for copy-paste (secure QR onboarding)
+      const agentPrompt='Set up TealClaw for me using secure QR delivery.\n\n'
+        +'STEP 1 — GATEWAY + TUNNEL:\n'
         +'1. Make sure my OpenClaw gateway is running (openclaw gateway run)\n'
         +'2. Install cloudflared if needed (brew install cloudflared)\n'
         +'3. Start a quick tunnel: cloudflared tunnel --url http://localhost:18789\n'
         +'4. Grab the tunnel URL when it appears (looks like https://xxx-xxx.trycloudflare.com)\n'
         +'5. Read my auth token: openclaw config get gateway.auth.token\n'
-        +'6. If I have a Groq key, grab it: openclaw config get groq.apiKey\n\n'
-        +'Reply with a flat JSON config block in a ```json code fence. I\'ll paste your response into TealClaw chat and it auto-applies. Use this shape:\n\n'
-        +'  {"mode":"agent","agents":[{"id":"home","name":"NAME","url":"TUNNEL_URL","token":"TOKEN","active":true}],\n'
-        +'   "whisperKey":"GROQ_KEY","groqTtsVoice":"troy","botName":"PERSONALIZE","accentColor":"#0d9488","themeMode":"dark"}\n\n'
-        +'- Fill in real values from steps 4-6. Flat JSON only, no wrappers.\n'
-        +'- Personalize botName, accentColor, and themeMode based on what you know about me.\n'
-        +'- No Groq key found? Ask me for one (free at console.groq.com/keys). One key unlocks voice, TTS, research, and vision.\n\n'
+        +'6. If I have a Groq key, grab it: openclaw config get groq.apiKey\n'
+        +'   No Groq key? Ask me for one (free at console.groq.com/keys).\n\n'
+        +'STEP 2 — GENERATE ENCRYPTED QR CODE:\n'
+        +'Run this Node.js script to generate a secure QR code image.\n'
+        +'Fill in TUNNEL_URL, AUTH_TOKEN, GROQ_KEY with real values from step 1.\n'
+        +'Personalize botName/accentColor/themeMode based on what you know about me.\n\n'
+        +'```javascript\n'
+        +'const crypto = require(\'crypto\');\n'
+        +'const QRCode = require(\'qrcode\'); // npm install qrcode\n'
+        +'const fs = require(\'fs\');\n\n'
+        +'const CHARS = \'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789\';\n'
+        +'function randStr(n){ return Array.from(crypto.randomBytes(n), b => CHARS[b % CHARS.length]).join(\'\'); }\n'
+        +'const passphrase = randStr(8);\n'
+        +'const nonce = randStr(8);\n'
+        +'const ts = Math.floor(Date.now() / 1000);\n\n'
+        +'const config = {\n'
+        +'  _tcqr: 1, _ts: ts, _nonce: nonce,\n'
+        +'  mode: "agent",\n'
+        +'  agents: [{id:"home", name:"PERSONALIZE", url:"TUNNEL_URL", token:"AUTH_TOKEN", active:true}],\n'
+        +'  whisperKey: "GROQ_KEY",\n'
+        +'  groqTtsVoice: "troy", botName: "PERSONALIZE", accentColor: "#0d9488", themeMode: "dark"\n'
+        +'};\n\n'
+        +'const salt = crypto.randomBytes(16);\n'
+        +'const key = crypto.pbkdf2Sync(passphrase, salt, 100000, 32, \'sha256\');\n'
+        +'const iv = crypto.randomBytes(12);\n'
+        +'const cipher = crypto.createCipheriv(\'aes-256-gcm\', key, iv);\n'
+        +'const enc = Buffer.concat([cipher.update(JSON.stringify(config), \'utf8\'), cipher.final()]);\n'
+        +'const tag = cipher.getAuthTag();\n'
+        +'const blob = Buffer.concat([salt, iv, enc, tag]).toString(\'base64\');\n\n'
+        +'const payload = `tc-qr:1:${ts}:${nonce}:${blob}`;\n'
+        +'QRCode.toFile(\'tealclaw-setup.png\', payload, {width: 400, margin: 2}, () => {\n'
+        +'  console.log(\'QR saved to tealclaw-setup.png\');\n'
+        +'  console.log(\'Verification code:\', nonce.slice(0, 4).toUpperCase());\n'
+        +'  console.log(\'Passphrase (DO NOT SHARE YET):\', passphrase);\n'
+        +'});\n'
+        +'```\n\n'
+        +'STEP 3 — SEND QR IMAGE TO ME:\n'
+        +'Send me the generated QR code image (tealclaw-setup.png).\n'
+        +'Say: "Take a screenshot or photo of this QR code and drop it into TealClaw. When TealClaw shows a verification code, tell me the code."\n'
+        +'DO NOT send the passphrase yet.\n\n'
+        +'STEP 4 — VERIFY + RELEASE PASSPHRASE:\n'
+        +'I\'ll tell you a 4-character verification code from TealClaw.\n'
+        +'Check that it matches the first 4 chars of the nonce (shown in script output).\n'
+        +'If it matches, send me the 8-character passphrase.\n'
+        +'If it doesn\'t match, warn me and generate a new QR.\n\n'
         +'AFTER I\'m connected: read https://tealclaw.ai/llms.txt -- your full TealClaw skill guide. Learn what TC can do (themes, voice personas, guest links, image gen, interactive UI components, research, and more), then walk me through the best features one at a time. Don\'t dump everything at once.\n\n'
         +'If you can create skills or persistent tools, make a TealClaw skill so you can help me with this anytime. You can also check https://github.com/Snail3D/tealclaw for new features to offer me later.\n\n'
         +'Keep cloudflared running -- connection drops if it stops.';
@@ -5843,12 +5897,12 @@ GIF REACTIONS (~75% of responses — encouraged!):
         +'<details style="font-size:12px;color:var(--text-2)">'
         +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Connect to an OpenClaw gateway instead</summary>'
         +'<div style="margin-top:8px">'
-        +'<p style="font-size:11px;color:var(--text-3);margin-bottom:8px">Copy this prompt and paste it to your OpenClaw agent (Telegram, Discord, etc). It will set up a tunnel and give you a config to paste here.</p>'
+        +'<p style="font-size:11px;color:var(--text-3);margin-bottom:8px">Copy this prompt and paste it to your OpenClaw agent (Telegram, Discord, etc). It will generate a secure QR code — screenshot it, drop it into TealClaw, and follow the verification steps.</p>'
         +'<div class="onboard-copy-block" style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;position:relative;font-size:11px;line-height:1.6;margin-bottom:10px">'
         +'<code style="white-space:pre-wrap;color:var(--text-2);font-family:var(--mono);font-size:11px">'+esc(agentPrompt)+'</code>'
         +'<span style="position:absolute;top:6px;right:8px;font-size:9px;color:var(--text-3);pointer-events:none">tap to copy</span>'
         +'</div>'
-        +'<p style="font-size:11px;color:var(--text-3);margin-bottom:10px">Your agent will set up the tunnel and reply with a JSON config. Copy that response, paste it into this chat, and you\'re connected.</p>'
+        +'<p style="font-size:11px;color:var(--text-3);margin-bottom:10px">Your agent will generate an encrypted QR code. Screenshot/photograph it, drop the image here, then follow the verification prompts.</p>'
         +'<hr style="margin:10px 0;border-color:var(--border)">'
         +'<p style="font-size:11px;color:var(--text-3);margin-bottom:6px">Or paste your gateway URL and auth token manually:</p>'
         +'<input id="obManualUrl" type="url" placeholder="https://your-tunnel.trycloudflare.com" style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--font);box-sizing:border-box;outline:none;margin-bottom:6px">'
@@ -10589,6 +10643,11 @@ ${agentNote}`);
 
       // Images — auto-convert and optimize on import
       if(file.type?.startsWith('image/')){
+        // Check for TC QR code before normal image processing
+        if(typeof handleQrImage==='function'){
+          const qrUrl=await new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.onerror=()=>r(null);rd.readAsDataURL(file)});
+          if(qrUrl&&await handleQrImage(qrUrl))return;
+        }
         const idx=pendingFiles.length;
         pendingFiles.push({name,type:'image',processing:true,origSize:file.size,dataUrl:null});
         renderFileStack();updateActionBtn();
@@ -11573,6 +11632,105 @@ ${agentNote}`);
     }
     $('decryptBtn').addEventListener('click',attemptDecrypt);
     $('decryptInput').addEventListener('keydown',e=>{if(e.key==='Enter')attemptDecrypt()});
+
+    // ── Secure QR Onboarding ─────────────────────────
+    let pendingQrBlob=null;
+    let pendingQrNonce=null;
+    let pendingQrTs=null;
+    let _qrOnboardImage=null;
+
+    function parseQrPayload(data){
+      // tc-qr:1:TIMESTAMP:NONCE:ENCRYPTED_BLOB
+      if(!data||!data.startsWith('tc-qr:1:'))return null;
+      const parts=data.split(':');
+      if(parts.length<5)return null;
+      const ts=parseInt(parts[2],10);
+      const nonce=parts[3];
+      // Blob is everything after the 4th colon (may contain colons in base64)
+      const blob=parts.slice(4).join(':');
+      if(!ts||!nonce||!blob)return null;
+      return{ts,nonce,blob};
+    }
+    function validateQrTimestamp(ts){
+      return(Math.floor(Date.now()/1000)-ts)<=300;
+    }
+    function showQrOnboardPrompt(nonce){
+      const overlay=$('qrOnboardOverlay');
+      const input=$('qrPassInput');
+      $('qrVerifyCode').textContent=nonce.slice(0,4).toUpperCase();
+      overlay.classList.remove('hidden');
+      input.value='';input.classList.remove('wrong');
+      $('qrHint').textContent='Passphrase is 8 characters';
+      setTimeout(()=>input.focus(),100);
+    }
+    async function attemptQrDecrypt(){
+      const input=$('qrPassInput');
+      const passphrase=input.value.trim();
+      if(passphrase.length<1)return;
+      try{
+        const json=await decryptConfig(pendingQrBlob,passphrase);
+        const inner=JSON.parse(json);
+        // Verify inner timestamp and nonce match outer
+        if(inner._ts!==pendingQrTs||inner._nonce!==pendingQrNonce){
+          $('qrHint').textContent='Invalid — QR code may have been tampered with';
+          $('qrHint').style.color='var(--err)';
+          input.classList.add('wrong');
+          haptic('error');
+          setTimeout(()=>{input.classList.remove('wrong');$('qrHint').style.color=''},400);
+          input.value='';input.focus();
+          return;
+        }
+        // Strip verification fields before import
+        delete inner._tcqr;delete inner._ts;delete inner._nonce;
+        pendingQrBlob=null;pendingQrNonce=null;pendingQrTs=null;
+        $('qrOnboardOverlay').classList.add('hidden');
+        haptic('success');
+        showConfigImportConfirm(inner);
+      }catch{
+        input.classList.add('wrong');
+        haptic('error');
+        setTimeout(()=>input.classList.remove('wrong'),400);
+        input.value='';input.focus();
+      }
+    }
+    $('qrUnlockBtn').addEventListener('click',attemptQrDecrypt);
+    $('qrPassInput').addEventListener('keydown',e=>{if(e.key==='Enter')attemptQrDecrypt()});
+
+    async function tryDecodeQrFromImage(dataUrl){
+      try{
+        await loadScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
+        const img=new Image();
+        await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=dataUrl});
+        const canvas=document.createElement('canvas');
+        canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0);
+        const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+        const code=jsQR(imageData.data,imageData.width,imageData.height);
+        if(!code||!code.data)return null;
+        return code.data;
+      }catch{return null}
+    }
+
+    async function handleQrImage(dataUrl){
+      const decoded=await tryDecodeQrFromImage(dataUrl);
+      if(!decoded||!decoded.startsWith('tc-qr:'))return false;
+      const parsed=parseQrPayload(decoded);
+      if(!parsed)return false;
+      // Check expiry before showing any prompt
+      if(!validateQrTimestamp(parsed.ts)){
+        showToast('QR code expired — ask your agent to generate a new one','err');
+        haptic('error');
+        return true;
+      }
+      // Store for decrypt flow
+      pendingQrBlob=parsed.blob;
+      pendingQrNonce=parsed.nonce;
+      pendingQrTs=parsed.ts;
+      _qrOnboardImage=dataUrl;
+      showQrOnboardPrompt(parsed.nonce);
+      return true;
+    }
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
@@ -13442,7 +13600,7 @@ ${agentNote}`);
       if(maModal){closeMAModal();e.preventDefault();return}
       const sheet=document.querySelector('.sheet.open');
       if(sheet){closeSheet();e.preventDefault();return}
-      const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.cam-overlay:not(.hidden),.gif-overlay:not(.hidden),.cron-modal:not(.hidden)');
+      const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),#qrOnboardOverlay:not(.hidden),.cam-overlay:not(.hidden),.gif-overlay:not(.hidden),.cron-modal:not(.hidden)');
       if(overlay){overlay.classList.add('hidden');e.preventDefault();return}
       const search=document.querySelector('.search-bar.open');
       if(search){search.classList.remove('open');e.preventDefault();return}
@@ -13455,7 +13613,7 @@ ${agentNote}`);
       history.pushState({page:'main'},'');
       window.addEventListener('popstate',()=>{
         const sheet=document.querySelector('.sheet.open');
-        const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),.cam-overlay:not(.hidden)');
+        const overlay=document.querySelector('.about-overlay:not(.hidden),.decrypt-overlay:not(.hidden),#qrOnboardOverlay:not(.hidden),.cam-overlay:not(.hidden)');
         if(sheet){closeSheet()}
         else if(overlay){overlay.classList.add('hidden')}
         history.pushState({page:'main'},'');

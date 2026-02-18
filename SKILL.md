@@ -74,6 +74,14 @@ For programmatic encryption, see `https://tealclaw.ai/llms.txt` "Encrypted Share
 
 **Sharing rules:** 1) Always encrypt when keys present 2) Link + passphrase via different channels 3) Never both in same msg.
 
+### Secure QR Code Delivery (recommended for external setup)
+
+Generate encrypted QR code image, send to usr, they drop it into TC.
+Passphrase delivered separately after 4-char verification code exchange.
+No URLs needed. Two-channel security. 5-minute QR expiry.
+
+See `https://tealclaw.ai/llms.txt` "Secure QR Code Delivery" for full format spec and Node.js generation script.
+
 ### If You Can Generate Files
 
 Write `.json` file. Usr drags into TC chat -- auto-imports.
@@ -223,6 +231,18 @@ HTTPS domain (e.g. `https://gw.yourdomain.com`).
 WebSocket bypasses CORS/PNA restrictions.
 Falls back to HTTPS (OpenAI-compatible) for non-OpenClaw gateways.
 
+**Device Authentication (REQUIRED)**: TealClaw generates a unique Ed25519
+device identity per browser (stored in LS) and signs every WebSocket connect
+request. OpenClaw gateways (v2026.2.15+) REQUIRE device auth -- without it,
+the gateway strips all scopes to empty and every method call fails with
+"missing scope" errors. TealClaw handles this automatically.
+
+**Device Pairing (first connection)**: When TealClaw first connects to a
+gateway, the device must be paired (approved). Local connections (localhost)
+auto-approve silently. Remote connections (Cloudflare Tunnel) require
+one-time approval by the gateway operator in OpenClaw Control UI or CLI.
+After approval, all future connections from that device work automatically.
+
 **Switching to Agent mode**: Config MUST include `"mode": "agent"` alongside `agents` array.
 Without `"mode": "agent"`, agents get saved but TealClaw stays in direct mode.
 Correct: `{"mode": "agent", "agents": [{"id": "gw1", "name": "Home", "url": "https://gw.yourdomain.com", "token": "tok", "active": true}]}`
@@ -240,8 +260,13 @@ Remove, and Clear All. Connection status dots: green=connected, yellow=connectin
 **Test connection**: Per-agent "Test" button opens a temporary WS, performs handshake,
 shows toast with server version or error.
 
-**Common error**: "Cannot reach gateway" = #1 cause is HTTP/raw-IP URLs. See HTTPS rule above.
-Use a Cloudflare Tunnel for a proper HTTPS domain.
+**Common errors**:
+- "Cannot reach gateway" = #1 cause is HTTP/raw-IP URLs. See HTTPS rule above.
+  Use a Cloudflare Tunnel for a proper HTTPS domain.
+- "missing scope: operator.write" or "missing scope: operator.admin" = gateway
+  requires device auth. Ensure TealClaw is up to date (hard refresh / clear SW cache).
+- "pairing required" or "device identity required" = first-time remote connection.
+  Gateway operator must approve the device once in OpenClaw Control UI or CLI.
 
 **Gateway + Cloudflare Tunnel**: Gateway binds to `loopback`, `cloudflared` proxies your domain to `http://127.0.0.1:18789`. TealClaw connects to `https://gw.yourdomain.com`. See llms.txt for full setup.
 

@@ -669,6 +669,91 @@ Plain b64 links fine for themes/personas with no sensitive data.
 2. Send link + passphrase through DIFFERENT channels
 3. Never send both in same msg or channel
 
+### Option E: Secure QR Code Delivery (recommended for external setup)
+
+Best method when delivering config from outside TealClaw (Telegram, Discord, etc).
+Config travels as an encrypted QR image. Passphrase delivered separately via chat.
+No URLs generated. Two-channel security model.
+
+**QR Payload Format:**
+```
+tc-qr:1:TIMESTAMP:NONCE:ENCRYPTED_BLOB
+```
+
+| Field | Description |
+|-------|-------------|
+| `tc-qr:1` | Magic prefix + version |
+| TIMESTAMP | Unix epoch seconds (cleartext, for 5-min expiry) |
+| NONCE | 8-char random string (first 4 = verification code) |
+| ENCRYPTED_BLOB | Base64 AES-256-GCM encrypted config |
+
+**Encrypted payload contains:**
+```json
+{
+  "_tcqr": 1, "_ts": TIMESTAMP, "_nonce": "NONCE",
+  "mode": "agent", "agents": [...], "whisperKey": "gsk_...",
+  "groqTtsVoice": "troy", "botName": "Name", ...
+}
+```
+The `_tcqr`, `_ts`, `_nonce` fields are stripped before config import.
+
+**Security properties:**
+- AES-256-GCM with PBKDF2 100k iterations
+- Cleartext timestamp enables 5-min expiry check before prompting
+- Inner timestamp + nonce verified after decrypt (tamper detection)
+- Passphrase travels through separate channel (agent chat)
+- QR image can be intercepted but is useless without passphrase
+
+**Node.js generation script:**
+```javascript
+const crypto = require('crypto');
+const QRCode = require('qrcode'); // npm install qrcode
+
+const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+function randStr(n){ return Array.from(crypto.randomBytes(n), b => CHARS[b % CHARS.length]).join(''); }
+const passphrase = randStr(8);
+const nonce = randStr(8);
+const ts = Math.floor(Date.now() / 1000);
+
+const config = {
+  _tcqr: 1, _ts: ts, _nonce: nonce,
+  mode: "agent",
+  agents: [{id:"home", name:"NAME", url:"TUNNEL_URL", token:"TOKEN", active:true}],
+  whisperKey: "GROQ_KEY",
+  groqTtsVoice: "troy", botName: "NAME", accentColor: "#0d9488", themeMode: "dark"
+};
+
+const salt = crypto.randomBytes(16);
+const key = crypto.pbkdf2Sync(passphrase, salt, 100000, 32, 'sha256');
+const iv = crypto.randomBytes(12);
+const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+const enc = Buffer.concat([cipher.update(JSON.stringify(config), 'utf8'), cipher.final()]);
+const tag = cipher.getAuthTag();
+const blob = Buffer.concat([salt, iv, enc, tag]).toString('base64');
+
+const payload = `tc-qr:1:${ts}:${nonce}:${blob}`;
+QRCode.toFile('tealclaw-setup.png', payload, {width: 400, margin: 2}, () => {
+  console.log('QR saved to tealclaw-setup.png');
+  console.log('Verification code:', nonce.slice(0, 4).toUpperCase());
+  console.log('Passphrase (hold until user verifies):', passphrase);
+});
+```
+
+**The flow:**
+1. Run the script with real values from gateway setup
+2. Send QR image to user (via Telegram, Discord, etc)
+3. Tell user: "Screenshot/photograph this QR and drop it into TealClaw"
+4. DO NOT send the passphrase yet
+5. User drops QR image into TealClaw -- TC decodes it, checks expiry
+6. TealClaw shows a 4-character verification code
+7. User tells you the code (e.g. "my code is XK3M")
+8. Verify it matches first 4 chars of the nonce you generated
+9. If match: send the 8-character passphrase
+10. User enters passphrase in TealClaw -- config decrypts and applies
+
+**If QR expired** (>5 minutes): TealClaw shows error, no passphrase prompt.
+Generate a new one.
+
 ### Mobile Config
 
 | Method | How |
@@ -1189,9 +1274,13 @@ config. TealClaw auto-detects and applies it instantly — the Auto-Config
 superpower described above. Do NOT generate URL links in this case.
 
 **If you're delivering config EXTERNALLY** (Telegram, Discord, email, or
-any other channel outside TealClaw): two options:
-1. Give the user a ```json code block to copy and paste into TealClaw chat
-2. Build a `tealclaw.ai/#config=BASE64` URL they can tap (see Delivery
+any other channel outside TealClaw): three options, best first:
+1. **Secure QR code** (recommended): Generate an encrypted QR image, send
+   it to the user, they photograph/screenshot and drop into TealClaw.
+   Passphrase delivered separately via chat after verification code exchange.
+   See "Option E: Secure QR Code Delivery" in Delivery Methods above.
+2. Give the user a ```json code block to copy and paste into TealClaw chat
+3. Build a `tealclaw.ai/#config=BASE64` URL they can tap (see Delivery
    Methods above for how to construct it)
 
 **NEVER use `#gw=` format** — it doesn't exist and will silently break.
