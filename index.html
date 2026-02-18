@@ -3476,8 +3476,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <textarea class="gm-input" id="gmInstructions" placeholder="What can they do? (e.g. Manage calendar, ask questions)" rows="3">${esc(prefill?.instructions||'')}</textarea>
         </div>
         <div class="gm-field">
-          <label>Passphrase <span style="font-weight:400;color:var(--text-3)">(leave blank to auto-generate)</span></label>
-          <input class="gm-input" id="gmPass" type="text" placeholder="Custom passphrase or leave blank for random" value="" maxlength="40" autocomplete="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:1px">
+          <label>Passphrase <span style="color:var(--err)">*</span></label>
+          <input class="gm-input" id="gmPass" type="text" placeholder="Set a passphrase for the guest" value="" maxlength="40" autocomplete="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:1px">
         </div>
         <div class="gm-field">
           <label>Passphrase Hint</label>
@@ -3589,9 +3589,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       };
       if(commands.length){payload.cmd=commands;payload.cmdCost=cmdCost}
 
-      // Encrypt — use custom passphrase if provided, otherwise auto-generate
-      const customPass=$('gmPass')?.value?.trim();
-      const passphrase=customPass||generatePassphrase();
+      // Encrypt with user-set passphrase
+      const passphrase=$('gmPass')?.value?.trim();
+      if(!passphrase){showToast('Passphrase is required','err');$('gmPass').focus();return}
       const json=JSON.stringify(payload);
       const blob=await encryptConfig(json,passphrase);
 
