@@ -2492,6 +2492,14 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       updateMuteBtn();
       // Keep cron bar in sync with agent connection
       if(typeof renderCronBar==='function')renderCronBar();
+      // BLE proximity gate indicator
+      if(bleGateActive()){
+        if(bleConnected){
+          $('pillLabel').innerHTML+=' <span class="pill-transport" style="color:var(--ok)">BLE</span>';
+        }else{
+          pill.className='pill err';$('pillLabel').innerHTML='BLE Locked';
+        }
+      }
     }
 
     // ── Channel Selector ────────────────────────────────
@@ -2881,7 +2889,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         {name:'Image Gen',active:!!(k.imageGenKey||k.imageGenUrl)},
         {name:'GIF',active:true},
         {name:'Agent',active:!!getAgents().length},
-        {name:'LaTeX',active:true}
+        {name:'LaTeX',active:true},
+        {name:'BLE Gate',active:bleGateActive()&&bleConnected}
       ];
       // Session token totals
       const sessionTokens=chatHistory.reduce((acc,m)=>{if(m.usage){acc.prompt+=(m.usage.prompt||0);acc.completion+=(m.usage.completion||0);acc.total+=(m.usage.total||0);acc.count++}return acc},{prompt:0,completion:0,total:0,count:0});
@@ -3043,6 +3052,39 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         </div>
         <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">4-8 characters. Locks chat after 15 min of inactivity. Type password in chat to unlock. Stored as SHA-256 hash.</div>
       </div>`;
+
+      // BLE Beacon Lock
+      if(!bleSupported()){
+        html+=`<div class="sheet-section"><div class="sheet-section-title">BLE Beacon Lock</div>
+          <div style="font-size:11px;color:var(--text-3)">Bluetooth not available in this browser. Use Chrome, Edge, or Opera.</div>
+        </div>`;
+      }else{
+        const bleOn=!!k.bleEnabled;
+        const blePaired=!!k.bleDeviceId;
+        const bleName=k.bleDeviceName||'';
+        html+=`<div class="sheet-section"><div class="sheet-section-title">BLE Beacon Lock</div>
+          <div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Require a BLE beacon in range to send messages</div>
+          <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
+            <button class="mode-btn ble-mode-btn ${bleOn?'active':''}" data-ble="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${bleOn?'var(--teal)':'transparent'};border:none;color:${bleOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+            <button class="mode-btn ble-mode-btn ${!bleOn?'active':''}" data-ble="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!bleOn?'var(--teal)':'transparent'};border:none;color:${!bleOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+          </div>`;
+        if(blePaired){
+          const dotColor=bleConnected?'var(--ok)':'var(--err, #e74c3c)';
+          const statusText=bleConnected?'Connected':'Disconnected';
+          html+=`<div style="margin-top:10px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);display:flex;align-items:center;gap:8px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:500;color:var(--text-1)">${esc(bleName)}</div>
+              <div style="font-size:10px;color:var(--text-3)">${statusText}</div>
+            </div>
+            <button class="btn" id="bleUnpairBtn" style="font-size:11px;padding:4px 10px;background:var(--bg-hover);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer">Unpair</button>
+          </div>`;
+        }else{
+          html+=`<div style="margin-top:8px"><button class="btn btn-teal" id="blePairBtn" style="width:100%;padding:10px;font-size:12px;font-weight:600">Pair BLE Beacon</button></div>`;
+        }
+        html+=`<div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Blocks all messaging when the paired BLE beacon is out of range (~5-10m). Auto-reconnects when back in range.</div>
+        </div>`;
+      }
 
       // Guest Links section
       const gLinks=getGuestLinks();
@@ -3312,6 +3354,26 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         showToast(val?'Password set (hashed)':'Password removed','ok');
       });
 
+      // Wire up BLE Beacon Lock
+      $('sheetBody').querySelectorAll('.ble-mode-btn').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();
+        const on=b.dataset.ble==='true';
+        if(on&&!k2.bleDeviceId){showToast('Pair a BLE beacon first','err');return}
+        k2.bleEnabled=on;setK(k2);
+        if(!on&&_bleReconnectTimer){clearInterval(_bleReconnectTimer);_bleReconnectTimer=null}
+        if(on)initBleGate();
+        renderSheetContent();updateStatus();
+        showToast(on?'BLE gate enabled':'BLE gate disabled','ok');
+      }));
+      $('sheetBody').querySelector('#blePairBtn')?.addEventListener('click',async()=>{
+        await blePairDevice();
+        renderSheetContent();
+      });
+      $('sheetBody').querySelector('#bleUnpairBtn')?.addEventListener('click',()=>{
+        if(!confirm('Unpair this BLE beacon?'))return;
+        bleUnpairDevice();
+        renderSheetContent();
+      });
 
       $('sheetBody').querySelector('#sheetAudioVolume')?.addEventListener('input',e=>{
         const v=applyPlaybackVolume(e.target.value,false);
@@ -4778,6 +4840,7 @@ RULES:
 
     // ── AI Call ─────────────────────────────────────────
     async function callAI(userText,imageBase64){
+      if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
       const k=getK();
       const mode=k.mode||'direct';
 
@@ -5395,6 +5458,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
     async function callAgent(text,imageBase64,onToken){
       const agent=getActiveAgent();
       if(!agent)throw new Error('No agent configured. Open Settings and add a gateway agent, or switch to Direct mode.');
+      if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
       let conn=agentConnections.get(agent.id);
       // Wait briefly for a connecting WS before falling back to HTTP
       if(conn&&!conn.connected&&conn.state==='connecting'){
@@ -8217,6 +8281,7 @@ Rules:
 
     // ── Streaming AI Call ────────────────────────────────
     async function callAIStream(userText,imageBase64,onToken){
+      if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
       const k=getK();
       if(k.mode==='agent'&&getActiveAgent())return callAgent(userText,imageBase64,onToken);
       // Groq direct chat (streaming)
@@ -9615,6 +9680,8 @@ Return ONLY valid JSON, no explanation.`;
         handleChatLockInput(text);
         return;
       }
+      // BLE proximity gate
+      if(bleGateBlocking()){showToast('BLE beacon required','err');return}
       touchActivity();
 
       // Input rules: max length
@@ -11813,6 +11880,86 @@ ${agentNote}`);
 
     function touchActivity(){lastActivity=Date.now()}
 
+    // ── BLE Beacon Proximity Gate ─────────────────────
+    let bleConnected=false;
+    let _bleDevice=null;
+    let _bleReconnectTimer=null;
+
+    function bleSupported(){return!!navigator.bluetooth}
+    function bleGateActive(){const k=getK();return!!k.bleEnabled&&!!k.bleDeviceId}
+    function bleGateBlocking(){return bleGateActive()&&!bleConnected}
+
+    async function blePairDevice(){
+      if(!bleSupported()){showToast('Bluetooth not available in this browser','err');return}
+      try{
+        const device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['heart_rate']});
+        const server=await device.gatt.connect();
+        _bleDevice=device;
+        bleConnected=true;
+        device.addEventListener('gattserverdisconnected',_onBleDisconnect);
+        const k=getK();
+        k.bleEnabled=true;
+        k.bleDeviceId=device.id;
+        k.bleDeviceName=device.name||'BLE Device';
+        setK(k);
+        showToast(`Paired: ${k.bleDeviceName}`,'ok');
+        updateStatus();
+        if(typeof renderSheetContent==='function'){try{renderSheetContent()}catch(e){}}
+      }catch(e){
+        if(e.name!=='NotFoundError')showToast('BLE pairing failed: '+e.message,'err');
+      }
+    }
+
+    function bleUnpairDevice(){
+      if(_bleReconnectTimer){clearInterval(_bleReconnectTimer);_bleReconnectTimer=null}
+      if(_bleDevice&&_bleDevice.gatt.connected)try{_bleDevice.gatt.disconnect()}catch(e){}
+      _bleDevice=null;
+      bleConnected=false;
+      const k=getK();
+      delete k.bleEnabled;delete k.bleDeviceId;delete k.bleDeviceName;
+      setK(k);
+      updateStatus();
+      showToast('BLE beacon unpaired','ok');
+    }
+
+    function _onBleDisconnect(){
+      bleConnected=false;
+      showToast('BLE beacon lost — messaging locked','err');
+      addSystemBubble('BLE beacon disconnected. Messaging is locked until the beacon is back in range.');
+      updateStatus();
+      _bleScheduleReconnect();
+    }
+
+    async function _bleAttemptReconnect(){
+      if(bleConnected||!bleGateActive())return;
+      try{
+        if(!navigator.bluetooth.getDevices)return;
+        const devices=await navigator.bluetooth.getDevices();
+        const k=getK();
+        const saved=devices.find(d=>d.id===k.bleDeviceId);
+        if(!saved)return;
+        const server=await saved.gatt.connect();
+        _bleDevice=saved;
+        bleConnected=true;
+        saved.addEventListener('gattserverdisconnected',_onBleDisconnect);
+        if(_bleReconnectTimer){clearInterval(_bleReconnectTimer);_bleReconnectTimer=null}
+        showToast('BLE beacon reconnected','ok');
+        addSystemBubble('BLE beacon reconnected. Messaging unlocked.');
+        updateStatus();
+      }catch(e){/* retry next tick */}
+    }
+
+    function _bleScheduleReconnect(){
+      if(_bleReconnectTimer)return;
+      _bleReconnectTimer=setInterval(_bleAttemptReconnect,3000);
+    }
+
+    function initBleGate(){
+      if(!bleSupported()||!bleGateActive())return;
+      _bleAttemptReconnect();
+      _bleScheduleReconnect();
+    }
+
     function checkIdle(){
       const k=getK();
       if(!k.pinRequired||!k.pinHash||chatLocked)return;
@@ -12964,6 +13111,7 @@ ${agentNote}`);
     window.addEventListener('pagehide',()=>{agentConnections.forEach(c=>c.stop());agentConnections.clear()});
     // Password lock on startup + idle timer
     initChatLock();
+    initBleGate();
     setInterval(checkIdle,60000);
     // Track activity on input focus
     $('textIn').addEventListener('focus',touchActivity);
