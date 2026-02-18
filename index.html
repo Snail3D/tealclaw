@@ -5718,8 +5718,9 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       if(!groqKey)return ttsQuickClean(cleaned)||cleaned;
       // User-set expression override takes priority
       const userExpr=k.groqTtsExpression||'';
-      // Short text: regex cleanup + user expression tag
-      if(cleaned.length<80){
+      // Very short text (< 30 chars) with no special formatting: regex cleanup only
+      const hasSpecial=/\d{4}[-/]|https?:|```|\|.*\||\*\*/.test(cleaned);
+      if(cleaned.length<30&&!hasSpecial){
         const simple=ttsQuickClean(cleaned)||cleaned;
         return userExpr?`[${userExpr}] ${simple}`:simple;
       }
