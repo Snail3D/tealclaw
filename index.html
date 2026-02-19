@@ -11509,15 +11509,45 @@ ${agentNote}`);
       return rec;
     }
 
+    let _recStartMs=0;
+
+    function isMeaningfulTranscript(rawText,durationMs){
+      const k=getK?.()||{};
+      const minDur=Number.isFinite(+k.voiceMinDurationMs)?Math.max(0,+k.voiceMinDurationMs):700;
+      const minChars=Number.isFinite(+k.voiceMinChars)?Math.max(0,+k.voiceMinChars):12;
+      const minWords=Number.isFinite(+k.voiceMinWords)?Math.max(0,+k.voiceMinWords):3;
+
+      const t=(rawText||'').trim();
+      if(!t)return false;
+      if(/^[\s\p{P}]+$/u.test(t))return false; // punctuation-only (".", "...", etc.)
+      if(durationMs!=null&&durationMs<minDur)return false;
+
+      // Normalize for word/char counts (strip punctuation)
+      const norm=t.replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+      if(!norm)return false;
+      const words=norm.split(' ').filter(Boolean);
+      if(words.length>=minWords)return true;
+      if(norm.length>=minChars)return true;
+      return false;
+    }
+
     async function initMic(){
       try{
         stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
         recorder=createAudioRecorder(stream,e=>{if(e.data.size>0)chunks.push(e.data)},async()=>{
+          const dur=(_recStartMs?Date.now()-_recStartMs:null);
           if(chunks.length>0){
             const blob=new Blob(chunks,{type:recorder?.mimeType||'audio/webm'});
             try{
               const text=await transcribe(blob);
               if(text){
+                // If user didn't actually speak, do NOT auto-send junk.
+                if(!isMeaningfulTranscript(text,dur)){
+                  chunks=[];
+                  clearLiveSubtitle();
+                  return;
+                }
+
                 showLiveSubtitle(text);
                 setTimeout(clearLiveSubtitle,2500);
                 const inputVal=$('textIn').value.trim();
@@ -11537,10 +11567,10 @@ ${agentNote}`);
       }catch{showToast('Mic access denied','err');return false}
     }
 
-    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(recording||recorder?.state==='recording')return;if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
+    micBtn.addEventListener('mousedown',async e=>{e.preventDefault();if(recording||recorder?.state==='recording')return;if(!recorder&&!await initMic())return;chunks=[];_recStartMs=Date.now();recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
     micBtn.addEventListener('mouseup',e=>{e.preventDefault();stopRec()});
     micBtn.addEventListener('mouseleave',()=>{if(recording)stopRec()});
-    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(recording||recorder?.state==='recording')return;if(!recorder&&!await initMic())return;chunks=[];recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
+    micBtn.addEventListener('touchstart',async e=>{e.preventDefault();if(recording||recorder?.state==='recording')return;if(!recorder&&!await initMic())return;chunks=[];_recStartMs=Date.now();recorder.start();recording=true;micBtn.classList.add('recording');clearLiveSubtitle();haptic('medium')});
     micBtn.addEventListener('touchend',e=>{e.preventDefault();stopRec()});
 
     function stopRec(){if(!recorder||!recording)return;recorder.stop();recording=false;micBtn.classList.remove('recording');haptic('light')}
@@ -11945,6 +11975,9 @@ ${agentNote}`);
       skillContext:'skillContext',
       // Voice tuning
       audioVolume:'audioVolume',
+      voiceMinDurationMs:'voiceMinDurationMs',
+      voiceMinChars:'voiceMinChars',
+      voiceMinWords:'voiceMinWords',
       // Gesture tuning
       gestureConfidence:'gestureConfidence',
       // Group chat
