@@ -10026,6 +10026,7 @@ Return ONLY valid JSON, no explanation.`;
     let _sending=false;
     const _queuedAutoSends=[]; // [{id,text,ts,open}]
     let _queueFlushTimer=null;
+    let _queueSendAllOnce=false; // if true, next flush will send ALL staged messages in a single pass
 
     function isTTSPlaying(){
       try{return !!audio && !audio.paused && !audio.ended && audio.currentTime>0}catch{return false}
@@ -10052,6 +10053,7 @@ Return ONLY valid JSON, no explanation.`;
         <div class="send-queue-head">
           <div><strong>Queued</strong> (${count})</div>
           <div class="send-queue-actions">
+            ${count>1?`<button class="send-queue-btn" id="queueSendAllBtn" type="button">${_queueSendAllOnce?'Send-all armed':'Send all at once'}</button>`:''}
             <button class="send-queue-btn" id="queueClearBtn" type="button">Clear</button>
           </div>
         </div>
@@ -10060,14 +10062,15 @@ Return ONLY valid JSON, no explanation.`;
             <div class="send-queue-item ${m.open?'open':''}" data-idx="${idx}">
               <div>
                 <div class="send-queue-text">${esc(m.text||'')}</div>
-                <div class="send-queue-meta">Staged</div>
+                <div class="send-queue-meta">Staged${_queueSendAllOnce&&count>1?' • send-all armed':''}</div>
               </div>
               <button class="send-queue-x" data-idx="${idx}" title="Remove" aria-label="Remove">&times;</button>
             </div>
           `).join('')}
         </div>
       `;
-      qEl.querySelector('#queueClearBtn')?.addEventListener('click',()=>{_queuedAutoSends.length=0;renderSendQueue();updateActionBtn();});
+      qEl.querySelector('#queueSendAllBtn')?.addEventListener('click',()=>{_queueSendAllOnce=!_queueSendAllOnce;renderSendQueue();});
+      qEl.querySelector('#queueClearBtn')?.addEventListener('click',()=>{_queuedAutoSends.length=0;_queueSendAllOnce=false;renderSendQueue();updateActionBtn();});
       qEl.querySelectorAll('.send-queue-x').forEach(btn=>btn.addEventListener('click',e=>{
         e.stopPropagation();
         const idx=+btn.dataset.idx;
@@ -10118,7 +10121,25 @@ Return ONLY valid JSON, no explanation.`;
       clearQueueFlushTimer();
       if(_sending||recording||recorder?.state==='recording')return;
       if(!_queuedAutoSends.length)return;
+
+      // "Send all at once" option: collapse the staged queue into one outbound message.
+      // This avoids concurrent sends and preserves provider-at-send-time behavior.
+      if(_queueSendAllOnce && _queuedAutoSends.length>1){
+        const all=_queuedAutoSends.splice(0,_queuedAutoSends.length).map(m=>(m?.text||'').trim()).filter(Boolean);
+        _queueSendAllOnce=false;
+        renderSendQueue();
+        updateActionBtn();
+        if(all.length<1)return;
+        const combined=all.map((t,i)=>`(${i+1}/${all.length}) ${t}`).join('\n\n');
+        $('textIn').value=combined;
+        $('textIn').dispatchEvent(new Event('input'));
+        send();
+        return;
+      }
+
       const next=_queuedAutoSends.shift();
+      // Reset one-shot send-all flag at the start of a new queue pass
+      if(_queuedAutoSends.length===0)_queueSendAllOnce=false;
       renderSendQueue();
       updateActionBtn();
       if(!next||!next.text)return;
