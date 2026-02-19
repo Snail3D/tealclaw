@@ -4625,7 +4625,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       // Wire up share + obsidian action buttons (tap bubble to reveal, auto-hide)
       s.querySelectorAll('.chat-bubble').forEach(bubble=>{
         bubble.addEventListener('click',e=>{
-          if(e.target.closest('.chat-action-btn,.tts-play,.code-copy-btn,.config-apply-btn,.tc-ui-btn,.tc-ui-chip,a'))return;
+          if(e.target.closest('.chat-action-btn,.tts-play,.code-copy-btn,.config-apply-btn,.tc-ui-btn,.tc-ui-chip,.gl-inline-copy-link,.gl-inline-reveal,.gl-pp,a'))return;
           // Hide any other visible actions first
           s.querySelectorAll('.chat-bubble.actions-visible').forEach(b=>{b.classList.remove('actions-visible');clearTimeout(b._actionsTimer)});
           bubble.classList.add('actions-visible');
@@ -4637,6 +4637,27 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       s.querySelectorAll('.obsidian-save-btn').forEach(b=>b.addEventListener('click',()=>saveMessageToObsidian(+b.dataset.idx)));
       s.querySelectorAll('.edit-msg-btn').forEach(b=>b.addEventListener('click',()=>editMessage(+b.dataset.idx)));
       s.querySelectorAll('.del-msg-btn').forEach(b=>b.addEventListener('click',()=>deleteMessage(+b.dataset.idx)));
+
+      // Wire up inline guest-link UI blocks (they appear in chat via tc-action)
+      s.querySelectorAll('.gl-inline').forEach(box=>{
+        if(box._wired)return;box._wired=true;
+        const url=box.dataset.glUrl||'';
+        const pass=box.dataset.glPass||'';
+        const copyBtn=box.querySelector('.gl-inline-copy-link');
+        const revealBtn=box.querySelector('.gl-inline-reveal');
+        const passArea=box.querySelector('.gl-inline-pass-area');
+        if(copyBtn)copyBtn.addEventListener('click',function(){
+          navigator.clipboard.writeText(url).then(()=>{this.textContent='Copied!';showToast('Link copied','ok');setTimeout(()=>this.textContent='Copy Link',2000)}).catch(()=>showToast('Copy failed','err'));
+        });
+        if(revealBtn)revealBtn.addEventListener('click',function showPass(){
+          if(!passArea)return;
+          passArea.innerHTML='<div style="padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer;margin-bottom:4px" class="gl-pp">'+esc(pass)+'</div><div style="font-size:9px;color:var(--text-3);text-align:center">Hiding in <span class="gl-timer">10</span>s</div>';
+          passArea.querySelector('.gl-pp')?.addEventListener('click',()=>{navigator.clipboard.writeText(pass).then(()=>showToast('Passphrase copied','ok')).catch(()=>showToast('Copy failed','err'))});
+          let sec=10;const iv=setInterval(()=>{sec--;const t=passArea.querySelector('.gl-timer');if(t)t.textContent=sec;if(sec<=0){clearInterval(iv);passArea.innerHTML='';revealBtn.textContent='Reveal Passphrase'}},1000);
+          revealBtn.textContent='Hiding in 10s';revealBtn.disabled=true;
+          setTimeout(()=>{revealBtn.disabled=false},10000);
+        });
+      });
 
       if(getK().autoScroll!==false){
         if((!_userScrolledUp&&!_userIsTouching)||chatHistory.length<=1)smoothScrollToBottom(s);
@@ -5548,15 +5569,16 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         let full='',runId=null,usage=null,settled=false,finished=false;
         _localAgentInflight++;
         // Timeout guard: if the gateway stops responding, don't leave the UI stuck in "sending" state.
-        const FIRST_TOKEN_TIMEOUT_MS=20000;
+        // Some gateways/models may not emit deltas quickly (they may only emit a final message).
+        // Keep this generous to avoid false "Gateway unresponsive" errors.
+        const FIRST_TOKEN_TIMEOUT_MS=60000;
         const TOTAL_TIMEOUT_MS=180000;
         let firstTokTimer=setTimeout(()=>{
           if(settled)return;
           settled=true;conn.off('chat',onChat);clearRun();
-          // Force a WS reconnect so the user doesn't have to refresh the page.
-          try{conn.stop()}catch{}
-          try{conn.start().catch(()=>{})}catch{}
-          reject(new Error('Gateway unresponsive (no response). Try /reconnect (or refresh) and resend.'));
+          // If we truly get stuck, suggest reconnect — but don't aggressively restart the socket here.
+          // (Restarting can race with an in-flight run and make things feel worse.)
+          reject(new Error('Gateway unresponsive (no response yet). It may still be thinking. If it never replies, try /reconnect (or refresh) and resend.'));
         },FIRST_TOKEN_TIMEOUT_MS);
         let totalTimer=setTimeout(()=>{
           if(settled)return;
@@ -8312,19 +8334,7 @@ Rules:
                 const links=getGuestLinks();links.push(record);setGuestLinks(links);
                 const fullUrl=location.origin+'/guest.html#'+hintPrefix+blob;
                 setTimeout(()=>{
-                  const b=sysBubble(`<div style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><button style="width:100%;margin:8px 0;padding:10px;font-size:12px;font-weight:600;font-family:var(--font);border:1.5px solid var(--teal);border-radius:var(--r-md);background:transparent;color:var(--teal);cursor:pointer" class="gl-inline-copy-link">Copy Link</button><button style="width:100%;padding:8px;font-size:11px;font-weight:600;font-family:var(--font);border:1.5px dashed var(--warn);border-radius:var(--r-md);background:transparent;color:var(--warn);cursor:pointer" class="gl-inline-reveal">Reveal Passphrase</button><div class="gl-inline-pass-area" style="margin-top:6px"></div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:6px">Share the passphrase separately from the link.</div></div>`);
-                  b.querySelector('.gl-inline-copy-link').addEventListener('click',function(){
-                    navigator.clipboard.writeText(fullUrl).then(()=>{this.textContent='Copied!';showToast('Link copied','ok');setTimeout(()=>this.textContent='Copy Link',2000)}).catch(()=>showToast('Copy failed','err'));
-                  });
-                  const revealBtn=b.querySelector('.gl-inline-reveal');
-                  const passArea=b.querySelector('.gl-inline-pass-area');
-                  revealBtn.addEventListener('click',function showPass(){
-                    passArea.innerHTML='<div style="padding:6px 10px;background:var(--teal-dim);border:1px solid var(--teal);border-radius:var(--r-md);font-family:var(--mono);font-size:14px;letter-spacing:2px;text-align:center;color:var(--teal);font-weight:600;cursor:pointer;margin-bottom:4px" class="gl-pp">'+esc(passphrase)+'</div><div style="font-size:9px;color:var(--text-3);text-align:center">Hiding in <span class="gl-timer">10</span>s</div>';
-                    passArea.querySelector('.gl-pp').addEventListener('click',()=>{navigator.clipboard.writeText(passphrase).then(()=>showToast('Passphrase copied','ok'))});
-                    let sec=10;const iv=setInterval(()=>{sec--;const t=passArea.querySelector('.gl-timer');if(t)t.textContent=sec;if(sec<=0){clearInterval(iv);passArea.innerHTML='';revealBtn.textContent='Reveal Passphrase'}},1000);
-                    revealBtn.textContent='Hiding in 10s';revealBtn.disabled=true;
-                    setTimeout(()=>{revealBtn.disabled=false},10000);
-                  });
+                  sysBubble(`<div class="gl-inline" data-gl-url="${esc(fullUrl)}" data-gl-pass="${esc(passphrase)}" style="padding:4px 0"><strong>Guest link created for ${esc(name)}</strong><br><button style="width:100%;margin:8px 0;padding:10px;font-size:12px;font-weight:600;font-family:var(--font);border:1.5px solid var(--teal);border-radius:var(--r-md);background:transparent;color:var(--teal);cursor:pointer" class="gl-inline-copy-link">Copy Link</button><button style="width:100%;padding:8px;font-size:11px;font-weight:600;font-family:var(--font);border:1.5px dashed var(--warn);border-radius:var(--r-md);background:transparent;color:var(--warn);cursor:pointer" class="gl-inline-reveal">Reveal Passphrase</button><div class="gl-inline-pass-area" style="margin-top:6px"></div><div style="font-size:9px;color:var(--text-3);text-align:center;margin-top:6px">Share the passphrase separately from the link.</div></div>`);
                 },200);
                 results.push({type:'guest-link',ok:true,action:'create',id:payload.id});
               } else if(glAction==='list'){
