@@ -4258,8 +4258,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const url=URL.createObjectURL(blob);
         audio.src=url;
         audio.volume=getConfiguredVolume();
-        audio.onended=()=>{URL.revokeObjectURL(url);hideStopTTS();activeTTSSource=null;activeTTSGain=null};
-        audio.onpause=()=>{hideStopTTS();activeTTSSource=null;activeTTSGain=null};
+        audio.onended=()=>{URL.revokeObjectURL(url);hideStopTTS();activeTTSSource=null;activeTTSGain=null;try{maybeFlushQueueAfterTTS()}catch{}};
+        audio.onpause=()=>{hideStopTTS();activeTTSSource=null;activeTTSGain=null;try{maybeFlushQueueAfterTTS()}catch{}};
         activeTTSSource={stop(){audio.pause();audio.currentTime=0}};
         activeTTSGain=null;
         showStopTTS();
@@ -10077,6 +10077,7 @@ Return ONLY valid JSON, no explanation.`;
         <div class="send-queue-head">
           <div><strong>Queued</strong> (${count})</div>
           <div class="send-queue-actions">
+            <button class="send-queue-btn" id="queueFireNowBtn" type="button">Fire now</button>
             ${count>1?`<button class="send-queue-btn send-all ${_queueSendAllOnce?'armed':''}" id="queueSendAllBtn" type="button">Send all at once</button>`:''}
             ${(_queueSendAllOnce&&count>1)?`<button class="send-queue-btn disarm" id="queueDisarmBtn" type="button">Disarm</button>`:''}
             <button class="send-queue-btn" id="queueClearBtn" type="button">Clear</button>
@@ -10094,6 +10095,7 @@ Return ONLY valid JSON, no explanation.`;
           `).join('')}
         </div>
       `;
+      qEl.querySelector('#queueFireNowBtn')?.addEventListener('click',()=>{flushQueuedAutoSend();});
       qEl.querySelector('#queueSendAllBtn')?.addEventListener('click',()=>{_queueSendAllOnce=true;renderSendQueue();});
       qEl.querySelector('#queueDisarmBtn')?.addEventListener('click',()=>{_queueSendAllOnce=false;renderSendQueue();});
       qEl.querySelector('#queueClearBtn')?.addEventListener('click',()=>{_queuedAutoSends.length=0;_queueSendAllOnce=false;renderSendQueue();updateActionBtn();});
