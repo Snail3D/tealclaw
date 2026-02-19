@@ -8312,7 +8312,7 @@ Rules:
                 ? true
                 : await confirmTcAction('Open Camera Capture',`Open ${facing} camera. ${autoSend?'Photo will send to AI after you tap shutter.':'Photo will stay in draft until you send.'}`);
               if(!ok){results.push({type:'camera-capture',ok:false,error:'denied by user'});break}
-              const opened=await openCamera({facing,autoSend,autoSnap:true,message:msg,source:'tc-action'});
+              const opened=await openCamera({facing,autoSend,autoSnap:true,silent:true,message:msg,source:'tc-action'});
               results.push({type:'camera-capture',ok:!!opened,facing,autoSend});
               break;
             }
@@ -12039,23 +12039,61 @@ ${agentNote}`);
       };
       if(opts.facing==='user'||opts.facing==='environment')facingMode=opts.facing;
       const autoSnap=!!opts.autoSnap;
-      $('camOverlay').classList.remove('hidden');
+      const silent=!!opts.silent;
+      if(!silent)$('camOverlay').classList.remove('hidden');
       try{
         camStream=await navigator.mediaDevices.getUserMedia({
           video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
         });
         const vid=$('camVideo');
         vid.srcObject=camStream;
-        // Auto-snap: capture immediately once metadata is ready.
+        try{await vid.play()}catch{}
+
+        const snapNow=()=>{
+          const video=$('camVideo'),canvas=$('camCanvas');
+          if(!video||!canvas||!video.videoWidth||!video.videoHeight)return false;
+          canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+          canvas.getContext('2d').drawImage(video,0,0);
+          const rawUrl=canvas.toDataURL('image/jpeg',0.85);
+          const req={...cameraCaptureRequest};
+          closeCamera();
+          const sendText=(req.message||'').trim();
+          if(req.autoSend){
+            addTyping();
+            compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
+              removeTyping();
+              pipeline(sendText,comp?.dataUrl||rawUrl);
+            }).catch(()=>{removeTyping();pipeline(sendText,rawUrl)});
+            return true;
+          }
+          const n=pendingFiles.filter(f=>f.type==='image').length+1;
+          const idx=pendingFiles.length;
+          const origSize=Math.round(rawUrl.length*0.75);
+          pendingFiles.push({name:`Photo ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl});
+          renderFileStack();updateActionBtn();
+          compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
+            pendingFiles[idx]={name:`Photo ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false};
+            renderFileStack();
+          });
+          return true;
+        };
+
+        // Auto-snap: capture without showing the selfie UI.
         if(autoSnap){
-          const snapOnce=()=>{
-            try{vid.removeEventListener('loadedmetadata',snapOnce)}catch{}
-            setTimeout(()=>{try{$('camShutter')?.click()}catch{}},120);
+          const trySnap=()=>{
+            if(snapNow())return;
+            // Retry a few times while camera warms up
+            let tries=0;
+            const t=setInterval(()=>{
+              tries++;
+              if(snapNow()||tries>=15)clearInterval(t);
+            },60);
           };
-          // If metadata already loaded, snap now; otherwise wait.
-          if(vid.videoWidth&&vid.videoHeight)snapOnce();
-          else vid.addEventListener('loadedmetadata',snapOnce,{once:true});
+          // If dimensions ready, snap; else wait for canplay.
+          if(vid.videoWidth&&vid.videoHeight)trySnap();
+          else vid.addEventListener('canplay',trySnap,{once:true});
         }
+
         return true;
       }catch(e){
         showToast('Camera access denied','err');
