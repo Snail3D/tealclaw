@@ -58,6 +58,15 @@ Config keys:
 - `tagMessagesFromTealclaw` (bool) — default true on tealclaw.ai
 - `tealclawMessageTag` (string) — default: `[TealClaw] `
 
+### Voice: prevent accidental sends when the user didn’t speak
+TealClaw will ignore very short/likely-noise transcriptions so a tap or
+silent click doesn’t auto-send junk like "." or single short phrases.
+
+Config keys:
+- `voiceMinDurationMs` (number) — default 700
+- `voiceMinWords` (number) — default 3
+- `voiceMinChars` (number) — default 12
+
 ### Your Job: Give Them a Config JSON
 
 Include a fenced ```json code block in your response. TC auto-detects it
