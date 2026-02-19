@@ -1,4 +1,4 @@
-const CACHE = 'tealclaw-v198';
+const CACHE = 'tealclaw-v199';
 // IMPORTANT: Do NOT pre-cache navigation HTML (/, /index.html). If a bad build ever ships,
 // caching can “brick” the app for users until they manually clear site data.
 const ASSETS = ['/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png'];
@@ -25,7 +25,11 @@ self.addEventListener('fetch', e => {
   // Always fetch navigation from the network.
   // This prevents a cached index.html from “bricking” the app.
   if (e.request.mode === 'navigate') {
-    e.respondWith(fetch(e.request));
+    // Network-first for navigations (keeps HTML un-cached), with a safe offline fallback.
+    // If the user is offline, serve the cached /guest.html shell instead of failing.
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/guest.html'))
+    );
     return;
   }
 
