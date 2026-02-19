@@ -10096,7 +10096,12 @@ Return ONLY valid JSON, no explanation.`;
           `).join('')}
         </div>
       `;
-      qEl.querySelector('#queueFireNowBtn')?.addEventListener('click',()=>{flushQueuedAutoSend();});
+      qEl.querySelector('#queueFireNowBtn')?.addEventListener('click',()=>{
+        // Force queue flush even if TealClaw got stuck in a "busy" state.
+        try{stopTTSPlayback()}catch{}
+        try{stopStreaming()}catch{}
+        setTimeout(()=>{try{flushQueuedAutoSend()}catch{}},60);
+      });
       qEl.querySelector('#queueSendAllBtn')?.addEventListener('click',()=>{_queueSendAllOnce=true;renderSendQueue();});
       qEl.querySelector('#queueDisarmBtn')?.addEventListener('click',()=>{_queueSendAllOnce=false;renderSendQueue();});
       qEl.querySelector('#queueClearBtn')?.addEventListener('click',()=>{_queuedAutoSends.length=0;_queueSendAllOnce=false;clearQueueWatchTimer();renderSendQueue();updateActionBtn();});
