@@ -4171,7 +4171,12 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         if(!url||!token){showToast('Enter URL and token','err');return}
         const ag=getAgents();const existing=ag.find(a=>a.id===id);
         if(existing){existing.name=name;existing.url=url;existing.token=token;setAgents(ag)}
-        disconnectAgent(id);if(existing?.active)ensureAgentConnection(existing);
+        // Apply immediately: reconnect in-place so the user doesn't need to refresh.
+        try{disconnectAgent(id)}catch{}
+        if(existing?.active){
+          showToast('Reconnecting...','ok');
+          setTimeout(()=>{try{ensureAgentConnection(existing)}catch{};setTimeout(()=>updateStatus(),800)},50);
+        }
         openAgentEditor();renderAgentSelector();updateStatus();showToast(name+' updated','ok');
       });
       $('sheetBody').querySelector('#sheetAgentCancelEdit')?.addEventListener('click',()=>openAgentEditor());
@@ -4186,7 +4191,11 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const newAgent={id,name,url,token,active:ag.length===0};
         ag.push(newAgent);setAgents(ag);
         // Auto-switch to agent mode when adding first agent
-        if(newAgent.active){const k=getK();k.mode='agent';setK(k);ensureAgentConnection(newAgent)}
+        if(newAgent.active){
+          const k=getK();k.mode='agent';setK(k);
+          showToast('Connecting...','ok');
+          setTimeout(()=>{try{ensureAgentConnection(newAgent)}catch{};setTimeout(()=>updateStatus(),800)},50);
+        }
         openAgentEditor();renderAgentSelector();updateStatus();showToast(name+' added','ok');
       });
 
