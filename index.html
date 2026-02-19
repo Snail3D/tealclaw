@@ -2941,6 +2941,16 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         <div class="sheet-row-info"><div class="sheet-row-label">Gateway</div><div class="sheet-row-desc">${agents.length?agents.find(a=>a.active)?.name||agents[0]?.name:'Not configured'}</div></div>
         <div class="sheet-row-action">${agents.length?'Manage':'Add'}</div>
       </div></div>`;
+      const proactiveCamOn=k.allowProactiveCameraCapture!==false;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Agent Camera Access</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">Inline photo consent</div>
+            <div style="font-size:10px;color:var(--text-3)">For incoming <code>camera.capture</code>: ON shows lightweight Take photo / Cancel prompt, OFF uses full confirm modal.</div>
+          </div>
+          <button class="camera-consent-toggle btn ${proactiveCamOn?'btn-teal':'btn-ghost'} btn-sm" data-on="${proactiveCamOn}">${proactiveCamOn?'On':'Off'}</button>
+        </div>
+      </div>`;
 
       // Mode toggle
       const mode=k.mode||'direct';
@@ -3320,6 +3330,15 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           openKeyEditor(field,info);
         });
       });
+
+      $('sheetBody').querySelectorAll('.camera-consent-toggle').forEach(b=>b.addEventListener('click',()=>{
+        const k2=getK();
+        const on=b.dataset.on!=='true';
+        k2.allowProactiveCameraCapture=on;
+        setK(k2);
+        renderSheetContent();
+        showToast(on?'Inline camera consent enabled':'Inline camera consent disabled','ok');
+      }));
 
       // Wire up mode toggle
       $('sheetBody').querySelectorAll('.mode-btn[data-mode]').forEach(b=>b.addEventListener('click',()=>{
@@ -7870,6 +7889,30 @@ Rules:
       });
     }
 
+    function requestInlineCameraConsent({facing='environment',autoSend=true}={}){
+      return new Promise(resolve=>{
+        const id='tc-cam-'+Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>b.toString(16).padStart(2,'0')).join('');
+        const facingLabel=facing==='user'?'front':'back';
+        sysBubble(`<div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text)">AI requests a photo (${facingLabel} camera)</div>
+          <div style="font-size:10px;color:var(--text-3)">Take photo to continue. You still tap shutter ${autoSend?'before send.':'.'}</div>
+          <div style="display:flex;gap:8px;justify-content:flex-start">
+            <button class="btn btn-teal" id="${id}-take">Take photo</button>
+            <button class="btn btn-ghost" id="${id}-cancel">Cancel</button>
+          </div>
+        </div>`);
+        const scroll=$('chatScroll');
+        if(scroll){
+          if(typeof snapScrollToBottom==='function')snapScrollToBottom(scroll);
+          else scroll.scrollTop=scroll.scrollHeight;
+        }
+        const last=document.querySelector('.chat-bubble:last-child');
+        const disable=()=>{last?.querySelectorAll('.btn').forEach(b=>{b.style.opacity='0.5';b.style.pointerEvents='none'})};
+        last?.querySelector('#'+id+'-cancel')?.addEventListener('click',()=>{disable();showToast('Camera request cancelled','ok');haptic('light');resolve(false)});
+        last?.querySelector('#'+id+'-take')?.addEventListener('click',()=>{disable();resolve(true)});
+      });
+    }
+
     // Strip dangerous HTML from agent bubble content
     function sanitizeActionHtml(html){
       const div=document.createElement('div');div.innerHTML=html;
@@ -8052,8 +8095,10 @@ Rules:
               const facing=action.facing==='user'?'user':'environment';
               const autoSend=action.autoSend!==false;
               const msg=(action.message||action.prompt||action.text||'').trim();
-              const details=`Open ${facing} camera. ${autoSend?'Photo will send to AI after you tap shutter.':'Photo will stay in draft until you send.'}`;
-              const ok=await confirmTcAction('Open Camera Capture',details);
+              const proactiveOn=getK().allowProactiveCameraCapture!==false;
+              const ok=proactiveOn
+                ? await requestInlineCameraConsent({facing,autoSend})
+                : await confirmTcAction('Open Camera Capture',`Open ${facing} camera. ${autoSend?'Photo will send to AI after you tap shutter.':'Photo will stay in draft until you send.'}`);
               if(!ok){results.push({type:'camera-capture',ok:false,error:'denied by user'});break}
               const opened=await openCamera({facing,autoSend,message:msg,source:'tc-action'});
               results.push({type:'camera-capture',ok:!!opened,facing,autoSend});
@@ -11567,7 +11612,7 @@ ${agentNote}`);
       focusHighlight:'focusHighlight',compactMode:'compactMode',
       autoScroll:'autoScroll',hapticFeedback:'hapticFeedback',
       maxTokens:'maxTokens',temperature:'temperature',
-      soundEnabled:'soundEnabled',cameraEnabled:'cameraEnabled',
+      soundEnabled:'soundEnabled',cameraEnabled:'cameraEnabled',allowProactiveCameraCapture:'allowProactiveCameraCapture',
       // Quick replies, avatars, loading
       quickReplies:'quickReplies',userAvatar:'userAvatar',aiAvatar:'aiAvatar',
       loadingText:'loadingText',loadingEmoji:'loadingEmoji',contextMessages:'contextMessages',
@@ -12130,7 +12175,7 @@ ${agentNote}`);
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
-    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
 
     function buildConfigPayload(includeSensitive=false){
       const k=getK();
