@@ -5636,21 +5636,39 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return {text:c,usage};
     }
 
-    // Dual-transport agent call: prefer WS, fall back to HTTP
+    // Dual-transport agent call: prefer WS, fall back to HTTP.
+    // NOTE: Many OpenClaw gateways do NOT expose /v1/chat/completions (HTTP 405). So we try hard to ensure WS.
     async function callAgent(text,imageBase64,onToken){
       const agent=getActiveAgent();
       if(!agent)throw new Error('No agent configured. Open Settings and add a gateway agent, or switch to Direct mode.');
       if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
+
+      // If we are not connected, auto-reconnect before sending.
       let conn=agentConnections.get(agent.id);
-      // Wait briefly for a connecting WS before falling back to HTTP
-      if(conn&&!conn.connected&&conn.state==='connecting'){
-        await new Promise(r=>setTimeout(r,3000));
-        conn=agentConnections.get(agent.id);
+      if(!conn||!conn.connected){
+        try{conn=ensureAgentConnection(agent)}catch{}
+        // Wait up to ~10s for WS connect (most networks are fast; Cloudflare can take a beat)
+        const start=Date.now();
+        while((!conn||!conn.connected) && Date.now()-start<10000){
+          await new Promise(r=>setTimeout(r,250));
+          conn=agentConnections.get(agent.id);
+        }
       }
+
       if(conn?.connected){
         return callAgentWS(conn,text,imageBase64,onToken);
       }
-      return callAgentHTTP(agent,text,imageBase64);
+
+      // Last resort: HTTP fallback (may not be supported by the gateway)
+      try{
+        return await callAgentHTTP(agent,text,imageBase64);
+      }catch(e){
+        const msg=(e&&e.message)||String(e||'');
+        if(/\b405\b/.test(msg)||/Method Not Allowed/i.test(msg)){
+          throw new Error('Gateway not connected (WS offline) and HTTP fallback is not supported (405). Try /reconnect or refresh.');
+        }
+        throw e;
+      }
     }
 
     // ── Transcribe ─────────────────────────────────────
