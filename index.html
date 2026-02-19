@@ -5208,11 +5208,15 @@ RULES:
       conn.on('chat',(payload)=>{handlePassiveAgentReply(payload,conn)});
       // Listen for agent (builder) events
       conn.on('agent',(payload)=>{handleAgentEvent(payload,conn)});
-      // Listen for cross-device sync events
-      conn.on('chat.sync',(payload)=>{
-        if(payload.deviceId===getDeviceTag().id)return; // Ignore own messages
-        handleRemoteChatSync(payload);
-      });
+      // Listen for cross-device sync events (if supported by the gateway)
+      // Some OpenClaw gateways do not implement chat.sync; repeated calls can destabilize the WS connection.
+      const disableSync=localStorage.getItem('tc-disable-chat-sync')==='1';
+      if(!disableSync){
+        conn.on('chat.sync',(payload)=>{
+          if(payload.deviceId===getDeviceTag().id)return; // Ignore own messages
+          handleRemoteChatSync(payload);
+        });
+      }
       conn.start().then(hello=>{
         agentContext.agentName=agent.name||'';
         updateStatus();
@@ -5248,16 +5252,24 @@ RULES:
       // Same-device sync (other tabs)
       _syncChannel?.postMessage({type:'chat-update',deviceId:dev.id});
       // Cross-device sync via WS (fire-and-forget) — only in agent mode
+      // Feature-detect: if the gateway rejects chat.sync (INVALID_REQUEST unknown method), disable permanently.
       const k=getK();
       const agent=getActiveAgent();
       const conn=agent?agentConnections.get(agent.id):null;
-      if(k.mode==='agent'&&conn?.connected&&msg){
+      const disableSync=localStorage.getItem('tc-disable-chat-sync')==='1';
+      if(!disableSync&&k.mode==='agent'&&conn?.connected&&msg){
         conn.request('chat.sync',{
           deviceId:dev.id,
           deviceName:dev.name,
           message:{role:msg.role,text:msg.text,time:msg.time},
           conversationId:localStorage.getItem('tc-active-conv')||'default'
-        }).catch(()=>{});
+        }).catch(e=>{
+          const m=(e&&e.message)||'';
+          if(/unknown method:\s*chat\.sync/i.test(m)||/INVALID_REQUEST/i.test(m)){
+            try{localStorage.setItem('tc-disable-chat-sync','1')}catch{}
+            console.warn('[TealClaw] Gateway does not support chat.sync — disabling cross-device sync');
+          }
+        });
       }
     }
 
