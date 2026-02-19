@@ -10215,15 +10215,14 @@ ${agentNote}`);
         }
         if(cmd==='/photo'||cmd.startsWith('/photo ')||cmd==='/capture'||cmd.startsWith('/capture ')||cmd==='/takephoto'||cmd.startsWith('/takephoto ')){
           const cArg=text.replace(/^\/(?:photo|capture|takephoto)\s*/i,'').trim();
-          const opened=await openCamera({
+          openCamera({
             autoSend:true,
             message:cArg,
             source:'slash',
             facing:facingMode||'environment'
+          }).then(opened=>{
+            if(opened)showToast('Take photo to send','ok');
           });
-          if(opened){
-            showToast('Take photo to send','ok');
-          }
           return;
         }
         if(cmd==='/screenshot'||cmd.startsWith('/screenshot ')||cmd==='/screen'||cmd.startsWith('/screen ')||cmd==='/capture-screen'||cmd.startsWith('/capture-screen ')){
