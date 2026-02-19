@@ -8312,7 +8312,7 @@ Rules:
                 ? true
                 : await confirmTcAction('Open Camera Capture',`Open ${facing} camera. ${autoSend?'Photo will send to AI after you tap shutter.':'Photo will stay in draft until you send.'}`);
               if(!ok){results.push({type:'camera-capture',ok:false,error:'denied by user'});break}
-              const opened=await openCamera({facing,autoSend,message:msg,source:'tc-action'});
+              const opened=await openCamera({facing,autoSend,autoSnap:true,message:msg,source:'tc-action'});
               results.push({type:'camera-capture',ok:!!opened,facing,autoSend});
               break;
             }
@@ -12038,12 +12038,24 @@ ${agentNote}`);
         source:opts.source||'manual'
       };
       if(opts.facing==='user'||opts.facing==='environment')facingMode=opts.facing;
+      const autoSnap=!!opts.autoSnap;
       $('camOverlay').classList.remove('hidden');
       try{
         camStream=await navigator.mediaDevices.getUserMedia({
           video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
         });
-        $('camVideo').srcObject=camStream;
+        const vid=$('camVideo');
+        vid.srcObject=camStream;
+        // Auto-snap: capture immediately once metadata is ready.
+        if(autoSnap){
+          const snapOnce=()=>{
+            try{vid.removeEventListener('loadedmetadata',snapOnce)}catch{}
+            setTimeout(()=>{try{$('camShutter')?.click()}catch{}},120);
+          };
+          // If metadata already loaded, snap now; otherwise wait.
+          if(vid.videoWidth&&vid.videoHeight)snapOnce();
+          else vid.addEventListener('loadedmetadata',snapOnce,{once:true});
+        }
         return true;
       }catch(e){
         showToast('Camera access denied','err');
