@@ -11550,14 +11550,57 @@ ${agentNote}`);
       const latinLetters=letters.filter(ch=>/\p{Script=Latin}/u.test(ch));
       const nonLatinRatio = letters.length ? (1 - (latinLetters.length/letters.length)) : 0;
 
-      // Whitelist short commands (exact phrase) and allow polite/urgent suffixes.
+      // Whitelist short commands and allow polite/urgent suffixes.
+      // Includes a very small fuzzy-match so "stop" can still pass if Whisper returns "scott".
       if(allowShort && whitelist?.length){
         const cleaned = norm.replace(/\b(please|pls|plz|now)\b/g,'').replace(/\s+/g,' ').trim();
         const alsoAllow = cleaned.replace(/\b(ok|okay)\b/g,'').replace(/\s+/g,' ').trim();
         const candidates=[cleaned,alsoAllow].filter(Boolean);
         const wl=whitelist.map(s=>String(s||'').toLowerCase().trim()).filter(Boolean);
+
+        const editDist=(a,b)=>{
+          if(a===b)return 0;
+          const al=a.length,bl=b.length;
+          if(!al)return bl;
+          if(!bl)return al;
+          // small DP, strings are tiny here
+          const dp=new Array(bl+1);
+          for(let j=0;j<=bl;j++)dp[j]=j;
+          for(let i=1;i<=al;i++){
+            let prev=dp[0];
+            dp[0]=i;
+            const ai=a.charCodeAt(i-1);
+            for(let j=1;j<=bl;j++){
+              const tmp=dp[j];
+              const cost=(ai===b.charCodeAt(j-1))?0:1;
+              dp[j]=Math.min(
+                dp[j]+1,       // deletion
+                dp[j-1]+1,     // insertion
+                prev+cost      // substitution
+              );
+              prev=tmp;
+            }
+          }
+          return dp[bl];
+        };
+        const fuzzyOk=(c,w)=>{
+          // Only fuzzy-match short phrases (1–2 words) to avoid accidental sends.
+          const cw=c.split(' ').filter(Boolean);
+          const ww=w.split(' ').filter(Boolean);
+          if(cw.length>2||ww.length>2)return false;
+          if(c.length>14||w.length>14)return false;
+          const d=editDist(c,w);
+          const max=Math.max(c.length,w.length);
+          const th=(max<=5)?1:(max<=9?2:2);
+          return d<=th;
+        };
+
         for(const c of candidates){
           if(wl.includes(c))return true;
+          // Fuzzy match (very conservative)
+          for(const w of wl){
+            if(fuzzyOk(c,w))return true;
+          }
         }
       }
 
