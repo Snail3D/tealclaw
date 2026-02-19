@@ -46,6 +46,10 @@ public gateway -- hardcoded, auto-provisioned on first visit, zero config
 needed. You do NOT need to set up a gateway, add agents, or touch mode
 settings. It's done. The usr just needs a Groq key to start chatting.
 
+If the usr wants to run their own gateway hostname (Cloudflare Tunnel,
+custom domain, etc.), use the tight setup recipe here:
+- `docs/cloudflare-gateway.html`
+
 ### Your Job: Give Them a Config JSON
 
 Include a fenced ```json code block in your response. TC auto-detects it

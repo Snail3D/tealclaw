@@ -116,6 +116,9 @@ Works by voice too — just say "research quantum physics" or "imagine a sunset 
 
 TealClaw connects to **[OpenClaw](https://github.com/openclaw/openclaw)** gateways via WebSocket for full agent mode — shared context across Telegram, Discord, Signal, and more.
 
+Setup recipe (tight, repeatable):
+- `docs/cloudflare-gateway.html`
+
 ```
 Your Browser ←→ Cloudflare Tunnel ←→ OpenClaw Gateway ←→ Your AI Agent
 ```
