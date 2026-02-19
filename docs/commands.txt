@@ -12,6 +12,9 @@
 | `/research query` | Deep research report (GROQ-powered, uses groq/compound-mini) |
 | `/research` + image | Visual analysis — attach an image and type `/research` |
 | `/imagine prompt` | Generate an image using the configured image gen API |
+| `/photo [optional question]` | Open camera modal, capture a still, and send to chat pipeline for AI analysis |
+| `/capture [optional question]` | Alias for `/photo` |
+| `/takephoto [optional question]` | Alias for `/photo` |
 | `/export` | Export current conversation as encrypted JSON (re-importable) |
 | `/export all` | Export all conversations as encrypted JSON |
 | `/export md` | Download chat as Markdown file (for reading) |

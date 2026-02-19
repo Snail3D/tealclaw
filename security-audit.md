@@ -1,8 +1,8 @@
 # Security Audit: tealclaw
 
 - **Repository:** /Users/ericwoodard/Desktop/programs/tealclaw
-- **Branch/HEAD:** main @ 935b9a6
-- **Audit Date:** 2026-02-18 14:57 MST
+- **Branch/HEAD:** main @ cf6f78c
+- **Audit Date:** 2026-02-18 18:30 MST
 - **Risk Level:** 🟢 LOW
 
 ## Summary
@@ -11,12 +11,14 @@
 
 ## Scan Results
 
+- repo-security-sweep: unavailable (`command not found`) — manual fallback executed
 - TruffleHog (git history): verified=0 unverified=0 unknown=0
 - TruffleHog (filesystem): verified=0 unverified=0 unknown=0
 
 ## Commands Run
 
 ```bash
+repo-security-sweep .
 trufflehog git file:///Users/ericwoodard/Desktop/programs/tealclaw --results=verified,unknown --no-update
 trufflehog filesystem /Users/ericwoodard/Desktop/programs/tealclaw --results=verified,unknown --no-update
 ```

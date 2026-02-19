@@ -89,6 +89,7 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/research query` | Sourced research report |
 | `/deepresearch query` | Multi-tool deep analysis |
 | `/imagine prompt` | Generate an image |
+| `/photo` / `/capture` / `/takephoto` | Open camera, capture, and send photo for AI analysis |
 | `/voice` | Voice settings and personas |
 | `/save` | Save to Obsidian |
 | `/template` | Browse style templates |
