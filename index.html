@@ -5135,6 +5135,20 @@ RULES:
       }
 
       chatSend(text,attachments){
+        // Tag messages so the agent can tell they came from TealClaw.
+        // We prefer metadata, but the gateway may not surface it to the model,
+        // so we prefix the user-visible message in agent mode.
+        try{
+          const k=getK?.()||{};
+          const enabled = (k.tagMessagesFromTealclaw!==undefined)
+            ? !!k.tagMessagesFromTealclaw
+            : (location.hostname==='tealclaw.ai' || location.hostname.endsWith('.tealclaw.ai'));
+          const tag = (k.tealclawMessageTag!==undefined) ? String(k.tealclawMessageTag||'') : '[TealClaw] ';
+          if(enabled && tag && typeof text==='string' && text.trim() && !text.startsWith(tag)){
+            text = tag + text;
+          }
+        }catch{}
+
         const key=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(36).padStart(2,'0')).join('')}`;
         return this.request('chat.send',{sessionKey:this.sessionKey,message:text,idempotencyKey:key,attachments});
       }
@@ -11934,7 +11948,10 @@ ${agentNote}`);
       // Gesture tuning
       gestureConfidence:'gestureConfidence',
       // Group chat
-      groupChat:'groupChat'
+      groupChat:'groupChat',
+      // Source tagging (agent mode)
+      tagMessagesFromTealclaw:'tagMessagesFromTealclaw',
+      tealclawMessageTag:'tealclawMessageTag'
     };
 
     function importConfig(cfg){

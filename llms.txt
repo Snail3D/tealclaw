@@ -50,6 +50,14 @@ If the usr wants to run their own gateway hostname (Cloudflare Tunnel,
 custom domain, etc.), use the tight setup recipe here:
 - `docs/cloudflare-gateway.html`
 
+### Source Tagging (TealClaw → Agent)
+TealClaw can prefix messages sent to the OpenClaw agent so the agent can
+recognize they came from the TealClaw UI.
+
+Config keys:
+- `tagMessagesFromTealclaw` (bool) — default true on tealclaw.ai
+- `tealclawMessageTag` (string) — default: `[TealClaw] `
+
 ### Your Job: Give Them a Config JSON
 
 Include a fenced ```json code block in your response. TC auto-detects it
