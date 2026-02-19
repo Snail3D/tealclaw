@@ -10227,8 +10227,9 @@ ${agentNote}`);
         }
         if(cmd==='/screenshot'||cmd.startsWith('/screenshot ')||cmd==='/screen'||cmd.startsWith('/screen ')||cmd==='/capture-screen'||cmd.startsWith('/capture-screen ')){
           const sArg=text.replace(/^\/(?:screenshot|screen|capture-screen)\s*/i,'').trim();
-          const captured=await captureScreenFrame({autoSend:true,message:sArg,source:'slash'});
-          if(captured)showToast('Screenshot captured','ok');
+          captureScreenFrame({autoSend:true,message:sArg,source:'slash'}).then(captured=>{
+            if(captured)showToast('Screenshot captured','ok');
+          });
           return;
         }
         if(cmd==='/chron'||cmd.startsWith('/chron ')){
