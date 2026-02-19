@@ -8268,8 +8268,10 @@ Rules:
               const autoSend=action.autoSend!==false;
               const msg=(action.message||action.prompt||action.text||'').trim();
               const proactiveOn=getK().allowProactiveCameraCapture!==false;
+              // If the owner explicitly enables proactive capture, don't add extra in-app consent friction.
+              // The browser will still enforce camera permissions.
               const ok=proactiveOn
-                ? await requestInlineCameraConsent({facing,autoSend})
+                ? true
                 : await confirmTcAction('Open Camera Capture',`Open ${facing} camera. ${autoSend?'Photo will send to AI after you tap shutter.':'Photo will stay in draft until you send.'}`);
               if(!ok){results.push({type:'camera-capture',ok:false,error:'denied by user'});break}
               const opened=await openCamera({facing,autoSend,message:msg,source:'tc-action'});
