@@ -198,6 +198,9 @@ Example first-time cfg:
 
 - **IMAGE GEN** -- /imagine command powered by Google Gemini (Nano Banana). Supports text-to-image and image-to-image (attach a reference photo). Generated images are sent to connected agents with metadata. Groq Maverick provides visual commentary when no agent is connected. Keys: Google AI (AIza...) or OpenRouter (sk-or-v1-...). Voice-friendly: "imagine a sunset" works without the /.
 
+- **CAPTURE ROUTING (AGENT MODE)** -- Use `/photo` (or `/capture` / `/takephoto`) for one-off camera snapshots via `camera.capture`. Use `/screenshot` (or `/screen` / `/capture-screen`) for one-off display captures via `screen.capture`. Choose screenshot for app/site/UI debugging and photo for physical-world scenes. For persistent monitoring/alerts, use Overwatch/watch flows. Route retained stills to photo-log when usr asks to archive/review evidence (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general image Q&A.
+- **INLINE CAPTURE CONSENT SETTING** -- `allowProactiveCameraCapture` defaults ON. When ON and agent sends `camera.capture` or `screen.capture`, TealClaw shows lightweight inline consent (photo: Take photo / Cancel, screenshot: Take screenshot / Cancel). Screenshot flow captures one frame via getDisplayMedia and stops tracks immediately. When OFF, TealClaw uses full confirm modal.
+
 - **DEEP RESEARCH** -- /research uses GQ for structured reports with verdicts, findings, sources. Same free GQ k that enables voice.
 
 - **SCHEDULED MESSAGES** -- Timed greetings at specific times/days.
@@ -221,7 +224,7 @@ Example first-time cfg:
 
   Vision: usr tells you "create a custom chat for my trip to Japan" and you spin up a purpose-built PWA link with all trip context pre-loaded, relevant presets ("Find restaurants", "Translate this", "Check weather"), and appropriate rate limits. The link is shareable, encrypted, and expires when the trip ends.
 
-- **SHARE CONFIG WITH AGENT** -- Settings > Agent Tools > "Share Settings with Agent" sends your current config (sanitized -- API keys shown as presence booleans) to the active agent. The agent can then reply with tc-action config blocks to modify settings. Full round-trip: share config -> agent reads it -> agent replies with changes -> auto-applied.
+- **SHARE CONFIG WITH AGENT** -- Settings > Share > "Share Settings with Agent" sends your current config (sanitized -- API keys shown as presence booleans) to the active agent. The agent can then reply with tc-action config blocks to modify settings. Full round-trip: share config -> agent reads it -> agent replies with changes -> auto-applied.
 
 - **INTERACTIVE PROMPTS** -- tc-action type "prompt" shows tappable buttons in chat. The agent can ask yes/no questions or offer multiple choices. The user taps a button, the choice is returned to the agent. Use for confirmations, preference selection, or multi-step workflows.
 
@@ -273,7 +276,12 @@ Example first-time cfg:
                Beautiful responsive photo grid with lightbox. Layouts: 1 (full),
                2 (side-by-side), 3 (hero+2), 4 (2x2), 5+ (3-col masonry).
                Click opens fullscreen lightbox w/ arrow nav + keyboard support.
-    surveillance -- {"type":"surveillance","command":"start","camera":"user",
+    screen-capture -- {"type":"screen-capture","autoSend":true,"message":"what should I check?"}
+               One-off screenshot flow. Opens browser screen-share picker,
+               captures one frame via getDisplayMedia, stops tracks immediately,
+               and sends screenshot into pipeline(text,imageBase64).
+               Alias form also supported: {"kind":"screen.capture",...}.
+    surveillance -- {"type":"surveillance","command":"start","camera":"user", 
                     "cooldown":30,"sensitivity":0.7,"label":"Office Cam"}
                Starts device camera with face/motion detection. Commands: start, stop, snap.
                On detection: haptic alert, toast, snapshot sent to connected agent.
@@ -939,6 +947,14 @@ visible in cleartext, even in localStorage. Numeric PINs show numpad;
 alphanumeric shows text input. Set via Settings > PIN / Password Lock.
 Minimum 4 characters enforced.
 
+### Camera Privacy + Consent Rules (must follow)
+Before any `/photo`, `/screenshot`, Overwatch/watch, photo-log routing, surveillance, or proto-BOLO workflow:
+- Confirm the requester has consent/authority for the space and people being captured.
+- Refuse covert, stalking, or non-consensual monitoring/capture requests.
+- Minimize collection: capture only what is needed, avoid unnecessary identifying detail.
+- Prefer one-off `/photo` + `camera.capture` or `/screenshot` + `screen.capture` unless the user explicitly asks for persistent monitoring.
+- Use proto-BOLO only for explicit watchlist matching requests.
+
 ### Agent Config Guardrails
 You (the agent) can update ANY cfg field via tc-action config blocks EXCEPT:
 aiKey, whisperKey, gwToken, gwUrl, mode, pinCode, pinHash, tgToken, tgChatId, imageGenKey, webhookUrl, webhookEvents, customCSS.
@@ -1080,6 +1096,13 @@ Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/sp
 | /research + image | Visual analysis |
 | /imagine prompt | Generate image (Nano Banana). Attach image for edit/remix. Voice: "imagine prompt" |
 | /imagine + image | Image-to-image: edit/remix attached photo with prompt |
+| /photo [optional question] | One-off snapshot flow (camera.capture). Use facing based on task. |
+| /capture [optional question] | Alias for /photo |
+| /takephoto [optional question] | Alias for /photo |
+| /screenshot [optional question] | One-off display capture flow (screen.capture). Best for UI/app/website debugging. |
+| /screen [optional question] | Alias for /screenshot |
+| /capture-screen [optional question] | Alias for /screenshot |
+| /watch ... | Agent monitoring workflow (Overwatch/watch pipeline; persistent alerts) |
 | /export | Export current convo (enc JSON) |
 | /export all | Export all convos (enc JSON) |
 | /export md | Download chat as md |

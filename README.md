@@ -90,6 +90,7 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/deepresearch query` | Multi-tool deep analysis |
 | `/imagine prompt` | Generate an image |
 | `/photo` / `/capture` / `/takephoto` | Open camera, capture, and send photo for AI analysis |
+| `/screenshot` / `/screen` / `/capture-screen` | Open screen picker, capture one frame, and send screenshot for AI analysis |
 | `/voice` | Voice settings and personas |
 | `/save` | Save to Obsidian |
 | `/template` | Browse style templates |
@@ -99,6 +100,15 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/help` | All commands |
 
 Works by voice too — just say "research quantum physics" or "imagine a sunset over mars".
+
+### Agent Camera Routing (OpenClaw mode)
+- Use `/photo` (or `/capture` / `/takephoto`) for one-off camera snapshots, routed through `camera.capture`.
+- Use `/screenshot` (or `/screen` / `/capture-screen`) for display captures, routed through `screen.capture`. Prefer screenshot for UI/app/website debugging; prefer photo for real-world scenes.
+- Facing guidance: `environment` for rooms/objects/scenes, `user` for selfie/face checks.
+- Use Overwatch/watch flows for ongoing monitoring; use photo-log when the user wants archived reviewable captures.
+- Proto-BOLO is a watchlist-matching target workflow (v3), not general image Q&A.
+- Always confirm consent/authority before any camera capture or monitoring.
+- New setting (default ON): **Inline agent capture consent**. When an agent sends `camera.capture` or `screen.capture`, TealClaw shows lightweight prompts (photo: "Take photo / Cancel", screenshot: "Take screenshot / Cancel"). Screenshot capture stops screen-share tracks immediately after one frame.
 
 ---
 

@@ -15,6 +15,9 @@
 | `/photo [optional question]` | Open camera modal, capture a still, and send to chat pipeline for AI analysis |
 | `/capture [optional question]` | Alias for `/photo` |
 | `/takephoto [optional question]` | Alias for `/photo` |
+| `/screenshot [optional question]` | Open screen picker, capture one frame, and send to chat pipeline for AI analysis |
+| `/screen [optional question]` | Alias for `/screenshot` |
+| `/capture-screen [optional question]` | Alias for `/screenshot` |
 | `/export` | Export current conversation as encrypted JSON (re-importable) |
 | `/export all` | Export all conversations as encrypted JSON |
 | `/export md` | Download chat as Markdown file (for reading) |
@@ -65,6 +68,28 @@ Deep research powered by Groq API. Returns a structured report with:
 - Full context forwarded to Telegram/OpenClaw agent (3-4x more detail)
 
 Requires: Groq key (whisperKey). Same free key as voice input.
+
+### /photo / /capture / /takephoto
+One-off camera snapshot command. In agent mode, this should route through `camera.capture` (preferred).
+
+LLM/operator routing guidance:
+- Use `/photo` for immediate still captures.
+- Facing selection: `environment` for world/room/object capture, `user` for selfie/face checks.
+- For ongoing monitoring, use Overwatch/watch workflows instead of repeated `/photo` calls.
+- If user wants archival review or evidence trail, route captured stills to photo-log.
+- Proto-BOLO is for explicit watchlist matching workflows (v3 target), not broad identification.
+
+Privacy/consent requirements:
+- Confirm the requester has consent/authority for the people and space being captured.
+- Refuse covert, stalking, or non-consensual capture requests.
+- Agent capture requests respect `allowProactiveCameraCapture` (default ON): ON = lightweight inline Take photo/Take screenshot/Cancel prompt; OFF = full confirm modal.
+
+### /screenshot / /screen / /capture-screen
+One-off display capture command. Opens the browser's screen-share picker via `getDisplayMedia`, captures one frame to canvas, stops tracks immediately, and sends the screenshot into the chat pipeline.
+
+Routing guidance:
+- Use screenshot commands for UI bugs, website reviews, app states, dashboards, and anything visible on-screen.
+- Use `/photo` commands for physical-world scenes from device cameras.
 
 ### /keys
 Shows current configuration status:
