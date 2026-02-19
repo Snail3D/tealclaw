@@ -4516,6 +4516,10 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
         if(m.role==='ai'){
           if(m.raw)content+=displayText;
+          else if(displayText==='...'){
+            // Waiting-for-first-token indicator (bigger animated dots)
+            content+=`<div class="typing-dots" aria-label="Thinking"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
+          }
           else if(/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
             // Group chat: render each speaker segment with colored labels, alternating L/R
             const segs=parseGroupResponse(displayText);
