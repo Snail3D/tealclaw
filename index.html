@@ -1190,6 +1190,7 @@
       <li><a href="https://tealclaw.ai/docs/recipes.txt">Config Recipes</a></li>
       <li><a href="https://tealclaw.ai/docs/commands.txt">Chat Commands</a></li>
       <li><a href="https://tealclaw.ai/docs/free-setup.txt">Free Setup Guide</a></li>
+      <li><a href="https://tealclaw.ai/docs/openclaw-cloudflare-worker.txt">OpenClaw + Cloudflare (Phone-safe Worker)</a></li>
     </ul>
   </div>
   <script>document.getElementById('staticContent').style.display='none'</script>
@@ -6080,14 +6081,16 @@ GIF REACTIONS (~75% of responses — encouraged!):
 
       // Build the agent prompt for copy-paste (secure QR onboarding)
       const agentPrompt='Set up TealClaw for me using secure QR delivery.\n\n'
-        +'STEP 1 — GATEWAY + TUNNEL:\n'
+        +'IMPORTANT: I want to use TealClaw from my PHONE browser.\n'
+        +'If browser CORS preflight (OPTIONS) fails on /v1/chat/completions, use the Cloudflare Worker shim documented here: https://tealclaw.ai/docs/openclaw-cloudflare-worker.txt\n\n'
+        +'STEP 1 — GATEWAY + CLOUDFLARE TUNNEL:\n'
         +'1. Make sure my OpenClaw gateway is running (openclaw gateway run)\n'
         +'2. Install cloudflared if needed (brew install cloudflared)\n'
-        +'3. Start a quick tunnel: cloudflared tunnel --url http://localhost:18789\n'
-        +'4. Grab the tunnel URL when it appears (looks like https://xxx-xxx.trycloudflare.com)\n'
-        +'5. Read my auth token: openclaw config get gateway.auth.token\n'
-        +'6. If I have a Groq key, grab it: openclaw config get groq.apiKey\n'
-        +'   No Groq key? Ask me for one (free at console.groq.com/keys).\n\n'
+        +'3. Prefer a NAMED tunnel + stable hostname (recommended). Quick tunnels change URLs.\n'
+        +'   Named tunnel example: gw-origin.yourdomain.com → http://localhost:18789\n'
+        +'4. If you must use a quick tunnel: cloudflared tunnel --url http://localhost:18789\n'
+        +'   Grab the tunnel URL when it appears (looks like https://xxx-xxx.trycloudflare.com)\n'
+        +'5. Read my auth token: openclaw config get gateway.auth.token\n\n'
         +'STEP 2 — GENERATE ENCRYPTED QR CODE:\n'
         +'Run this Node.js script to generate a secure QR code image.\n'
         +'Fill in TUNNEL_URL, AUTH_TOKEN, GROQ_KEY with real values from step 1.\n'
