@@ -14244,8 +14244,9 @@ ${agentNote}`);
           const nw=reg.installing;
           nw.addEventListener('statechange',()=>{
             if(nw.state==='installed'&&navigator.serviceWorker.controller){
-              showToast('New version available — tap to update','ok',10000);
-              toast.style.cursor='pointer';toast.onclick=()=>location.reload();
+              showToast('New version available — refresh page to update','ok',10000);
+              // This toast is informational; the update requires a page refresh.
+              try{toast.style.cursor='default';toast.onclick=null}catch{}
               nw.postMessage('skipWaiting');
             }
           });
