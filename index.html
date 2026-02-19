@@ -10050,6 +10050,7 @@ Return ONLY valid JSON, no explanation.`;
     let _sending=false;
     const _queuedAutoSends=[]; // [{id,text,ts,open}]
     let _queueFlushTimer=null;
+    let _queueWatchTimer=null;
     let _queueSendAllOnce=false; // if true, next flush will send ALL staged messages in a single pass
 
     function isTTSPlaying(){
@@ -10098,11 +10099,12 @@ Return ONLY valid JSON, no explanation.`;
       qEl.querySelector('#queueFireNowBtn')?.addEventListener('click',()=>{flushQueuedAutoSend();});
       qEl.querySelector('#queueSendAllBtn')?.addEventListener('click',()=>{_queueSendAllOnce=true;renderSendQueue();});
       qEl.querySelector('#queueDisarmBtn')?.addEventListener('click',()=>{_queueSendAllOnce=false;renderSendQueue();});
-      qEl.querySelector('#queueClearBtn')?.addEventListener('click',()=>{_queuedAutoSends.length=0;_queueSendAllOnce=false;renderSendQueue();updateActionBtn();});
+      qEl.querySelector('#queueClearBtn')?.addEventListener('click',()=>{_queuedAutoSends.length=0;_queueSendAllOnce=false;clearQueueWatchTimer();renderSendQueue();updateActionBtn();});
       qEl.querySelectorAll('.send-queue-x').forEach(btn=>btn.addEventListener('click',e=>{
         e.stopPropagation();
         const idx=+btn.dataset.idx;
         if(Number.isFinite(idx))_queuedAutoSends.splice(idx,1);
+        if(!_queuedAutoSends.length)clearQueueWatchTimer();
         renderSendQueue();updateActionBtn();
       }));
       qEl.querySelectorAll('.send-queue-item').forEach(row=>row.addEventListener('click',()=>{
@@ -10119,12 +10121,27 @@ Return ONLY valid JSON, no explanation.`;
       const last=_queuedAutoSends[_queuedAutoSends.length-1];
       if(last&&last.text===t)return;
       _queuedAutoSends.push({id:crypto.randomUUID?.()||String(Date.now())+Math.random(),text:t,ts:Date.now(),open:false});
+      ensureQueueWatchTimer();
       renderSendQueue();
       updateActionBtn();
     }
 
     function clearQueueFlushTimer(){
       if(_queueFlushTimer){try{clearTimeout(_queueFlushTimer)}catch{};_queueFlushTimer=null}
+    }
+    function clearQueueWatchTimer(){
+      if(_queueWatchTimer){try{clearInterval(_queueWatchTimer)}catch{};_queueWatchTimer=null}
+    }
+    function ensureQueueWatchTimer(){
+      if(_queueWatchTimer)return;
+      _queueWatchTimer=setInterval(()=>{
+        if(!_queuedAutoSends.length){clearQueueWatchTimer();return}
+        if(_sending||recording||recorder?.state==='recording')return;
+        // If nothing is playing and we're idle, the queue should eventually flush.
+        if(!isTTSPlaying()){
+          try{flushQueuedAutoSend()}catch{}
+        }
+      },500);
     }
 
     function maybeFlushQueueAfterTTS(){
@@ -10148,7 +10165,7 @@ Return ONLY valid JSON, no explanation.`;
     function flushQueuedAutoSend(){
       clearQueueFlushTimer();
       if(_sending||recording||recorder?.state==='recording')return;
-      if(!_queuedAutoSends.length)return;
+      if(!_queuedAutoSends.length){clearQueueWatchTimer();return}
 
       // "Send all at once" option: collapse the staged queue into one outbound message.
       // This avoids concurrent sends and preserves provider-at-send-time behavior.
