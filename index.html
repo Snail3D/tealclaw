@@ -5502,6 +5502,20 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return new Promise((resolve,reject)=>{
         let full='',runId=null,usage=null,settled=false,finished=false;
         _localAgentInflight++;
+        // Timeout guard: if the gateway stops responding, don't leave the UI stuck in "sending" state.
+        const FIRST_TOKEN_TIMEOUT_MS=20000;
+        const TOTAL_TIMEOUT_MS=180000;
+        let firstTokTimer=setTimeout(()=>{
+          if(settled)return;
+          settled=true;conn.off('chat',onChat);clearRun();
+          reject(new Error('Gateway unresponsive (no response). If the gateway is offline, switch to Direct mode or restart it.'));
+        },FIRST_TOKEN_TIMEOUT_MS);
+        let totalTimer=setTimeout(()=>{
+          if(settled)return;
+          settled=true;conn.off('chat',onChat);clearRun();
+          reject(new Error('Gateway timeout. Try again or restart the gateway.'));
+        },TOTAL_TIMEOUT_MS);
+        const clearTimers=()=>{try{clearTimeout(firstTokTimer)}catch{}try{clearTimeout(totalTimer)}catch{}};
         const clearRun=()=>{
           if(finished)return;
           finished=true;
@@ -5511,9 +5525,11 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         const onChat=(payload)=>{
           if(!runId&&payload.runId){runId=payload.runId;_localAgentRunIds.add(runId)}
           if(payload.state==='delta'&&payload.message){
+            clearTimers();
             full=chatPayloadText(payload.message);
             if(onToken)onToken(full);
           } else if(payload.state==='final'){
+            clearTimers();
             if(payload.usage)usage={prompt:payload.usage.prompt_tokens||0,completion:payload.usage.completion_tokens||0,total:payload.usage.total_tokens||0,model:'agent'};
             const finalText=chatPayloadText(payload.message);
             if(finalText&&!full)full=finalText;
@@ -5521,9 +5537,11 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
             settled=true;conn.off('chat',onChat);clearRun();
             resolve({text:full,usage});
           } else if(payload.state==='error'){
+            clearTimers();
             settled=true;conn.off('chat',onChat);clearRun();
             reject(new Error(payload.errorMessage||'Agent error'));
           } else if(payload.state==='aborted'){
+            clearTimers();
             settled=true;conn.off('chat',onChat);clearRun();
             resolve({text:full||'(aborted)',usage:null});
           }
@@ -5535,7 +5553,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         conn.chatSend(msg,imageBase64?[{type:'image',data:imageBase64}]:undefined).then(ack=>{
           if(!runId&&ack?.runId){runId=ack.runId;_localAgentRunIds.add(runId)}
         }).catch(e=>{
-          if(!settled){settled=true;conn.off('chat',onChat);clearRun();reject(e)}
+          if(!settled){clearTimers();settled=true;conn.off('chat',onChat);clearRun();reject(e)}
         });
         // No timeout — agent reports when done (long-horizon tasks can run indefinitely)
       });
