@@ -5084,13 +5084,16 @@ RULES:
           const timeout=setTimeout(()=>{if(!settled){settled=true;this.ws.close();reject(new Error('connect timeout'))}},10000);
           this.ws.onmessage=(e)=>{
             let frame;try{frame=JSON.parse(e.data)}catch{return}
+            // Any valid inbound traffic means the socket is alive — don't rely solely on tick events.
+            // (Some gateways stop emitting ticks while busy, which can cause false disconnects.)
+            if(this.state==='connected')this._resetTick();
             if(frame.type==='event'){
               // Challenge → respond with connect
               if(frame.event==='connect.challenge'){
                 const nonce=frame.payload?.nonce||'';
                 this._sendConnect(nonce).catch(err=>console.error('device auth failed:',err));
               } else if(frame.event==='tick'){
-                this._resetTick();
+                // Tick is still supported, but we also reset on any frame above.
               } else {
                 this._emitEvent(frame.event,frame.payload);
               }
