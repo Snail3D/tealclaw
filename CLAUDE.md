@@ -20,6 +20,9 @@ No backend. No database. No tracking. Static files on Cloudflare Pages.
 - All API keys stored in browser localStorage only
 - All API calls go directly from browser to provider (verify in DevTools > Network)
 - Agent connection via user's own OpenClaw gateway over Cloudflare Tunnel
+- Ed25519 device identity generated per browser instance (stored in localStorage)
+- Device auth is REQUIRED by OpenClaw gateways (v2026.2.15+) -- without it,
+  gateways strip all scopes and every method call fails
 - PWA: installable, works offline (cached assets)
 - Single HTML file + manifest + service worker
 
@@ -47,6 +50,19 @@ cloudflared tunnel run --url http://127.0.0.1:18789 openclaw-gw
 ```
 
 **Agent URLs in TealClaw MUST be HTTPS.** Cloudflare Tunnel handles TLS automatically.
+
+## Device Auth & Pairing
+
+TealClaw signs every WebSocket connect request with an Ed25519 device identity.
+This is required by OpenClaw gateways v2026.2.15+ -- gateways that don't receive
+device auth will strip all scopes (operator.admin, operator.write, etc.) to empty,
+causing every method call to fail with "missing scope" errors.
+
+- Device identity: Ed25519 key pair, deviceId = SHA-256(publicKey), stored in localStorage
+- Signing: v2 payload format `v2|deviceId|clientId|clientMode|role|scopes|signedAtMs|token|nonce`
+- Local connections: pairing auto-approved (silent)
+- Remote connections (Cloudflare Tunnel): gateway operator must approve device once
+- Key code: `getOrCreateDeviceIdentity()`, `signDeviceAuth()`, `_sendConnect()` in index.html
 
 ## Development
 

@@ -254,7 +254,7 @@ Example: `{"rateLimitPerMin": 10}` — allows 10 messages per minute, blocks add
 | Field | Type | Description |
 |-------|------|-------------|
 | customCSS | string | Inject arbitrary CSS. Ultimate escape hatch for styling |
-| agents | array | OpenClaw gateway agents. Array of {id, name, url, token, active} objects. Replaces entire list |
+| agents | array | OpenClaw gateway agents. Array of {id, name, url, token, active} objects. Replaces entire list. URLs MUST be HTTPS (Cloudflare Tunnel). Device pairing required on first remote connection |
 
 ## Key Auto-Detection Prefixes
 
