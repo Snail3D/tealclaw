@@ -364,8 +364,26 @@
 
     .circle-btn{width:var(--btn-size,50px);height:var(--btn-size,50px);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--t);flex-shrink:0}
     .circle-btn svg{width:calc(var(--btn-size,50px) * 0.45);height:calc(var(--btn-size,50px) * 0.45)}
-    .send-btn{background:var(--teal);color:#fff} .send-btn:hover{background:var(--teal-hover)}
+    .send-btn{background:var(--teal);color:#fff;position:relative} .send-btn:hover{background:var(--teal-hover)}
+    .send-btn.queueing{background:#f7c948;color:#111} .send-btn.queueing:hover{background:#f2b705}
+    .send-btn .queue-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#f2b705;color:#111;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.35)}
+    .send-btn.has-queue .queue-badge{display:flex}
     .send-btn.hidden{display:none}
+
+    .send-queue{max-width:760px;margin:0 auto 8px;display:flex;flex-direction:column;gap:6px}
+    .send-queue.hidden{display:none}
+    .send-queue-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--text-2);font-size:11px}
+    .send-queue-actions{display:flex;gap:6px}
+    .send-queue-btn{border:1px solid var(--border);background:var(--bg-input);color:var(--text-2);border-radius:999px;padding:5px 10px;font-size:11px;cursor:pointer}
+    .send-queue-btn:hover{color:var(--text);border-color:var(--border-2)}
+    .send-queue-item{border:1px solid var(--border);background:rgba(255,255,255,0.03);border-radius:14px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+    .send-queue-item:hover{border-color:var(--border-2)}
+    .send-queue-text{font-size:12px;color:var(--text);line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .send-queue-item.open .send-queue-text{-webkit-line-clamp:unset}
+    .send-queue-meta{font-size:10px;color:var(--text-3);margin-top:4px}
+    .send-queue-x{width:26px;height:26px;border-radius:999px;border:1px solid rgba(239,68,68,0.35);background:rgba(239,68,68,0.12);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1}
+    .send-queue-x:hover{background:rgba(239,68,68,0.2);border-color:#ef4444}
+
     .stop-stream-btn{background:#e04040;color:#fff} .stop-stream-btn:hover{background:#c53030}
     .stop-stream-btn.hidden{display:none}
     .debate-skip-wrap{display:flex;justify-content:flex-end;max-width:760px;margin:8px auto 0}
@@ -1433,6 +1451,7 @@
         <select id="agentChatSelect"></select>
       </div>
       <div class="file-stack" id="fileStack"></div>
+      <div class="send-queue hidden" id="sendQueue" aria-label="Queued messages"></div>
       <div class="input-row">
         <div class="claw-wrap">
           <button class="claw-toggle" id="clawToggle" title="Toggle Claw mode" aria-label="Toggle Claw mode">
@@ -1454,7 +1473,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         </button>
         <button class="circle-btn send-btn hidden" id="sendBtn" title="Send">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span class="queue-badge" id="queueBadge">0</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y1="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
         <button class="circle-btn stop-stream-btn hidden" id="stopStreamBtn" title="Stop generating">
           <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
@@ -9987,9 +10007,11 @@ Return ONLY valid JSON, no explanation.`;
       const hasText=$('textIn').value.trim().length>0;
       const hasFiles=pendingFiles.length>0;
       const streaming=!!_sending;
+      const willQueue=shouldStageInsteadOfSend()&&hasText&&!hasFiles; // if files attached, we force send (avoids losing attachments)
       $('micBtn').classList.toggle('hidden',hasText||hasFiles||streaming);
       $('sendBtn').classList.toggle('hidden',(!hasText&&!hasFiles)||streaming);
       $('stopStreamBtn').classList.toggle('hidden',!streaming);
+      $('sendBtn').classList.toggle('queueing',willQueue);
     }
     function stopStreaming(){
       if(window._tcActiveReader){try{window._tcActiveReader.cancel()}catch{}}
@@ -10000,24 +10022,107 @@ Return ONLY valid JSON, no explanation.`;
     }
     $('stopStreamBtn').addEventListener('click',()=>stopStreaming());
 
-    // ── Send ───────────────────────────────────────────
+    // ── Send + Staged Queue ─────────────────────────────
     let _sending=false;
-    const _queuedAutoSends=[];
+    const _queuedAutoSends=[]; // [{id,text,ts,open}]
+    let _queueFlushTimer=null;
+
+    function isTTSPlaying(){
+      try{return !!audio && !audio.paused && !audio.ended && audio.currentTime>0}catch{return false}
+    }
+
+    function shouldStageInsteadOfSend(){
+      // Stage when a request is in-flight; optionally also stage while TTS is speaking.
+      if(_sending)return true;
+      const k=getK();
+      if(k.stageWhileTTSPlaying===false)return false;
+      return isTTSPlaying();
+    }
+
+    function renderSendQueue(){
+      const qEl=$('sendQueue');
+      const sb=$('sendBtn');
+      const badge=$('queueBadge');
+      const count=_queuedAutoSends.length;
+      if(badge){badge.textContent=String(count)}
+      if(sb){sb.classList.toggle('has-queue',count>0)}
+      if(count===0){qEl.classList.add('hidden');qEl.innerHTML='';return}
+      qEl.classList.remove('hidden');
+      qEl.innerHTML=`
+        <div class="send-queue-head">
+          <div><strong>Queued</strong> (${count})</div>
+          <div class="send-queue-actions">
+            <button class="send-queue-btn" id="queueClearBtn" type="button">Clear</button>
+          </div>
+        </div>
+        <div class="send-queue-list">
+          ${_queuedAutoSends.map((m,idx)=>`
+            <div class="send-queue-item ${m.open?'open':''}" data-idx="${idx}">
+              <div>
+                <div class="send-queue-text">${esc(m.text||'')}</div>
+                <div class="send-queue-meta">Staged</div>
+              </div>
+              <button class="send-queue-x" data-idx="${idx}" title="Remove" aria-label="Remove">&times;</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      qEl.querySelector('#queueClearBtn')?.addEventListener('click',()=>{_queuedAutoSends.length=0;renderSendQueue();updateActionBtn();});
+      qEl.querySelectorAll('.send-queue-x').forEach(btn=>btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const idx=+btn.dataset.idx;
+        if(Number.isFinite(idx))_queuedAutoSends.splice(idx,1);
+        renderSendQueue();updateActionBtn();
+      }));
+      qEl.querySelectorAll('.send-queue-item').forEach(row=>row.addEventListener('click',()=>{
+        const idx=+row.dataset.idx;
+        if(!Number.isFinite(idx))return;
+        _queuedAutoSends[idx].open=!_queuedAutoSends[idx].open;
+        renderSendQueue();
+      }));
+    }
 
     function queueAutoSendText(text){
       const t=(text||'').trim();
       if(!t)return;
-      if(_queuedAutoSends[_queuedAutoSends.length-1]===t)return;
-      _queuedAutoSends.push(t);
+      const last=_queuedAutoSends[_queuedAutoSends.length-1];
+      if(last&&last.text===t)return;
+      _queuedAutoSends.push({id:crypto.randomUUID?.()||String(Date.now())+Math.random(),text:t,ts:Date.now(),open:false});
+      renderSendQueue();
+      updateActionBtn();
+    }
+
+    function clearQueueFlushTimer(){
+      if(_queueFlushTimer){try{clearTimeout(_queueFlushTimer)}catch{};_queueFlushTimer=null}
+    }
+
+    function maybeFlushQueueAfterTTS(){
+      clearQueueFlushTimer();
+      if(!_queuedAutoSends.length)return;
+      if(_sending||recording||recorder?.state==='recording')return;
+      // If TTS is currently playing, flush when it's ~75% complete for better "in sync" flow.
+      if(isTTSPlaying()){
+        const dur=audio.duration;
+        const cur=audio.currentTime;
+        if(Number.isFinite(dur)&&dur>0.25){
+          const target=Math.min(dur,Math.max(cur,0)+Math.max(0.05,dur*0.75-cur));
+          const ms=Math.max(50,Math.floor((target-cur)*1000));
+          _queueFlushTimer=setTimeout(()=>{flushQueuedAutoSend();},ms);
+          return;
+        }
+      }
       flushQueuedAutoSend();
     }
 
     function flushQueuedAutoSend(){
+      clearQueueFlushTimer();
       if(_sending||recording||recorder?.state==='recording')return;
       if(!_queuedAutoSends.length)return;
       const next=_queuedAutoSends.shift();
-      if(!next)return;
-      $('textIn').value=next;
+      renderSendQueue();
+      updateActionBtn();
+      if(!next||!next.text)return;
+      $('textIn').value=next.text;
       $('textIn').dispatchEvent(new Event('input'));
       send();
     }
@@ -10029,7 +10134,19 @@ Return ONLY valid JSON, no explanation.`;
         if(draft)queueAutoSendText(draft);
         return;
       }
-      let text=$('textIn').value.trim();
+
+      // If TTS is currently playing, stage the next message for a smoother "in sync" flow.
+      // (Attachments are NOT staged — only text — to avoid accidentally losing them.)
+      const hasFilesNow=pendingFiles.length>0;
+      const draftNow=$('textIn').value.trim();
+      if(!hasFilesNow && draftNow && shouldStageInsteadOfSend()){
+        $('textIn').value='';$('textIn').style.height='auto';
+        updateActionBtn();
+        queueAutoSendText(draftNow);
+        return;
+      }
+
+      let text=draftNow;
       const imageFiles=pendingFiles.filter(f=>f.dataUrl&&f.type==='image');
       const images=imageFiles.map(f=>f.dataUrl);
       const docs=pendingFiles.filter(f=>f.type==='document'&&f.text);
@@ -10601,7 +10718,8 @@ ${agentNote}`);
       pipeline(text+noteStr,firstImage).finally(()=>{
         _sending=false;
         updateActionBtn();
-        flushQueuedAutoSend();
+        // If voice output is playing, flush queued messages near the end of playback for better pacing.
+        maybeFlushQueueAfterTTS();
       });
     }
 
