@@ -66,6 +66,8 @@ Config keys:
 - `voiceMinDurationMs` (number) — default 700
 - `voiceMinWords` (number) — default 3
 - `voiceMinChars` (number) — default 12
+- `voiceAllowShortCommands` (bool) — default true
+- `voiceCommandWhitelist` (string[]) — phrases that should always be allowed (e.g. "stop", "cancel", "do it")
 
 ### Your Job: Give Them a Config JSON
 

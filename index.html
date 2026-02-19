@@ -11529,14 +11529,41 @@ ${agentNote}`);
       const minChars=Number.isFinite(+k.voiceMinChars)?Math.max(0,+k.voiceMinChars):12;
       const minWords=Number.isFinite(+k.voiceMinWords)?Math.max(0,+k.voiceMinWords):3;
 
+      const allowShort = (k.voiceAllowShortCommands!==undefined) ? !!k.voiceAllowShortCommands : true;
+      const defaultWhitelist=['stop','cancel','restart','send','yes','no','do it','lets go','let\'s go','hurry up'];
+      const whitelist = Array.isArray(k.voiceCommandWhitelist) ? k.voiceCommandWhitelist : defaultWhitelist;
+
       const t=(rawText||'').trim();
       if(!t)return false;
       if(/^[\s\p{P}]+$/u.test(t))return false; // punctuation-only (".", "...", etc.)
+
+      // Normalize to simple phrase for matching + counting
+      const norm=t
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s']/gu,' ')  // keep letters/numbers/spaces/apostrophe
+        .replace(/\s+/g,' ')
+        .trim();
+      if(!norm)return false;
+
+      // If it's mostly non-latin letters and short, ignore (prevents weird CJK noise) unless explicitly whitelisted.
+      const letters=[...norm].filter(ch=>/\p{L}/u.test(ch));
+      const latinLetters=letters.filter(ch=>/\p{Script=Latin}/u.test(ch));
+      const nonLatinRatio = letters.length ? (1 - (latinLetters.length/letters.length)) : 0;
+
+      // Whitelist short commands (exact phrase) and allow polite/urgent suffixes.
+      if(allowShort && whitelist?.length){
+        const cleaned = norm.replace(/\b(please|pls|plz|now)\b/g,'').replace(/\s+/g,' ').trim();
+        const alsoAllow = cleaned.replace(/\b(ok|okay)\b/g,'').replace(/\s+/g,' ').trim();
+        const candidates=[cleaned,alsoAllow].filter(Boolean);
+        const wl=whitelist.map(s=>String(s||'').toLowerCase().trim()).filter(Boolean);
+        for(const c of candidates){
+          if(wl.includes(c))return true;
+        }
+      }
+
+      if(nonLatinRatio>0.6 && norm.length<20)return false;
       if(durationMs!=null&&durationMs<minDur)return false;
 
-      // Normalize for word/char counts (strip punctuation)
-      const norm=t.replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
-      if(!norm)return false;
       const words=norm.split(' ').filter(Boolean);
       if(words.length>=minWords)return true;
       if(norm.length>=minChars)return true;
@@ -11990,6 +12017,8 @@ ${agentNote}`);
       voiceMinDurationMs:'voiceMinDurationMs',
       voiceMinChars:'voiceMinChars',
       voiceMinWords:'voiceMinWords',
+      voiceAllowShortCommands:'voiceAllowShortCommands',
+      voiceCommandWhitelist:'voiceCommandWhitelist',
       // Gesture tuning
       gestureConfidence:'gestureConfidence',
       // Group chat
