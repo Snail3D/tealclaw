@@ -1913,7 +1913,12 @@
 
     // ── Storage ────────────────────────────────────────
     function getK(){try{return JSON.parse(localStorage.getItem('tc-keys')||'{}')}catch{return{}}}
-    function setK(k){localStorage.setItem('tc-keys',JSON.stringify(k))}
+    // Central setter for TealClaw settings.
+    // Emits an event so the running app can react immediately (no manual refresh required).
+    function setK(k){
+      localStorage.setItem('tc-keys',JSON.stringify(k));
+      try{window.dispatchEvent(new CustomEvent('tc-keys-updated',{detail:k}))}catch{}
+    }
     function getDeviceTag(){
       const k=getK();
       const name=k.deviceName||'';
@@ -2102,7 +2107,33 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
-    function setAgents(a){localStorage.setItem('tc-agents',JSON.stringify(a))}
+    function setAgents(a){
+      localStorage.setItem('tc-agents',JSON.stringify(a));
+      try{window.dispatchEvent(new CustomEvent('tc-agents-updated',{detail:a}))}catch{}
+    }
+
+    // React immediately to settings changes (so users don't have to refresh).
+    // Note: keep this lightweight; it fires often.
+    let _tcConfigApplyTimer=null;
+    function scheduleConfigApply(){
+      clearTimeout(_tcConfigApplyTimer);
+      _tcConfigApplyTimer=setTimeout(()=>{
+        try{applyVisualConfig()}catch{}
+        try{updateStatus()}catch{}
+        try{renderAgentSelector()}catch{}
+        // If agent mode is active and we now have a valid active agent, connect/reconnect.
+        try{
+          const k=getK();
+          if(k.mode==='agent'){
+            const agents=getAgents();
+            const active=agents.find(a=>a.active)||agents[0];
+            if(active?.url&&active?.token)ensureAgentConnection(active);
+          }
+        }catch{}
+      },50);
+    }
+    window.addEventListener('tc-keys-updated',scheduleConfigApply);
+    window.addEventListener('tc-agents-updated',scheduleConfigApply);
 
     // ── Auto-provisioning for tealclaw.ai public gateway ──
     const TEALCLAW_GW_URL='https://gw.tealclaw.ai';
