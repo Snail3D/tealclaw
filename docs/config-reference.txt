@@ -32,6 +32,18 @@ All values are stored in browser localStorage. No server, no database.
 |-------|------|-------------|
 | sysPrompt | string | System prompt sent to the AI. Supports any instructions, persona, etc. |
 | mode | "direct" / "agent" | Direct = browser calls provider API. Agent = route through OpenClaw gateway |
+| allowProactiveCameraCapture | boolean | Default: true. If true, incoming `tc-action` `camera.capture` uses lightweight inline consent (Take photo / Cancel). If false, uses full confirm modal flow. |
+
+## Agent Camera Routing (Operational Guidance)
+
+When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
+- Use `/photo` (or `/capture` / `/takephoto`) for one-off snapshots via `camera.capture`.
+- Use Overwatch/watch flows for persistent monitoring and recurring alerts.
+- Facing guidance: `environment` for scenes/objects, `user` for selfie/face checks.
+- Route retained stills into photo-log when users ask to archive/review captures (v2 target behavior).
+- Proto-BOLO is intended for watchlist matching workflows (v3 target).
+- Always require user consent/authority before camera capture or monitoring.
+- `allowProactiveCameraCapture` (default true): show inline consent UI for `camera.capture` requests (Take photo / Cancel). If false, keep strict confirm modal.
 
 ## Telegram Forwarding
 

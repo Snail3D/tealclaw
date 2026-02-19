@@ -66,6 +66,21 @@ Deep research powered by Groq API. Returns a structured report with:
 
 Requires: Groq key (whisperKey). Same free key as voice input.
 
+### /photo / /capture / /takephoto
+One-off camera snapshot command. In agent mode, this should route through `camera.capture` (preferred).
+
+LLM/operator routing guidance:
+- Use `/photo` for immediate still captures.
+- Facing selection: `environment` for world/room/object capture, `user` for selfie/face checks.
+- For ongoing monitoring, use Overwatch/watch workflows instead of repeated `/photo` calls.
+- If user wants archival review or evidence trail, route captured stills to photo-log.
+- Proto-BOLO is for explicit watchlist matching workflows (v3 target), not broad identification.
+
+Privacy/consent requirements:
+- Confirm the requester has consent/authority for the people and space being captured.
+- Refuse covert, stalking, or non-consensual capture requests.
+- Agent camera requests respect `allowProactiveCameraCapture` (default ON): ON = lightweight inline Take photo/Cancel prompt; OFF = full confirm modal.
+
 ### /keys
 Shows current configuration status:
 - AI provider and key status

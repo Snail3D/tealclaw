@@ -100,6 +100,14 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 
 Works by voice too — just say "research quantum physics" or "imagine a sunset over mars".
 
+### Agent Camera Routing (OpenClaw mode)
+- Use `/photo` (or `/capture` / `/takephoto`) for one-off snapshots, routed through `camera.capture`.
+- Facing guidance: `environment` for rooms/objects/scenes, `user` for selfie/face checks.
+- Use Overwatch/watch flows for ongoing monitoring; use photo-log when the user wants archived reviewable captures.
+- Proto-BOLO is a watchlist-matching target workflow (v3), not general image Q&A.
+- Always confirm consent/authority before any camera capture or monitoring.
+- New setting (default ON): **Inline agent camera consent**. When an agent sends `camera.capture`, TealClaw shows a lightweight "AI requests a photo — Take photo / Cancel" prompt; tapping **Take photo** opens camera and user still taps shutter.
+
 ---
 
 ## Connect Your Own Agent

@@ -4732,6 +4732,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture require user approval.
 IMPORTANT: When the user asks to change settings, customize the app, or modify their configuration — activate help mode first with {"type":"navigate","target":"help-mode"} so you have full context to make changes accurately. You can also show the help menu with {"type":"navigate","target":"help"} to let the user see available commands.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
+Camera routing (agent mode): use /photo (or /capture /takephoto) for one-off snapshots via camera.capture. Choose facing intentionally: environment for rooms/objects/scenes, user for selfie/face checks. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
+Privacy/consent: confirm requester authority/consent before camera capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
 Video: \`\`\`tc-action\n{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}\n\`\`\` Supports HLS, MP4, WebM. Auto-PiP on scroll.
 Camera grid: \`\`\`tc-action\n{"type":"video-grid","title":"Security","cols":2,"feeds":[{"url":"...","label":"Front"},{"url":"...","label":"Back"}]}\n\`\`\` 1-4 cols, each feed has url+label+live.
 Photo gallery: \`\`\`tc-action\n{"type":"gallery","title":"Photos","images":[{"url":"...","caption":"Sunset"},{"url":"..."}]}\n\`\`\` Beautiful grid, lightbox on tap, keyboard nav.
@@ -6201,6 +6203,8 @@ SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagi
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
+- For camera actions, require user consent/authority; refuse covert or non-consensual capture/monitoring
+- Use /photo + camera.capture for one-off snapshots; use Overwatch/watch for persistent monitoring
 - ALWAYS include a tc-action block when the user asks to change something — do not just describe the change
 - Be proactive: suggest improvements, offer templates, configure features
 - Keep your text responses brief — let the actions speak`;
