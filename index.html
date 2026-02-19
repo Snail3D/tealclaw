@@ -8144,10 +8144,8 @@ Rules:
               const hasSensitive=['aiKey','whisperKey','tgToken','webhookUrl','customCSS','pinHash'].some(s=>data[s]);
               const desc=keys.slice(0,5).join(', ')+(keys.length>5?'...':'')+(hasSensitive?' (includes sensitive keys)':'');
               const helpAutoApply=_helpMode&&keys.every(k=>TC_HELPMODE_AUTO_KEYS.has(k));
-              if(!helpAutoApply){
-                const ok=await confirmTcAction('Update '+keys.length+' config setting'+(keys.length===1?'':'s'),desc);
-                if(!ok){results.push({type:'config',ok:false,error:'denied by user'});break}
-              }
+              // No in-app confirmation for config changes (power-user control surface).
+              // Keep blocked sensitive keys enforcement via TC_BLOCKED_CONFIG_KEYS above.
               const count=importConfig(data);
               applyVisualConfig();updateStatus();renderAgentSelector();renderQuickReplies();
               if(_helpMode)showToast(`Applied ${count} setting${count===1?'':'s'}`,'ok');
@@ -8157,9 +8155,8 @@ Rules:
             case 'command':{
               const cmd=action.command||action.text||'';
               if(cmd.startsWith('/')){
-                const ok=await confirmTcAction('Run command',cmd);
-                if(!ok){results.push({type:'command',ok:false,error:'denied by user'});break}
-                // Call pipeline directly — send() would be blocked by _sending guard
+                // No in-app confirmation for commands (power-user control surface).
+                // Blocked/slimmed commands should be handled at the command/router layer.
                 setTimeout(()=>pipeline(cmd,null),300);
                 results.push({type:'command',ok:true,command:cmd});
               }
@@ -8168,8 +8165,7 @@ Rules:
             case 'save':{
               const name=action.name||`Agent Note - ${new Date().toISOString().slice(0,10)}`;
               const folder=action.folder||'Daily';
-              const ok=await confirmTcAction('Save to Obsidian',`"${name}" → ${folder}/`);
-              if(!ok){results.push({type:'save',ok:false,error:'denied by user'});break}
+              // No in-app confirmation for saves (power-user control surface).
               const tags=action.tags||['tealclaw','agent'];
               const now=new Date().toISOString();
               let md=`---\ntags: [${tags.join(', ')}]\ncreated: ${now}\nsource: "[[TealClaw]]"\nagent: true\n---\n\n`;
@@ -8205,8 +8201,7 @@ Rules:
               const vars=action.vars;
               if(vars&&typeof vars==='object'){
                 const keys=Object.keys(vars).filter(k=>k.startsWith('--'));
-                const ok=await confirmTcAction('Change '+keys.length+' CSS variable'+(keys.length===1?'':'s'),keys.slice(0,5).join(', ')+(keys.length>5?'...':''));
-                if(!ok){results.push({type:'style',ok:false,error:'denied by user'});break}
+                // No in-app confirmation for style changes (power-user control surface).
                 const root=document.documentElement;
                 // Sanitize CSS values: strip url(), expression(), -moz-binding
                 keys.forEach(k=>{let v=String(vars[k]);v=v.replace(/url\s*\(/gi,'').replace(/expression\s*\(/gi,'').replace(/-moz-binding/gi,'');root.style.setProperty(k,v)});
@@ -8291,9 +8286,9 @@ Rules:
               const autoSend=action.autoSend!==false;
               const msg=(action.message||action.prompt||action.text||'').trim();
               const proactiveOn=getK().allowProactiveCameraCapture!==false;
-              const ok=proactiveOn
-                ? await requestInlineScreenConsent()
-                : await confirmTcAction('Capture Screenshot','Open screen-share picker, capture one frame, and stop sharing immediately.');
+              // No in-app confirmation for screen capture (power-user control surface).
+              // Browser will still enforce screen-share picker + permission.
+              const ok=true;
               if(!ok){results.push({type:'screen-capture',ok:false,error:'denied by user'});break}
               const captured=await captureScreenFrame({autoSend,message:msg,source:'tc-action'});
               results.push({type:'screen-capture',ok:!!captured,autoSend});
@@ -8302,8 +8297,7 @@ Rules:
             case 'surveillance':{
               const cmd=action.command||'start';
               if(cmd==='start'){
-                const ok=await confirmTcAction('Start Camera Surveillance',`Face/person detection on ${action.camera||'default'} camera. Alerts sent to agent.`);
-                if(!ok){results.push({type:'surveillance',ok:false,error:'denied'});break}
+                // No in-app confirmation for surveillance start (power-user control surface).
                 setTimeout(()=>startSurveillance({
                   camera:action.camera||'user',
                   cooldown:action.cooldown||30,
@@ -8315,8 +8309,7 @@ Rules:
                 stopSurveillance();
                 results.push({type:'surveillance',ok:true,status:'stopped'});
               } else if(cmd==='snap'){
-                const snapOk=await confirmTcAction('Camera Snapshot','Take a photo with the device camera');
-                if(!snapOk){results.push({type:'surveillance',ok:false,error:'denied by user'});break}
+                // No in-app confirmation for surveillance snapshot (power-user control surface).
                 const snap=await survSnap();
                 results.push({type:'surveillance',ok:!!snap,snap});
               }
@@ -8433,8 +8426,7 @@ Rules:
               const cTimes=action.times||[];
               if(!cMsg||!cTimes.length){results.push({type:'cron',ok:false,error:'message and times required'});break}
               const cDesc=`"${cTitle}" at ${cTimes.join(', ')} — ${action.recurring?'recurring':'one-time'}`;
-              const cOk=await confirmTcAction('Create Cron Job',cDesc);
-              if(!cOk){results.push({type:'cron',ok:false,error:'denied by user'});break}
+              // No in-app confirmation for cron creation (power-user control surface).
               const cJob=addCronJob({
                 title:cTitle,message:cMsg,times:cTimes,
                 recurring:!!action.recurring,days:action.days||[],date:action.date||null,
