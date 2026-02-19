@@ -4466,6 +4466,13 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     const EXPR_TAG_RE=/^\s*\[(cheerful|warm|whisper|dramatic|sarcastic|excited|professional|sad|angry|calm|gentle|energetic|serious|playful|confident|nervous|empathetic)\]\s*/i;
     function stripExprTags(text){return text.replace(EXPR_TAG_RE,'').replace(/\[(cheerful|warm|whisper|dramatic|sarcastic|excited|professional|sad|angry|calm|gentle|energetic|serious|playful|confident|nervous|empathetic)\]/gi,'').trim()}
 
+    // Hide tc-action protocol blocks from the visible chat transcript.
+    // (Actions still execute; users typically only want the results/toasts.)
+    function stripTcActionBlocksForDisplay(text){
+      if(!text)return '';
+      return text.replace(/```tc-action\s*[\s\S]*?```/g,'').trim();
+    }
+
     // ── Chat Rendering ─────────────────────────────────
     function renderChat(){
       const s=$('chatScroll');
@@ -4485,7 +4492,9 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
           const content=m.raw?m.text:esc(m.text);
           return divider+`<div class="chat-bubble system${isCompacted?' compacted':''}" data-msg-idx="${i}"><div class="md-content">${content}</div><div class="chat-meta">${m.time||''}</div></div>`;
         }
-        const displayText=(m.rawText&&m._showRaw)?m.rawText:m.text;
+        let displayText=(m.rawText&&m._showRaw)?m.rawText:m.text;
+        // By default, don't show internal control protocol blocks in chat.
+        if(!m.raw)displayText=stripTcActionBlocksForDisplay(displayText);
         let content='';
         if(m.image) content+=`<img class="chat-img" src="${esc(m.image)}">`;
         if(m.role==='ai'){
