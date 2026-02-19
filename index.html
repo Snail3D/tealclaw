@@ -5536,7 +5536,10 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         let firstTokTimer=setTimeout(()=>{
           if(settled)return;
           settled=true;conn.off('chat',onChat);clearRun();
-          reject(new Error('Gateway unresponsive (no response). If the gateway is offline, switch to Direct mode or restart it.'));
+          // Force a WS reconnect so the user doesn't have to refresh the page.
+          try{conn.stop()}catch{}
+          try{conn.start().catch(()=>{})}catch{}
+          reject(new Error('Gateway unresponsive (no response). Try /reconnect (or refresh) and resend.'));
         },FIRST_TOKEN_TIMEOUT_MS);
         let totalTimer=setTimeout(()=>{
           if(settled)return;
@@ -10369,7 +10372,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro','/debate'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -10422,6 +10425,7 @@ ${agentNote}`);
 <li><code>/pomodoro 25m task1, task2</code> -- quick-start Pomodoro with tasks (voice: "pomodoro...")</li>
 <li><code>/pomodoro</code> -- AI-guided Pomodoro setup wizard</li>
 <li><code>/debate [topic]</code> -- mini-debate between personas with a judge (voice: "debate cats vs dogs")</li>
+<li><code>/reconnect</code> -- reconnect to your gateway (fixes "Gateway unresponsive" without a page refresh)</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -10448,6 +10452,16 @@ ${agentNote}`);
           captureScreenFrame({autoSend:true,message:sArg,source:'slash'}).then(captured=>{
             if(captured)showToast('Screenshot captured','ok');
           });
+          return;
+        }
+        if(cmd==='/reconnect'){
+          const a=getActiveAgent();
+          if(!a){showToast('No agent configured','err');return}
+          showToast('Reconnecting gateway...','ok');
+          try{disconnectAgent(a.id)}catch{}
+          try{ensureAgentConnection(a)}catch{}
+          // Give it a beat to connect
+          setTimeout(()=>{updateStatus();},600);
           return;
         }
         if(cmd==='/chron'||cmd.startsWith('/chron ')){
