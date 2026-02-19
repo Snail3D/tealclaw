@@ -6064,6 +6064,23 @@ GIF REACTIONS (~75% of responses — encouraged!):
       return new Blob([data],{type:'audio/wav'});
     }
 
+    // Start auto-TTS without blocking other UI work (e.g. tc-action prompts).
+    // This avoids "voice doesn't start until I click" when an action is awaiting user input.
+    function kickOffAutoTTS(text,msgIdx,k){
+      try{
+        if(ttsMode!=='auto'||!hasTTS(k))return;
+        const speakText=(text||'').trim();
+        if(!speakText)return;
+        speak(speakText).then(ttsData=>{
+          if(!ttsData)return;
+          const blob=ttsBlob(ttsData);
+          const url=URL.createObjectURL(blob);
+          if(chatHistory[msgIdx]){chatHistory[msgIdx].audioUrl=url;evictTTSCache();setChat(chatHistory);renderChat()}
+          playAudioBuffer(ttsData);
+        }).catch(()=>{});
+      }catch{}
+    }
+
     // ── Chat-Based Onboarding ─────────────────────────
     function sysBubble(html,opts={}){
       const entry={role:'system',text:html,raw:true,time:fmtTime(),...opts};
@@ -9911,7 +9928,12 @@ Return ONLY valid JSON, no explanation.`;
           if(displayText==='...')displayText='(No response)'; // initial placeholder
           const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
           let tcResults=[];
-          if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
+          if(tcActions.length){
+            displayText=actionClean;
+            // Start voice immediately even if an action waits for user input (e.g. prompt).
+            kickOffAutoTTS(displayText,streamIdx,pk);
+            tcResults=await executeTcActions(tcActions).catch(()=>[]);
+          }
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             // Show GIF immediately; TTS may override with a better one later
@@ -9983,7 +10005,12 @@ Return ONLY valid JSON, no explanation.`;
           // Parse and execute agent actions
           const{cleanText:actionClean,actions:tcActions}=parseTcActions(displayText);
           let tcResults=[];
-          if(tcActions.length){displayText=actionClean;tcResults=await executeTcActions(tcActions).catch(()=>[])}
+          if(tcActions.length){
+            displayText=actionClean;
+            // Start voice immediately even if an action waits for user input.
+            kickOffAutoTTS(displayText,streamIdx,pk);
+            tcResults=await executeTcActions(tcActions).catch(()=>[]);
+          }
           {
             const{cleanText,gifQuery}=parseGifTag(displayText);displayText=cleanText;
             const query=gifQuery||autoDetectGif(displayText);
@@ -9999,7 +10026,8 @@ Return ONLY valid JSON, no explanation.`;
           sendTelegram(`AI: ${displayText}`);
           fireWebhook('message.receive',{text:displayText});
           // TTS
-          if(ttsMode==='auto'&&hasTTS(pk)){
+          // If tc-actions existed, we already kicked off TTS early to avoid waiting on user input.
+          if(!tcActions.length&&ttsMode==='auto'&&hasTTS(pk)){
             const ttsData=await speak(displayText);
             if(ttsData){const blob=ttsBlob(ttsData);chatHistory[streamIdx].audioUrl=URL.createObjectURL(blob);evictTTSCache();setChat(chatHistory);playAudioBuffer(ttsData);renderChat()}
           }
