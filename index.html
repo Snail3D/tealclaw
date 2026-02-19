@@ -539,6 +539,9 @@
     /* ── Toast ──────────────────────────────────────────── */
     .toast{position:fixed;bottom:16px;right:16px;padding:8px 14px;font-size:11px;font-weight:500;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:200;opacity:0;transform:translateY(6px);transition:all 0.3s;pointer-events:none}
     .toast.show{opacity:1;transform:translateY(0)} .toast.ok{border-color:var(--ok);color:var(--ok)} .toast.err{border-color:var(--err);color:var(--err)}
+    .toast.center{top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%) scale(0.96)}
+    .toast.center.show{transform:translate(-50%,-50%) scale(1)}
+    .toast.lg{padding:14px 18px;font-size:14px;font-weight:700;border-radius:16px;min-width:260px;max-width:min(520px,92vw);text-align:center}
     .tc-notify{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.95);z-index:700;opacity:0;pointer-events:none;transition:opacity 0.4s ease,transform 0.4s ease}
     .tc-notify.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
     .tc-notify.hide{opacity:0;transform:translate(-50%,-50%) scale(0.97)}
@@ -1646,7 +1649,17 @@
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
     let ttsMode='off', chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
 
-    function showToast(m,t='',dur=3000){toast.textContent=m;toast.style.cursor='';toast.onclick=null;toast.className='toast show '+t;if(t==='ok')haptic('success');if(t==='err')haptic('error');setTimeout(()=>toast.className='toast',dur)}
+    function showToast(m,t='',dur=3000,opts={}){
+      const position=opts&&opts.position;
+      const size=opts&&opts.size;
+      toast.textContent=m;
+      toast.style.cursor='';
+      toast.onclick=null;
+      toast.className='toast show '+t+(position?(' '+position):'')+(size?(' '+size):'');
+      if(t==='ok')haptic('success');
+      if(t==='err')haptic('error');
+      setTimeout(()=>toast.className='toast',dur);
+    }
 
     // Elegant center-screen notification card for key/config changes
     let _notifyTimer=null;
@@ -8230,8 +8243,13 @@ Rules:
               break;
             }
             case 'toast':{
-              showToast(action.message||action.text||'',action.style||'ok');
-              if(action.style==='err')haptic('error');else haptic('light');
+              const msg=(action.message||action.text||'');
+              const style=(action.style||'ok');
+              const dur=action.durationMs||action.duration||3000;
+              const position=action.position||action.placement||''; // e.g. 'center'
+              const size=action.size||''; // e.g. 'lg'
+              showToast(msg,style,dur,{position,size});
+              if(style==='err')haptic('error');else haptic('light');
               results.push({type:'toast',ok:true});
               break;
             }
