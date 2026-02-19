@@ -198,8 +198,8 @@ Example first-time cfg:
 
 - **IMAGE GEN** -- /imagine command powered by Google Gemini (Nano Banana). Supports text-to-image and image-to-image (attach a reference photo). Generated images are sent to connected agents with metadata. Groq Maverick provides visual commentary when no agent is connected. Keys: Google AI (AIza...) or OpenRouter (sk-or-v1-...). Voice-friendly: "imagine a sunset" works without the /.
 
-- **CAMERA OPS ROUTING (AGENT MODE)** -- Use `/photo` (or `/capture` / `/takephoto`) for one-off snapshots and route capture via `camera.capture`. Choose facing intentionally: `environment` for rooms/objects/scenes, `user` for selfie/face checks. For persistent monitoring/alerts, use Overwatch/watch flows. Route retained stills to photo-log when usr asks to archive/review evidence (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general image Q&A.
-- **INLINE CAMERA CONSENT SETTING** -- `allowProactiveCameraCapture` defaults ON. When ON and agent sends `camera.capture`, TealClaw shows lightweight inline consent: "AI requests a photo (front/back) — Take photo / Cancel". Take photo opens camera; usr still taps shutter. When OFF, TealClaw uses full confirm modal.
+- **CAPTURE ROUTING (AGENT MODE)** -- Use `/photo` (or `/capture` / `/takephoto`) for one-off camera snapshots via `camera.capture`. Use `/screenshot` (or `/screen` / `/capture-screen`) for one-off display captures via `screen.capture`. Choose screenshot for app/site/UI debugging and photo for physical-world scenes. For persistent monitoring/alerts, use Overwatch/watch flows. Route retained stills to photo-log when usr asks to archive/review evidence (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general image Q&A.
+- **INLINE CAPTURE CONSENT SETTING** -- `allowProactiveCameraCapture` defaults ON. When ON and agent sends `camera.capture` or `screen.capture`, TealClaw shows lightweight inline consent (photo: Take photo / Cancel, screenshot: Take screenshot / Cancel). Screenshot flow captures one frame via getDisplayMedia and stops tracks immediately. When OFF, TealClaw uses full confirm modal.
 
 - **DEEP RESEARCH** -- /research uses GQ for structured reports with verdicts, findings, sources. Same free GQ k that enables voice.
 
@@ -276,7 +276,12 @@ Example first-time cfg:
                Beautiful responsive photo grid with lightbox. Layouts: 1 (full),
                2 (side-by-side), 3 (hero+2), 4 (2x2), 5+ (3-col masonry).
                Click opens fullscreen lightbox w/ arrow nav + keyboard support.
-    surveillance -- {"type":"surveillance","command":"start","camera":"user",
+    screen-capture -- {"type":"screen-capture","autoSend":true,"message":"what should I check?"}
+               One-off screenshot flow. Opens browser screen-share picker,
+               captures one frame via getDisplayMedia, stops tracks immediately,
+               and sends screenshot into pipeline(text,imageBase64).
+               Alias form also supported: {"kind":"screen.capture",...}.
+    surveillance -- {"type":"surveillance","command":"start","camera":"user", 
                     "cooldown":30,"sensitivity":0.7,"label":"Office Cam"}
                Starts device camera with face/motion detection. Commands: start, stop, snap.
                On detection: haptic alert, toast, snapshot sent to connected agent.
@@ -943,11 +948,11 @@ alphanumeric shows text input. Set via Settings > PIN / Password Lock.
 Minimum 4 characters enforced.
 
 ### Camera Privacy + Consent Rules (must follow)
-Before any `/photo`, Overwatch/watch, photo-log routing, surveillance, or proto-BOLO workflow:
+Before any `/photo`, `/screenshot`, Overwatch/watch, photo-log routing, surveillance, or proto-BOLO workflow:
 - Confirm the requester has consent/authority for the space and people being captured.
 - Refuse covert, stalking, or non-consensual monitoring/capture requests.
 - Minimize collection: capture only what is needed, avoid unnecessary identifying detail.
-- Prefer one-off `/photo` + `camera.capture` unless the user explicitly asks for persistent monitoring.
+- Prefer one-off `/photo` + `camera.capture` or `/screenshot` + `screen.capture` unless the user explicitly asks for persistent monitoring.
 - Use proto-BOLO only for explicit watchlist matching requests.
 
 ### Agent Config Guardrails
@@ -1094,6 +1099,9 @@ Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/sp
 | /photo [optional question] | One-off snapshot flow (camera.capture). Use facing based on task. |
 | /capture [optional question] | Alias for /photo |
 | /takephoto [optional question] | Alias for /photo |
+| /screenshot [optional question] | One-off display capture flow (screen.capture). Best for UI/app/website debugging. |
+| /screen [optional question] | Alias for /screenshot |
+| /capture-screen [optional question] | Alias for /screenshot |
 | /watch ... | Agent monitoring workflow (Overwatch/watch pipeline; persistent alerts) |
 | /export | Export current convo (enc JSON) |
 | /export all | Export all convos (enc JSON) |

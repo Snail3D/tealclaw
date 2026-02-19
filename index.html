@@ -2942,11 +2942,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         <div class="sheet-row-action">${agents.length?'Manage':'Add'}</div>
       </div></div>`;
       const proactiveCamOn=k.allowProactiveCameraCapture!==false;
-      html+=`<div class="sheet-section"><div class="sheet-section-title">Agent Camera Access</div>
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Agent Capture Access</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
           <div>
-            <div style="font-size:12px;font-weight:600;color:var(--text)">Inline photo consent</div>
-            <div style="font-size:10px;color:var(--text-3)">For incoming <code>camera.capture</code>: ON shows lightweight Take photo / Cancel prompt, OFF uses full confirm modal.</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text)">Inline capture consent</div>
+            <div style="font-size:10px;color:var(--text-3)">For incoming <code>camera.capture</code> and <code>screen.capture</code>: ON shows lightweight Take photo / Take screenshot prompts, OFF uses full confirm modal.</div>
           </div>
           <button class="camera-consent-toggle btn ${proactiveCamOn?'btn-teal':'btn-ghost'} btn-sm" data-on="${proactiveCamOn}">${proactiveCamOn?'On':'Off'}</button>
         </div>
@@ -3337,7 +3337,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         k2.allowProactiveCameraCapture=on;
         setK(k2);
         renderSheetContent();
-        showToast(on?'Inline camera consent enabled':'Inline camera consent disabled','ok');
+        showToast(on?'Inline capture consent enabled':'Inline capture consent disabled','ok');
       }));
 
       // Wire up mode toggle
@@ -4748,11 +4748,11 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture/screen-capture require user approval.
 IMPORTANT: When the user asks to change settings, customize the app, or modify their configuration — activate help mode first with {"type":"navigate","target":"help-mode"} so you have full context to make changes accurately. You can also show the help menu with {"type":"navigate","target":"help"} to let the user see available commands.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
-Camera routing (agent mode): use /photo (or /capture /takephoto) for one-off snapshots via camera.capture. Choose facing intentionally: environment for rooms/objects/scenes, user for selfie/face checks. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
-Privacy/consent: confirm requester authority/consent before camera capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
+Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
+Privacy/consent: confirm requester authority/consent before camera/screen capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
 Video: \`\`\`tc-action\n{"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true}\n\`\`\` Supports HLS, MP4, WebM. Auto-PiP on scroll.
 Camera grid: \`\`\`tc-action\n{"type":"video-grid","title":"Security","cols":2,"feeds":[{"url":"...","label":"Front"},{"url":"...","label":"Back"}]}\n\`\`\` 1-4 cols, each feed has url+label+live.
 Photo gallery: \`\`\`tc-action\n{"type":"gallery","title":"Photos","images":[{"url":"...","caption":"Sunset"},{"url":"..."}]}\n\`\`\` Beautiful grid, lightbox on tap, keyboard nav.
@@ -4767,7 +4767,7 @@ Timers: \`\`\`tc-action\n{"type":"timer","duration":"5m","message":"Pizza is rea
 Cron jobs: \`\`\`tc-action\n{"type":"cron","title":"Morning Briefing","message":"Give me a briefing","times":["09:00"],"recurring":true,"days":["mon","tue","wed","thu","fri"],"action":"pipeline"}\n\`\`\` Creates a scheduled job. action can be: pipeline (send to you), research, deepresearch, imagine, snap, notify. Requires user approval. source:'agent' — you're notified when it fires.
 Pomodoro: \`\`\`tc-action\n{"type":"pomodoro","duration":25,"breakDuration":5,"rounds":4,"tasks":["Task 1","Task 2"]}\n\`\`\` Starts a Pomodoro focus timer with task checklist. You're notified on phase changes (focus_start, break_start) and completion. Control: {"type":"pomodoro","action":"pause|resume|stop"}.
 Debate: \`\`\`tc-action\n{"type":"debate","topic":"cats vs dogs"}\n\`\`\` Triggers a mini-debate between 2 TealClaw personas (auto-selected by topic). A 3rd persona judges. Short 4-exchange debate + verdict + winner thanks. If you trigger it, you receive the full debate transcript when it completes.
-User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /photo /capture /takephoto /save /session /chron /alarm /timer /pomodoro /debate /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza", "debate AI vs humans")
+User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /photo /capture /takephoto /screenshot /screen /capture-screen /save /session /chron /alarm /timer /pomodoro /debate /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza", "debate AI vs humans")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus with voice personas: Trey (troy, hype & real), Axel (austin, hacker), Dean (daniel, professional), Haven (hannah, chill vibes), Vera (autumn, nerd), Diane (diana, executive). Each persona has a distinct personality that colors responses. Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
 GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
@@ -6206,6 +6206,7 @@ AVAILABLE ACTION TYPES:
 - request-config: {"type":"request-config"} — read current config
 - prompt: {"type":"prompt","question":"Pick one","options":["A","B","C"]}
 - camera-capture: {"type":"camera-capture","facing":"user"|"environment","autoSend":true,"message":"what is this?"} (or {"kind":"camera.capture",...)
+- screen-capture: {"type":"screen-capture","autoSend":true,"message":"what should I check?"} (or {"kind":"screen.capture",...)
 
 CONFIG FIELDS YOU CAN SET:
 Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, sendBtnColor, micBtnColor, lineHeight, letterSpacing, borderRadius
@@ -6218,12 +6219,12 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
-- For camera actions, require user consent/authority; refuse covert or non-consensual capture/monitoring
-- Use /photo + camera.capture for one-off snapshots; use Overwatch/watch for persistent monitoring
+- For camera/screen actions, require user consent/authority; refuse covert or non-consensual capture/monitoring
+- Use /photo + camera.capture for one-off camera snapshots, and /screenshot + screen.capture for on-screen UI/app capture; use Overwatch/watch for persistent monitoring
 - ALWAYS include a tc-action block when the user asks to change something — do not just describe the change
 - Be proactive: suggest improvements, offer templates, configure features
 - Keep your text responses brief — let the actions speak`;
@@ -7802,7 +7803,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -7819,7 +7820,9 @@ Rules:
             const t=(typeof obj.type==='string'&&obj.type)||'';
             const k=(typeof obj.kind==='string'&&obj.kind)||'';
             if(k==='camera.capture'&&!t)obj.type='camera-capture';
+            if(k==='screen.capture'&&!t)obj.type='screen-capture';
             if(obj.type==='camera.capture')obj.type='camera-capture';
+            if(obj.type==='screen.capture')obj.type='screen-capture';
             if(typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
               actions.push(obj);
               stripBlocks.push(m[0]);
@@ -7838,7 +7841,9 @@ Rules:
               const t=(typeof obj.type==='string'&&obj.type)||'';
               const k=(typeof obj.kind==='string'&&obj.kind)||'';
               if(k==='camera.capture'&&!t)obj.type='camera-capture';
+              if(k==='screen.capture'&&!t)obj.type='screen-capture';
               if(obj.type==='camera.capture')obj.type='camera-capture';
+              if(obj.type==='screen.capture')obj.type='screen-capture';
               if(typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
                 actions.push(obj);
                 stripBlocks.push(a[0]);
@@ -7909,6 +7914,30 @@ Rules:
         const last=document.querySelector('.chat-bubble:last-child');
         const disable=()=>{last?.querySelectorAll('.btn').forEach(b=>{b.style.opacity='0.5';b.style.pointerEvents='none'})};
         last?.querySelector('#'+id+'-cancel')?.addEventListener('click',()=>{disable();showToast('Camera request cancelled','ok');haptic('light');resolve(false)});
+        last?.querySelector('#'+id+'-take')?.addEventListener('click',()=>{disable();resolve(true)});
+      });
+    }
+
+
+    function requestInlineScreenConsent(){
+      return new Promise(resolve=>{
+        const id='tc-screen-'+Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>b.toString(16).padStart(2,'0')).join('');
+        sysBubble(`<div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--text)">AI requests screenshot</div>
+          <div style="font-size:10px;color:var(--text-3)">Choose a tab/window/screen, then TealClaw captures one frame and stops sharing immediately.</div>
+          <div style="display:flex;gap:8px;justify-content:flex-start">
+            <button class="btn btn-teal" id="${id}-take">Take screenshot</button>
+            <button class="btn btn-ghost" id="${id}-cancel">Cancel</button>
+          </div>
+        </div>`);
+        const scroll=$('chatScroll');
+        if(scroll){
+          if(typeof snapScrollToBottom==='function')snapScrollToBottom(scroll);
+          else scroll.scrollTop=scroll.scrollHeight;
+        }
+        const last=document.querySelector('.chat-bubble:last-child');
+        const disable=()=>{last?.querySelectorAll('.btn').forEach(b=>{b.style.opacity='0.5';b.style.pointerEvents='none'})};
+        last?.querySelector('#'+id+'-cancel')?.addEventListener('click',()=>{disable();showToast('Screenshot request cancelled','ok');haptic('light');resolve(false)});
         last?.querySelector('#'+id+'-take')?.addEventListener('click',()=>{disable();resolve(true)});
       });
     }
@@ -8102,6 +8131,18 @@ Rules:
               if(!ok){results.push({type:'camera-capture',ok:false,error:'denied by user'});break}
               const opened=await openCamera({facing,autoSend,message:msg,source:'tc-action'});
               results.push({type:'camera-capture',ok:!!opened,facing,autoSend});
+              break;
+            }
+            case 'screen-capture':case 'screen.capture':{
+              const autoSend=action.autoSend!==false;
+              const msg=(action.message||action.prompt||action.text||'').trim();
+              const proactiveOn=getK().allowProactiveCameraCapture!==false;
+              const ok=proactiveOn
+                ? await requestInlineScreenConsent()
+                : await confirmTcAction('Capture Screenshot','Open screen-share picker, capture one frame, and stop sharing immediately.');
+              if(!ok){results.push({type:'screen-capture',ok:false,error:'denied by user'});break}
+              const captured=await captureScreenFrame({autoSend,message:msg,source:'tc-action'});
+              results.push({type:'screen-capture',ok:!!captured,autoSend});
               break;
             }
             case 'surveillance':{
@@ -8324,7 +8365,7 @@ Rules:
     function renderActionBadge(actions){
       if(!actions.length)return '';
       const types=[...new Set(actions.map(a=>a.type))];
-      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5','video-grid':'\uD83D\uDCF9',gallery:'\uD83D\uDDBC','camera-capture':'\uD83D\uDCF8',surveillance:'\uD83D\uDC41','guest-link':'\uD83D\uDD17',prompt:'\u2753','request-config':'\uD83D\uDCCB'};
+      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5','video-grid':'\uD83D\uDCF9',gallery:'\uD83D\uDDBC','camera-capture':'\uD83D\uDCF8','screen-capture':'\uD83D\uDDA5\uFE0F',surveillance:'\uD83D\uDC41','guest-link':'\uD83D\uDD17',prompt:'\u2753','request-config':'\uD83D\uDCCB'};
       const labels=types.map(t=>icons[t]||'\u26A1').join(' ');
       return `<div class="tc-action-badge" title="${types.length} action${types.length>1?'s':''} executed: ${types.join(', ')}">${labels} ${types.length} action${types.length>1?'s':''}</div>`;
     }
@@ -10093,6 +10134,7 @@ ${agentNote}`);
         else if(/^debate\b/i.test(text))text='/debate '+text.replace(/^debate\s*/i,'');
         else if(/^deep\s*(?:re)?search\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s*(?:re)?search\s+/i,'');
         else if(/^(photo|capture|takephoto)\b/i.test(text))text='/photo '+text.replace(/^(photo|capture|takephoto)\s*/i,'');
+        else if(/^(screenshot|screen|capture-screen)\b/i.test(text))text='/screenshot '+text.replace(/^(screenshot|screen|capture-screen)\s*/i,'');
         else if(/^(imagine|(?:re)?search|deep(?:re)?search)\s/i.test(text))text='/'+text;
         // Natural language image generation intent → /imagine
         else{
@@ -10109,7 +10151,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro','/debate'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro','/debate'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -10129,6 +10171,9 @@ ${agentNote}`);
 <li><code>/photo [optional question]</code> -- open camera, take a photo, and send to AI for analysis</li>
 <li><code>/capture [optional question]</code> -- alias for /photo</li>
 <li><code>/takephoto [optional question]</code> -- alias for /photo</li>
+<li><code>/screenshot [optional question]</code> -- choose a tab/window/screen, capture one frame, and send for AI analysis</li>
+<li><code>/screen [optional question]</code> -- alias for /screenshot</li>
+<li><code>/capture-screen [optional question]</code> -- alias for /screenshot</li>
 <li><code>/export</code> -- export current chat (encrypted JSON, re-importable)</li>
 <li><code>/export json</code> -- export as portable JSON (drag-droppable)</li>
 <li><code>/export all</code> -- export all conversations (encrypted JSON)</li>
@@ -10179,6 +10224,12 @@ ${agentNote}`);
           if(opened){
             showToast('Take photo to send','ok');
           }
+          return;
+        }
+        if(cmd==='/screenshot'||cmd.startsWith('/screenshot ')||cmd==='/screen'||cmd.startsWith('/screen ')||cmd==='/capture-screen'||cmd.startsWith('/capture-screen ')){
+          const sArg=text.replace(/^\/(?:screenshot|screen|capture-screen)\s*/i,'').trim();
+          const captured=await captureScreenFrame({autoSend:true,message:sArg,source:'slash'});
+          if(captured)showToast('Screenshot captured','ok');
           return;
         }
         if(cmd==='/chron'||cmd.startsWith('/chron ')){
@@ -11496,6 +11547,50 @@ ${agentNote}`);
     // ── Camera ──────────────────────────────────────────
     let camStream=null,facingMode='environment',torchOn=false;
     let cameraCaptureRequest={autoSend:false,message:'',source:'manual'};
+
+    async function captureScreenFrame(opts={}){
+      if(!navigator.mediaDevices?.getDisplayMedia){
+        showToast('Screen capture not supported in this browser','err');
+        return false;
+      }
+      const req={autoSend:opts.autoSend!==false,message:typeof opts.message==='string'?opts.message.trim():'',source:opts.source||'manual'};
+      let stream=null;let video=null;
+      const stopAll=()=>{try{stream?.getTracks()?.forEach(t=>t.stop())}catch{}};
+      try{
+        stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
+        const track=stream.getVideoTracks?.()[0];
+        if(!track)throw new Error('No screen track');
+        video=document.createElement('video');
+        video.srcObject=stream;video.playsInline=true;video.muted=true;
+        await video.play();
+        await new Promise(r=>requestAnimationFrame(r));
+        const w=video.videoWidth||track.getSettings?.().width||1920;
+        const h=video.videoHeight||track.getSettings?.().height||1080;
+        const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d',{alpha:false});ctx.drawImage(video,0,0,w,h);
+        const rawUrl=canvas.toDataURL('image/jpeg',0.9);
+        stopAll();
+        if(req.autoSend){
+          addTyping();
+          compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{removeTyping();pipeline(req.message,comp?.dataUrl||rawUrl)}).catch(()=>{removeTyping();pipeline(req.message,rawUrl)});
+          return true;
+        }
+        const n=pendingFiles.filter(f=>f.type==='image').length+1;
+        const idx=pendingFiles.length;
+        const origSize=Math.round(rawUrl.length*0.75);
+        pendingFiles.push({name:`Screenshot ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl});
+        renderFileStack();updateActionBtn();
+        compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{pendingFiles[idx]={name:`Screenshot ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false};renderFileStack();});
+        return true;
+      }catch(e){
+        const msg=(e&&e.name==='NotAllowedError')?'Screen capture cancelled':'Screen capture failed';
+        showToast(msg,'err');
+        return false;
+      }finally{
+        stopAll();
+        try{if(video){video.pause();video.srcObject=null}}catch{}
+      }
+    }
 
     $('cameraBtn').addEventListener('click',openCamera);
     $('voiceChatBtn').addEventListener('click',enterVoiceMode);

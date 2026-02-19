@@ -15,6 +15,9 @@
 | `/photo [optional question]` | Open camera modal, capture a still, and send to chat pipeline for AI analysis |
 | `/capture [optional question]` | Alias for `/photo` |
 | `/takephoto [optional question]` | Alias for `/photo` |
+| `/screenshot [optional question]` | Open screen picker, capture one frame, and send to chat pipeline for AI analysis |
+| `/screen [optional question]` | Alias for `/screenshot` |
+| `/capture-screen [optional question]` | Alias for `/screenshot` |
 | `/export` | Export current conversation as encrypted JSON (re-importable) |
 | `/export all` | Export all conversations as encrypted JSON |
 | `/export md` | Download chat as Markdown file (for reading) |
@@ -79,7 +82,14 @@ LLM/operator routing guidance:
 Privacy/consent requirements:
 - Confirm the requester has consent/authority for the people and space being captured.
 - Refuse covert, stalking, or non-consensual capture requests.
-- Agent camera requests respect `allowProactiveCameraCapture` (default ON): ON = lightweight inline Take photo/Cancel prompt; OFF = full confirm modal.
+- Agent capture requests respect `allowProactiveCameraCapture` (default ON): ON = lightweight inline Take photo/Take screenshot/Cancel prompt; OFF = full confirm modal.
+
+### /screenshot / /screen / /capture-screen
+One-off display capture command. Opens the browser's screen-share picker via `getDisplayMedia`, captures one frame to canvas, stops tracks immediately, and sends the screenshot into the chat pipeline.
+
+Routing guidance:
+- Use screenshot commands for UI bugs, website reviews, app states, dashboards, and anything visible on-screen.
+- Use `/photo` commands for physical-world scenes from device cameras.
 
 ### /keys
 Shows current configuration status:
