@@ -16,6 +16,9 @@ For each implementation slice landed:
   - Verifies slash command handlers (`/providers`, `/provider <name>`)
   - Verifies docs were updated and aligned
   - Verifies syntax gate for `index.html` scripts
+- `scripts/doris-qa-watch.mjs`
+  - Watches `git HEAD` and re-runs Doris QA automatically whenever new commits land
+  - Supports one-shot mode via `--once`
 
 ## Validation Targeted at Landed Changes
 Commits validated in this QA pass:
@@ -32,6 +35,7 @@ node scripts/doris-parallel-qa.mjs
 Result:
 - **19 passed, 0 failed**
 - Includes syntax pass + provider/command/doc integrity checks
+- Watch-mode evidence: `node scripts/doris-qa-watch.mjs --once` passed on HEAD `016f934e532b23031c472d2a2bbf4a804cf30b7e`
 
 ## Notes
 - Existing unrelated modified firmware files were intentionally excluded from this QA scope.
