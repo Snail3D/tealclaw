@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TealClaw ↔ OpenClaw via Cloudflare Tunnel (Gateway Setup)</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.45;margin:0;padding:32px;max-width:980px}
+    h1,h2,h3{line-height:1.15}
+    code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    pre{padding:14px;border:1px solid rgba(127,127,127,.35);border-radius:10px;overflow:auto}
+    .note{padding:12px 14px;border-left:4px solid #0ea5e9;background:rgba(14,165,233,.08);border-radius:10px}
+    .warn{padding:12px 14px;border-left:4px solid #f59e0b;background:rgba(245,158,11,.10);border-radius:10px}
+    a{color:inherit}
+    ul{margin-top:6px}
+  </style>
+</head>
+<body>
+
+<h1>TealClaw ↔ OpenClaw via Cloudflare Tunnel (Gateway Setup)</h1>
+
+<p>This page is a tight, repeatable recipe for exposing an <strong>OpenClaw Gateway</strong> to a TealClaw client over the internet using a <strong>Cloudflare Tunnel</strong> (stable hostname, no port-forwarding). It also documents the main “kinks” we’ve hit so the next setup takes minutes, not hours.</p>
+
+<div class="note">
+  <strong>Security model:</strong> TealClaw is a client-side PWA. Your TealClaw <em>browser</em> talks to your OpenClaw Gateway over HTTPS/WebSocket. Keep your gateway token secret and use Cloudflare access controls when appropriate.
+</div>
+
+<h2>0) Prereqs</h2>
+<ul>
+  <li>You control a Cloudflare zone (e.g. <code>example.com</code>)</li>
+  <li>You can run <code>cloudflared</code> on the machine hosting the OpenClaw Gateway</li>
+  <li>Your OpenClaw Gateway is running locally (usually on <code>http://localhost:18789</code>)</li>
+</ul>
+
+<h2>1) Make sure the Gateway is reachable locally</h2>
+
+<p>On the gateway host:</p>
+<pre><code>openclaw status
+# and/or
+curl -sS http://127.0.0.1:18789/health || true</code></pre>
+
+<div class="warn">
+  <strong>Common failure:</strong> Gateway is bound only to <code>127.0.0.1</code> but you expect LAN/Tunnel access. Fix by binding to <code>0.0.0.0</code> in your OpenClaw config (then restart). If you only ever access via the same machine + tunnel, loopback can still be OK — just be consistent.
+</div>
+
+<h2>2) Create a named Cloudflare Tunnel (stable)</h2>
+
+<p>Use a <strong>named tunnel</strong> so your hostname is stable (no “quick tunnel” URLs).</p>
+
+<pre><code># Authenticate this host with your CF account
+cloudflared tunnel login
+
+# Create a named tunnel
+cloudflared tunnel create &lt;TUNNEL_NAME&gt;
+
+# Route DNS hostname → tunnel
+cloudflared tunnel route dns &lt;TUNNEL_NAME&gt; &lt;GW_HOSTNAME&gt;
+# example: cloudflared tunnel route dns openclaw-gw gw.example.com</code></pre>
+
+<h2>3) Point the tunnel at the local Gateway</h2>
+
+<p>Create (or edit) your cloudflared config. Locations vary; common ones are:</p>
+<ul>
+  <li><code>~/.cloudflared/config.yml</code></li>
+  <li><code>/etc/cloudflared/config.yml</code> (Linux service installs)</li>
+</ul>
+
+<p>Example <code>config.yml</code> (use your real tunnel UUID and credentials file path):</p>
+<pre><code>tunnel: &lt;TUNNEL_UUID&gt;
+credentials-file: /path/to/&lt;TUNNEL_UUID&gt;.json
+
+ingress:
+  - hostname: &lt;GW_HOSTNAME&gt;
+    service: http://localhost:18789
+  - service: http_status:404</code></pre>
+
+<p>Run it:</p>
+<pre><code>cloudflared tunnel run &lt;TUNNEL_NAME&gt;</code></pre>
+
+<h2>4) TealClaw config: point agent URL at your hostname</h2>
+
+<p>In TealClaw, set your agent URL to the tunnel hostname. Example JSON config block (placeholders — do not paste real secrets into docs):</p>
+
+<pre><code class="language-json">{
+  "mode": "agent",
+  "agents": [
+    {
+      "id": "home",
+      "name": "Home",
+      "url": "https://&lt;GW_HOSTNAME&gt;",
+      "token": "&lt;OPENCLAW_GATEWAY_TOKEN&gt;",
+      "active": true
+    }
+  ]
+}</code></pre>
+
+<div class="note">
+  <strong>Tip:</strong> If you also use Groq Whisper/TTS in TealClaw, those keys live in browser localStorage. The gateway token also lives in localStorage. TealClaw does not run a backend.
+</div>
+
+<h2>5) Troubleshooting (fast)</h2>
+
+<h3>A) “It was fine until I pasted the wrong key”</h3>
+<ul>
+  <li>Re-paste the correct key/token in a TealClaw JSON block</li>
+  <li>If the UI is weird after changes, unregister the service worker (below)</li>
+</ul>
+
+<h3>B) Infinite queue / stuck “sending” / agent never responds</h3>
+<ul>
+  <li>Confirm tunnel is up and DNS hostname resolves to Cloudflare</li>
+  <li>Confirm gateway is healthy locally (<code>curl http://localhost:18789/health</code>)</li>
+  <li>Check for a WebSocket handshake failure (DevTools → Network → WS)</li>
+  <li>Validate the agent URL is <code>https://...</code> (not <code>http://</code>)</li>
+</ul>
+
+<h3>C) Changes “didn’t apply” (Service Worker caching)</h3>
+<ul>
+  <li>Hard refresh (Shift-Reload)</li>
+  <li>DevTools → Application → Service Workers → <strong>Unregister</strong></li>
+</ul>
+
+<h3>D) Gateway reachable locally, not reachable remotely</h3>
+<ul>
+  <li>Confirm your tunnel is pointing to the right local port</li>
+  <li>If you intended LAN access without tunnel, bind gateway to <code>0.0.0.0</code></li>
+</ul>
+
+<hr />
+<p><strong>Keep it tight:</strong> named tunnel → stable hostname → ingress to local gateway → TealClaw agent URL points to that hostname. The rest is debugging keys, binding, and caching.</p>
+
+</body>
+</html>

@@ -20,7 +20,9 @@ That's it. One key gives you chat, voice, vision, image generation, and deep res
 
 ## What You Get
 
-**Voice Chat** — Hold to speak, get spoken replies. Six voice personas with distinct personalities: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive). Powered by Groq Whisper + Orpheus TTS.
+**Voice Chat** — Hold to speak, get spoken replies. Voice Services now has explicit TTS provider routing (`groq`, `elevenlabs`, or `off`), opt-in fallback, and ElevenLabs key+voice validation status. Groq personas: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive).
+
+**Direct Provider Routing** — Run direct chat/vision through Groq, Fireworks, OpenAI, Anthropic, OpenRouter, xAI, Mistral, Together, DeepSeek, Cerebras, or Perplexity. Provider can be switched in Settings or via `/provider <name>`, with optional Groq fallback for resiliency.
 
 **Deep Research** — Type `/research` and get a full sourced report. `/deepresearch` goes deeper with multi-tool analysis.
 
@@ -51,6 +53,10 @@ TealClaw has **no backend**. The site is static files on Cloudflare Pages.
 - The entire app is one HTML file. View Source and read every line.
 
 Full details: **[Security Philosophy](SECURITY.md)**
+
+### Developer safety (no-secrets)
+Before pushing changes, run:
+- `node scripts/security-scan.mjs`
 
 ---
 
@@ -92,12 +98,14 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/photo` / `/capture` / `/takephoto` | Open camera, capture, and send photo for AI analysis |
 | `/screenshot` / `/screen` / `/capture-screen` | Open screen picker, capture one frame, and send screenshot for AI analysis |
 | `/voice` | Voice settings and personas |
+| `/providers` / `/provider <name>` | List/switch direct AI provider quickly |
 | `/save` | Save to Obsidian |
 | `/template` | Browse style templates |
 | `/share` | Encrypted config link |
 | `/session create` | Time-limited guest access |
 | `/profile save name` | Save/load config profiles |
 | `/help` | All commands |
+| `/grok action` | Quick background automation actions (status, reconnect, relay/provider routing) |
 
 Works by voice too — just say "research quantum physics" or "imagine a sunset over mars".
 
@@ -117,11 +125,16 @@ Works by voice too — just say "research quantum physics" or "imagine a sunset 
 
 TealClaw connects to **[OpenClaw](https://github.com/openclaw/openclaw)** gateways via WebSocket for full agent mode — shared context across Telegram, Discord, Signal, and more.
 
+Setup recipe (tight, repeatable):
+- `docs/cloudflare-gateway.html`
+
 ```
 Your Browser ←→ Cloudflare Tunnel ←→ OpenClaw Gateway ←→ Your AI Agent
 ```
 
 Paste a gateway URL + token, or let your agent generate a one-click connection link.
+
+**Phone note:** TealClaw connects to OpenClaw via **WebSocket**. If you see pairing errors, approve the device on the gateway: `openclaw devices list` → `openclaw devices approve <requestId>`. For local/self-hosted gateways, optional HTTP fallback can be enabled in Settings > AI Configuration.
 
 **Device Pairing:** TealClaw uses Ed25519 device authentication on every connection. The first time you connect to a gateway through a Cloudflare Tunnel, the gateway operator must approve your device (one-time). Local connections auto-approve. See [llms.txt](https://tealclaw.ai/llms.txt) for details.
 

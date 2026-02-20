@@ -36,7 +36,7 @@
 | `/voice-chat` | Push-to-talk voice-only mode (alias: `/vc`) |
 | `/new` | Start new conversation |
 | `/export json` | Export as portable JSON |
-| `/telegram` | Show Telegram setup instructions (BotFather + Chat ID) |
+| `/telegram` | Show Telegram setup instructions (Settings quick wizard + BotFather/Chat ID fallback) |
 | `/telegram on` | Enable Telegram message forwarding |
 | `/telegram off` | Disable Telegram message forwarding |
 | `/template` | Browse and apply pre-built style templates |
@@ -48,6 +48,14 @@
 | `/session create 1h For Jake` | Session link with a label |
 | `/session info` | Show current session status and expiry |
 | `/session end` | End session early, wipe gateway credentials |
+
+## UX Note (v1.1)
+
+Telegram setup is now first-class in **Settings → Telegram Relay Setup**:
+- Quick Setup Wizard (step-by-step)
+- Direct fields for bot token, chat ID, optional bot ID auto-detect
+- Relay toggles + gateway-native diagnostics in one place (inbound source, runtime, startup reconciliation)
+- **Copy safe config block** button for manual fallback (no secrets included)
 
 ## Command Details
 
@@ -96,8 +104,8 @@ Shows current configuration status:
 - AI provider and key status
 - Current model
 - Voice input (Groq Whisper) status
-- Voice output (Groq Orpheus TTS) status
-- Telegram forwarding status
+- Voice output provider status (Groq / ElevenLabs / Off), plus fallback + readiness
+- Telegram forwarding / relay status
 - Image generation status
 
 ### /clear
@@ -111,20 +119,33 @@ Removes ALL API keys and resets configuration. The user will need to set up agai
 Config fields (colors, persona, etc.) are preserved in localStorage.
 
 ### /telegram
-Shows step-by-step instructions for setting up Telegram forwarding:
-1. Create a bot via @BotFather
-2. Get the bot token
-3. Get the chat ID from @userinfobot
-4. Paste both in the TealClaw chat
+Shows setup guidance and points users to the in-app wizard:
+1. Open **Settings → Telegram Relay Setup → Quick Setup Wizard**
+2. Create bot via @BotFather
+3. Get chat ID from @userinfobot
+4. Save in Settings (no JSON required)
+
+Also explains both modes:
+- One-way forwarding (`/telegram on|off`)
+- Two-way Telegram Relay transport (`/telegram relay on|off|status`)
 
 ### /telegram on / /telegram off
-Toggle Telegram message forwarding without changing the token or chat ID.
+Toggle one-way Telegram message forwarding without changing token/chat ID.
+
+### /telegram relay on / off / status
+Enable or disable **Telegram Relay Mode** (Telegram becomes primary chat transport), or view relay runtime/config status.
+
+Relay v2 behavior:
+- Inbound source is explicitly **gateway-native** (single-consumer model via OpenClaw gateway stream/events)
+- TealClaw no longer consumes Telegram Bot API `getUpdates` in relay mode
+- Status output includes startup reconciliation + runtime diagnostics
 
 ### /voice
-Shows current TTS voice settings:
-- Current Groq Orpheus voice name (groqTtsVoice)
-- Available voices: autumn, diana, hannah, austin, daniel, troy
-- Instructions to change voice
+Shows current voice service settings:
+- Active TTS provider (`ttsProvider`: groq / elevenlabs / off)
+- Groq persona voice (if Groq is selected)
+- ElevenLabs validation status (if ElevenLabs is selected)
+- Fallback opt-in status (`ttsFallbackEnabled`)
 
 ### /imagine
 Generate images using a configured image generation API.

@@ -207,6 +207,14 @@ When you use TealClaw, your AI provider receives your messages and API key — t
 
 TealClaw adds no tracking parameters, no user IDs, and no metadata to any of these requests.
 
+## Developer Safety Checks (Repo)
+
+To reduce the chance of accidentally committing secrets, this repo includes a lightweight scanner:
+
+- Run: `node scripts/security-scan.mjs`
+- It scans **tracked text files** for common key/token formats (best-effort).
+- Treat any hit as a stop-the-line event: rotate/revoke the credential and purge it from git history if needed.
+
 ## Auditability
 
 TealClaw is fully open source and intentionally simple to audit:

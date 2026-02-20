@@ -2,7 +2,7 @@
 
 // ── WiFi AP defaults ──
 #define AP_SSID_PREFIX    "TealClaw-"
-#define AP_DEFAULT_PASS   "tealclaw"
+#define AP_DEFAULT_PASS   "tc-default" // Legacy fallback only; runtime uses per-device default
 #define AP_CHANNEL        6
 #define AP_MAX_CLIENTS    4
 
