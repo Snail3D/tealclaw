@@ -109,6 +109,11 @@ Reduces padding and margins throughout:
 - Input bar: 6px 10px padding
 - Settings rows: 8px 10px padding, 4px margin
 
+### Keyboard Skip Link
+TealClaw includes a built-in “Skip to chat input” link for keyboard users.
+It stays visually hidden by default and appears only on `:focus-visible`.
+Activating it moves focus directly to the message input.
+
 ## PWA Note
 
 All accessibility settings persist in localStorage and are applied on app launch.

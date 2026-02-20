@@ -222,6 +222,9 @@
     [data-theme="light"] .icon-btn.cron-quick-btn{color:#6366f1;background:rgba(99,102,241,0.14)}
     [data-theme="light"] .icon-btn.cron-quick-btn:hover{color:#4f46e5;background:rgba(99,102,241,0.24)}
     .icon-btn svg{width:16px;height:16px}
+    .icon-btn.cron-quick-btn{color:#818cf8}
+    .icon-btn.cron-quick-btn:hover{background:rgba(99,102,241,0.12);color:#818cf8}
+    [data-theme="light"] .icon-btn.cron-quick-btn:hover{background:rgba(99,102,241,0.2)}
 
     /* ── Conversation Picker ──────────────────────────── */
     .conv-title{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 8px;border-radius:var(--r-md);transition:background var(--t);min-width:0;overflow:hidden}
@@ -1020,6 +1023,14 @@
       .cron-detail{min-width:180px;right:-4px}
       .chron-wizard-banner{padding:4px 10px;font-size:10px}
     }
+    @media(max-width:340px){
+      .topbar{padding:0 6px;gap:3px}
+      .topbar-r{gap:0}
+      .pill{padding:4px 8px;font-size:10px}
+      .icon-btn{width:32px;height:32px}
+      .icon-btn svg{width:13px;height:13px}
+      .new-chat-btn{width:28px;height:28px;font-size:14px}
+    }
     ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
     /* ── Builder Tabs ─────────────────────────────────── */
@@ -1165,6 +1176,9 @@
     .watch-ref-del:hover{background:rgba(239,68,68,0.8)}
     .watch-ref-drop{border:2px dashed var(--border);border-radius:var(--r-md);padding:16px;text-align:center;font-size:11px;color:var(--text-3);cursor:pointer;transition:all 0.2s}
     .watch-ref-drop:hover,.watch-ref-drop.dragover{border-color:var(--teal);color:var(--teal);background:rgba(13,148,136,0.05)}
+    .skip-link{position:fixed;top:calc(var(--sat,0px) + 8px);left:16px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:999px;z-index:9999;font-size:13px;font-weight:600;text-decoration:none;transform:translateY(calc(-100% - 12px));opacity:0;pointer-events:none;transition:transform 0.16s ease,opacity 0.16s ease}
+    .skip-link:focus-visible{transform:translateY(0);opacity:1;pointer-events:auto}
+    @media (prefers-reduced-motion: reduce){.skip-link{transition:none}}
     /* Model picker */
     .model-picker{position:relative}
     .model-picker-input{display:flex;gap:4px;align-items:center}
@@ -1186,7 +1200,7 @@
   </style>
 </head>
 <body>
-  <a href="#textIn" class="skip-link" style="position:absolute;top:-100%;left:16px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:0 0 8px 8px;z-index:9999;font-size:13px;font-weight:600;text-decoration:none;transition:top 0.2s" onfocus="this.style.top='var(--sat,0px)'" onblur="this.style.top='-100%'">Skip to chat input</a>
+  <a href="#textIn" class="skip-link" id="skipToInput">Skip to chat input</a>
 
   <!-- Static content visible to agents/crawlers/scrapers. JS hides it on load. -->
   <div id="staticContent" style="max-width:700px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif;color:#ececec;background:#171717">
@@ -12008,7 +12022,7 @@ Return ONLY valid JSON, no explanation.`;
       send();
     }
 
-    function send(){
+    async function send(){
       if(_sending){
         const draft=$('textIn').value.trim();
         // Don't drop quick sends while prior response is still finalizing (e.g., right after TTS Stop)
@@ -12815,6 +12829,19 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
       $('textIn').value=text;
       send();
     }
+
+    // Keyboard skip link (hidden by default; visible on :focus-visible)
+    $('skipToInput')?.addEventListener('click',e=>{
+      const input=$('textIn');
+      if(!input)return;
+      e.preventDefault();
+      if(input.disabled){
+        input.scrollIntoView({behavior:'smooth',block:'center'});
+        return;
+      }
+      try{input.focus({preventScroll:true})}catch{input.focus()}
+      input.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
 
     // Send button — clean single click
     $('sendBtn').addEventListener('click',()=>send());
@@ -14814,6 +14841,18 @@ ${note}`:note;
     $('cameraBtn').addEventListener('click',openCamera);
     $('voiceChatBtn').addEventListener('click',enterVoiceMode);
 
+    async function startCameraStream(targetFacing,retryDelayMs=120){
+      const constraints={video:{facingMode:targetFacing,width:{ideal:1920},height:{ideal:1080}},audio:false};
+      try{return await navigator.mediaDevices.getUserMedia(constraints)}catch(err){
+        // Some devices need a short release window after tracks stop before reacquire
+        if(retryDelayMs>0&&(err?.name==='NotReadableError'||err?.name==='AbortError'||err?.name==='OverconstrainedError')){
+          await new Promise(r=>setTimeout(r,retryDelayMs));
+          return await navigator.mediaDevices.getUserMedia(constraints);
+        }
+        throw err;
+      }
+    }
+
     async function openCamera(opts={}){
       if(getK().cameraEnabled===false){showToast('Camera disabled','err');haptic('error');return false}
 
@@ -14824,7 +14863,6 @@ ${note}`:note;
         source:opts.source||'manual',
         facing:requestedFacing
       };
-
       const autoSnap=!!opts.autoSnap||requestedFacing==='both';
       const silent=!!opts.silent;
       if(!silent)$('camOverlay').classList.remove('hidden');
@@ -14847,7 +14885,6 @@ ${note}`:note;
           closeCamera();
           await queueCapturedImage(cap.rawUrl,cameraCaptureRequest,cap.meta);
         }
-
         return true;
       }catch(e){
         showToast('Camera access denied','err');
