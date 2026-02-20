@@ -11843,7 +11843,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/cron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -11893,6 +11893,7 @@ ${agentNote}`);
 <li><code>/session info</code> -- show current session status</li>
 <li><code>/session end</code> -- end session early</li>
 <li><code>/chron</code> -- AI-guided cron job setup wizard (voice: "chron...")</li>
+<li><code>/cron</code> -- list/manage cron jobs (list, pause-all, resume-all, disable &lt;id&gt;, delete &lt;id&gt;)</li>
 <li><code>/alarm [time] [message]</code> -- set an alarm (voice: "alarm 3pm check oven")</li>
 <li><code>/timer [duration] [message]</code> -- set a countdown timer (voice: "timer 5 minutes pizza")</li>
 <li><code>/pomodoro 25m task1, task2</code> -- quick-start Pomodoro with tasks (voice: "pomodoro...")</li>
@@ -11963,6 +11964,56 @@ ${agentNote}`);
           const ck=getK();
           if(!getGroqKey(ck)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           startChronWizard(chronArg||null);
+          return;
+        }
+        if(cmd==='/cron'||cmd.startsWith('/cron ')){
+          const arg=text.slice(5).trim();
+          const parts=arg.split(/\s+/).filter(Boolean);
+          const sub=(parts[0]||'list').toLowerCase();
+          const jobs=getCronJobs();
+          if(sub==='list' || !sub){
+            if(!jobs.length){sysBubble('<p>No cron jobs. Use <code>/chron</code> to create one (wizard) or the Schedules button.</p>');return}
+            const list=jobs.map(j=>{
+              const times=(j.times&&j.times.length)?j.times.join(', '):'—';
+              const when=j.recurring?('days: '+(j.days&&j.days.length?j.days.join(', '):'every day')):('date: '+(j.date||'—'));
+              return `<li><code>${esc(j.id)}</code> ${j.enabled?'✅':'⏸️'} <strong>${esc(j.title||'Untitled')}</strong> — ${esc(times)} (${esc(when)})</li>`;
+            }).join('');
+            sysBubble(`<h3>Cron Jobs</h3><ul>${list}</ul><p style="font-size:11px;color:var(--text-3)">Commands: <code>/cron pause-all</code>, <code>/cron resume-all</code>, <code>/cron disable &lt;id&gt;</code>, <code>/cron delete &lt;id&gt;</code></p>`);
+            return;
+          }
+          if(sub==='pause-all'){
+            if(!jobs.length){sysBubble('<p>No cron jobs to pause.</p>');return}
+            setCronJobs(jobs.map(j=>({...j,enabled:false})));
+            renderCronBar();
+            showToast('Paused all cron jobs','ok');
+            return;
+          }
+          if(sub==='resume-all'){
+            if(!jobs.length){sysBubble('<p>No cron jobs to resume.</p>');return}
+            setCronJobs(jobs.map(j=>({...j,enabled:true})));
+            renderCronBar();
+            showToast('Resumed all cron jobs','ok');
+            return;
+          }
+          if(sub==='disable'){
+            const id=parts[1];
+            if(!id){sysBubble('<p>Usage: <code>/cron disable &lt;id&gt;</code></p>');return}
+            const found=jobs.find(j=>j.id===id);
+            if(!found){sysBubble('<p>Unknown cron id.</p>');return}
+            updateCronJob(id,{enabled:false});
+            showToast('Cron job disabled','ok');
+            return;
+          }
+          if(sub==='delete'){
+            const id=parts[1];
+            if(!id){sysBubble('<p>Usage: <code>/cron delete &lt;id&gt;</code></p>');return}
+            const found=jobs.find(j=>j.id===id);
+            if(!found){sysBubble('<p>Unknown cron id.</p>');return}
+            deleteCronJob(id);
+            showToast('Cron job deleted','ok');
+            return;
+          }
+          sysBubble('<p>Unknown /cron command. Try <code>/cron</code> to list.</p>');
           return;
         }
         if(cmd==='/alarm'||cmd.startsWith('/alarm ')){
