@@ -7376,7 +7376,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
                   +'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>'
                   +'<span style="font-size:13px;font-weight:600;color:var(--teal)">OpenClaw gateway detected on this machine</span></div>'
                   +'<p style="font-size:11px;color:var(--text-2);margin-bottom:8px">Paste your auth token to connect instantly. Get it with: <code style="font-size:10px;background:var(--bg-root);padding:2px 6px;border-radius:4px">openclaw config get gateway.auth.token</code></p>'
-                  +'<input id="obLocalToken" type="text" placeholder="Auth token" style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);box-sizing:border-box;outline:none;margin-bottom:8px">'
+                  +'<input id="obLocalToken" type="password" placeholder="Auth token" autocomplete="off" spellcheck="false" style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);box-sizing:border-box;outline:none;margin-bottom:8px">'
                   +'<button id="obLocalConnect" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer">Connect to Local Gateway</button>';
                 // Insert before the Groq key section
                 const groqLabel=container.querySelector('p[style*="Start chatting"]');
@@ -7385,6 +7385,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
                 document.getElementById('obLocalConnect')?.addEventListener('click',()=>{
                   const tok=(document.getElementById('obLocalToken')?.value||'').trim();
                   if(!tok){showToast('Paste your gateway auth token','err');return}
+                  if(tok.length>4096){showToast('Auth token too large','err');return}
                   const agents=getAgents();
                   const agent={id:'local-gw',name:'Local Gateway',url:'http://localhost:18789',token:tok,active:true};
                   const idx=agents.findIndex(a=>a.id==='local-gw');
