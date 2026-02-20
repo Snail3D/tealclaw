@@ -94,8 +94,9 @@ When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
 | Field | Type | Description |
 |-------|------|-------------|
 | gifEnabled | boolean | Show fullscreen GIF overlay on AI responses. Default: true |
+| gifScale | number | GIF size multiplier. Default: `1`. Example: `1.5` = 50% larger; `0.8` = smaller |
 
-GIFs use Klipy via server proxy — no API key needed. When enabled, AI responses with `[gif:search term]` trigger a fullscreen GIF overlay. Without a tag, auto-searches based on response text.
+GIFs use Klipy via server proxy — no API key needed. When enabled, AI responses with `[gif:search term]` trigger a fullscreen GIF overlay. Without a tag, auto-searches based on response text. `gifScale` applies to GIF media + Klipy ad embeds and keeps drag/resize behavior intact.
 
 ## Visual Customization — Colors
 
