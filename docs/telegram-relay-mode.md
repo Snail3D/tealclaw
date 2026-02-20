@@ -1,40 +1,46 @@
-# Telegram Relay Mode (v1) — Implementation Plan
+# Telegram Relay Mode (v2) — Gateway-Native Architecture
 
 ## Goal
-Make Telegram the **primary transport** for TealClaw chat when desired, so users can run production workflows through Telegram/OpenClaw without requiring browser↔gateway WebSocket pairing.
+Eliminate Telegram Bot API `getUpdates` contention between TealClaw and OpenClaw gateway by moving relay inbound to a **single-consumer gateway fanout model**.
 
-## Why
-Current Agent mode is powerful but setup-heavy (gateway URL/token + pairing). Many users already run OpenClaw via Telegram. Relay mode gives a simpler path:
+## Problem (v1)
+In v1, both TealClaw and OpenClaw gateway consumed Telegram inbound updates directly. Dual consumers caused race conditions and intermittent missed messages.
 
-- TealClaw sends user messages to Telegram
-- TealClaw listens for Telegram replies
-- Chat continues in TealClaw UI with minimal setup
+## v2 Fix Summary
+1. **Removed TealClaw Bot API `getUpdates` polling** from relay runtime.
+2. **Inbound source switched to gateway-native** stream/events path.
+3. **Relay UX preserved** (`/telegram relay on|off|status`, Settings toggles).
+4. **Startup reconciliation added** using gateway chat history + local cursor (timestamp-based) to avoid stale offset behavior.
+5. **Explicit diagnostics added** in status output:
+   - inbound source = `gateway-native`
+   - gateway link/runtime state
+   - startup reconciliation state
+   - inbound path + last inbound timestamp
+6. **Outbound path:**
+   - Preferred: gateway `send` method (when available)
+   - Fallback: existing Telegram Bot API send path (no inbound polling)
 
-## v1 Scope (implemented)
-1. **New chat mode:** `telegram-relay` in Settings > Chat Mode
-2. **Safe defaults:** relay is OFF by default; requires existing `tgToken` + `tgChatId`
-3. **Outbound relay:** user messages (and optional image attachment) sent via Telegram Bot API
-4. **Inbound relay:** polling `getUpdates` and rendering incoming Telegram messages in chat
-5. **Config toggles (v1):**
-   - Relay mode on/off
-   - Receive inbound Telegram replies
-   - Relay poll interval (seconds)
-   - Optional TTS for inbound relay messages
-6. **Command UX:** `/telegram relay on|off|status`
-7. **Status UX:** top pill + `/keys` reflect relay state
+## Runtime Design
+- Relay runtime binds to active OpenClaw WS connection.
+- Inbound handlers process gateway events (chat + telegram/channel adapters).
+- Message dedupe uses bounded seen-set and outbound echo suppression.
+- Startup reconciliation:
+  - Reads `chat.history` from candidate telegram session keys
+  - Replays only messages newer than last cursor
+  - Persists cursor locally per agent+chat
 
-## Compatibility / Safety
-- Existing one-way Telegram forwarding (`tgEnabled`) remains unchanged.
-- Existing Direct and Agent modes remain intact.
-- Relay mode only activates when explicitly enabled.
-- No secrets added to repo; token/chat ID stay in browser storage.
+## Adapter / Contract Note
+Gateway channel event contracts vary by build. TealClaw includes an adapter layer with conservative defaults:
+- **Main-session fallback is disabled by default** (`tc-tg-relay-main-fallback`)
+- Optional `message.send` adapter path is disabled by default (`tc-tg-relay-message-send-adapter`)
+- TODO remains to tighten event contract names/shapes once fully standardized across gateway versions
 
-## Adapter note (contract uncertainty)
-OpenClaw gateway RPC contracts for direct channel send/receive bridging are not guaranteed across builds.
+## Compatibility
+- v1 relay commands remain supported.
+- Existing Telegram forwarding (`tgEnabled`) remains unchanged.
+- Direct and Agent modes remain intact.
 
-For v1, TealClaw uses a **Bot API relay adapter** (stable, mockable boundary in code). Gateway-native relay can be added behind the same adapter later.
-
-### TODO (v2)
-- Add optional gateway-backed adapter path (e.g. `message.send` / channel events) when contract is standardized.
-- Add webhook option (instead of polling) for lower latency and battery usage.
-- Add richer media inbound rendering (voice/photo/file previews).
+## Security / Safety
+- No secrets are committed.
+- Tokens/chat IDs remain local runtime config.
+- Single inbound consumer model avoids update races while gateway is active.

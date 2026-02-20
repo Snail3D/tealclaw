@@ -40,7 +40,7 @@ If any field fails to persist (including sensitive keys on mobile), TealClaw sho
 | Field | Type | Description |
 |-------|------|-------------|
 | sysPrompt | string | System prompt sent to the AI. Supports any instructions, persona, etc. |
-| mode | "direct" / "agent" / "telegram-relay" | Direct = browser calls provider API. Agent = route through OpenClaw gateway. Telegram Relay = Telegram is primary chat transport |
+| mode | "direct" / "agent" / "telegram-relay" | Direct = browser calls provider API. Agent = route through OpenClaw gateway. Telegram Relay = Telegram is primary chat transport, with inbound source gateway-native via OpenClaw events |
 | allowProactiveCameraCapture | boolean | Default: true. If true, incoming `tc-action` `camera.capture` and `screen.capture` use lightweight inline consent (Take photo / Take screenshot / Cancel). If false, uses full confirm modal flow. |
 
 ## Agent Camera Routing (Operational Guidance)
@@ -65,10 +65,10 @@ When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
 | tgRelayEnabled | boolean | Enables Telegram Relay transport (legacy compatibility flag; mode should be `telegram-relay`) |
 | tgRelayReceive | boolean | In relay mode, receive inbound Telegram messages into TealClaw chat. Default: true |
 | tgRelaySpeak | boolean | In relay mode, auto-speak inbound Telegram messages via TTS. Default: false |
-| tgRelayPollSec | number | Relay polling interval in seconds. Range: 2-30. Default: 6 |
-| tgBotId | number | Cached Telegram bot id from `getMe` for echo filtering |
+| tgRelayPollSec | number | Legacy v1 relay polling interval (compat field). Relay v2 inbound is gateway-native and does not use Bot API polling. Range retained: 2-30. Default: 6 |
+| tgBotId | number | Optional cached Telegram bot id from `getMe` (diagnostics / compatibility metadata) |
 
-**UX note:** Telegram fields are now first-class in Settings (bot token, chat ID, optional bot ID, relay toggles, poll interval) with a one-tap Quick Setup Wizard and a **Copy safe config block** fallback button.
+**UX note:** Telegram fields are now first-class in Settings (bot token, chat ID, optional bot ID, relay toggles, legacy poll field) with a one-tap Quick Setup Wizard, plus relay diagnostics showing inbound source = gateway-native, runtime state, and startup reconciliation status.
 
 ## Image Generation
 

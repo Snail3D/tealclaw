@@ -54,7 +54,7 @@
 Telegram setup is now first-class in **Settings → Telegram Relay Setup**:
 - Quick Setup Wizard (step-by-step)
 - Direct fields for bot token, chat ID, optional bot ID auto-detect
-- Relay toggles + poll interval in one place
+- Relay toggles + gateway-native diagnostics in one place (inbound source, runtime, startup reconciliation)
 - **Copy safe config block** button for manual fallback (no secrets included)
 
 ## Command Details
@@ -134,6 +134,11 @@ Toggle one-way Telegram message forwarding without changing token/chat ID.
 
 ### /telegram relay on / off / status
 Enable or disable **Telegram Relay Mode** (Telegram becomes primary chat transport), or view relay runtime/config status.
+
+Relay v2 behavior:
+- Inbound source is explicitly **gateway-native** (single-consumer model via OpenClaw gateway stream/events)
+- TealClaw no longer consumes Telegram Bot API `getUpdates` in relay mode
+- Status output includes startup reconciliation + runtime diagnostics
 
 ### /voice
 Shows current TTS voice settings:
