@@ -16,24 +16,26 @@ In v1, both TealClaw and OpenClaw gateway consumed Telegram inbound updates dire
    - gateway link/runtime state
    - startup reconciliation state
    - inbound path + last inbound timestamp
-6. **Outbound path:**
-   - Preferred: gateway `send` method (when available)
-   - Fallback: existing Telegram Bot API send path (no inbound polling)
+6. **Outbound path (auto-negotiated):**
+   - Tries gateway methods in order: `send` → `message.send` → `channel.send` → `channels.send` → `telegram.send`
+   - Records active adapter path in relay diagnostics
+   - Falls back to Telegram Bot API send path if gateway methods are unavailable
 
 ## Runtime Design
 - Relay runtime binds to active OpenClaw WS connection.
 - Inbound handlers process gateway events (chat + telegram/channel adapters).
 - Message dedupe uses bounded seen-set and outbound echo suppression.
 - Startup reconciliation:
-  - Reads `chat.history` from candidate telegram session keys
+  - Reads history via method negotiation (`chat.history`, `history.get`, `chat.sync`, `message.history`)
   - Replays only messages newer than last cursor
   - Persists cursor locally per agent+chat
 
 ## Adapter / Contract Note
-Gateway channel event contracts vary by build. TealClaw includes an adapter layer with conservative defaults:
-- **Main-session fallback is disabled by default** (`tc-tg-relay-main-fallback`)
-- Optional `message.send` adapter path is disabled by default (`tc-tg-relay-message-send-adapter`)
-- TODO remains to tighten event contract names/shapes once fully standardized across gateway versions
+Gateway channel event contracts vary by build. TealClaw now ships an active compatibility layer:
+- Inbound listens to expanded event aliases (chat/channel/telegram variants)
+- Outbound auto-negotiates compatible gateway send method (no hidden localStorage flags required)
+- Session candidate matching includes canonical and legacy telegram key patterns
+- **Main-session fallback remains disabled by default** (`tc-tg-relay-main-fallback`) to avoid cross-session leakage
 
 ## Compatibility
 - v1 relay commands remain supported.

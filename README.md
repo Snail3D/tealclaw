@@ -22,7 +22,7 @@ That's it. One key gives you chat, voice, vision, image generation, and deep res
 
 **Voice Chat** — Hold to speak, get spoken replies. Six voice personas with distinct personalities: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive). Powered by Groq Whisper + Orpheus TTS.
 
-**Direct Provider Routing** — Run direct chat/vision through Groq, Fireworks, OpenAI, Anthropic, OpenRouter, xAI, Mistral, Together, or DeepSeek. Provider can be switched in Settings, with optional Groq fallback for resiliency.
+**Direct Provider Routing** — Run direct chat/vision through Groq, Fireworks, OpenAI, Anthropic, OpenRouter, xAI, Mistral, Together, DeepSeek, Cerebras, or Perplexity. Provider can be switched in Settings or via `/provider <name>`, with optional Groq fallback for resiliency.
 
 **Deep Research** — Type `/research` and get a full sourced report. `/deepresearch` goes deeper with multi-tool analysis.
 
@@ -94,6 +94,7 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/photo` / `/capture` / `/takephoto` | Open camera, capture, and send photo for AI analysis |
 | `/screenshot` / `/screen` / `/capture-screen` | Open screen picker, capture one frame, and send screenshot for AI analysis |
 | `/voice` | Voice settings and personas |
+| `/providers` / `/provider <name>` | List/switch direct AI provider quickly |
 | `/save` | Save to Obsidian |
 | `/template` | Browse style templates |
 | `/share` | Encrypted config link |

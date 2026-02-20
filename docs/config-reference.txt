@@ -26,13 +26,16 @@ If any field fails to persist (including sensitive keys on mobile), TealClaw sho
 
 | Field | Type | Description |
 |-------|------|-------------|
-| aiProvider | "groq" | AI provider for chat completions |
-| aiKey | string | API key for chat. Prefixes: gsk_* (Groq) |
-| aiModel | string | Model ID. Default: groq/compound-mini |
-| whisperKey | string | Groq API key for Whisper voice transcription, Orpheus TTS, AND /research command. Get free at console.groq.com |
+| aiProvider | string | Direct AI provider. Supported: `groq`, `fireworks`, `openai`, `anthropic`, `openrouter`, `xai`, `mistral`, `together`, `deepseek`, `cerebras`, `perplexity` |
+| aiKey | string | Direct-provider API key (examples: `fw_...`, `sk-...`, `sk-ant-...`, `sk-or-v1-...`, `xai-...`, `csk-...`, `pplx-...`) |
+| aiBaseUrl | string | Optional custom direct-provider base URL override. Must be HTTPS (HTTP only allowed for localhost/self-hosted local gateways) |
+| aiModel | string | Direct chat model ID. If unset, TealClaw uses provider defaults |
+| directFallbackToGroq | boolean | If true (default), non-Groq direct providers automatically fail over to Groq when recoverable errors occur and a Groq key is present |
+| gatewayHttpFallback | boolean | Allows agent HTTP fallback path when gateway WebSocket is unavailable (useful for local/self-hosted setups) |
+| whisperKey | string | Groq API key for Whisper voice transcription, Groq TTS, and `/research` |
 | groqTtsVoice | string | Groq Orpheus TTS voice name. Options: autumn, diana, hannah, austin, daniel, troy. Default: troy |
 | ttsAutoPlay | boolean | Auto-speak AI responses. Default: true. Set false for on-demand playback (tap to hear) |
-| maxTokens | number | Max tokens per AI response. Default: 400. Range: 50-2000 |
+| maxTokens | number | Max tokens per AI response (provider-capped). Default: 400 |
 | temperature | number | AI creativity. 0=focused, 2=creative. Default: 0.7 |
 
 ## System Prompt & Mode
@@ -181,7 +184,7 @@ GIFs use Klipy via server proxy — no API key needed. When enabled, AI response
 | hapticFeedback | boolean | Vibrate on interactions (mobile). Default: true |
 | soundEnabled | boolean | Play subtle tones on send/receive |
 | cameraEnabled | boolean | Enable/disable camera access. Default: true |
-| streamEnabled | boolean | Show AI responses as they generate (token by token streaming). Default: false |
+| streamEnabled | boolean | Show AI responses as they generate (token by token streaming). Default: true |
 | latexEnabled | boolean | Render LaTeX math ($inline$ and $$block$$) using KaTeX. Default: false |
 | contextMessages | number | Number of conversation messages to include as context. Default: 20. Range: 2-50 |
 
