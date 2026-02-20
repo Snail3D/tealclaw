@@ -12430,7 +12430,8 @@ ${statusLine}
         if(!body)continue;
 
         if(k.tgBotId&&String(msg.from?.id||'')===String(k.tgBotId))continue;
-        if(wasRelayOutbound(msg.chat?.id,body))continue;
+        // Do NOT suppress inbound just because text matches a recent outbound.
+        // In real chats users often reply with similar/identical text.
         if(k.tgRelayReceive===false)continue;
 
         const sender=telegramSenderName(msg);
