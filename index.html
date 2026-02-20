@@ -11366,6 +11366,7 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
         let bubbleIdx=null;
         let revealedText='';
         const doTTS=ttsMode==='auto'&&hasTTS(k);
+        const debateTtsProvider=getActiveTtsProvider(k);
         const scroll=$('chatScroll');
 
         for(let i=0;i<segments.length;i++){
@@ -11386,9 +11387,14 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
           // TTS: speak actual debate text directly (no summarization)
           if(doTTS){
             try{
-              const segK={...k,groqTtsVoice:seg.voiceId};
               const cleanText=ttsQuickClean(stripExprTags(seg.text))||seg.text;
-              const wavData=await speakGroq(cleanText,segK);
+              let wavData=null;
+              if(debateTtsProvider==='groq'){
+                const segK={...k,groqTtsVoice:seg.voiceId};
+                wavData=await speakGroq(cleanText,segK,{showTermsError:true,showErrors:true});
+              }else if(debateTtsProvider==='elevenlabs'){
+                wavData=await speakElevenLabs(cleanText,k,{showErrors:true});
+              }
               if(wavData){
                 await new Promise(resolve=>{
                   let done=false;
@@ -12583,9 +12589,26 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
         }
         if(cmd==='/voice'){
           const k=getK();
+          const provider=getSelectedTtsProvider(k);
+          if(provider==='off'){
+            sysBubble(`<h3>Voice Services</h3>
+<p><strong>Provider:</strong> Off</p>
+<p style="font-size:11px;color:var(--text-2)">Enable Groq or ElevenLabs in Settings > Voice Services.</p>`);
+            return;
+          }
+          if(provider==='elevenlabs'){
+            const v=getElevenLabsValidationInfo(k);
+            const voiceId=esc(String(k.elevenlabsVoiceId||k.elevenlabsVoice||'not set'));
+            sysBubble(`<h3>Voice Services</h3>
+<p><strong>Provider:</strong> ElevenLabs</p>
+<p><strong>Voice ID:</strong> <code>${voiceId}</code></p>
+<p style="font-size:11px;color:${v.state==='ok'?'var(--ok)':(v.state==='err'?'var(--err)':'var(--text-3)')}">${esc(v.text)}</p>
+<p style="font-size:11px;color:var(--text-2)">Manage provider, fallback, and validation in Settings > Voice Services.</p>`);
+            return;
+          }
           const vp=getVoicePersona(k);
           const voiceList=Object.entries(VOICE_PERSONAS).map(([id,p])=>`<code>${p.name}</code> <span style="color:var(--text-3)">(${p.tag})</span>`).join(', ');
-          sysBubble(`<h3>Voice Personas</h3>
+          sysBubble(`<h3>Voice Personas (Groq)</h3>
 <p><strong>Current:</strong> ${esc(vp.name)} <span style="color:var(--text-3)">(${esc(vp.tag)})</span></p>
 <p style="font-size:11px;color:var(--text-2);margin:4px 0">${esc(vp.desc)}</p>
 <p style="margin-top:10px"><strong>All voices:</strong> ${voiceList}</p>

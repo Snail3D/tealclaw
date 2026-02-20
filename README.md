@@ -20,7 +20,7 @@ That's it. One key gives you chat, voice, vision, image generation, and deep res
 
 ## What You Get
 
-**Voice Chat** — Hold to speak, get spoken replies. Six voice personas with distinct personalities: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive). Powered by Groq Whisper + Orpheus TTS.
+**Voice Chat** — Hold to speak, get spoken replies. Voice Services now has explicit TTS provider routing (`groq`, `elevenlabs`, or `off`), opt-in fallback, and ElevenLabs key+voice validation status. Groq personas: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive).
 
 **Direct Provider Routing** — Run direct chat/vision through Groq, Fireworks, OpenAI, Anthropic, OpenRouter, xAI, Mistral, Together, DeepSeek, Cerebras, or Perplexity. Provider can be switched in Settings or via `/provider <name>`, with optional Groq fallback for resiliency.
 
