@@ -41,6 +41,13 @@ checks.push(ok(/if\(cmd\.startsWith\('\/provider '\)\)/.test(indexHtml), '/provi
 checks.push(ok(/SLASH COMMANDS:[\s\S]*\/providers, \/provider <name>/.test(indexHtml), 'Help command list includes provider commands'));
 checks.push(ok(/\| `\/providers` \/ `\/provider <name>` \|/.test(readme), 'README command table includes provider commands'));
 
+section('Enterprise Security UX Checks');
+checks.push(ok(/Gateway URL must be https/.test(indexHtml), 'Gateway hash import enforces https (toast copy present)'));
+checks.push(ok(/payload\.length>120000/.test(indexHtml), 'Config hash import has size cap'));
+checks.push(ok(/Include API keys\/tokens in the encrypted link\?/.test(indexHtml), 'Encrypted share link prompts include/exclude secrets'));
+checks.push(ok(/id="obLocalToken"[^>]*type="password"/.test(indexHtml), 'Local gateway onboarding token input is masked'));
+checks.push(ok(/Auth token too large/.test(indexHtml), 'Local gateway onboarding enforces token length cap'));
+
 section('Doc Alignment Checks');
 checks.push(ok(/`cerebras`, `perplexity`/.test(cfgRef), 'Config reference lists Cerebras + Perplexity'));
 checks.push(ok(/aiBaseUrl/.test(cfgRef), 'Config reference includes aiBaseUrl'));
