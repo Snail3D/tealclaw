@@ -147,6 +147,7 @@
     /* ── Cron Modal ──────────────────────────────────── */
     .cron-modal{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:1;transition:opacity 0.2s}
     .cron-modal.hidden{opacity:0;pointer-events:none;display:none}
+    body.cron-modal-open{overflow:hidden}
     .cron-modal-card{background:var(--bg-1);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:85dvh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.5);animation:bubble-scale-in 0.15s ease-out}
     .cron-modal-card h3{font-size:16px;font-weight:600;margin-bottom:12px}
     .cron-modal-card label{display:block;font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px}
@@ -10611,6 +10612,7 @@ Rules:
 
       // A11y: trap focus inside modal + move initial focus into first field.
       modal.dataset.open='1';
+      document.body.classList.add('cron-modal-open');
       modal.classList.remove('hidden');
       try{card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');}catch{}
       setTimeout(()=>{try{$('cronTitleIn')?.focus()}catch{}},0);
@@ -10619,6 +10621,7 @@ Rules:
     function closeCronModal(){
       const modal=$('cronModal');
       modal.classList.add('hidden');
+      document.body.classList.remove('cron-modal-open');
       delete modal.dataset.open;
       // Return focus to trigger for keyboard users.
       try{$('cronAddBtn')?.focus()}catch{}
