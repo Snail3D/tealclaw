@@ -2953,6 +2953,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const keys=[
         {label:'Groq Key',desc:'Chat + vision + voice + TTS (free)',field:'whisperKey',val:k.whisperKey,link:'https://console.groq.com/keys',linkText:'Get key',prefix:'gsk_'},
 
+        {label:'ElevenLabs Key',desc:'ElevenLabs TTS (custom voices)',field:'elevenlabsKey',val:k.elevenlabsKey,link:'https://elevenlabs.io/app/settings/api-keys',linkText:'Get key',prefix:'sk_'},
+        {label:'ElevenLabs Voice ID',desc:'Voice id (e.g. Burt Reynolds)',field:'elevenlabsVoiceId',val:k.elevenlabsVoiceId,link:'https://elevenlabs.io/app/voice-lab',linkText:'Find voice',prefix:''},
+
         {label:'Image Gen Key',desc:'Google AI or OpenRouter — /imagine',field:'imageGenKey',val:k.imageGenKey,link:'https://aistudio.google.com/apikey',linkText:'Get key',prefix:'AIza'}
       ];
 
@@ -4874,7 +4877,7 @@ GIF reactions (encouraged!): append a [gif:search query] tag at the end of your 
 Inline media: your responses support full markdown rendering. Use ![alt](url) for inline images, ![audio](url.mp3) for inline audio players, ![video](url.mp4) for inline video players. Use [download:filename.ext](url) for download buttons. All render natively in the chat — no plugins needed.
 File generation: to produce a downloadable file, use \`\`\`tc-action\n{"type":"file","filename":"notes.md","content":"# My Notes\\n\\nContent here...","mime":"text/markdown"}\n\`\`\` Supported: .md, .json, .csv, .txt, .html. The file appears as a styled download card in chat. Use this when users ask for exports, reports, templates, or any generated document.
 Context compaction: TealClaw automatically summarizes older messages so you retain awareness of the full conversation even in long chats. Sticky facts (name, preferences, decisions) persist across compaction rounds. If you see a [Memory] section in the system prompt, those are facts extracted from earlier in this conversation.
-Config links: to give a user a one-click setup link, build valid JSON with config keys, base64-encode it, and provide: https://tealclaw.ai/#config=BASE64. CRITICAL RULES: (1) ALL fields must be in ONE flat JSON object — no nested closing braces. (2) Use ONLY valid config keys: mode, agents, whisperKey, groqTtsVoice, ttsAutoPlay, botName, accentColor, themeMode, etc. (3) There is NO "ttsKey" or "ttsVoice" field — TTS uses the same Groq key as whisperKey, voice is set via groqTtsVoice. (4) agents is an array: [{"id":"x","name":"X","url":"https://...","token":"xxx","active":true}]. (5) Agent url MUST be HTTPS — HTTP and raw IPs will fail. Example: {"mode":"agent","agents":[{"id":"home","name":"Bot","url":"https://gw.example.com","token":"tok","active":true}],"whisperKey":"gsk_xxx","groqTtsVoice":"troy","ttsAutoPlay":true,"botName":"Bot","accentColor":"#0d9488","themeMode":"dark"} → btoa(JSON.stringify(config)) → append to https://tealclaw.ai/#config=
+Config links: to give a user a one-click setup link, build valid JSON with config keys, base64-encode it, and provide: https://tealclaw.ai/#config=BASE64. CRITICAL RULES: (1) ALL fields must be in ONE flat JSON object — no nested closing braces. (2) Use ONLY valid config keys (see CONFIG_KEYS in this file). (3) Groq TTS uses the same Groq key as whisperKey, voice is set via groqTtsVoice. (4) Optional: ElevenLabs TTS supports elevenlabsKey + elevenlabsVoiceId for custom voices. (5) agents is an array: [{"id":"x","name":"X","url":"https://...","token":"xxx","active":true}]. (6) Agent url MUST be HTTPS — HTTP and raw IPs will fail. Example: {"mode":"agent","agents":[{"id":"home","name":"Bot","url":"https://gw.example.com","token":"tok","active":true}],"whisperKey":"gsk_xxx","groqTtsVoice":"troy","ttsAutoPlay":true,"botName":"Bot","accentColor":"#0d9488","themeMode":"dark"} → btoa(JSON.stringify(config)) → append to https://tealclaw.ai/#config=
 IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey), or mode. Those are owner-controlled only.`;
 
     // Core content policy — hardcoded, non-configurable, appended last to every prompt
@@ -5946,6 +5949,35 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return bufs.length===1?bufs[0]:stitchWavBuffers(bufs);
     }
 
+    // ElevenLabs TTS (direct-from-browser BYOK). Returns audio bytes (usually mp3).
+    async function speakElevenLabs(text,k){
+      const apiKey=k.elevenlabsKey;
+      const voiceId=k.elevenlabsVoiceId||k.elevenlabsVoice||'';
+      if(!apiKey||!voiceId)return null;
+      const chunks=chunkTextForTTS(text,350);
+      const fetches=chunks.map(chunk=>
+        fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,{
+          method:'POST',
+          headers:{'xi-api-key':apiKey,'Content-Type':'application/json','Accept':'audio/mpeg'},
+          body:JSON.stringify({
+            text:chunk,
+            model_id:k.elevenlabsModel||'eleven_multilingual_v2',
+            voice_settings:{
+              stability:(k.elevenlabsStability??0.35),
+              similarity_boost:(k.elevenlabsSimilarity??0.85),
+              style:(k.elevenlabsStyle??0.2),
+              use_speaker_boost:(k.elevenlabsSpeakerBoost??true)
+            }
+          })
+        }).then(r=>r.ok?r.arrayBuffer():null)
+      );
+      const results=await Promise.all(fetches);
+      const bufs=results.filter(Boolean);
+      if(!bufs.length)return null;
+      // NOTE: multi-chunk stitching for mp3 is non-trivial. For now, only return the first chunk.
+      return bufs[0];
+    }
+
 
 
     // TTS script preprocessor: convert AI text into speech-friendly format with tone direction
@@ -6079,15 +6111,31 @@ GIF REACTIONS (~75% of responses — encouraged!):
       // Extract GIF tag injected by the TTS model before sending to audio
       const{cleanText:ttsClean,gifQuery:ttsGif}=parseGifTag(script);
       if(ttsGif)searchGif(ttsGif).then(r=>{if(r)showGifOverlay(r)}).catch(()=>{});
+
+      // Prefer ElevenLabs if configured (lets you use custom voices, e.g. Burt Reynolds)
+      if(k.elevenlabsKey&&(k.elevenlabsVoiceId||k.elevenlabsVoice))return speakElevenLabs(ttsClean,k);
       return speakGroq(ttsClean,k);
     }
 
     function hasTTS(k){
       if(!k)k=getK();
-      return !!(k.whisperKey||k.aiKey);
+      return !!(k.elevenlabsKey&&(k.elevenlabsVoiceId||k.elevenlabsVoice)) || !!(k.whisperKey||k.aiKey);
     }
+
+    function guessAudioMime(data){
+      try{
+        const u8=new Uint8Array(data);
+        // WAV starts with RIFF....WAVE
+        if(u8.length>12&&u8[0]===0x52&&u8[1]===0x49&&u8[2]===0x46&&u8[3]===0x46) return 'audio/wav';
+        // MP3 often starts with ID3 or frame sync 0xFF 0xFB
+        if(u8.length>3&&u8[0]===0x49&&u8[1]===0x44&&u8[2]===0x33) return 'audio/mpeg';
+        if(u8.length>2&&u8[0]===0xFF&&(u8[1]&0xE0)===0xE0) return 'audio/mpeg';
+      }catch{}
+      return 'application/octet-stream';
+    }
+
     function ttsBlob(data){
-      return new Blob([data],{type:'audio/wav'});
+      return new Blob([data],{type:guessAudioMime(data)});
     }
 
     // Start auto-TTS without blocking other UI work (e.g. tc-action prompts).
@@ -6407,7 +6455,7 @@ CONFIG FIELDS YOU CAN SET:
 Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMode(dark/light), chatUserColor, chatAiColor, chatUserTextColor, chatAiTextColor, topbarBg, inputBarBg, borderColor, chatBubbleRadius, chatBubblePadding, chatMaxWidth, sendBtnColor, micBtnColor, lineHeight, letterSpacing, borderRadius
 Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
 Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
-Voice: ttsAutoPlay, groqTtsVoice(troy=Trey/austin=Axel/daniel=Dean/hannah=Haven/autumn=Vera/diana=Diane), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
+Voice: ttsAutoPlay, ttsMode, groqTtsVoice(troy=Trey/austin=Axel/daniel=Dean/hannah=Haven/autumn=Vera/diana=Diane), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume. Optional ElevenLabs: elevenlabsKey + elevenlabsVoiceId (enables custom voices).
 Features: streamEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
 Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
 Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
@@ -12181,6 +12229,8 @@ ${agentNote}`);
     const CONFIG_KEYS={
       aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
       whisperKey:'whisperKey',ttsAutoPlay:'ttsAutoPlay',ttsMode:'ttsMode',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',groqTtsExpression:'groqTtsExpression',
+      elevenlabsKey:'elevenlabsKey',elevenlabsVoiceId:'elevenlabsVoiceId',elevenlabsVoice:'elevenlabsVoice',elevenlabsModel:'elevenlabsModel',
+      elevenlabsStability:'elevenlabsStability',elevenlabsSimilarity:'elevenlabsSimilarity',elevenlabsStyle:'elevenlabsStyle',elevenlabsSpeakerBoost:'elevenlabsSpeakerBoost',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',gifEnabled:'gifEnabled',
