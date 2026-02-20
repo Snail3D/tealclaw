@@ -17174,7 +17174,8 @@ ${note}`:note;
               showToast('New version available — tap to refresh','ok',10000);
               // Make updating one-tap. We still show a confirm to avoid surprise reload.
               try{toast.style.cursor='pointer';toast.onclick=()=>{if(confirm('Refresh now to update TealClaw?'))location.reload()}}catch{}
-              nw.postMessage('skipWaiting');
+              // Ask the waiting worker to activate ASAP (still requires refresh to take control)
+              try{(reg.waiting||nw)?.postMessage('skipWaiting')}catch{}
             }
           });
         });
