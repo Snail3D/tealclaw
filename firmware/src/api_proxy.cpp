@@ -3,136 +3,224 @@
 #include "config.h"
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <memory>
 
-// ── Accumulation buffer for chunked body reception ──
-// ESPAsyncWebServer delivers POST bodies in chunks via onBody callback.
-// We accumulate until index+len == total, then forward the complete request.
+namespace {
+constexpr uintptr_t REQ_BLOCKED_SENTINEL = 0x1;
+constexpr size_t PROXY_MAX_BODY_BYTES = 512 * 1024;
+
+struct StreamContext {
+    std::unique_ptr<WiFiClientSecure> tls;
+    std::unique_ptr<HTTPClient> http;
+    WiFiClient* stream = nullptr;
+
+    ~StreamContext() {
+        if (http) http->end();
+    }
+};
 
 static String _chatBody;
 static String _transcribeBody;
 static String _ttsBody;
 static String _geminiBody;
 
+bool isBlockedRequest(AsyncWebServerRequest* request) {
+    return reinterpret_cast<uintptr_t>(request->_tempObject) == REQ_BLOCKED_SENTINEL;
+}
+
+bool accumulateBody(AsyncWebServerRequest* request,
+                    String& accumulator,
+                    uint8_t* data,
+                    size_t len,
+                    size_t index,
+                    size_t total,
+                    String& outBody) {
+    if (isBlockedRequest(request)) return false;
+
+    if (index == 0) {
+        accumulator = "";
+    }
+
+    if (accumulator.length() + len > PROXY_MAX_BODY_BYTES) {
+        accumulator = "";
+        request->_tempObject = reinterpret_cast<void*>(REQ_BLOCKED_SENTINEL);
+        request->send(413, "application/json", "{\"error\":\"request payload too large\"}");
+        return false;
+    }
+
+    accumulator.concat(reinterpret_cast<char*>(data), len);
+    if (index + len < total) return false;
+
+    outBody = accumulator;
+    accumulator = "";
+    return true;
+}
+
+size_t readUpstreamChunk(const std::shared_ptr<StreamContext>& ctx, uint8_t* buffer, size_t maxLen) {
+    if (!ctx || !ctx->stream) return 0;
+
+    unsigned long waitStart = millis();
+    while (ctx->stream->available() == 0 && ctx->stream->connected()) {
+        if (millis() - waitStart > PROXY_TIMEOUT_MS) {
+            return 0;
+        }
+        delay(2);
+    }
+
+    int available = ctx->stream->available();
+    if (available <= 0 && !ctx->stream->connected()) {
+        return 0;
+    }
+    if (available <= 0) {
+        return 0;
+    }
+
+    size_t toRead = min(maxLen, (size_t)PROXY_CHUNK_SIZE);
+    toRead = min(toRead, (size_t)available);
+
+    size_t bytesRead = ctx->stream->readBytes(buffer, toRead);
+    if (bytesRead == 0 && !ctx->stream->connected()) {
+        return 0;
+    }
+
+    return bytesRead;
+}
+
+void sendUpstreamError(AsyncWebServerRequest* request, int code, const String& message) {
+    request->send(code, "application/json", String("{\"error\":\"") + message + "\"}");
+}
+
 // ── Helper: forward JSON to upstream API with Bearer auth, stream response back ──
-static void forwardJSON(AsyncWebServerRequest* request, const String& body,
-                        const char* url, const char* apiKey, bool streaming) {
-    WiFiClientSecure* client = new WiFiClientSecure();
-    client->setInsecure(); // ESP32 root CA bundle is limited; TLS still encrypts
+void forwardJSON(AsyncWebServerRequest* request, const String& body,
+                 const char* url, const char* apiKey, bool streaming) {
+    if (!streaming) {
+        WiFiClientSecure client;
+        client.setInsecure();
 
-    HTTPClient http;
-    if (!http.begin(*client, url)) {
-        request->send(502, "application/json", "{\"error\":\"upstream connect failed\"}");
-        delete client;
-        return;
-    }
+        HTTPClient http;
+        if (!http.begin(client, url)) {
+            sendUpstreamError(request, 502, "upstream connect failed");
+            return;
+        }
 
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", String("Bearer ") + apiKey);
-    http.setTimeout(PROXY_TIMEOUT_MS);
+        http.addHeader("Content-Type", "application/json");
+        http.addHeader("Authorization", String("Bearer ") + apiKey);
+        http.setTimeout(PROXY_TIMEOUT_MS);
 
-    int httpCode = http.POST(body);
-    if (httpCode <= 0) {
-        request->send(502, "application/json",
-            String("{\"error\":\"upstream error: ") + http.errorToString(httpCode) + "\"}");
+        int httpCode = http.POST(body);
+        if (httpCode <= 0) {
+            sendUpstreamError(request, 502,
+                String("upstream error: ") + http.errorToString(httpCode));
+            http.end();
+            return;
+        }
+
+        String contentType = http.header("Content-Type");
+        if (contentType.length() == 0) contentType = "application/json";
+
+        String responseBody = http.getString();
+        request->send(httpCode, contentType, responseBody);
         http.end();
-        delete client;
         return;
     }
 
-    // Get response stream
-    int contentLen = http.getSize();
-    WiFiClient* stream = http.getStreamPtr();
+    auto ctx = std::shared_ptr<StreamContext>(new StreamContext());
+    ctx->tls.reset(new WiFiClientSecure());
+    ctx->http.reset(new HTTPClient());
 
-    // Determine content type from upstream
-    String contentType = http.header("Content-Type");
+    ctx->tls->setInsecure(); // ESP32 root CA bundle is limited; TLS still encrypts
+
+    if (!ctx->http->begin(*ctx->tls, url)) {
+        sendUpstreamError(request, 502, "upstream connect failed");
+        return;
+    }
+
+    ctx->http->addHeader("Content-Type", "application/json");
+    ctx->http->addHeader("Authorization", String("Bearer ") + apiKey);
+    ctx->http->setTimeout(PROXY_TIMEOUT_MS);
+
+    int httpCode = ctx->http->POST(body);
+    if (httpCode <= 0) {
+        sendUpstreamError(request, 502,
+            String("upstream error: ") + ctx->http->errorToString(httpCode));
+        return;
+    }
+
+    String contentType = ctx->http->header("Content-Type");
     if (contentType.length() == 0) contentType = "application/json";
 
-    if (streaming && contentType.indexOf("text/event-stream") >= 0) {
-        // SSE streaming response
-        AsyncWebServerResponse* response = request->beginChunkedResponse(
-            "text/event-stream",
-            [stream, client, &http](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-                if (!stream->available() && !stream->connected()) {
-                    return 0; // Done
-                }
-                size_t toRead = min(maxLen, (size_t)PROXY_CHUNK_SIZE);
-                size_t bytesRead = stream->readBytes(buffer, toRead);
-                if (bytesRead == 0 && !stream->connected()) {
-                    return 0; // Done
-                }
-                return bytesRead;
-            }
-        );
-        response->addHeader("Cache-Control", "no-cache");
-        response->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(response);
-    } else {
-        // Non-streaming: read full response and forward
-        String responseBody = http.getString();
-        AsyncWebServerResponse* response = request->beginResponse(
-            httpCode, contentType, responseBody);
-        response->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(response);
+    // Fallback: if upstream didn't actually return SSE, return normal body.
+    if (contentType.indexOf("text/event-stream") < 0) {
+        String responseBody = ctx->http->getString();
+        request->send(httpCode, contentType, responseBody);
+        return;
     }
 
-    http.end();
-    delete client;
+    ctx->stream = ctx->http->getStreamPtr();
+    if (!ctx->stream) {
+        sendUpstreamError(request, 502, "upstream stream unavailable");
+        return;
+    }
+
+    AsyncWebServerResponse* response = request->beginChunkedResponse(
+        "text/event-stream",
+        [ctx](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+            return readUpstreamChunk(ctx, buffer, maxLen);
+        }
+    );
+    response->addHeader("Cache-Control", "no-cache");
+    request->send(response);
 }
 
 // ── Helper: forward binary response (TTS audio) ──
-static void forwardBinary(AsyncWebServerRequest* request, const String& body,
-                          const char* url, const char* apiKey) {
-    WiFiClientSecure* client = new WiFiClientSecure();
-    client->setInsecure();
+void forwardBinary(AsyncWebServerRequest* request, const String& body,
+                   const char* url, const char* apiKey) {
+    auto ctx = std::shared_ptr<StreamContext>(new StreamContext());
+    ctx->tls.reset(new WiFiClientSecure());
+    ctx->http.reset(new HTTPClient());
 
-    HTTPClient http;
-    if (!http.begin(*client, url)) {
-        request->send(502, "application/json", "{\"error\":\"upstream connect failed\"}");
-        delete client;
+    ctx->tls->setInsecure();
+
+    if (!ctx->http->begin(*ctx->tls, url)) {
+        sendUpstreamError(request, 502, "upstream connect failed");
         return;
     }
 
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", String("Bearer ") + apiKey);
-    http.setTimeout(PROXY_TIMEOUT_MS);
+    ctx->http->addHeader("Content-Type", "application/json");
+    ctx->http->addHeader("Authorization", String("Bearer ") + apiKey);
+    ctx->http->setTimeout(PROXY_TIMEOUT_MS);
 
-    int httpCode = http.POST(body);
+    int httpCode = ctx->http->POST(body);
     if (httpCode <= 0) {
-        request->send(502, "application/json",
-            String("{\"error\":\"upstream error: ") + http.errorToString(httpCode) + "\"}");
-        http.end();
-        delete client;
+        sendUpstreamError(request, 502,
+            String("upstream error: ") + ctx->http->errorToString(httpCode));
         return;
     }
 
-    String contentType = http.header("Content-Type");
+    String contentType = ctx->http->header("Content-Type");
     if (contentType.length() == 0) contentType = "application/octet-stream";
 
-    WiFiClient* stream = http.getStreamPtr();
+    ctx->stream = ctx->http->getStreamPtr();
+    if (!ctx->stream) {
+        sendUpstreamError(request, 502, "upstream stream unavailable");
+        return;
+    }
 
     AsyncWebServerResponse* response = request->beginChunkedResponse(
         contentType.c_str(),
-        [stream, client, &http](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-            if (!stream->available() && !stream->connected()) return 0;
-            size_t toRead = min(maxLen, (size_t)PROXY_CHUNK_SIZE);
-            return stream->readBytes(buffer, toRead);
+        [ctx](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+            return readUpstreamChunk(ctx, buffer, maxLen);
         }
     );
-    response->addHeader("Access-Control-Allow-Origin", "*");
     request->send(response);
-
-    http.end();
-    delete client;
 }
+} // namespace
 
 // ── Groq Chat Completions ──
 void proxyGroqChat(AsyncWebServerRequest* request, uint8_t* data, size_t len,
                    size_t index, size_t total) {
-    _chatBody += String((char*)data, len);
-    if (index + len < total) return; // Still receiving body
-
-    String body = _chatBody;
-    _chatBody = "";
+    String body;
+    if (!accumulateBody(request, _chatBody, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("groq_key");
     if (apiKey.length() == 0) {
@@ -151,11 +239,8 @@ void proxyGroqChat(AsyncWebServerRequest* request, uint8_t* data, size_t len,
 void proxyGroqTranscribe(AsyncWebServerRequest* request, uint8_t* data, size_t len,
                          size_t index, size_t total) {
     // Whisper expects multipart/form-data — forward as-is with auth header
-    _transcribeBody += String((char*)data, len);
-    if (index + len < total) return;
-
-    String body = _transcribeBody;
-    _transcribeBody = "";
+    String body;
+    if (!accumulateBody(request, _transcribeBody, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("groq_key");
     if (apiKey.length() == 0) {
@@ -163,13 +248,12 @@ void proxyGroqTranscribe(AsyncWebServerRequest* request, uint8_t* data, size_t l
         return;
     }
 
-    WiFiClientSecure* client = new WiFiClientSecure();
-    client->setInsecure();
+    WiFiClientSecure client;
+    client.setInsecure();
 
     HTTPClient http;
-    if (!http.begin(*client, GROQ_TRANSCRIBE_URL)) {
-        request->send(502, "application/json", "{\"error\":\"upstream connect failed\"}");
-        delete client;
+    if (!http.begin(client, GROQ_TRANSCRIBE_URL)) {
+        sendUpstreamError(request, 502, "upstream connect failed");
         return;
     }
 
@@ -181,27 +265,25 @@ void proxyGroqTranscribe(AsyncWebServerRequest* request, uint8_t* data, size_t l
 
     int httpCode = http.POST((uint8_t*)body.c_str(), body.length());
     if (httpCode <= 0) {
-        request->send(502, "application/json",
-            String("{\"error\":\"upstream error: ") + http.errorToString(httpCode) + "\"}");
-    } else {
-        String resp = http.getString();
-        AsyncWebServerResponse* response = request->beginResponse(httpCode, "application/json", resp);
-        response->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(response);
+        sendUpstreamError(request, 502,
+            String("upstream error: ") + http.errorToString(httpCode));
+        http.end();
+        return;
     }
 
+    String contentType = http.header("Content-Type");
+    if (contentType.length() == 0) contentType = "application/json";
+
+    String resp = http.getString();
+    request->send(httpCode, contentType, resp);
     http.end();
-    delete client;
 }
 
 // ── Groq TTS (Orpheus) ──
 void proxyGroqTTS(AsyncWebServerRequest* request, uint8_t* data, size_t len,
                   size_t index, size_t total) {
-    _ttsBody += String((char*)data, len);
-    if (index + len < total) return;
-
-    String body = _ttsBody;
-    _ttsBody = "";
+    String body;
+    if (!accumulateBody(request, _ttsBody, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("groq_key");
     if (apiKey.length() == 0) {
@@ -215,11 +297,8 @@ void proxyGroqTTS(AsyncWebServerRequest* request, uint8_t* data, size_t len,
 // ── Gemini Image Generation ──
 void proxyGeminiGenerate(AsyncWebServerRequest* request, uint8_t* data, size_t len,
                          size_t index, size_t total) {
-    _geminiBody += String((char*)data, len);
-    if (index + len < total) return;
-
-    String body = _geminiBody;
-    _geminiBody = "";
+    String body;
+    if (!accumulateBody(request, _geminiBody, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("gemini_key");
     if (apiKey.length() == 0) {
@@ -234,41 +313,42 @@ void proxyGeminiGenerate(AsyncWebServerRequest* request, uint8_t* data, size_t l
     String url = String("https://") + GEMINI_API_HOST +
                  "/v1beta/models/" + model + ":generateContent?key=" + apiKey;
 
-    WiFiClientSecure* client = new WiFiClientSecure();
-    client->setInsecure();
+    auto ctx = std::shared_ptr<StreamContext>(new StreamContext());
+    ctx->tls.reset(new WiFiClientSecure());
+    ctx->http.reset(new HTTPClient());
 
-    HTTPClient http;
-    if (!http.begin(*client, url)) {
-        request->send(502, "application/json", "{\"error\":\"upstream connect failed\"}");
-        delete client;
+    ctx->tls->setInsecure();
+
+    if (!ctx->http->begin(*ctx->tls, url)) {
+        sendUpstreamError(request, 502, "upstream connect failed");
         return;
     }
 
-    http.addHeader("Content-Type", "application/json");
-    http.setTimeout(PROXY_TIMEOUT_MS);
+    ctx->http->addHeader("Content-Type", "application/json");
+    ctx->http->setTimeout(PROXY_TIMEOUT_MS);
 
-    int httpCode = http.POST(body);
+    int httpCode = ctx->http->POST(body);
     if (httpCode <= 0) {
-        request->send(502, "application/json",
-            String("{\"error\":\"upstream error: ") + http.errorToString(httpCode) + "\"}");
-    } else {
-        // Gemini responses can be large (base64 images) — stream back
-        WiFiClient* stream = http.getStreamPtr();
-        String contentType = http.header("Content-Type");
-        if (contentType.length() == 0) contentType = "application/json";
-
-        AsyncWebServerResponse* response = request->beginChunkedResponse(
-            contentType.c_str(),
-            [stream, client, &http](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
-                if (!stream->available() && !stream->connected()) return 0;
-                size_t toRead = min(maxLen, (size_t)PROXY_CHUNK_SIZE);
-                return stream->readBytes(buffer, toRead);
-            }
-        );
-        response->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(response);
+        sendUpstreamError(request, 502,
+            String("upstream error: ") + ctx->http->errorToString(httpCode));
+        return;
     }
 
-    http.end();
-    delete client;
+    String contentType = ctx->http->header("Content-Type");
+    if (contentType.length() == 0) contentType = "application/json";
+
+    ctx->stream = ctx->http->getStreamPtr();
+    if (!ctx->stream) {
+        sendUpstreamError(request, 502, "upstream stream unavailable");
+        return;
+    }
+
+    // Gemini responses can be large (base64 images) — stream back
+    AsyncWebServerResponse* response = request->beginChunkedResponse(
+        contentType.c_str(),
+        [ctx](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
+            return readUpstreamChunk(ctx, buffer, maxLen);
+        }
+    );
+    request->send(response);
 }
