@@ -2528,12 +2528,14 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const k=getK();
       const agents=getAgents();
       const activeAgent=agents.find(a=>a.active)||agents[0];
-      if(activeAgent?.url&&activeAgent?.token&&k.mode!=='agent'){
+      if(activeAgent?.url&&activeAgent?.token&&(!k.mode||!['direct','agent','telegram-relay'].includes(k.mode))){
         k.mode='agent';setK(k);
       }
       if(k.mode==='agent'&&activeAgent?.url&&activeAgent?.token){
         ensureAgentConnection(activeAgent);
       }
+      if(isTelegramRelayEnabled(k))startTelegramRelayPolling();
+      else stopTelegramRelayPolling();
     }
 
     function getProviderLabel(k){
@@ -2542,10 +2544,25 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       return 'Setup';
     }
 
+    function hasTelegramConfig(k){
+      const cfg=k||getK();
+      return !!(cfg.tgToken&&cfg.tgChatId);
+    }
+
+    function isTelegramRelayEnabled(k){
+      const cfg=k||getK();
+      return cfg.mode==='telegram-relay'||cfg.tgRelayEnabled===true;
+    }
+
     function updateStatus(){
       const k=getK();
       const pill=$('pill');
-      if(k.mode==='agent'&&getAgents().some(a=>a.active||a.url)){
+      if(isTelegramRelayEnabled(k)){
+        const ready=hasTelegramConfig(k);
+        const relayStatus=_tgRelayRunning?'LIVE':'IDLE';
+        pill.className=ready?'pill ok':'pill off';
+        $('pillLabel').innerHTML=`Telegram Relay <span class="pill-transport">${ready?relayStatus:'SETUP'}</span>`;
+      } else if(k.mode==='agent'&&getAgents().some(a=>a.active||a.url)){
         const ag=getAgents().find(a=>a.active)||getAgents()[0];
         const transport=getAgentTransport(ag);
         const conn=agentConnections.get(ag?.id);
@@ -2592,9 +2609,18 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           active:k.mode==='agent'&&ag.active
         });
       });
+      // Telegram relay
+      if(hasTelegramConfig(k)){
+        channels.push({
+          type:'relay',id:'telegram-relay',name:'Telegram Relay',
+          status:isTelegramRelayEnabled(k)?'ok':'idle',
+          badge:'TG',
+          active:isTelegramRelayEnabled(k)
+        });
+      }
       // Direct providers
       if(k.whisperKey){
-        channels.push({type:'direct',id:'groq',name:'Groq',status:'ok',badge:'Free',active:k.mode!=='agent'});
+        channels.push({type:'direct',id:'groq',name:'Groq',status:'ok',badge:'Free',active:!isTelegramRelayEnabled(k)&&k.mode!=='agent'});
       }
       return channels;
     }
@@ -2605,7 +2631,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(channels.length<=1){dd.innerHTML='';return}
       let html='<div class="channel-dropdown-header">Switch Channel</div>';
       channels.forEach(ch=>{
-        const dot=ch.status==='ok'?'ok':ch.status==='connecting'?'idle':'off';
+        const dot=ch.status==='ok'?'ok':(ch.status==='connecting'||ch.status==='idle')?'idle':'off';
         html+=`<div class="channel-item${ch.active?' active':''}" data-ch-type="${ch.type}" data-ch-id="${ch.id}">`;
         html+=`<span class="ch-dot ${dot}"></span>`;
         html+=`<span class="ch-name">${esc(ch.name)}</span>`;
@@ -2630,30 +2656,39 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const k=getK();
       if(type==='agent'){
         k.mode='agent';
+        k.tgRelayEnabled=false;
         const agents=getAgents();
         agents.forEach(a=>a.active=(a.id===id));
         setAgents(agents);
         const ag=agents.find(a=>a.id===id);
         if(ag?.url&&ag?.token)ensureAgentConnection(ag);
         setK(k);
+      } else if(type==='relay'){
+        k.mode='telegram-relay';
+        k.tgRelayEnabled=true;
+        setK(k);
+        agentConnections.forEach(c=>c.stop());agentConnections.clear();
+        startTelegramRelayPolling();
       } else {
         // Switch to direct mode (Groq) but keep WS alive for inbound agent replies
         k.mode='direct';
+        k.tgRelayEnabled=false;
         k.aiProvider='groq';
         const active=getAgents().find(a=>a.active)||getAgents()[0];
         if(active?.url&&active?.token)ensureAgentConnection(active);
         setK(k);
+        stopTelegramRelayPolling();
       }
       updateStatus();
       renderAgentSelector();
-      showToast(`Switched to ${type==='agent'?getAgents().find(a=>a.id===id)?.name||'Agent':id.charAt(0).toUpperCase()+id.slice(1)}`,'ok');
+      showToast(`Switched to ${type==='agent'?getAgents().find(a=>a.id===id)?.name||'Agent':(type==='relay'?'Telegram Relay':id.charAt(0).toUpperCase()+id.slice(1))}`,'ok');
     }
 
     // Pill click toggles channel dropdown
     $('pill').addEventListener('click',e=>{
       e.stopPropagation();
       const k=getK();
-      const hasAI=!!(k.aiKey||k.whisperKey||(k.mode==='agent'&&getAgents().some(a=>a.url)));
+      const hasAI=!!(k.aiKey||k.whisperKey||(k.mode==='agent'&&getAgents().some(a=>a.url))||hasTelegramConfig(k));
       if(!hasAI){openSheet();return}
       const dd=$('channelDropdown');
       if(dd.classList.contains('open')){dd.classList.remove('open');return}
@@ -2967,6 +3002,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         {name:'Image Gen',active:!!(k.imageGenKey||k.imageGenUrl)},
         {name:'GIF',active:true},
         {name:'Agent',active:!!getAgents().length},
+        {name:'TG Relay',active:isTelegramRelayEnabled(k)&&hasTelegramConfig(k)},
         {name:'LaTeX',active:true},
         {name:'BLE Gate',active:bleGateActive()&&bleConnected}
       ];
@@ -3013,13 +3049,39 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       </div>`;
 
       // Mode toggle
-      const mode=k.mode||'direct';
+      const mode=(k.mode==='agent'||k.mode==='telegram-relay'||k.tgRelayEnabled===true)?(k.mode==='agent'?'agent':'telegram-relay'):'direct';
+      const relayReady=hasTelegramConfig(k);
+      const relayReceive=k.tgRelayReceive!==false;
+      const relaySpeak=k.tgRelaySpeak===true;
+      const relayPollSec=Math.max(2,Math.min(30,Number(k.tgRelayPollSec)||6));
+      const modeDesc=mode==='direct'
+        ?'Groq free tier — fast chat, vision, voice, and TTS'
+        :(mode==='agent'
+          ?'Routes through your OpenClaw gateway — shared context across all channels'
+          :'Uses Telegram as the primary transport (no gateway pairing in browser). Best when your OpenClaw agent already operates in Telegram.');
       html+=`<div class="sheet-section"><div class="sheet-section-title">Chat Mode</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
-          <button class="mode-btn ${mode==='direct'?'active':''}" data-mode="direct" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${mode==='direct'?'var(--teal)':'transparent'};border:none;color:${mode==='direct'?'#fff':'var(--text-3)'};cursor:pointer">Direct (Groq)</button>
-          <button class="mode-btn ${mode==='agent'?'active':''}" data-mode="agent" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${mode==='agent'?'var(--teal)':'transparent'};border:none;color:${mode==='agent'?'#fff':'var(--text-3)'};cursor:pointer">Agent (OpenClaw)</button>
+          <button class="mode-btn ${mode==='direct'?'active':''}" data-mode="direct" style="flex:1;padding:10px;font-size:11px;font-weight:500;font-family:var(--font);background:${mode==='direct'?'var(--teal)':'transparent'};border:none;color:${mode==='direct'?'#fff':'var(--text-3)'};cursor:pointer">Direct (Groq)</button>
+          <button class="mode-btn ${mode==='agent'?'active':''}" data-mode="agent" style="flex:1;padding:10px;font-size:11px;font-weight:500;font-family:var(--font);background:${mode==='agent'?'var(--teal)':'transparent'};border:none;color:${mode==='agent'?'#fff':'var(--text-3)'};cursor:pointer">Agent</button>
+          <button class="mode-btn ${mode==='telegram-relay'?'active':''}" data-mode="telegram-relay" style="flex:1;padding:10px;font-size:11px;font-weight:500;font-family:var(--font);background:${mode==='telegram-relay'?'var(--teal)':'transparent'};border:none;color:${mode==='telegram-relay'?'#fff':'var(--text-3)'};cursor:pointer">Telegram Relay</button>
         </div>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${mode==='direct'?'Groq free tier -- fast chat, vision, voice, and TTS':'Routes through your OpenClaw gateway -- shared context across all channels'}</div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${modeDesc}</div>
+        ${mode==='telegram-relay'?`<div style="margin-top:8px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm)">
+          <div style="font-size:10px;color:${relayReady?'var(--ok)':'var(--err)'};margin-bottom:6px">${relayReady?`Ready — chat ${esc(String(k.tgChatId))}`:'Needs Telegram bot token + chat ID. Type /telegram for setup.'}</div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px">
+            <input type="checkbox" id="sheetTgRelayReceive" ${relayReceive?'checked':''} style="accent-color:var(--teal)">
+            Receive inbound Telegram replies
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px">
+            <input type="checkbox" id="sheetTgRelaySpeak" ${relaySpeak?'checked':''} style="accent-color:var(--teal)">
+            Speak inbound relay replies (TTS)
+          </label>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <div style="font-size:10px;color:var(--text-3)">Poll interval</div>
+            <div style="font-size:10px;color:var(--teal);font-family:var(--mono)"><span id="sheetTgRelayPollVal">${relayPollSec}</span>s</div>
+          </div>
+          <input type="range" id="sheetTgRelayPoll" min="2" max="30" step="1" value="${relayPollSec}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
+        </div>`:''}
       </div>`;
 
       // Voice output (show when any TTS provider is available)
@@ -3402,16 +3464,55 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
       // Wire up mode toggle
       $('sheetBody').querySelectorAll('.mode-btn[data-mode]').forEach(b=>b.addEventListener('click',()=>{
-        const k2=getK();k2.mode=b.dataset.mode;setK(k2);
+        const nextMode=b.dataset.mode;
+        const k2=getK();
+        k2.mode=nextMode;
+        k2.tgRelayEnabled=(nextMode==='telegram-relay');
+        setK(k2);
         // Auto-connect/disconnect WS on mode switch
-        if(b.dataset.mode==='agent'){
+        if(nextMode==='agent'){
           const agent=getAgents().find(a=>a.active)||getAgents()[0];
           if(agent)ensureAgentConnection(agent);
+          stopTelegramRelayPolling();
         } else {
           agentConnections.forEach(c=>c.stop());agentConnections.clear();
+          if(nextMode==='telegram-relay')startTelegramRelayPolling();
+          else stopTelegramRelayPolling();
         }
         renderSheetContent();renderAgentSelector();updateStatus();
+        if(nextMode==='telegram-relay'&&!hasTelegramConfig(k2))showToast('Add Telegram token + chat ID (type /telegram)','err');
       }));
+
+      // Wire up Telegram relay controls
+      $('sheetBody').querySelector('#sheetTgRelayReceive')?.addEventListener('change',e=>{
+        const k2=getK();
+        k2.tgRelayReceive=e.target.checked;
+        setK(k2);
+        if(e.target.checked&&isTelegramRelayEnabled(k2))startTelegramRelayPolling();
+        showToast(e.target.checked?'Inbound relay enabled':'Inbound relay disabled','ok');
+      });
+      $('sheetBody').querySelector('#sheetTgRelaySpeak')?.addEventListener('change',e=>{
+        const k2=getK();
+        k2.tgRelaySpeak=e.target.checked;
+        setK(k2);
+        showToast(e.target.checked?'Relay TTS enabled':'Relay TTS disabled','ok');
+      });
+      $('sheetBody').querySelector('#sheetTgRelayPoll')?.addEventListener('input',e=>{
+        const v=Math.max(2,Math.min(30,Number(e.target.value)||6));
+        const el=$('sheetBody').querySelector('#sheetTgRelayPollVal');
+        if(el)el.textContent=String(v);
+      });
+      $('sheetBody').querySelector('#sheetTgRelayPoll')?.addEventListener('change',e=>{
+        const v=Math.max(2,Math.min(30,Number(e.target.value)||6));
+        const k2=getK();
+        k2.tgRelayPollSec=v;
+        setK(k2);
+        if(isTelegramRelayEnabled(k2)){
+          stopTelegramRelayPolling();
+          startTelegramRelayPolling();
+        }
+        showToast(`Relay poll: ${v}s`,'ok');
+      });
 
       // Wire up TTS mode toggle (auto/on/off)
       $('sheetBody').querySelectorAll('.tts-mode-btn').forEach(b=>b.addEventListener('click',()=>{
@@ -6467,12 +6568,12 @@ Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLoc
 Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
 Voice: ttsAutoPlay, ttsMode, groqTtsVoice(troy=Trey/austin=Axel/daniel=Dean/hannah=Haven/autumn=Vera/diana=Diane), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume. Optional ElevenLabs: elevenlabsKey + elevenlabsVoiceId (enables custom voices).
 Features: streamEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
-Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
+Integrations: obsidianVault, tgToken, tgChatId, tgEnabled, tgRelayEnabled, tgRelayReceive, tgRelaySpeak, tgRelayPollSec
 Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -6616,6 +6717,7 @@ RULES:
       if(!k.sysPrompt)k.sysPrompt='You are a helpful voice assistant. Keep responses concise and conversational (1-3 sentences).';
       setK(k);
       updateStatus();
+      if(isTelegramRelayEnabled(k)&&hasTelegramConfig(k))startTelegramRelayPolling();
       // Auto-enable audio when TTS becomes available after key setup
       if(hasTTS(k)&&ttsMode==='off'){ttsMode='auto';const k2=getK();k2.ttsMode='auto';setK(k2);enableAudio();updateMuteBtn()}
 
@@ -6646,9 +6748,13 @@ ${getOptionalSteps()}`;
 </ol>
 <p>Paste the Chat ID here.</p>`,
         tgChatId:()=>{
-          const k2=getK();k2.tgEnabled=true;setK(k2);
+          const k2=getK();
+          k2.tgEnabled=true;
+          if(k2.tgRelayReceive===undefined)k2.tgRelayReceive=true;
+          if(k2.tgRelayPollSec===undefined)k2.tgRelayPollSec=6;
+          setK(k2);
           return `<h3>Telegram Connected!</h3>
-<p>Messages will now be forwarded to your Telegram chat. You can type <code>/telegram off</code> to disable or <code>/telegram on</code> to re-enable.</p>
+<p>One-way forwarding is enabled. For full two-way relay mode, type <code>/telegram relay on</code> (or switch Chat Mode to <strong>Telegram Relay</strong> in Settings).</p>
 ${getOptionalSteps()}`;
         },
         gwUrl:()=>`<h3>Gateway URL Saved</h3>
@@ -6688,7 +6794,7 @@ ${getOptionalSteps()}`
 
       html+=`<li><strong>Image Gen</strong> -- <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI key</a> (<code>AIza...</code>) for <code>/imagine</code> (Nano Banana)</li>`;
       html+=`<li><strong>Agent Mode</strong> -- connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full tool access</li>`;
-      html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to forward conversations</li>`;
+      html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to set up forwarding or Telegram Relay mode</li>`;
       html+=`</ul>`;
       html+=`<p>Or just start chatting! Use the gear icon (top right) to manage keys later.</p>`;
       return html;
@@ -8111,7 +8217,7 @@ Rules:
       return{cleanText,actions};
     }
 
-    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','gwToken','gwUrl','mode','pinCode','pinHash','tgToken','tgChatId','imageGenKey','webhookUrl','webhookEvents','customCSS']);
+    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','tgToken','tgChatId','imageGenKey','webhookUrl','webhookEvents','customCSS']);
     const TC_HELPMODE_AUTO_KEYS=new Set([
       'accentColor','fontSize','fontFamily','bgColor','bgImage','textColor','themeMode',
       'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
@@ -9968,6 +10074,11 @@ Return ONLY valid JSON, no explanation.`;
       // Input prefix
       if(pk.inputPrefix&&text&&!text.startsWith('/'))text=pk.inputPrefix+' '+text;
 
+      if(isTelegramRelayEnabled(pk)){
+        await pipelineTelegramRelay(text,imageBase64);
+        return;
+      }
+
       addBubble('user',text||'[Image]',imageBase64?{image:imageBase64}:{});
       // User sent a message — scroll to bottom unless user is actively touching
       if(!_userIsTouching){_userScrolledUp=false;_scrollBtn.classList.remove('visible')}
@@ -10504,7 +10615,11 @@ Return ONLY valid JSON, no explanation.`;
             if(cfg.whisperKey)parts.push('Groq/Whisper');
             if(cfg.tgToken)parts.push('Telegram');
             if(cfg.mode)parts.push(`mode: ${cfg.mode}`);
-            const agentNote=cfg.mode==='agent'?'<p>Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway. Make sure the gateway is reachable from this device.</p>':'<p>Your TealClaw has been customized.</p>';
+            const agentNote=cfg.mode==='agent'
+              ?'<p>Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway. Make sure the gateway is reachable from this device.</p>'
+              :(cfg.mode==='telegram-relay'
+                ?'<p>Mode set to <strong>Telegram Relay</strong> -- messages route through Telegram transport.</p>'
+                :'<p>Your TealClaw has been customized.</p>');
             sysBubble(`<h3>Config Applied!</h3>
 <p>Imported <strong>${count}</strong> settings:</p>
 <p>${parts.join(', ')||'Configuration updated'}</p>
@@ -10576,8 +10691,9 @@ ${agentNote}`);
 <li><code>/profile save|load|list|delete name</code> -- manage config profiles</li>
 <li><code>/share</code> -- create an encrypted share link (includes API keys, protected by passphrase)</li>
 <li><code>/qr</code> -- generate encrypted QR code to share your config</li>
-<li><code>/telegram</code> -- set up Telegram forwarding</li>
-<li><code>/telegram on</code> / <code>/telegram off</code> -- toggle forwarding</li>
+<li><code>/telegram</code> -- set up Telegram forwarding + relay mode</li>
+<li><code>/telegram on</code> / <code>/telegram off</code> -- toggle one-way forwarding</li>
+<li><code>/telegram relay on</code> / <code>/telegram relay off</code> / <code>/telegram relay status</code> -- run Telegram as primary chat transport</li>
 <li><code>/groq [message]</code> -- send directly to Groq (bypasses agent)</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear context window and start fresh</li>
@@ -10732,26 +10848,70 @@ ${agentNote}`);
 <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- <code>gsk_...</code> (free chat + vision + voice)</li>
 <li>Or connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings &rarr; Agent</li>
 </ul>
-<p><strong>Telegram</strong>: Type <code>/telegram</code> for setup instructions.</p>`);
+<p><strong>Telegram</strong>: Type <code>/telegram</code> for forwarding + relay setup instructions.</p>`);
           return;
         }
         if(cmd==='/telegram'){
           sysBubble(`<h3>Telegram Setup</h3>
-<p>Forward your TealClaw conversations to a Telegram chat.</p>
+<p>Use Telegram in two ways:</p>
+<ul>
+<li><strong>Forwarding</strong> — one-way copy of TealClaw messages to Telegram</li>
+<li><strong>Telegram Relay Mode</strong> — Telegram becomes the primary send/receive transport</li>
+</ul>
 <h3>Step 1: Create a Bot</h3>
 <ol>
 <li>Open Telegram and message <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a></li>
 <li>Send <code>/newbot</code> and follow the prompts</li>
 <li>Copy the <strong>bot token</strong> (looks like <code>123456:ABC-DEF...</code>)</li>
-<li>Paste it right here in the chat</li>
+<li>Paste it here in TealClaw chat</li>
 </ol>
-<h3>Step 2: Get Your Chat ID</h3>
+<h3>Step 2: Get Chat ID</h3>
 <ol>
-<li>Message <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a> on Telegram</li>
-<li>It replies with your <strong>Chat ID</strong> (a number like <code>123456789</code>)</li>
+<li>Message <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a></li>
+<li>Copy your chat ID (e.g. <code>123456789</code>)</li>
 <li>Paste it here after the bot token</li>
 </ol>
-<p>For a group chat: add your bot to the group, then use <code>-100</code> + the group ID.</p>`);
+<p>Group chats use <code>-100...</code> IDs.</p>
+<p><strong>Relay commands:</strong> <code>/telegram relay on</code>, <code>/telegram relay off</code>, <code>/telegram relay status</code></p>`);
+          return;
+        }
+        if(cmd==='/telegram relay on'){
+          const k=getK();
+          k.mode='telegram-relay';
+          k.tgRelayEnabled=true;
+          if(k.tgRelayReceive===undefined)k.tgRelayReceive=true;
+          if(k.tgRelayPollSec===undefined)k.tgRelayPollSec=6;
+          setK(k);
+          agentConnections.forEach(c=>c.stop());agentConnections.clear();
+          startTelegramRelayPolling();
+          updateStatus();
+          if(!hasTelegramConfig(k))sysBubble('<p>Telegram Relay <strong>enabled</strong>, but token/chat ID are missing. Type <code>/telegram</code> for setup.</p>');
+          else sysBubble('<p>Telegram Relay <strong>enabled</strong>. New messages are now sent through Telegram.</p>');
+          return;
+        }
+        if(cmd==='/telegram relay off'){
+          const k=getK();
+          k.tgRelayEnabled=false;
+          if(k.mode==='telegram-relay')k.mode='direct';
+          setK(k);
+          stopTelegramRelayPolling();
+          updateStatus();
+          sysBubble('<p>Telegram Relay <strong>disabled</strong>. Switched back to direct chat mode.</p>');
+          return;
+        }
+        if(cmd==='/telegram relay status'||cmd==='/telegram status'){
+          const k=getK();
+          const relayOn=isTelegramRelayEnabled(k);
+          const ready=hasTelegramConfig(k);
+          const receiveOn=k.tgRelayReceive!==false;
+          const pollSec=Math.max(2,Math.min(30,Number(k.tgRelayPollSec)||6));
+          sysBubble(`<h3>Telegram Relay Status</h3><ul>
+<li>Mode: <strong>${relayOn?'ON':'OFF'}</strong></li>
+<li>Configured: <strong>${ready?'yes':'no'}</strong></li>
+<li>Inbound receive: <strong>${receiveOn?'on':'off'}</strong></li>
+<li>Poll interval: <strong>${pollSec}s</strong></li>
+<li>Runtime: <strong>${_tgRelayRunning?'listening':'idle'}</strong></li>
+</ul>`);
           return;
         }
         if(cmd==='/telegram on'){
@@ -10764,11 +10924,11 @@ ${agentNote}`);
         }
         if(cmd==='/keys'){
           const k=getK();
-          const mode=k.mode||'direct';
+          const mode=(k.mode==='agent'||isTelegramRelayEnabled(k))?(k.mode==='agent'?'agent':'telegram-relay'):'direct';
           const agents=getAgents();
           const activeAg=agents.find(a=>a.active)||agents[0];
           const lines=[];
-          lines.push(`Mode: <strong>${mode==='agent'?'Agent (Gateway)':'Direct'}</strong>`);
+          lines.push(`Mode: <strong>${mode==='agent'?'Agent (Gateway)':mode==='telegram-relay'?'Telegram Relay':'Direct'}</strong>`);
           if(mode==='agent'&&activeAg){
             lines.push(`Agent: <strong>${esc(activeAg.name)}</strong> -- <code>${esc(activeAg.url||'no url')}</code>`);
           }
@@ -10776,7 +10936,14 @@ ${agentNote}`);
           if(mode==='direct')lines.push(`Model: <code>${k.aiModel||'groq/compound-mini'}</code>`);
           lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>');
           {const vp=getVoicePersona(k);lines.push(hasTTS(k)?`Voice Out: <strong>${vp.name}</strong> (${vp.tag})`:'Voice Out: <strong>not set</strong> (text-only)')}
-          lines.push(k.tgToken&&k.tgChatId?`Telegram: <strong>${k.tgEnabled?'active':'configured (off)'}</strong>`:'Telegram: <strong>not set</strong>');
+          if(k.tgToken&&k.tgChatId){
+            const relayOn=isTelegramRelayEnabled(k);
+            const relayRx=k.tgRelayReceive!==false;
+            lines.push(`Telegram: <strong>${relayOn?'relay active':(k.tgEnabled?'forwarding active':'configured (off)')}</strong>`);
+            if(relayOn)lines.push(`Relay runtime: <strong>${_tgRelayRunning?'listening':'idle'}</strong> (${relayRx?'inbound on':'inbound off'})`);
+          }else{
+            lines.push('Telegram: <strong>not set</strong>');
+          }
           lines.push((k.imageGenKey||k.imageGenUrl)?`Image Gen: <strong>${k.imageGenKey?(k.imageGenKey.startsWith('AIza')?'Google AI':'OpenRouter'):'custom endpoint'}</strong>`:'Image Gen: <strong>not set</strong>');
           sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
 <p>Paste any key to update. Type <code>/clear keys</code> to wipe all keys.</p>`);
@@ -10798,7 +10965,9 @@ ${agentNote}`);
           newConversation();return;
         }
         if(cmd==='/clear keys'){
-          localStorage.removeItem('tc-keys');updateStatus();
+          localStorage.removeItem('tc-keys');
+          stopTelegramRelayPolling();
+          updateStatus();
           sysBubble('<p>All keys cleared. Type <code>/setup</code> to reconfigure.</p>');
           showToast('Keys cleared','ok');return;
         }
@@ -11501,7 +11670,7 @@ ${agentNote}`);
               sysBubble(`<h3>Config Imported!</h3>
 <p>Loaded <strong>${count}</strong> settings from <code>${esc(name)}</code>:</p>
 <p>${parts.join(', ')||'Configuration updated'}</p>
-<p>${cfg.mode==='agent'?'Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway.':'You\'re ready to chat!'}</p>`);
+<p>${cfg.mode==='agent'?'Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway.':(cfg.mode==='telegram-relay'?'Mode set to <strong>Telegram Relay</strong> -- messages route through Telegram transport.':'You\'re ready to chat!')}</p>`);
               showToast(`Imported ${count} settings`,'ok');
               if(cfg.botGreeting){
                 setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
@@ -11870,11 +12039,199 @@ ${agentNote}`);
       showToast('Claw mode off','ok');
     });
 
-    // ── Telegram ─────────────────────────────────────────
+    // ── Telegram / Telegram Relay ─────────────────────
+    const TG_RELAY_SEEN_MAX=200;
+    let _tgRelayRunning=false;
+    let _tgRelayLoopId=0;
+    let _tgRelaySeen=[];
+    let _tgRelayRecentOutbound=[];
+
+    function tgRelayOffsetKey(k){
+      const cfg=k||getK();
+      const chat=String(cfg.tgChatId||'unknown');
+      const tokenHint=String(cfg.tgToken||'').slice(0,12)||'token';
+      return `tc-tg-relay-offset:${chat}:${tokenHint}`;
+    }
+
     function getTelegramTag(){
       const k=getK();
       const name=k.deviceName||getDeviceTag().name||'';
       return name?`[${name}] `:'';
+    }
+
+    function rememberRelayOutbound(chatId,text){
+      if(!text)return;
+      const now=Date.now();
+      _tgRelayRecentOutbound=_tgRelayRecentOutbound.filter(x=>now-x.ts<120000);
+      _tgRelayRecentOutbound.push({chatId:String(chatId||''),text:String(text),ts:now});
+      if(_tgRelayRecentOutbound.length>40)_tgRelayRecentOutbound=_tgRelayRecentOutbound.slice(-40);
+    }
+
+    function wasRelayOutbound(chatId,text){
+      const t=String(text||'');
+      if(!t)return false;
+      const c=String(chatId||'');
+      const now=Date.now();
+      _tgRelayRecentOutbound=_tgRelayRecentOutbound.filter(x=>now-x.ts<120000);
+      return _tgRelayRecentOutbound.some(x=>x.chatId===c&&x.text===t);
+    }
+
+    function rememberRelaySeen(id){
+      if(!id)return;
+      _tgRelaySeen.push(String(id));
+      if(_tgRelaySeen.length>TG_RELAY_SEEN_MAX)_tgRelaySeen=_tgRelaySeen.slice(-TG_RELAY_SEEN_MAX);
+    }
+
+    function hasSeenRelayMessage(id){
+      return !!id&&_tgRelaySeen.includes(String(id));
+    }
+
+    function getTelegramRelayOffset(k){
+      const raw=localStorage.getItem(tgRelayOffsetKey(k));
+      const n=Number(raw||0);
+      return Number.isFinite(n)&&n>0?n:0;
+    }
+
+    function setTelegramRelayOffset(k,offset){
+      const n=Math.max(0,Number(offset)||0);
+      localStorage.setItem(tgRelayOffsetKey(k),String(n));
+    }
+
+    async function ensureTelegramBotId(){
+      const k=getK();
+      if(!k.tgToken)return null;
+      if(k.tgBotId)return k.tgBotId;
+      try{
+        const res=await fetch(`https://api.telegram.org/bot${k.tgToken}/getMe`);
+        const d=await res.json();
+        if(d?.ok&&d?.result?.id){
+          const k2=getK();
+          k2.tgBotId=d.result.id;
+          setK(k2);
+          return d.result.id;
+        }
+      }catch{}
+      return null;
+    }
+
+    function extractTelegramMessageText(msg){
+      if(!msg)return '';
+      if(msg.text)return msg.text;
+      if(msg.caption)return msg.caption;
+      if(msg.photo?.length)return '[Telegram photo]';
+      if(msg.voice)return '[Telegram voice message]';
+      if(msg.video)return '[Telegram video]';
+      if(msg.document)return `[Telegram file: ${msg.document.file_name||'document'}]`;
+      if(msg.sticker)return '[Telegram sticker]';
+      return '';
+    }
+
+    function telegramSenderName(msg){
+      const from=msg?.from||{};
+      const parts=[from.first_name,from.last_name].filter(Boolean);
+      if(parts.length)return parts.join(' ');
+      if(from.username)return '@'+from.username;
+      return from.id?`user ${from.id}`:'Telegram';
+    }
+
+    async function bootstrapTelegramRelayOffset(k){
+      if(getTelegramRelayOffset(k)>0)return;
+      try{
+        const base=`https://api.telegram.org/bot${k.tgToken}/getUpdates`;
+        const params=new URLSearchParams({timeout:'0',limit:'100',allowed_updates:JSON.stringify(['message','edited_message'])});
+        const res=await fetch(`${base}?${params.toString()}`);
+        const d=await res.json();
+        if(!d?.ok)return;
+        const updates=Array.isArray(d.result)?d.result:[];
+        if(!updates.length)return;
+        const maxId=Math.max(...updates.map(u=>Number(u.update_id)||0));
+        if(maxId>0)setTelegramRelayOffset(k,maxId+1);
+      }catch{}
+    }
+
+    async function pollTelegramRelayOnce(k){
+      const offset=getTelegramRelayOffset(k);
+      const timeoutSec=Math.max(2,Math.min(25,Number(k.tgRelayPollSec)||6));
+      const base=`https://api.telegram.org/bot${k.tgToken}/getUpdates`;
+      const params=new URLSearchParams({offset:String(offset),timeout:String(timeoutSec),allowed_updates:JSON.stringify(['message','edited_message'])});
+      const res=await fetch(`${base}?${params.toString()}`);
+      const d=await res.json().catch(()=>null);
+      if(!res.ok||!d?.ok)throw new Error(d?.description||`Telegram polling failed (${res.status})`);
+
+      const updates=Array.isArray(d.result)?d.result:[];
+      if(!updates.length)return;
+
+      let maxOffset=offset;
+      for(const upd of updates){
+        const upId=Number(upd.update_id)||0;
+        if(upId>=maxOffset)maxOffset=upId+1;
+        const msg=upd.message||upd.edited_message;
+        if(!msg)continue;
+        if(String(msg.chat?.id)!==String(k.tgChatId))continue;
+
+        const msgId=`${msg.chat?.id||''}:${msg.message_id||upId}`;
+        if(hasSeenRelayMessage(msgId))continue;
+        rememberRelaySeen(msgId);
+
+        const body=extractTelegramMessageText(msg).trim();
+        if(!body)continue;
+
+        if(k.tgBotId&&String(msg.from?.id||'')===String(k.tgBotId))continue;
+        if(wasRelayOutbound(msg.chat?.id,body))continue;
+        if(k.tgRelayReceive===false)continue;
+
+        const sender=telegramSenderName(msg);
+        const inboundText=`[Telegram • ${sender}] ${body}`;
+        addBubble('ai',inboundText,{providerTag:'Telegram Relay',providerType:'telegram-relay',inbound:true});
+        if(!_userIsTouching){_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),220)}
+        playReceiveSound();
+        haptic('receive');
+        fireWebhook('message.receive',{text:inboundText,source:'telegram-relay'});
+
+        const rk=getK();
+        if(rk.tgRelaySpeak===true&&ttsMode==='auto'&&hasTTS(rk)){
+          speak(inboundText).then(ttsData=>{if(ttsData)playAudioBuffer(ttsData)}).catch(()=>{});
+        }
+      }
+      if(maxOffset>offset)setTelegramRelayOffset(k,maxOffset);
+    }
+
+    function stopTelegramRelayPolling(){
+      _tgRelayLoopId++;
+      _tgRelayRunning=false;
+      updateStatus();
+    }
+
+    function startTelegramRelayPolling(){
+      const k=getK();
+      if(!isTelegramRelayEnabled(k)||!hasTelegramConfig(k)||k.tgRelayReceive===false){
+        _tgRelayRunning=false;
+        updateStatus();
+        return;
+      }
+      if(_tgRelayRunning)return;
+      _tgRelayRunning=true;
+      const loopId=++_tgRelayLoopId;
+      updateStatus();
+
+      (async()=>{
+        try{
+          await ensureTelegramBotId();
+          await bootstrapTelegramRelayOffset(k);
+          while(loopId===_tgRelayLoopId){
+            const live=getK();
+            if(!isTelegramRelayEnabled(live)||!hasTelegramConfig(live)||live.tgRelayReceive===false)break;
+            try{await pollTelegramRelayOnce(live)}catch(e){console.warn('Telegram relay poll failed:',e?.message||e);}
+            if(loopId!==_tgRelayLoopId)break;
+            await new Promise(r=>setTimeout(r,300));
+          }
+        }finally{
+          if(loopId===_tgRelayLoopId){
+            _tgRelayRunning=false;
+            updateStatus();
+          }
+        }
+      })();
     }
 
     async function sendTelegram(text){
@@ -11887,6 +12244,62 @@ ${agentNote}`);
           body:JSON.stringify({chat_id:k.tgChatId,text:tagged,parse_mode:'Markdown'})
         });
       }catch(e){console.warn('Telegram send failed:',e)}
+    }
+
+    async function sendTelegramRelayMessage(text,imageBase64){
+      const k=getK();
+      if(!k.tgToken||!k.tgChatId)throw new Error('Telegram relay requires bot token + chat ID');
+      const tag=getTelegramTag();
+      const chatId=String(k.tgChatId).trim();
+      const content=(tag+(text||'')).trim()||`${tag}[Image]`;
+
+      if(imageBase64){
+        const blob=await fetch(imageBase64).then(r=>r.blob());
+        const fd=new FormData();
+        fd.append('chat_id',chatId);
+        fd.append('caption',content.slice(0,1020));
+        fd.append('photo',blob,'tealclaw-relay.jpg');
+        const res=await fetch(`https://api.telegram.org/bot${k.tgToken}/sendPhoto`,{method:'POST',body:fd});
+        const d=await res.json().catch(()=>null);
+        if(!res.ok||!d?.ok)throw new Error(d?.description||'Telegram sendPhoto failed');
+        rememberRelayOutbound(chatId,content.slice(0,1020));
+        return d.result;
+      }
+
+      const safeText=content.length>3900?content.slice(0,3900)+'\n\n[truncated by TealClaw relay]':content;
+      const res=await fetch(`https://api.telegram.org/bot${k.tgToken}/sendMessage`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({chat_id:chatId,text:safeText,disable_web_page_preview:true})
+      });
+      const d=await res.json().catch(()=>null);
+      if(!res.ok||!d?.ok)throw new Error(d?.description||'Telegram sendMessage failed');
+      rememberRelayOutbound(chatId,safeText);
+      return d.result;
+    }
+
+    async function pipelineTelegramRelay(text,imageBase64){
+      addBubble('user',text||'[Image]',imageBase64?{image:imageBase64}:{});
+      if(!_userIsTouching){_userScrolledUp=false;_scrollBtn.classList.remove('visible')}
+      smoothScrollToBottom($('chatScroll'),300);
+      playSendSound();
+      fireWebhook('message.send',{text:text||'[Image]',hasImage:!!imageBase64,transport:'telegram-relay'});
+
+      const k=getK();
+      if(!hasTelegramConfig(k)){
+        addBubble('ai','Telegram Relay Mode is on, but Telegram bot token/chat ID are missing. Type /telegram for setup.',{providerTag:'Telegram Relay',providerType:'telegram-relay'});
+        showToast('Telegram relay needs setup','err');
+        return;
+      }
+
+      try{
+        await sendTelegramRelayMessage(text,imageBase64);
+        showToast('Sent via Telegram relay','ok');
+        startTelegramRelayPolling();
+      }catch(e){
+        addBubble('ai',`Telegram relay send failed: ${e.message||e}`,{providerTag:'Telegram Relay',providerType:'telegram-relay'});
+        showToast('Telegram relay failed','err');
+      }
     }
 
     // ── Image Generation ──────────────────────────────
@@ -12046,7 +12459,7 @@ ${agentNote}`);
     function renderAgentSelector(){
       const agents=getAgents(),sel=$('agentChatSelect'),bar=$('agentSelectorBar');
       const k=getK();
-      if(agents.length<2||(k.mode||'direct')==='direct'){bar.style.display='none';return}
+      if(agents.length<2||k.mode!=='agent'){bar.style.display='none';return}
       bar.style.display='flex';
       sel.innerHTML=agents.map(a=>`<option value="${a.id}" ${a.active?'selected':''}>${esc(a.name)}</option>`).join('');
     }
@@ -12242,7 +12655,7 @@ ${agentNote}`);
       elevenlabsKey:'elevenlabsKey',elevenlabsVoiceId:'elevenlabsVoiceId',elevenlabsVoice:'elevenlabsVoice',elevenlabsModel:'elevenlabsModel',
       elevenlabsStability:'elevenlabsStability',elevenlabsSimilarity:'elevenlabsSimilarity',elevenlabsStyle:'elevenlabsStyle',elevenlabsSpeakerBoost:'elevenlabsSpeakerBoost',
       sysPrompt:'sysPrompt',mode:'mode',
-      tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',
+      tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',tgRelayEnabled:'tgRelayEnabled',tgRelayReceive:'tgRelayReceive',tgRelaySpeak:'tgRelaySpeak',tgRelayPollSec:'tgRelayPollSec',tgBotId:'tgBotId',
       imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',gifEnabled:'gifEnabled',
       accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
       bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
@@ -12318,6 +12731,8 @@ ${agentNote}`);
         if(cfg[from]!==undefined){k[to]=cfg[from];count++}
       }
       setK(k);
+      if(isTelegramRelayEnabled(k)&&hasTelegramConfig(k))startTelegramRelayPolling();
+      else stopTelegramRelayPolling();
       if(cfg.agents&&Array.isArray(cfg.agents)){
         setAgents(cfg.agents);count+=cfg.agents.length;
       } else if(cfg.gwUrl&&cfg.gwToken){
@@ -12837,7 +13252,7 @@ ${agentNote}`);
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
-    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:true,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:true,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',tgRelayEnabled:false,tgRelayReceive:true,tgRelaySpeak:false,tgRelayPollSec:6,streamEnabled:true,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:true,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
 
     function buildConfigPayload(includeSensitive=false){
       const k=getK();
@@ -14155,7 +14570,7 @@ ${agentNote}`);
     var _chatScroll=$('chatScroll');
     loadUI();
     // Disconnect WS on page unload
-    window.addEventListener('pagehide',()=>{agentConnections.forEach(c=>c.stop());agentConnections.clear()});
+    window.addEventListener('pagehide',()=>{agentConnections.forEach(c=>c.stop());agentConnections.clear();stopTelegramRelayPolling()});
     // Password lock on startup + idle timer
     initChatLock();
     initBleGate();
@@ -14207,7 +14622,8 @@ ${agentNote}`);
     setTimeout(()=>{
       try{
         const bk=getK();
-        if(bk.botGreeting&&chatHistory.length===0&&(bk.aiKey||bk.whisperKey)){
+        const hasPrimaryConn=!!(bk.aiKey||bk.whisperKey||hasTelegramConfig(bk));
+        if(bk.botGreeting&&chatHistory.length===0&&hasPrimaryConn){
           sysBubble(`<div class="md-content">${renderMd(bk.botGreeting)}</div>`);
         } else {
           runOnboarding();
@@ -14218,7 +14634,8 @@ ${agentNote}`);
     setTimeout(()=>{
       try{
         const scroll=$('chatScroll');
-        if(scroll&&!scroll.querySelector('.chat-bubble')&&chatHistory.length===0&&!getK().aiKey&&!getK().whisperKey){
+        const bk=getK();
+        if(scroll&&!scroll.querySelector('.chat-bubble')&&chatHistory.length===0&&!bk.aiKey&&!bk.whisperKey&&!hasTelegramConfig(bk)){
           runOnboarding();
         }
       }catch{}

@@ -2,6 +2,14 @@
 
 ## Latest
 
+### 2026-02-19 23:12 MST — Sweep: tealclaw
+
+- Result: ✅ Clean (🟢 LOW)
+- repo-security-sweep: unavailable (`command not found`)
+- TruffleHog git: verified=0 unknown=0
+- TruffleHog fs: verified=0 unknown=0
+- Report: file:///Users/ericwoodard/Desktop/programs/tealclaw/security-audit.md
+
 ### 2026-02-18 14:57 MST — Sweep: tealclaw
 
 - Result: ✅ Clean (🟢 LOW)

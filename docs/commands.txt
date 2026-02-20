@@ -97,7 +97,7 @@ Shows current configuration status:
 - Current model
 - Voice input (Groq Whisper) status
 - Voice output (Groq Orpheus TTS) status
-- Telegram forwarding status
+- Telegram forwarding / relay status
 - Image generation status
 
 ### /clear
@@ -111,14 +111,21 @@ Removes ALL API keys and resets configuration. The user will need to set up agai
 Config fields (colors, persona, etc.) are preserved in localStorage.
 
 ### /telegram
-Shows step-by-step instructions for setting up Telegram forwarding:
+Shows step-by-step instructions for setting up Telegram:
 1. Create a bot via @BotFather
 2. Get the bot token
 3. Get the chat ID from @userinfobot
 4. Paste both in the TealClaw chat
 
+Also explains both modes:
+- One-way forwarding (`/telegram on|off`)
+- Two-way Telegram Relay transport (`/telegram relay on|off|status`)
+
 ### /telegram on / /telegram off
-Toggle Telegram message forwarding without changing the token or chat ID.
+Toggle one-way Telegram message forwarding without changing token/chat ID.
+
+### /telegram relay on / off / status
+Enable or disable **Telegram Relay Mode** (Telegram becomes primary chat transport), or view relay runtime/config status.
 
 ### /voice
 Shows current TTS voice settings:

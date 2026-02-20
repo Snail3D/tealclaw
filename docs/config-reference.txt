@@ -31,7 +31,7 @@ All values are stored in browser localStorage. No server, no database.
 | Field | Type | Description |
 |-------|------|-------------|
 | sysPrompt | string | System prompt sent to the AI. Supports any instructions, persona, etc. |
-| mode | "direct" / "agent" | Direct = browser calls provider API. Agent = route through OpenClaw gateway |
+| mode | "direct" / "agent" / "telegram-relay" | Direct = browser calls provider API. Agent = route through OpenClaw gateway. Telegram Relay = Telegram is primary chat transport |
 | allowProactiveCameraCapture | boolean | Default: true. If true, incoming `tc-action` `camera.capture` and `screen.capture` use lightweight inline consent (Take photo / Take screenshot / Cancel). If false, uses full confirm modal flow. |
 
 ## Agent Camera Routing (Operational Guidance)
@@ -46,13 +46,18 @@ When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
 - Always require user consent/authority before camera capture or monitoring.
 - `allowProactiveCameraCapture` (default true): show inline consent UI for `camera.capture` and `screen.capture` requests (Take photo / Take screenshot / Cancel). If false, keep strict confirm modal.
 
-## Telegram Forwarding
+## Telegram Integration
 
 | Field | Type | Description |
 |-------|------|-------------|
 | tgToken | string | Telegram bot token from @BotFather (format: 123456:ABC-DEF...) |
 | tgChatId | string | Telegram chat ID. Personal: positive number. Group: -100 + group ID |
-| tgEnabled | boolean | Toggle Telegram forwarding on/off |
+| tgEnabled | boolean | Toggle one-way Telegram forwarding on/off |
+| tgRelayEnabled | boolean | Enables Telegram Relay transport (legacy compatibility flag; mode should be `telegram-relay`) |
+| tgRelayReceive | boolean | In relay mode, receive inbound Telegram messages into TealClaw chat. Default: true |
+| tgRelaySpeak | boolean | In relay mode, auto-speak inbound Telegram messages via TTS. Default: false |
+| tgRelayPollSec | number | Relay polling interval in seconds. Range: 2-30. Default: 6 |
+| tgBotId | number | Cached Telegram bot id from `getMe` for echo filtering |
 
 ## Image Generation
 
