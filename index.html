@@ -10022,7 +10022,7 @@ Return ONLY valid JSON, no explanation.`;
       send();
     }
 
-    function send(){
+    async function send(){
       if(_sending){
         const draft=$('textIn').value.trim();
         // Don't drop quick sends while prior response is still finalizing (e.g., right after TTS Stop)
