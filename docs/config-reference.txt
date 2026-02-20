@@ -8,10 +8,19 @@ All values are stored in browser localStorage. No server, no database.
 
 ## Delivery Methods
 
-1. **URL hash**: `https://tealclaw.ai/#config=BASE64_JSON` (best — zero user effort)
-2. **JSON file**: Drag a `.json` file into the TealClaw chat
-3. **Chat paste**: Paste raw JSON into the chat input
-4. **Bare key**: Paste a single API key (auto-detected by prefix)
+1. **Settings UI (recommended on mobile)**: Settings → Telegram Relay Setup (includes Quick Setup Wizard)
+2. **URL hash**: `https://tealclaw.ai/#config=BASE64_JSON` (best link-based import)
+3. **JSON file**: Drag a `.json` file into the TealClaw chat
+4. **Chat paste**: Paste raw JSON into the chat input
+5. **Bare key**: Paste a single API key (auto-detected by prefix)
+
+### Import Reliability (v1.1)
+
+Encrypted config imports now verify each applied field after save.
+If any field fails to persist (including sensitive keys on mobile), TealClaw shows:
+- exact field-level failure list
+- clear reason per field
+- **Retry Failed Keys** action
 
 ## API Provider Fields
 
@@ -58,6 +67,8 @@ When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
 | tgRelaySpeak | boolean | In relay mode, auto-speak inbound Telegram messages via TTS. Default: false |
 | tgRelayPollSec | number | Relay polling interval in seconds. Range: 2-30. Default: 6 |
 | tgBotId | number | Cached Telegram bot id from `getMe` for echo filtering |
+
+**UX note:** Telegram fields are now first-class in Settings (bot token, chat ID, optional bot ID, relay toggles, poll interval) with a one-tap Quick Setup Wizard and a **Copy safe config block** fallback button.
 
 ## Image Generation
 

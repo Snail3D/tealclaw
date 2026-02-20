@@ -36,7 +36,7 @@
 | `/voice-chat` | Push-to-talk voice-only mode (alias: `/vc`) |
 | `/new` | Start new conversation |
 | `/export json` | Export as portable JSON |
-| `/telegram` | Show Telegram setup instructions (BotFather + Chat ID) |
+| `/telegram` | Show Telegram setup instructions (Settings quick wizard + BotFather/Chat ID fallback) |
 | `/telegram on` | Enable Telegram message forwarding |
 | `/telegram off` | Disable Telegram message forwarding |
 | `/template` | Browse and apply pre-built style templates |
@@ -48,6 +48,14 @@
 | `/session create 1h For Jake` | Session link with a label |
 | `/session info` | Show current session status and expiry |
 | `/session end` | End session early, wipe gateway credentials |
+
+## UX Note (v1.1)
+
+Telegram setup is now first-class in **Settings → Telegram Relay Setup**:
+- Quick Setup Wizard (step-by-step)
+- Direct fields for bot token, chat ID, optional bot ID auto-detect
+- Relay toggles + poll interval in one place
+- **Copy safe config block** button for manual fallback (no secrets included)
 
 ## Command Details
 
@@ -111,11 +119,11 @@ Removes ALL API keys and resets configuration. The user will need to set up agai
 Config fields (colors, persona, etc.) are preserved in localStorage.
 
 ### /telegram
-Shows step-by-step instructions for setting up Telegram:
-1. Create a bot via @BotFather
-2. Get the bot token
-3. Get the chat ID from @userinfobot
-4. Paste both in the TealClaw chat
+Shows setup guidance and points users to the in-app wizard:
+1. Open **Settings → Telegram Relay Setup → Quick Setup Wizard**
+2. Create bot via @BotFather
+3. Get chat ID from @userinfobot
+4. Save in Settings (no JSON required)
 
 Also explains both modes:
 - One-way forwarding (`/telegram on|off`)

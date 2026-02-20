@@ -1942,7 +1942,10 @@
 
     // ── Storage ────────────────────────────────────────
     function getK(){try{return JSON.parse(localStorage.getItem('tc-keys')||'{}')}catch{return{}}}
-    function setK(k){localStorage.setItem('tc-keys',JSON.stringify(k))}
+    function setK(k){
+      try{localStorage.setItem('tc-keys',JSON.stringify(k));return true}
+      catch(e){console.warn('Failed to persist settings:',e?.message||e);return false}
+    }
     function getDeviceTag(){
       const k=getK();
       const name=k.deviceName||'';
@@ -2554,6 +2557,190 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       return cfg.mode==='telegram-relay'||cfg.tgRelayEnabled===true;
     }
 
+    function validTelegramToken(v){
+      return /^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(String(v||'').trim());
+    }
+
+    function validTelegramChatId(v){
+      return /^-?\d{6,}$/.test(String(v||'').trim());
+    }
+
+    function validTelegramBotId(v){
+      return /^\d{5,}$/.test(String(v||'').trim());
+    }
+
+    async function fetchTelegramBotMeta(token){
+      const clean=String(token||'').trim();
+      if(!validTelegramToken(clean))throw new Error('Enter a valid Telegram bot token first');
+      const res=await fetch(`https://api.telegram.org/bot${clean}/getMe`);
+      const d=await res.json().catch(()=>null);
+      if(!res.ok||!d?.ok||!d?.result?.id)throw new Error(d?.description||`Telegram getMe failed (${res.status})`);
+      return{id:String(d.result.id),username:d.result.username||''};
+    }
+
+    function buildSafeConfigBlock(){
+      const k=getK();
+      const pollSec=Math.max(2,Math.min(30,Number(k.tgRelayPollSec)||6));
+      const block={
+        type:'config',
+        config:{
+          tgToken:'<PASTE_BOT_TOKEN>',
+          tgChatId:'<PASTE_CHAT_ID>',
+          tgBotId:'<OPTIONAL_BOT_ID>',
+          tgEnabled:k.tgEnabled!==false,
+          tgRelayEnabled:isTelegramRelayEnabled(k),
+          tgRelayReceive:k.tgRelayReceive!==false,
+          tgRelaySpeak:k.tgRelaySpeak===true,
+          tgRelayPollSec:pollSec
+        }
+      };
+      return '```tc-action\n'+JSON.stringify(block,null,2)+'\n```';
+    }
+
+    function openTelegramSetupWizard(){
+      const base=getK();
+      const state={
+        step:1,
+        token:base.tgToken||'',
+        chatId:base.tgChatId?String(base.tgChatId):'',
+        botId:base.tgBotId?String(base.tgBotId):'',
+        forwarding:base.tgEnabled!==false,
+        relayEnabled:isTelegramRelayEnabled(base),
+        relayReceive:base.tgRelayReceive!==false,
+        relaySpeak:base.tgRelaySpeak===true,
+        pollSec:Math.max(2,Math.min(30,Number(base.tgRelayPollSec)||6))
+      };
+
+      const renderStep=()=>{
+        const pct=Math.round((state.step/4)*100);
+        let body='';
+        if(state.step===1){
+          body=`<div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Step 1 of 4 — Bot token</div>
+            <div class="sheet-input-group"><div class="sheet-input-label">Telegram Bot Token</div>
+              <input type="password" class="sheet-input" id="tgWizToken" value="${esc(state.token)}" placeholder="123456:ABC..." autocomplete="off" spellcheck="false">
+              <div style="font-size:10px;color:var(--text-3);margin-top:4px">Create one with @BotFather.</div>
+            </div>`;
+        } else if(state.step===2){
+          body=`<div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Step 2 of 4 — Chat ID</div>
+            <div class="sheet-input-group"><div class="sheet-input-label">Telegram Chat ID</div>
+              <input type="text" class="sheet-input" id="tgWizChat" value="${esc(state.chatId)}" placeholder="123456789 or -100..." autocomplete="off" spellcheck="false">
+              <div style="font-size:10px;color:var(--text-3);margin-top:4px">Personal chats are positive numbers. Groups usually start with -100.</div>
+            </div>`;
+        } else if(state.step===3){
+          body=`<div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Step 3 of 4 — Bot ID (optional)</div>
+            <div class="sheet-input-group"><div class="sheet-input-label">Telegram Bot ID</div>
+              <input type="text" class="sheet-input" id="tgWizBotId" value="${esc(state.botId)}" placeholder="Optional" autocomplete="off" spellcheck="false">
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <button class="btn btn-teal btn-sm" id="tgWizDetectBot">Auto-detect</button>
+                <button class="btn btn-ghost btn-sm" id="tgWizSkipBot">Skip</button>
+              </div>
+            </div>`;
+        } else {
+          body=`<div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Step 4 of 4 — Relay options</div>
+            <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-2);margin-bottom:6px"><input id="tgWizForward" type="checkbox" ${state.forwarding?'checked':''} style="accent-color:var(--teal)">Enable one-way forwarding</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-2);margin-bottom:6px"><input id="tgWizRelayEnabled" type="checkbox" ${state.relayEnabled?'checked':''} style="accent-color:var(--teal)">Enable Telegram Relay mode now</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-2);margin-bottom:6px"><input id="tgWizRelayReceive" type="checkbox" ${state.relayReceive?'checked':''} style="accent-color:var(--teal)">Receive inbound Telegram replies</label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-2);margin-bottom:8px"><input id="tgWizRelaySpeak" type="checkbox" ${state.relaySpeak?'checked':''} style="accent-color:var(--teal)">Speak inbound replies (TTS)</label>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:10px;color:var(--text-3)">Poll interval</div><div style="font-size:10px;color:var(--teal);font-family:var(--mono)"><span id="tgWizPollVal">${state.pollSec}</span>s</div></div>
+            <input type="range" id="tgWizPoll" min="2" max="30" step="1" value="${state.pollSec}" style="width:100%;margin-top:4px;accent-color:var(--teal)">`;
+        }
+
+        $('sheetBody').innerHTML=`<div style="padding-top:8px">
+          <div class="sheet-section-title" style="display:flex;align-items:center;justify-content:space-between">Telegram Quick Setup <span style="font-size:10px;color:var(--text-3)">${pct}%</span></div>
+          <div style="height:6px;background:var(--bg-input);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-bottom:10px"><div style="height:100%;width:${pct}%;background:var(--teal)"></div></div>
+          ${body}
+          <div style="display:flex;gap:6px;margin-top:10px">
+            ${state.step>1?'<button class="sheet-btn sheet-btn-ghost" id="tgWizBack">Back</button>':''}
+            <button class="sheet-btn sheet-btn-teal" id="tgWizNext" style="flex:1">${state.step===4?'Save Setup':'Next'}</button>
+          </div>
+          <button class="sheet-btn sheet-btn-ghost" id="tgWizCancel" style="margin-top:8px">Cancel</button>
+        </div>`;
+
+        $('sheetBody').querySelector('#tgWizCancel')?.addEventListener('click',()=>renderSheetContent());
+        $('sheetBody').querySelector('#tgWizBack')?.addEventListener('click',()=>{state.step=Math.max(1,state.step-1);renderStep()});
+
+        if(state.step===3){
+          $('sheetBody').querySelector('#tgWizDetectBot')?.addEventListener('click',async()=>{
+            const token=$('sheetBody').querySelector('#tgWizToken')?.value?.trim()||state.token;
+            if(!validTelegramToken(token)){showToast('Enter a valid token first','err');return}
+            try{
+              const meta=await fetchTelegramBotMeta(token);
+              state.botId=meta.id;
+              const el=$('sheetBody').querySelector('#tgWizBotId');
+              if(el)el.value=meta.id;
+              showToast(`Bot ID detected${meta.username?' (@'+meta.username+')':''}`,'ok');
+            }catch(e){showToast(e?.message||'Auto-detect failed','err')}
+          });
+          $('sheetBody').querySelector('#tgWizSkipBot')?.addEventListener('click',()=>{state.botId='';const el=$('sheetBody').querySelector('#tgWizBotId');if(el)el.value='';});
+        }
+
+        if(state.step===4){
+          $('sheetBody').querySelector('#tgWizPoll')?.addEventListener('input',e=>{
+            state.pollSec=Math.max(2,Math.min(30,Number(e.target.value)||6));
+            const val=$('sheetBody').querySelector('#tgWizPollVal');
+            if(val)val.textContent=String(state.pollSec);
+          });
+        }
+
+        $('sheetBody').querySelector('#tgWizNext')?.addEventListener('click',async()=>{
+          if(state.step===1){
+            const token=$('sheetBody').querySelector('#tgWizToken')?.value?.trim()||'';
+            if(!validTelegramToken(token)){showToast('Enter a valid Telegram bot token','err');return}
+            state.token=token;
+            state.step=2;
+            renderStep();
+            return;
+          }
+          if(state.step===2){
+            const chatId=$('sheetBody').querySelector('#tgWizChat')?.value?.trim()||'';
+            if(!validTelegramChatId(chatId)){showToast('Enter a valid Telegram chat ID','err');return}
+            state.chatId=chatId;
+            state.step=3;
+            renderStep();
+            return;
+          }
+          if(state.step===3){
+            const botId=$('sheetBody').querySelector('#tgWizBotId')?.value?.trim()||'';
+            if(botId&&!validTelegramBotId(botId)){showToast('Bot ID must be numeric','err');return}
+            state.botId=botId;
+            state.step=4;
+            renderStep();
+            return;
+          }
+
+          state.forwarding=$('sheetBody').querySelector('#tgWizForward')?.checked!==false;
+          state.relayEnabled=$('sheetBody').querySelector('#tgWizRelayEnabled')?.checked===true;
+          state.relayReceive=$('sheetBody').querySelector('#tgWizRelayReceive')?.checked!==false;
+          state.relaySpeak=$('sheetBody').querySelector('#tgWizRelaySpeak')?.checked===true;
+
+          if(state.relayEnabled&&(!validTelegramToken(state.token)||!validTelegramChatId(state.chatId))){
+            showToast('Token + chat ID are required before relay can be enabled','err');
+            return;
+          }
+
+          const k2=getK();
+          k2.tgToken=state.token;
+          k2.tgChatId=state.chatId;
+          if(state.botId)k2.tgBotId=state.botId;else delete k2.tgBotId;
+          k2.tgEnabled=state.forwarding;
+          k2.tgRelayEnabled=state.relayEnabled;
+          k2.tgRelayReceive=state.relayReceive;
+          k2.tgRelaySpeak=state.relaySpeak;
+          k2.tgRelayPollSec=Math.max(2,Math.min(30,Number(state.pollSec)||6));
+          if(state.relayEnabled)k2.mode='telegram-relay';
+          else if(k2.mode==='telegram-relay')k2.mode='direct';
+          const ok=setK(k2);
+          if(!ok){showToast('Could not save Telegram setup on this device','err');return}
+          if(state.relayEnabled&&hasTelegramConfig(k2))startTelegramRelayPolling();
+          else stopTelegramRelayPolling();
+          updateStatus();renderAgentSelector();renderChannelDropdown();renderSheetContent();
+          showToast('Telegram setup saved','ok');
+        });
+      };
+
+      renderStep();
+    }
+
     function updateStatus(){
       const k=getK();
       const pill=$('pill');
@@ -3048,12 +3235,51 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         </div>
       </div>`;
 
+      // Telegram setup (first-class fields)
+      const tgTokenMasked=k.tgToken?(k.tgToken.slice(0,6)+'...'+k.tgToken.slice(-4)):'Not set';
+      const tgChatVal=k.tgChatId?String(k.tgChatId):'';
+      const tgBotVal=k.tgBotId?String(k.tgBotId):'';
+      const tgRelayEnabled=isTelegramRelayEnabled(k);
+      const tgForwardOn=k.tgEnabled!==false;
+      const tgRelayReceiveOn=k.tgRelayReceive!==false;
+      const tgRelaySpeakOn=k.tgRelaySpeak===true;
+      const tgRelayPollSec=Math.max(2,Math.min(30,Number(k.tgRelayPollSec)||6));
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Telegram Relay Setup</div>
+        <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Configure Telegram directly here (mobile-safe). No JSON required.</div>
+        <div style="display:grid;gap:8px">
+          <div>
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Telegram Bot Token</div>
+            <input type="password" class="sheet-input" id="sheetTgToken" value="" placeholder="${esc(k.tgToken?('Saved: '+tgTokenMasked):'123456:ABC...')}" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
+            <div style="font-size:9px;color:var(--text-3);margin-top:3px">Leave blank to keep current saved token.</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Telegram Chat ID</div>
+            <input type="text" class="sheet-input" id="sheetTgChatId" value="${esc(tgChatVal)}" placeholder="123456789 or -100..." autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
+              <div style="font-size:11px;font-weight:500;color:var(--text-2)">Telegram Bot ID (optional)</div>
+              <button class="btn btn-ghost btn-sm" id="sheetTgDetectBot">Auto-detect</button>
+            </div>
+            <input type="text" class="sheet-input" id="sheetTgBotId" value="${esc(tgBotVal)}" placeholder="Optional numeric bot id" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetTgForwardEnabled" ${tgForwardOn?'checked':''} style="accent-color:var(--teal)">Enable one-way Telegram forwarding</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetTgRelayEnabled" ${tgRelayEnabled?'checked':''} style="accent-color:var(--teal)">Enable Telegram Relay mode</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetTgRelayReceive" ${tgRelayReceiveOn?'checked':''} style="accent-color:var(--teal)">Receive inbound Telegram replies</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetTgRelaySpeak" ${tgRelaySpeakOn?'checked':''} style="accent-color:var(--teal)">Speak inbound relay replies (TTS)</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:10px;color:var(--text-3)">Relay poll interval</div><div style="font-size:10px;color:var(--teal);font-family:var(--mono)"><span id="sheetTgPollVal">${tgRelayPollSec}</span>s</div></div>
+          <input type="range" id="sheetTgPoll" min="2" max="30" step="1" value="${tgRelayPollSec}" style="width:100%;accent-color:var(--teal)">
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-teal btn-sm" id="sheetTgSave">Save Telegram Settings</button>
+            <button class="btn btn-ghost btn-sm" id="sheetTgWizard">Quick Setup Wizard</button>
+            <button class="btn btn-ghost btn-sm" id="sheetCopySafeCfg">Copy safe config block</button>
+          </div>
+        </div>
+      </div>`;
+
       // Mode toggle
       const mode=(k.mode==='agent'||k.mode==='telegram-relay'||k.tgRelayEnabled===true)?(k.mode==='agent'?'agent':'telegram-relay'):'direct';
       const relayReady=hasTelegramConfig(k);
-      const relayReceive=k.tgRelayReceive!==false;
-      const relaySpeak=k.tgRelaySpeak===true;
-      const relayPollSec=Math.max(2,Math.min(30,Number(k.tgRelayPollSec)||6));
       const modeDesc=mode==='direct'
         ?'Groq free tier — fast chat, vision, voice, and TTS'
         :(mode==='agent'
@@ -3068,19 +3294,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${modeDesc}</div>
         ${mode==='telegram-relay'?`<div style="margin-top:8px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm)">
           <div style="font-size:10px;color:${relayReady?'var(--ok)':'var(--err)'};margin-bottom:6px">${relayReady?`Ready — chat ${esc(String(k.tgChatId))}`:'Needs Telegram bot token + chat ID. Type /telegram for setup.'}</div>
-          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px">
-            <input type="checkbox" id="sheetTgRelayReceive" ${relayReceive?'checked':''} style="accent-color:var(--teal)">
-            Receive inbound Telegram replies
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px">
-            <input type="checkbox" id="sheetTgRelaySpeak" ${relaySpeak?'checked':''} style="accent-color:var(--teal)">
-            Speak inbound relay replies (TTS)
-          </label>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <div style="font-size:10px;color:var(--text-3)">Poll interval</div>
-            <div style="font-size:10px;color:var(--teal);font-family:var(--mono)"><span id="sheetTgRelayPollVal">${relayPollSec}</span>s</div>
-          </div>
-          <input type="range" id="sheetTgRelayPoll" min="2" max="30" step="1" value="${relayPollSec}" style="width:100%;margin-top:4px;accent-color:var(--teal)">
+          <div style="font-size:10px;color:var(--text-3)">Use <strong>Telegram Relay Setup</strong> above to adjust inbound receive, auto-speak, and poll interval.</div>
         </div>`:''}
       </div>`;
 
@@ -3483,37 +3697,6 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         if(nextMode==='telegram-relay'&&!hasTelegramConfig(k2))showToast('Add Telegram token + chat ID (type /telegram)','err');
       }));
 
-      // Wire up Telegram relay controls
-      $('sheetBody').querySelector('#sheetTgRelayReceive')?.addEventListener('change',e=>{
-        const k2=getK();
-        k2.tgRelayReceive=e.target.checked;
-        setK(k2);
-        if(e.target.checked&&isTelegramRelayEnabled(k2))startTelegramRelayPolling();
-        showToast(e.target.checked?'Inbound relay enabled':'Inbound relay disabled','ok');
-      });
-      $('sheetBody').querySelector('#sheetTgRelaySpeak')?.addEventListener('change',e=>{
-        const k2=getK();
-        k2.tgRelaySpeak=e.target.checked;
-        setK(k2);
-        showToast(e.target.checked?'Relay TTS enabled':'Relay TTS disabled','ok');
-      });
-      $('sheetBody').querySelector('#sheetTgRelayPoll')?.addEventListener('input',e=>{
-        const v=Math.max(2,Math.min(30,Number(e.target.value)||6));
-        const el=$('sheetBody').querySelector('#sheetTgRelayPollVal');
-        if(el)el.textContent=String(v);
-      });
-      $('sheetBody').querySelector('#sheetTgRelayPoll')?.addEventListener('change',e=>{
-        const v=Math.max(2,Math.min(30,Number(e.target.value)||6));
-        const k2=getK();
-        k2.tgRelayPollSec=v;
-        setK(k2);
-        if(isTelegramRelayEnabled(k2)){
-          stopTelegramRelayPolling();
-          startTelegramRelayPolling();
-        }
-        showToast(`Relay poll: ${v}s`,'ok');
-      });
-
       // Wire up TTS mode toggle (auto/on/off)
       $('sheetBody').querySelectorAll('.tts-mode-btn').forEach(b=>b.addEventListener('click',()=>{
         ttsMode=b.dataset.ttsmode;
@@ -3576,6 +3759,75 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         if(!confirm('Unpair this BLE beacon?'))return;
         bleUnpairDevice();
         renderSheetContent();
+      });
+
+      $('sheetBody').querySelector('#sheetTgPoll')?.addEventListener('input',e=>{
+        const n=Math.max(2,Math.min(30,Number(e.target.value)||6));
+        const lbl=$('sheetBody').querySelector('#sheetTgPollVal');
+        if(lbl)lbl.textContent=String(n);
+      });
+      $('sheetBody').querySelector('#sheetTgWizard')?.addEventListener('click',()=>openTelegramSetupWizard());
+      $('sheetBody').querySelector('#sheetCopySafeCfg')?.addEventListener('click',async()=>{
+        const text=buildSafeConfigBlock();
+        try{await navigator.clipboard.writeText(text);showToast('Safe config block copied','ok')}
+        catch{
+          const ta=document.createElement('textarea');
+          ta.value=text;document.body.appendChild(ta);ta.select();
+          try{document.execCommand('copy');showToast('Safe config block copied','ok')}catch{showToast('Copy failed','err')}
+          ta.remove();
+        }
+      });
+      $('sheetBody').querySelector('#sheetTgDetectBot')?.addEventListener('click',async()=>{
+        const tokenInput=$('sheetBody').querySelector('#sheetTgToken')?.value?.trim();
+        const token=tokenInput||getK().tgToken||'';
+        if(!validTelegramToken(token)){showToast('Enter/save a valid Telegram token first','err');return}
+        try{
+          const meta=await fetchTelegramBotMeta(token);
+          const botField=$('sheetBody').querySelector('#sheetTgBotId');
+          if(botField)botField.value=meta.id;
+          showToast(`Bot ID detected${meta.username?' (@'+meta.username+')':''}`,'ok');
+        }catch(e){showToast(e?.message||'Auto-detect failed','err')}
+      });
+      $('sheetBody').querySelector('#sheetTgSave')?.addEventListener('click',()=>{
+        const k2=getK();
+        const tokenRaw=$('sheetBody').querySelector('#sheetTgToken')?.value?.trim()||'';
+        const chatRaw=$('sheetBody').querySelector('#sheetTgChatId')?.value?.trim()||'';
+        const botRaw=$('sheetBody').querySelector('#sheetTgBotId')?.value?.trim()||'';
+        const relayEnabled=$('sheetBody').querySelector('#sheetTgRelayEnabled')?.checked===true;
+        const forwarding=$('sheetBody').querySelector('#sheetTgForwardEnabled')?.checked!==false;
+        const relayReceive=$('sheetBody').querySelector('#sheetTgRelayReceive')?.checked!==false;
+        const relaySpeak=$('sheetBody').querySelector('#sheetTgRelaySpeak')?.checked===true;
+        const pollSec=Math.max(2,Math.min(30,Number($('sheetBody').querySelector('#sheetTgPoll')?.value)||6));
+
+        if(tokenRaw&&!validTelegramToken(tokenRaw)){showToast('Telegram token format looks invalid','err');return}
+        if(chatRaw&&!validTelegramChatId(chatRaw)){showToast('Telegram chat ID must be numeric','err');return}
+        if(botRaw&&!validTelegramBotId(botRaw)){showToast('Telegram bot ID must be numeric','err');return}
+
+        if(tokenRaw)k2.tgToken=tokenRaw;
+        if(chatRaw)k2.tgChatId=chatRaw;
+        else if(!chatRaw&&k2.tgChatId)delete k2.tgChatId;
+        if(botRaw)k2.tgBotId=botRaw;
+        else delete k2.tgBotId;
+        k2.tgEnabled=forwarding;
+        k2.tgRelayEnabled=relayEnabled;
+        k2.tgRelayReceive=relayReceive;
+        k2.tgRelaySpeak=relaySpeak;
+        k2.tgRelayPollSec=pollSec;
+
+        if(relayEnabled&&(!k2.tgToken||!k2.tgChatId)){
+          showToast('Token + chat ID are required before enabling relay','err');
+          return;
+        }
+
+        if(relayEnabled)k2.mode='telegram-relay';
+        else if(k2.mode==='telegram-relay')k2.mode='direct';
+
+        const ok=setK(k2);
+        if(!ok){showToast('Could not save Telegram settings on this device','err');return}
+        if(relayEnabled&&hasTelegramConfig(k2))startTelegramRelayPolling();
+        else stopTelegramRelayPolling();
+        updateStatus();renderChannelDropdown();renderAgentSelector();renderSheetContent();
+        showToast('Telegram settings saved','ok');
       });
 
       $('sheetBody').querySelector('#sheetAudioVolume')?.addEventListener('input',e=>{
@@ -8217,7 +8469,7 @@ Rules:
       return{cleanText,actions};
     }
 
-    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','tgToken','tgChatId','imageGenKey','webhookUrl','webhookEvents','customCSS']);
+    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','imageGenKey','webhookUrl','webhookEvents','customCSS']);
     const TC_HELPMODE_AUTO_KEYS=new Set([
       'accentColor','fontSize','fontFamily','bgColor','bgImage','textColor','themeMode',
       'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
@@ -10853,6 +11105,7 @@ ${agentNote}`);
         }
         if(cmd==='/telegram'){
           sysBubble(`<h3>Telegram Setup</h3>
+<p>Fastest path: open <strong>Settings → Telegram Relay Setup → Quick Setup Wizard</strong>.</p>
 <p>Use Telegram in two ways:</p>
 <ul>
 <li><strong>Forwarding</strong> — one-way copy of TealClaw messages to Telegram</li>
@@ -10863,15 +11116,13 @@ ${agentNote}`);
 <li>Open Telegram and message <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a></li>
 <li>Send <code>/newbot</code> and follow the prompts</li>
 <li>Copy the <strong>bot token</strong> (looks like <code>123456:ABC-DEF...</code>)</li>
-<li>Paste it here in TealClaw chat</li>
 </ol>
 <h3>Step 2: Get Chat ID</h3>
 <ol>
 <li>Message <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a></li>
 <li>Copy your chat ID (e.g. <code>123456789</code>)</li>
-<li>Paste it here after the bot token</li>
+<li>Group chats use <code>-100...</code> IDs</li>
 </ol>
-<p>Group chats use <code>-100...</code> IDs.</p>
 <p><strong>Relay commands:</strong> <code>/telegram relay on</code>, <code>/telegram relay off</code>, <code>/telegram relay status</code></p>`);
           return;
         }
@@ -11655,8 +11906,8 @@ ${agentNote}`);
             const recognized=Object.keys(CONFIG_KEYS);
             const hasConfig=recognized.some(k=>cfg[k]!==undefined)||cfg.agents||cfg.gwUrl;
             if(hasConfig){
-              const count=importConfig(cfg);
-              applyVisualConfig();updateStatus();renderAgentSelector();
+              const report=importConfig(cfg,{returnReport:true});
+              applyVisualConfig();updateStatus();renderAgentSelector();renderChannelDropdown();
               const parts=[];
               if(cfg.agents?.length)parts.push(`${cfg.agents.length} agent(s)`);
               else if(cfg.gwUrl)parts.push('gateway');
@@ -11667,11 +11918,16 @@ ${agentNote}`);
               if(cfg.bgImage)parts.push('background image');
               if(cfg.botName)parts.push('bot name');
               if(cfg.fontSize)parts.push('font size');
+              const statusLine=report.failed.length?`<p style="color:var(--err)">${report.failed.length} field(s) failed to apply. Use Retry below.</p>`:'';
               sysBubble(`<h3>Config Imported!</h3>
-<p>Loaded <strong>${count}</strong> settings from <code>${esc(name)}</code>:</p>
+<p>Loaded <strong>${report.count}</strong> settings from <code>${esc(name)}</code>:</p>
 <p>${parts.join(', ')||'Configuration updated'}</p>
+${statusLine}
 <p>${cfg.mode==='agent'?'Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway.':(cfg.mode==='telegram-relay'?'Mode set to <strong>Telegram Relay</strong> -- messages route through Telegram transport.':'You\'re ready to chat!')}</p>`);
-              showToast(`Imported ${count} settings`,'ok');
+              showToast(report.failed.length?`Imported ${report.count} settings (${report.failed.length} failed)`:`Imported ${report.count} settings`,report.failed.length?'err':'ok');
+              if(report.failed.length){
+                showImportFailureCard(report.failed,buildRetryConfigForFailedKeys(report.failed),'file import');
+              }
               if(cfg.botGreeting){
                 setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
               }
@@ -12102,14 +12358,11 @@ ${agentNote}`);
       if(!k.tgToken)return null;
       if(k.tgBotId)return k.tgBotId;
       try{
-        const res=await fetch(`https://api.telegram.org/bot${k.tgToken}/getMe`);
-        const d=await res.json();
-        if(d?.ok&&d?.result?.id){
-          const k2=getK();
-          k2.tgBotId=d.result.id;
-          setK(k2);
-          return d.result.id;
-        }
+        const meta=await fetchTelegramBotMeta(k.tgToken);
+        const k2=getK();
+        k2.tgBotId=meta.id;
+        setK(k2);
+        return meta.id;
       }catch{}
       return null;
     }
@@ -12724,15 +12977,107 @@ ${agentNote}`);
       tealclawMessageTag:'tealclawMessageTag'
     };
 
-    function importConfig(cfg){
-      const k=getK();
-      let count=0;
+    const IMPORT_FIELD_LABELS={
+      tgToken:'Telegram bot token',
+      tgChatId:'Telegram chat ID',
+      tgBotId:'Telegram bot ID',
+      tgEnabled:'Telegram forwarding',
+      tgRelayEnabled:'Telegram relay',
+      tgRelayReceive:'Relay inbound receive',
+      tgRelaySpeak:'Relay auto-speak',
+      tgRelayPollSec:'Relay poll interval',
+      aiKey:'AI key',
+      whisperKey:'Groq key',
+      imageGenKey:'Image generation key',
+      pinHash:'PIN hash',
+      pinRequired:'PIN required'
+    };
+    const SENSITIVE_IMPORT_FIELDS=new Set(['aiKey','whisperKey','tgToken','tgChatId','imageGenKey','pinHash','pinRequired']);
+
+    function importFieldLabel(key){
+      return IMPORT_FIELD_LABELS[key]||key;
+    }
+
+    function importValuesMatch(a,b){
+      try{return JSON.stringify(a)===JSON.stringify(b)}
+      catch{return a===b}
+    }
+
+    function buildRetryConfigForFailedKeys(failed){
+      const retry={};
+      failed.forEach(f=>{retry[f.from]=f.value});
+      return retry;
+    }
+
+    function showImportFailureCard(failed,retryCfg,label='import'){
+      if(!Array.isArray(failed)||!failed.length)return;
+      const retryId='cfgRetry_'+Date.now().toString(36);
+      const hasSensitiveFailure=failed.some(f=>SENSITIVE_IMPORT_FIELDS.has(f.from));
+      const list=failed.map(f=>`<li style="margin-bottom:6px"><strong>${esc(importFieldLabel(f.from))}</strong><div style="font-size:10px;color:var(--text-3)">${esc(f.reason||'Not applied')}</div></li>`).join('');
+      sysBubble(`<div style="text-align:left">
+        <h3>Import Needs Attention</h3>
+        <p style="font-size:11px;color:var(--text-2);margin:6px 0">${hasSensitiveFailure?'Some sensitive keys were not saved on this device.':'Some fields were not saved on this device.'}</p>
+        <ul style="margin:8px 0 4px 18px;padding:0">${list}</ul>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:10px">
+          <button class="btn btn-teal" id="${retryId}">Retry Failed Keys</button>
+        </div>
+      </div>`);
+      const last=document.querySelector('.chat-bubble:last-child');
+      last?.querySelector('#'+retryId)?.addEventListener('click',()=>{
+        const report=importConfig(retryCfg,{returnReport:true});
+        applyVisualConfig();updateStatus();renderAgentSelector();renderChannelDropdown();
+        if(!report.failed.length){
+          showToast('Retry succeeded','ok');
+          return;
+        }
+        showToast(`${report.failed.length} field(s) still failed`,'err');
+        showImportFailureCard(report.failed,buildRetryConfigForFailedKeys(report.failed),label);
+      });
+    }
+
+    function importConfig(cfg,opts={}){
+      const kBefore=getK();
+      const kNext={...kBefore};
+      const attempted=[];
       for(const[from,to]of Object.entries(CONFIG_KEYS)){
-        if(cfg[from]!==undefined){k[to]=cfg[from];count++}
+        if(cfg[from]!==undefined){
+          kNext[to]=cfg[from];
+          attempted.push({from,to,value:cfg[from]});
+        }
       }
-      setK(k);
-      if(isTelegramRelayEnabled(k)&&hasTelegramConfig(k))startTelegramRelayPolling();
-      else stopTelegramRelayPolling();
+
+      const storageOk=setK(kNext);
+      const persisted=getK();
+      const failed=[];
+      let count=0;
+
+      attempted.forEach(item=>{
+        if(!storageOk){
+          failed.push({...item,reason:'Storage write failed (browser blocked local save)'});
+          return;
+        }
+        if(!importValuesMatch(persisted[item.to],item.value)){
+          failed.push({...item,reason:'Value did not persist after save'});
+          return;
+        }
+        count++;
+      });
+
+      // Mobile reliability fallback: retry failed keys one-by-one.
+      if(storageOk&&failed.length){
+        const working={...getK()};
+        const stillFailed=[];
+        failed.forEach(item=>{
+          working[item.to]=item.value;
+          const ok=setK(working);
+          const check=getK();
+          if(ok&&importValuesMatch(check[item.to],item.value))count++;
+          else stillFailed.push(item);
+        });
+        failed.length=0;
+        failed.push(...stillFailed);
+      }
+
       if(cfg.agents&&Array.isArray(cfg.agents)){
         setAgents(cfg.agents);count+=cfg.agents.length;
       } else if(cfg.gwUrl&&cfg.gwToken){
@@ -12740,6 +13085,13 @@ ${agentNote}`);
         agents.push({id:Date.now().toString(36),name:cfg.agentName||'Agent',url:cfg.gwUrl,token:cfg.gwToken,active:true});
         setAgents(agents);count+=2;
       }
+
+      const live=getK();
+      if(isTelegramRelayEnabled(live)&&hasTelegramConfig(live))startTelegramRelayPolling();
+      else stopTelegramRelayPolling();
+
+      const report={count,failed,applied:attempted.length-failed.length,attempted:attempted.length,storageOk};
+      if(opts.returnReport)return report;
       return count;
     }
 
@@ -13082,7 +13434,7 @@ ${agentNote}`);
     }
     function showConfigImportConfirm(cfg){
       const fields=Object.keys(cfg).filter(k=>k!=='agents'&&k!=='_session');
-      const hasSensitive=['aiKey','whisperKey','tgToken','imageGenKey','pinHash'].some(s=>cfg[s]);
+      const hasSensitive=['aiKey','whisperKey','tgToken','tgChatId','imageGenKey','pinHash'].some(s=>cfg[s]);
       const hasWebhook=!!cfg.webhookUrl;
       const hasCSS=!!cfg.customCSS;
       const hasSession=!!cfg._session;
@@ -13114,17 +13466,21 @@ ${agentNote}`);
           updateSessionBadge();
         }
         const clean={...cfg};delete clean._session;
-        const count=importConfig(clean);
-        applyVisualConfig();
+        const report=importConfig(clean,{returnReport:true});
+        applyVisualConfig();updateStatus();renderAgentSelector();renderChannelDropdown();
         const nItems=fields.slice(0,6).map(f=>{
           let v=cfg[f];
-          if(typeof v==='string'&&v.length>20)v=v.slice(0,16)+'...';
-          if(['aiKey','whisperKey','tgToken','gwToken','pinHash'].includes(f))v=typeof cfg[f]==='string'?(cfg[f].slice(0,8)+'...'):String(cfg[f]);
+          if(SENSITIVE_IMPORT_FIELDS.has(f))v='[saved securely]';
+          else if(typeof v==='string'&&v.length>20)v=v.slice(0,16)+'...';
           return{label:f,value:String(v||''),badge:'updated'};
         });
         if(fields.length>6)nItems.push({label:`+${fields.length-6} more`,value:'',badge:''});
-        showNotification(hasSession?'Session Active':`${count} Settings Applied`,nItems);
-        haptic('success');
+        showNotification(hasSession?'Session Active':`${report.count} Settings Applied`,nItems);
+        haptic(report.failed.length?'error':'success');
+        if(report.failed.length){
+          const retryCfg=buildRetryConfigForFailedKeys(report.failed);
+          showImportFailureCard(report.failed,retryCfg,'encrypted import');
+        }
         if(cfg.botGreeting){
           setTimeout(()=>sysBubble(`<div class="md-content">${renderMd(cfg.botGreeting)}</div>`),500);
         }
