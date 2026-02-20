@@ -1206,7 +1206,6 @@
       <li><a href="https://tealclaw.ai/docs/recipes.txt">Config Recipes</a></li>
       <li><a href="https://tealclaw.ai/docs/commands.txt">Chat Commands</a></li>
       <li><a href="https://tealclaw.ai/docs/free-setup.txt">Free Setup Guide</a></li>
-      <li><a href="https://tealclaw.ai/docs/openclaw-cloudflare-worker.txt">OpenClaw + Cloudflare (Phone-safe Worker)</a></li>
     </ul>
   </div>
   <script>document.getElementById('staticContent').style.display='none'</script>
@@ -5733,16 +5732,9 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         return callAgentWS(conn,text,imageBase64,onToken);
       }
 
-      // Last resort: HTTP fallback (may not be supported by the gateway)
-      try{
-        return await callAgentHTTP(agent,text,imageBase64);
-      }catch(e){
-        const msg=(e&&e.message)||String(e||'');
-        if(/\b405\b/.test(msg)||/Method Not Allowed/i.test(msg)){
-          throw new Error('Gateway not connected (WS offline) and HTTP fallback is not supported (405). Try /reconnect or refresh.');
-        }
-        throw e;
-      }
+      // Root fix: In Agent mode we speak to OpenClaw via WebSocket. Do NOT fall back to HTTP
+      // /v1/chat/completions (it is often unsupported and triggers CORS failures in browsers).
+      throw new Error('Gateway not connected yet (WebSocket offline or pairing required). Try /reconnect (or refresh). If this is a new device, approve it on the gateway: openclaw devices list → openclaw devices approve <requestId>.');
     }
 
     // ── Transcribe ─────────────────────────────────────
@@ -6184,8 +6176,8 @@ GIF REACTIONS (~75% of responses — encouraged!):
         return;
       }
 
-      // Probe localhost for an OpenClaw gateway
-      (async function probeLocalGateway(){
+      // Probe localhost for an OpenClaw gateway (only makes sense when TealClaw is served from localhost)
+      if(location.hostname==='localhost' || location.hostname==='127.0.0.1') (async function probeLocalGateway(){
         try{
           const ws=new WebSocket('ws://localhost:18789');
           const timer=setTimeout(()=>ws.close(),2000);
@@ -6237,7 +6229,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
       // Build the agent prompt for copy-paste (secure QR onboarding)
       const agentPrompt='Set up TealClaw for me using secure QR delivery.\n\n'
         +'IMPORTANT: I want to use TealClaw from my PHONE browser.\n'
-        +'If browser CORS preflight (OPTIONS) fails on /v1/chat/completions, use the Cloudflare Worker shim documented here: https://tealclaw.ai/docs/openclaw-cloudflare-worker.txt\n\n'
+        +'NOTE: TealClaw connects to OpenClaw via WebSocket (not /v1/chat/completions).\n\n'
         +'STEP 1 — GATEWAY + CLOUDFLARE TUNNEL:\n'
         +'1. Make sure my OpenClaw gateway is running (openclaw gateway run)\n'
         +'2. Install cloudflared if needed (brew install cloudflared)\n'

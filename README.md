@@ -125,7 +125,7 @@ Your Browser ←→ Cloudflare Tunnel ←→ OpenClaw Gateway ←→ Your AI Age
 
 Paste a gateway URL + token, or let your agent generate a one-click connection link.
 
-**Phone note:** If your gateway doesn’t respond to browser CORS preflight (OPTIONS) on `/v1/chat/completions`, use the Worker shim guide: https://tealclaw.ai/docs/openclaw-cloudflare-worker.txt
+**Phone note:** TealClaw connects to OpenClaw via **WebSocket**. If you see pairing errors, approve the device on the gateway: `openclaw devices list` → `openclaw devices approve <requestId>`.
 
 **Device Pairing:** TealClaw uses Ed25519 device authentication on every connection. The first time you connect to a gateway through a Cloudflare Tunnel, the gateway operator must approve your device (one-time). Local connections auto-approve. See [llms.txt](https://tealclaw.ai/llms.txt) for details.
 
