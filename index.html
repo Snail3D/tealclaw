@@ -14862,13 +14862,31 @@ ${note}`:note;
       const h=location.hash;
       if(!h.includes('gw='))return false;
       const params=new URLSearchParams(h.slice(1));
-      const gwUrl=params.get('gw');
-      const token=params.get('token');
+      let gwUrl=params.get('gw');
+      let token=params.get('token');
       if(!gwUrl||!token)return false;
+      gwUrl=gwUrl.trim();
+      token=token.trim();
+      if(!gwUrl||!token)return false;
+      if(gwUrl.length>2048||token.length>4096){
+        showToast('Gateway link is too large','err');
+        return false;
+      }
       // Scrub sensitive fragments (token) from the URL while preserving any query params.
       history.replaceState(null,'',location.pathname+location.search);
+
+      // Validate gateway URL scheme to reduce token leakage risk.
+      // Allow http only for localhost dev.
+      let parsed=null;
+      try{parsed=new URL(gwUrl)}catch(e){showToast('Invalid gateway URL','err');return false}
+      const host=parsed.hostname||gwUrl;
+      const isLocalhost=(host==='localhost'||host==='127.0.0.1'||host==='::1');
+      if(parsed.protocol!=='https:' && !(parsed.protocol==='http:' && isLocalhost)){
+        showToast('Gateway URL must be https (or http://localhost for dev)','err');
+        return false;
+      }
+
       // Confirm before importing — this overwrites agent config
-      let host;try{host=new URL(gwUrl).hostname}catch(e){host=gwUrl}
       const msg=`A gateway link wants to connect you to:\n\n${host}\n\nThis will set your active agent. Continue?`;
       if(!confirm(msg))return false;
       // Save agent and connect
@@ -14893,6 +14911,12 @@ ${note}`:note;
       const h=location.hash;
       if(!h.startsWith('#config='))return false;
       const payload=h.slice(8);
+      // Defensive cap: avoid giant hash payloads that can freeze the UI.
+      if(payload.length>120000){
+        history.replaceState(null,'',location.pathname+location.search);
+        showToast('Config link too large','err');
+        return true;
+      }
       // Encrypted config: starts with enc: prefix
       if(payload.startsWith('enc:')){
         pendingEncBlob=payload.slice(4);
