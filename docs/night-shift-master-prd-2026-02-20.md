@@ -24,6 +24,7 @@ By end-of-shift, TealClaw should:
 - Reduce outage sensitivity via **fallback + timeout behaviors**
 - Expose operator controls for provider routing in both **Settings and slash commands**
 - Ship updated docs for field-level configuration and relay architecture
+- Enforce **continuous Doris-style QA in parallel** with each landed implementation slice
 
 ---
 
@@ -185,9 +186,23 @@ Bring docs in line with real runtime behavior and new fields.
 
 ---
 
-## 7) Acceptance Test Plan
+## 7) Parallel QA Operating Model (Doris Lane)
 
-## 7.1 Functional Checks (Tonight)
+QA is executed **continuously in parallel** with implementation, not at the end.
+
+Per micro-commit:
+1. Run targeted assertions for changed surface area.
+2. Run command/help/docs alignment checks for user-facing changes.
+3. Run syntax gate (`node --check` over extracted script blocks).
+4. Log results before proceeding to next implementation item.
+
+Night-shift harness:
+- `scripts/doris-parallel-qa.mjs`
+- Run log: `docs/doris-parallel-qa-log-2026-02-20.md`
+
+## 8) Acceptance Test Plan
+
+## 8.1 Functional Checks (Tonight)
 
 1. **Syntax validation**
    - Extract script blocks and run `node --check`
@@ -208,7 +223,7 @@ Bring docs in line with real runtime behavior and new fields.
 
 ---
 
-## 8) Risks & Mitigations
+## 9) Risks & Mitigations
 
 ### Risk: provider key prefix ambiguity (`sk-` family)
 - **Mitigation:** explicit high-confidence prefixes first (`sk-ant-`, `sk-or-v1-`, `csk-`, `pplx-`) and conservative fallback behavior
@@ -221,7 +236,7 @@ Bring docs in line with real runtime behavior and new fields.
 
 ---
 
-## 9) Deployment & Rollback
+## 10) Deployment & Rollback
 
 ### Deploy
 - Merge as small scoped commits (provider runtime, commands, docs)
@@ -233,7 +248,7 @@ Bring docs in line with real runtime behavior and new fields.
 
 ---
 
-## 10) Tonight Execution Log (Delivered)
+## 11) Tonight Execution Log (Delivered)
 
 ### Delivered in this run
 - Added **Cerebras** and **Perplexity** providers to runtime preset registry
@@ -250,7 +265,7 @@ Bring docs in line with real runtime behavior and new fields.
 
 ---
 
-## 11) Deferred Items + Blockers (Explicit)
+## 12) Deferred Items + Blockers (Explicit)
 
 1. **Live provider integration tests against each upstream API**
    - **Blocker:** no dedicated multi-provider credential set in this run context
@@ -263,7 +278,7 @@ Bring docs in line with real runtime behavior and new fields.
 
 ---
 
-## 12) Next-Step Plan (First 2 hours of next shift)
+## 13) Next-Step Plan (First 2 hours of next shift)
 
 1. Add provider smoke-test script (`docs/scripts` or lightweight page action)
 2. Add capability badges + unsupported-setting guardrails
@@ -272,7 +287,7 @@ Bring docs in line with real runtime behavior and new fields.
 
 ---
 
-## 13) Definition of Done (This PRD)
+## 14) Definition of Done (This PRD)
 
 - [x] Comprehensive roadmap with priorities and acceptance criteria
 - [x] Concrete implementation completed for feasible high-impact items
