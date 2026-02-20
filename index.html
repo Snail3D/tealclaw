@@ -1121,8 +1121,9 @@
     .watch-ref-del:hover{background:rgba(239,68,68,0.8)}
     .watch-ref-drop{border:2px dashed var(--border);border-radius:var(--r-md);padding:16px;text-align:center;font-size:11px;color:var(--text-3);cursor:pointer;transition:all 0.2s}
     .watch-ref-drop:hover,.watch-ref-drop.dragover{border-color:var(--teal);color:var(--teal);background:rgba(13,148,136,0.05)}
-    .skip-link{position:fixed;top:calc(var(--sat,0px) + 8px);left:16px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:999px;z-index:9999;font-size:13px;font-weight:600;text-decoration:none;transform:translateY(calc(-100% - 12px));opacity:0;pointer-events:none;transition:transform 0.16s ease,opacity 0.16s ease}
-    .skip-link:focus-visible{transform:translateY(0);opacity:1;pointer-events:auto}
+    .skip-link{display:none;position:fixed;top:calc(var(--sat,0px) + 8px);left:16px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:999px;z-index:9999;font-size:13px;font-weight:600;text-decoration:none;transform:translateY(calc(-100% - 12px));opacity:0;pointer-events:none;transition:transform 0.16s ease,opacity 0.16s ease}
+    body.skip-link-enabled .skip-link{display:block}
+    body.skip-link-enabled .skip-link:focus-visible{transform:translateY(0);opacity:1;pointer-events:auto}
     @media (prefers-reduced-motion: reduce){.skip-link{transition:none}}
     /* Model picker */
     .model-picker{position:relative}
@@ -3235,6 +3236,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         {key:'highContrast',label:'High Contrast',desc:'Boost text and border contrast'},
         {key:'dyslexiaFont',label:'Dyslexia-Friendly Font',desc:'Use OpenDyslexic font for better readability'},
         {key:'focusHighlight',label:'Focus Indicators',desc:'Show visible outlines on focused elements',def:true},
+        {key:'skipLinkEnabled',label:'Skip Link',desc:'Show keyboard "Skip to chat input" link'},
         {key:'compactMode',label:'Compact Mode',desc:'Reduce spacing for more content on screen'}
       ];
       a11yToggles.forEach(({key,label,desc,def})=>{
@@ -3569,7 +3571,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         const ti=document.querySelector('#textIn');if(ti)ti.placeholder='Message...';
         document.querySelector('#tc-custom-css')?.remove();
         document.querySelector('#dyslexia-font-link')?.remove();
-        document.body.classList.remove('reduce-motion','high-contrast','dyslexia-font','compact-mode','focus-visible');
+        document.body.classList.remove('reduce-motion','high-contrast','dyslexia-font','compact-mode','focus-visible','skip-link-enabled');
         document.body.style.lineHeight='';document.body.style.letterSpacing='';document.body.style.wordSpacing='';
         document.title='TealClaw';
         const logo=document.querySelector('.logo');if(logo){const img=logo.querySelector('img');if(img)img.src='/icon-192.png'}
@@ -6229,7 +6231,7 @@ Visual: accentColor, fontSize, fontFamily, bgColor, bgImage, textColor, themeMod
 Identity: botName, botIcon, botGreeting, inputPlaceholder, deviceName, deviceLocation
 Models: aiModel, searchModel, visionModel, fastModel, complexModel, maxTokens, temperature, contextMessages
 Voice: ttsAutoPlay, groqTtsVoice(troy=Trey/austin=Axel/daniel=Dean/hannah=Haven/autumn=Vera/diana=Diane), groqTtsExpression(cheerful/warm/whisper/dramatic/sarcastic/excited/professional), audioVolume
-Features: streamEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
+Features: streamEnabled, hapticFeedback, soundEnabled, reduceMotion, highContrast, focusHighlight, skipLinkEnabled, compactMode, autoScroll, typingAnimation, typingSpeed, bubbleAnimation, use24HourTime
 Integrations: obsidianVault, tgToken, tgChatId, tgEnabled
 Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
@@ -7880,7 +7882,7 @@ Rules:
       'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
       'borderColor','chatBubbleRadius','chatBubblePadding','chatMaxWidth','sendBtnColor','micBtnColor',
       'lineHeight','letterSpacing','borderRadius','botName','botIcon','botGreeting','inputPlaceholder',
-      'streamEnabled','hapticFeedback','soundEnabled','reduceMotion','highContrast',
+      'streamEnabled','hapticFeedback','soundEnabled','reduceMotion','highContrast','focusHighlight','skipLinkEnabled',
       'compactMode','autoScroll','typingAnimation','typingSpeed','bubbleAnimation','use24HourTime',
       'quickReplies','inputPrefix','translateTo','audioVolume'
     ]);
@@ -10623,7 +10625,7 @@ ${agentNote}`);
       send();
     }
 
-    // Keyboard skip link (hidden by default; visible on :focus-visible)
+    // Keyboard skip link (setting-controlled; visible on :focus-visible when enabled)
     $('skipToInput')?.addEventListener('click',e=>{
       const input=$('textIn');
       if(!input)return;
@@ -11751,7 +11753,7 @@ ${agentNote}`);
       chatBubbleRadius:'chatBubbleRadius',chatBubblePadding:'chatBubblePadding',
       reduceMotion:'reduceMotion',highContrast:'highContrast',dyslexiaFont:'dyslexiaFont',
       lineHeight:'lineHeight',letterSpacing:'letterSpacing',wordSpacing:'wordSpacing',
-      focusHighlight:'focusHighlight',compactMode:'compactMode',
+      focusHighlight:'focusHighlight',skipLinkEnabled:'skipLinkEnabled',compactMode:'compactMode',
       autoScroll:'autoScroll',hapticFeedback:'hapticFeedback',
       maxTokens:'maxTokens',temperature:'temperature',
       soundEnabled:'soundEnabled',cameraEnabled:'cameraEnabled',allowProactiveCameraCapture:'allowProactiveCameraCapture',
@@ -12023,6 +12025,7 @@ ${agentNote}`);
       document.body.classList.toggle('dyslexia-font',!!k.dyslexiaFont);
       document.body.classList.toggle('compact-mode',!!k.compactMode);
       document.body.classList.toggle('focus-visible',k.focusHighlight!==false);
+      document.body.classList.toggle('skip-link-enabled',!!k.skipLinkEnabled);
 
       if(k.lineHeight)root.style.setProperty('--line-height',k.lineHeight);
       if(k.letterSpacing)root.style.setProperty('--letter-spacing',k.letterSpacing);
@@ -12317,7 +12320,7 @@ ${agentNote}`);
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
-    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',streamEnabled:false,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,skipLinkEnabled:false,compactMode:false,soundEnabled:false,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
 
     function buildConfigPayload(includeSensitive=false){
       const k=getK();
