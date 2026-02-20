@@ -93,7 +93,7 @@
       <div class="step-title">4. Device Security</div>
       <label for="wifi_pass">AP Password</label>
       <input type="password" id="wifi_pass" placeholder="Min 8 characters" minlength="8" autocomplete="off">
-      <p class="hint">Password for the TealClaw WiFi network (default: tealclaw)</p>
+      <p class="hint">Password for the TealClaw WiFi network (leave blank to use a per-device default)</p>
     </div>
 
     <button type="submit" id="saveBtn">Save &amp; Start Gateway</button>
@@ -130,6 +130,7 @@ document.getElementById('setupForm').addEventListener('submit', async function(e
   try {
     const res = await fetch('/api/config', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(config)
     });
@@ -141,7 +142,7 @@ document.getElementById('setupForm').addEventListener('submit', async function(e
       btn.textContent = 'Rebooting...';
       // Trigger reboot after short delay
       setTimeout(async () => {
-        try { await fetch('/api/reset', { method: 'POST' }); } catch(e) {}
+        try { await fetch('/api/reboot', { method: 'POST', credentials: 'same-origin' }); } catch(e) {}
       }, 1000);
     } else {
       throw new Error(data.error || 'Save failed');

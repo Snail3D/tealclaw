@@ -78,6 +78,16 @@ void setup() {
     if (!setupMode) {
         String staSsid = keyStore.get("wifi_ssid");
         String staPass = keyStore.get("wifi_pass_sta");
+
+        // Backward compatibility: older builds accidentally stored STA pass under wifi_pass.
+        if (staSsid.length() > 0 && staPass.length() == 0) {
+            String legacyPass = keyStore.get("wifi_pass");
+            if (legacyPass.length() > 0) {
+                Serial.println("[Boot] Using legacy wifi_pass key for STA password fallback");
+                staPass = legacyPass;
+            }
+        }
+
         if (staSsid.length() > 0) {
             wifiManager.beginSTA(staSsid, staPass);
         }

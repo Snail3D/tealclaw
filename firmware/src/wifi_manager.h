@@ -9,9 +9,13 @@ public:
     IPAddress getAPIP();
     bool isConnectedToInternet();
     String getAPSSID();
+    String getAPPassword();
 
 private:
     String _apSSID;
+    String _apPass;
+
+    String _deriveDefaultAPPassword();
 };
 
 extern WiFiManager wifiManager;
