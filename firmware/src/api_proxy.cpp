@@ -4,6 +4,7 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <memory>
+#include <map>
 
 namespace {
 constexpr uintptr_t REQ_BLOCKED_SENTINEL = 0x1;
@@ -19,30 +20,30 @@ struct StreamContext {
     }
 };
 
-static String _chatBody;
-static String _transcribeBody;
-static String _ttsBody;
-static String _geminiBody;
+static std::map<AsyncWebServerRequest*, String> s_requestBodies;
 
 bool isBlockedRequest(AsyncWebServerRequest* request) {
     return reinterpret_cast<uintptr_t>(request->_tempObject) == REQ_BLOCKED_SENTINEL;
 }
 
 bool accumulateBody(AsyncWebServerRequest* request,
-                    String& accumulator,
                     uint8_t* data,
                     size_t len,
                     size_t index,
                     size_t total,
                     String& outBody) {
-    if (isBlockedRequest(request)) return false;
+    if (isBlockedRequest(request)) {
+        s_requestBodies.erase(request);
+        return false;
+    }
 
+    String& accumulator = s_requestBodies[request];
     if (index == 0) {
         accumulator = "";
     }
 
     if (accumulator.length() + len > PROXY_MAX_BODY_BYTES) {
-        accumulator = "";
+        s_requestBodies.erase(request);
         request->_tempObject = reinterpret_cast<void*>(REQ_BLOCKED_SENTINEL);
         request->send(413, "application/json", "{\"error\":\"request payload too large\"}");
         return false;
@@ -52,7 +53,7 @@ bool accumulateBody(AsyncWebServerRequest* request,
     if (index + len < total) return false;
 
     outBody = accumulator;
-    accumulator = "";
+    s_requestBodies.erase(request);
     return true;
 }
 
@@ -220,7 +221,7 @@ void forwardBinary(AsyncWebServerRequest* request, const String& body,
 void proxyGroqChat(AsyncWebServerRequest* request, uint8_t* data, size_t len,
                    size_t index, size_t total) {
     String body;
-    if (!accumulateBody(request, _chatBody, data, len, index, total, body)) return;
+    if (!accumulateBody(request, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("groq_key");
     if (apiKey.length() == 0) {
@@ -240,7 +241,7 @@ void proxyGroqTranscribe(AsyncWebServerRequest* request, uint8_t* data, size_t l
                          size_t index, size_t total) {
     // Whisper expects multipart/form-data — forward as-is with auth header
     String body;
-    if (!accumulateBody(request, _transcribeBody, data, len, index, total, body)) return;
+    if (!accumulateBody(request, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("groq_key");
     if (apiKey.length() == 0) {
@@ -283,7 +284,7 @@ void proxyGroqTranscribe(AsyncWebServerRequest* request, uint8_t* data, size_t l
 void proxyGroqTTS(AsyncWebServerRequest* request, uint8_t* data, size_t len,
                   size_t index, size_t total) {
     String body;
-    if (!accumulateBody(request, _ttsBody, data, len, index, total, body)) return;
+    if (!accumulateBody(request, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("groq_key");
     if (apiKey.length() == 0) {
@@ -298,7 +299,7 @@ void proxyGroqTTS(AsyncWebServerRequest* request, uint8_t* data, size_t len,
 void proxyGeminiGenerate(AsyncWebServerRequest* request, uint8_t* data, size_t len,
                          size_t index, size_t total) {
     String body;
-    if (!accumulateBody(request, _geminiBody, data, len, index, total, body)) return;
+    if (!accumulateBody(request, data, len, index, total, body)) return;
 
     String apiKey = keyStore.get("gemini_key");
     if (apiKey.length() == 0) {
