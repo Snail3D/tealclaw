@@ -198,5 +198,6 @@
 - [x] Run static analysis pass (non-blocking upstream warnings acknowledged)
 - [x] Verify browser settings focus/visibility/tab hygiene behavior
 - [x] Apply low-risk stability polish where found
+- [ ] Run `node scripts/enterprise-check.mjs` (secrets scan + Doris QA + optional firmware build)
 - [ ] Final sign-off on pending non-merged UI diffs (`index.html`) by UI owner
 - [ ] Commit/push QA polish changes in firmware (`api_proxy.cpp`, `web_server.cpp`)
