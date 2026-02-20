@@ -1584,10 +1584,10 @@
   </div>
 
   <!-- ═══ Motion & Alarms Modal ═══ -->
-  <div class="ma-modal" id="maModal">
+  <div class="ma-modal" id="maModal" role="dialog" aria-modal="true" aria-labelledby="maModalTitle" aria-hidden="true" tabindex="-1">
     <div class="ma-modal-card">
       <div class="ma-modal-header">
-        <h3>Motion &amp; Alarms</h3>
+        <h3 id="maModalTitle">Motion &amp; Alarms</h3>
         <button class="ma-modal-close" id="maModalClose" aria-label="Close Motion and Alarms">&times;</button>
       </div>
       <div class="ma-modal-body" id="maModalBody"></div>
@@ -3427,8 +3427,83 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
 
     // ── Motion & Alarms Modal ─────────────────────────
     let _maTimerInterval=null;
-    function openMAModal(){renderMAModal();$('maModal').classList.add('open')}
-    function closeMAModal(){$('maModal').classList.remove('open');if(_maTimerInterval){clearInterval(_maTimerInterval);_maTimerInterval=null}}
+    let maLastFocusedEl=null;
+    const MA_FOCUSABLE='a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+    function getMaFocusable(){
+      const modal=$('maModal');
+      return [...modal.querySelectorAll(MA_FOCUSABLE)].filter(el=>!el.hasAttribute('disabled')&&el.getAttribute('aria-hidden')!=='true'&&el.offsetParent!==null);
+    }
+    function trapMaFocus(e){
+      const modal=$('maModal');
+      if(!modal.classList.contains('open'))return;
+      if(e.key==='Escape')return; // handled by global Escape handler
+      if(e.key!=='Tab')return;
+      const focusables=getMaFocusable();
+      if(!focusables.length){e.preventDefault();return}
+      const first=focusables[0],last=focusables[focusables.length-1];
+      const active=document.activeElement;
+      if(!modal.contains(active)){
+        e.preventDefault();
+        (e.shiftKey?last:first).focus();
+        return;
+      }
+      if(e.shiftKey){
+        if(active===first){e.preventDefault();last.focus()}
+      }else if(active===last){
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    function setMaBackgroundInert(isInert){
+      const modal=$('maModal');
+      [...document.body.children].forEach(el=>{
+        if(el===modal)return;
+        if(isInert){
+          if(!el.hasAttribute('data-ma-prev-aria-hidden')){
+            const prev=el.getAttribute('aria-hidden');
+            el.setAttribute('data-ma-prev-aria-hidden',prev===null?'':prev);
+          }
+          el.setAttribute('aria-hidden','true');
+          el.inert=true;
+        }else{
+          const prev=el.getAttribute('data-ma-prev-aria-hidden');
+          if(prev!==null){
+            if(prev==='')el.removeAttribute('aria-hidden');
+            else el.setAttribute('aria-hidden',prev);
+            el.removeAttribute('data-ma-prev-aria-hidden');
+          }
+          el.inert=false;
+        }
+      });
+    }
+
+    function openMAModal(){
+      const modal=$('maModal');
+      if(modal.classList.contains('open')){renderMAModal();return}
+      maLastFocusedEl=document.activeElement instanceof HTMLElement?document.activeElement:null;
+      renderMAModal();
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden','false');
+      setMaBackgroundInert(true);
+      document.addEventListener('keydown',trapMaFocus,true);
+      requestAnimationFrame(()=>{
+        const first=getMaFocusable()[0]||$('maModalClose')||modal;
+        first?.focus?.({preventScroll:true});
+      });
+    }
+    function closeMAModal({restoreFocus=true}={}){
+      const modal=$('maModal');
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden','true');
+      document.removeEventListener('keydown',trapMaFocus,true);
+      setMaBackgroundInert(false);
+      if(_maTimerInterval){clearInterval(_maTimerInterval);_maTimerInterval=null}
+      if(restoreFocus&&maLastFocusedEl&&document.contains(maLastFocusedEl)){
+        try{maLastFocusedEl.focus({preventScroll:true})}catch{}
+      }
+      maLastFocusedEl=null;
+    }
     $('maModalClose').addEventListener('click',closeMAModal);
     $('maModal').addEventListener('click',e=>{if(e.target===$('maModal'))closeMAModal()});
     function renderMAModal(){
