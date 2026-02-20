@@ -40,3 +40,4 @@ Result:
 ## Notes
 - Existing unrelated modified firmware files were intentionally excluded from this QA scope.
 - This harness is designed to be rerun after each implementation micro-commit during the night shift.
+- After Snail's product-direction update (desktop dashboard + AI-managed orchestration), the PRD was updated and Doris QA reran successfully (19/0) to confirm no regressions from documentation-phase changes.
