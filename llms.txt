@@ -46,6 +46,29 @@ public gateway -- hardcoded, auto-provisioned on first visit, zero config
 needed. You do NOT need to set up a gateway, add agents, or touch mode
 settings. It's done. The usr just needs a Groq key to start chatting.
 
+If the usr wants to run their own gateway hostname (Cloudflare Tunnel,
+custom domain, etc.), use the tight setup recipe here:
+- `docs/cloudflare-gateway.html`
+
+### Source Tagging (TealClaw → Agent)
+TealClaw can prefix messages sent to the OpenClaw agent so the agent can
+recognize they came from the TealClaw UI.
+
+Config keys:
+- `tagMessagesFromTealclaw` (bool) — default true on tealclaw.ai
+- `tealclawMessageTag` (string) — default: `[TealClaw] `
+
+### Voice: prevent accidental sends when the user didn’t speak
+TealClaw will ignore very short/likely-noise transcriptions so a tap or
+silent click doesn’t auto-send junk like "." or single short phrases.
+
+Config keys:
+- `voiceMinDurationMs` (number) — default 700
+- `voiceMinWords` (number) — default 3
+- `voiceMinChars` (number) — default 12
+- `voiceAllowShortCommands` (bool) — default true
+- `voiceCommandWhitelist` (string[]) — phrases that should always be allowed (e.g. "stop", "cancel", "do it")
+
 ### Your Job: Give Them a Config JSON
 
 Include a fenced ```json code block in your response. TC auto-detects it
@@ -119,7 +142,7 @@ Example first-time cfg:
 
 - **STYLE TEMPLATES** -- 12 built-in themes via /template: Midnight Purple, Sunset Orange, Ocean Blue, Forest Green, Rose Pink, Golden Hour, Arctic White, Cotton Candy, Neon Cyber, Minimal Zen, Retro Terminal, Cozy Warm.
 
-- **GIF REACTIONS** -- AI includes [gif:search term] tags, TC shows GIF overlay via Klipy server proxy. No API key needed. Disable with gifEnabled:false.
+- **GIF REACTIONS** -- AI includes [gif:search term] tags, TC shows GIF overlay via Klipy server proxy. No API key needed. Disable with gifEnabled:false, size with gifScale (e.g. 1.5 for 50% larger).
 
 - **INTERACTIVE COMPONENTS (tc-ui)** -- ```tc-ui fenced blocks render buttons, cards, chips, status indicators, and collapsible sections in chat. Usr clicks a btn and it auto-sends as next msg. Selections persist across reloads.
 
@@ -345,6 +368,7 @@ Only include fields you want to set/change. TC uses partial merge.
   "imageGenModel": "gemini-2.5-flash-image",
   "imageGenSize": "1024x1024",
   "gifEnabled": true,
+  "gifScale": 1,
   "accentColor": "#0d9488",
   "fontSize": "medium",
   "fontFamily": "system-ui, sans-serif",
@@ -428,6 +452,7 @@ Only include fields you want to set/change. TC uses partial merge.
 | imageGenModel | string | Image gen model (dflt: gemini-2.5-flash-image) |
 | imageGenSize | string | e.g. "1024x1024" (OpenRouter/custom only) |
 | gifEnabled | boolean | Fullscreen GIF overlay on AI rsp (dflt: true). AI uses [gif:term] |
+| gifScale | number | GIF size multiplier (dflt: 1). Example: 1.5 = 50% bigger |
 | accentColor | string | Hex UI accent (dflt: #0d9488 teal). Cascades everywhere |
 | fontSize | "small"/"medium"/"large"/CSS | small=11px, medium=13px (dflt), large=16px |
 | fontFamily | string | Custom font family (dflt: system-ui) |
@@ -790,6 +815,7 @@ Ready-to-use cfg blocks. Use as starting points, customize per usr.
 | Mute auto-play | `{"ttsAutoPlay": false}` |
 | Custom prompt | `{"sysPrompt": "You are a pirate who speaks in nautical metaphors."}` |
 | Disable GIFs | `{"gifEnabled": false}` |
+| Bigger GIFs (+50%) | `{"gifScale": 1.5}` |
 | Color theme | `{"accentColor": "#8b5cf6", "chatUserColor": "#1a1040", "chatAiColor": "#0f0a2a", "bgColor": "#0a0520"}` |
 | bg image | `{"bgImage": "https://images.unsplash.com/photo-example?w=1920", "accentColor": "#f97316"}` |
 | Large font | `{"fontSize": "large"}` |
@@ -1035,7 +1061,8 @@ names so you can rebuild their cfg without asking them to repeat everything.
 
 When gifEnabled is true (dflt), AI can include [gif:happy dance] in rsp.
 TC searches Klipy (via server proxy) and shows GIF overlay (10s auto-fade). Tag stripped from
-text. If no tag, TC auto-searches using keyword pattern matching. Tap to dismiss.
+text. If no tag, TC auto-searches using keyword pattern matching. Tap to dismiss. Size is
+configurable via gifScale (dflt 1; set 1.5 for 50% larger).
 
 To enable AI usage, add to system prompt:
 ```json

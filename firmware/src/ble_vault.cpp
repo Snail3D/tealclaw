@@ -3,6 +3,7 @@
 #include "config.h"
 #include <NimBLEDevice.h>
 #include <ArduinoJson.h>
+#include <WiFi.h>
 
 BleVault bleVault;
 
@@ -60,7 +61,6 @@ void BleVault::begin() {
     // Advertising
     NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(BLE_SERVICE_UUID);
-    pAdvertising->setScanResponse(true);
     pAdvertising->start();
 
     Serial.println("[BLE] GATT server started, advertising");

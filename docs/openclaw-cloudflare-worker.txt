@@ -1,0 +1,103 @@
+OpenClaw + TealClaw + Cloudflare Tunnel (Phone-safe) — Worker CORS Shim
+
+Goal
+- Use TealClaw from a phone browser (https://tealclaw.ai) to talk to your OpenClaw gateway over HTTPS.
+- Cloudflare Tunnel gives you HTTPS.
+- Some gateway builds don’t answer browser CORS preflight (OPTIONS) on /v1/chat/completions.
+  When that happens, mobile browsers will block the request.
+
+Solution
+- Put a Cloudflare Worker in front of your gateway hostname to:
+  1) Answer OPTIONS preflight with Access-Control-Allow-* headers
+  2) Proxy the real request upstream to your tunnel
+
+Recommended topology
+
+  TealClaw (browser)
+      ↓
+  https://gw.yourdomain.com   (Worker route)
+      ↓
+  https://gw-origin.yourdomain.com  (Cloudflare Tunnel hostname → localhost)
+      ↓
+  http://127.0.0.1:18789  (OpenClaw gateway)
+
+Step 1 — Create a named Cloudflare Tunnel for the gateway
+
+1) Create tunnel
+   cloudflared tunnel create openclaw-gw
+
+2) Create DNS route for the ORIGIN hostname
+   cloudflared tunnel route dns openclaw-gw gw-origin.yourdomain.com
+
+3) Cloudflared config (~/.cloudflared/config-openclaw-gw.yml)
+
+   tunnel: <TUNNEL-UUID>
+   credentials-file: /Users/<you>/.cloudflared/<TUNNEL-UUID>.json
+
+   ingress:
+     - hostname: gw-origin.yourdomain.com
+       service: http://localhost:18789
+     - service: http_status:404
+
+4) Run the tunnel (or install as a service)
+   cloudflared tunnel --config ~/.cloudflared/config-openclaw-gw.yml run
+
+Step 2 — Deploy the Worker (CORS + reverse proxy)
+
+Deploy this Worker on gw.yourdomain.com/* (Workers Route).
+Set ORIGIN to https://gw-origin.yourdomain.com
+
+Worker code (minimal):
+
+export default {
+  async fetch(request, env) {
+    const origin = request.headers.get('Origin') || '';
+    const allowed = new Set([
+      'https://tealclaw.ai',
+      'https://www.tealclaw.ai',
+      'https://tealclaw.com',
+      'https://www.tealclaw.com'
+    ]);
+
+    const corsOrigin = allowed.has(origin) ? origin : 'https://tealclaw.ai';
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': corsOrigin,
+      'Vary': 'Origin',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+      'Access-Control-Allow-Headers': 'authorization,content-type,accept',
+      'Access-Control-Max-Age': '86400'
+    };
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    const url = new URL(request.url);
+    const upstream = new URL(env.ORIGIN);
+    upstream.pathname = url.pathname;
+    upstream.search = url.search;
+
+    const init = {
+      method: request.method,
+      headers: new Headers(request.headers),
+      body: request.body,
+      redirect: 'manual'
+    };
+
+    const resp = await fetch(upstream.toString(), init);
+    const out = new Headers(resp.headers);
+    for (const [k, v] of Object.entries(corsHeaders)) out.set(k, v);
+    return new Response(resp.body, { status: resp.status, headers: out });
+  }
+}
+
+Step 3 — TealClaw settings
+
+- Gateway URL: https://gw.yourdomain.com
+- Token: your OpenClaw gateway auth token
+
+Notes
+- This Worker does NOT make your gateway public. It just makes browser CORS work.
+- Keep the Worker strict: only allow TealClaw origins.
+- Device pairing may still apply on first connection, depending on your gateway policy.

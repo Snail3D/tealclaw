@@ -8,30 +8,50 @@ All values are stored in browser localStorage. No server, no database.
 
 ## Delivery Methods
 
-1. **URL hash**: `https://tealclaw.ai/#config=BASE64_JSON` (best — zero user effort)
-2. **JSON file**: Drag a `.json` file into the TealClaw chat
-3. **Chat paste**: Paste raw JSON into the chat input
-4. **Bare key**: Paste a single API key (auto-detected by prefix)
+1. **Settings UI (recommended on mobile)**: Settings → Telegram Relay Setup (includes Quick Setup Wizard)
+2. **URL hash**: `https://tealclaw.ai/#config=BASE64_JSON` (best link-based import)
+3. **JSON file**: Drag a `.json` file into the TealClaw chat
+4. **Chat paste**: Paste raw JSON into the chat input
+5. **Bare key**: Paste a single API key (auto-detected by prefix)
+
+### Import Reliability (v1.1)
+
+Encrypted config imports now verify each applied field after save.
+If any field fails to persist (including sensitive keys on mobile), TealClaw shows:
+- exact field-level failure list
+- clear reason per field
+- **Retry Failed Keys** action
 
 ## API Provider Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| aiProvider | "groq" | AI provider for chat completions |
-| aiKey | string | API key for chat. Prefixes: gsk_* (Groq) |
-| aiModel | string | Model ID. Default: groq/compound-mini |
-| whisperKey | string | Groq API key for Whisper voice transcription, Orpheus TTS, AND /research command. Get free at console.groq.com |
+| aiProvider | string | Direct AI provider. Supported: `groq`, `fireworks`, `openai`, `anthropic`, `openrouter`, `xai`, `mistral`, `together`, `deepseek`, `cerebras`, `perplexity` |
+| aiKey | string | Direct-provider API key (examples: `fw_...`, `sk-...`, `sk-ant-...`, `sk-or-v1-...`, `xai-...`, `csk-...`, `pplx-...`) |
+| aiBaseUrl | string | Optional custom direct-provider base URL override. Must be HTTPS (HTTP only allowed for localhost/self-hosted local gateways) |
+| aiModel | string | Direct chat model ID. If unset, TealClaw uses provider defaults |
+| directFallbackToGroq | boolean | If true (default), non-Groq direct providers automatically fail over to Groq when recoverable errors occur and a Groq key is present |
+| gatewayHttpFallback | boolean | Allows agent HTTP fallback path when gateway WebSocket is unavailable (useful for local/self-hosted setups) |
+| whisperKey | string | Groq API key for Whisper voice transcription, Groq TTS, and `/research` |
+| ttsProvider | string | Explicit voice provider selector: `groq`, `elevenlabs`, or `off` |
+| ttsMode | string | Voice playback mode: `auto` (speak every reply), `on` (listen button), `off` (mute playback) |
+| ttsFallbackEnabled | boolean | Optional fallback to the other TTS provider **only if you opt in**. Default: false |
 | groqTtsVoice | string | Groq Orpheus TTS voice name. Options: autumn, diana, hannah, austin, daniel, troy. Default: troy |
-| ttsAutoPlay | boolean | Auto-speak AI responses. Default: true. Set false for on-demand playback (tap to hear) |
-| maxTokens | number | Max tokens per AI response. Default: 400. Range: 50-2000 |
+| groqTtsModel | string | Groq TTS model ID sent to `/openai/v1/audio/speech`. Default/recommended: `canopylabs/orpheus-v1-english` |
+| elevenlabsKey | string | ElevenLabs API key (`sk_...`) for custom voice output |
+| elevenlabsVoiceId | string | ElevenLabs voice ID used for playback and validation |
+| ttsAutoPlay | boolean | Legacy compatibility flag. `false` maps to `ttsMode:"on"`; prefer `ttsMode` going forward |
+| maxTokens | number | Max tokens per AI response (provider-capped). Default: 400 |
 | temperature | number | AI creativity. 0=focused, 2=creative. Default: 0.7 |
+
+**Voice Services UX:** Settings now includes an explicit provider selector (`groq` / `elevenlabs` / `off`), fallback opt-in toggle, Groq model selector/input, and ElevenLabs key+voice validation status badge. Use `/voice diag` for last-request TTS diagnostics.
 
 ## System Prompt & Mode
 
 | Field | Type | Description |
 |-------|------|-------------|
 | sysPrompt | string | System prompt sent to the AI. Supports any instructions, persona, etc. |
-| mode | "direct" / "agent" | Direct = browser calls provider API. Agent = route through OpenClaw gateway |
+| mode | "direct" / "agent" / "telegram-relay" | Direct = browser calls provider API. Agent = route through OpenClaw gateway. Telegram Relay = Telegram is primary chat transport, with inbound source gateway-native via OpenClaw events |
 | allowProactiveCameraCapture | boolean | Default: true. If true, incoming `tc-action` `camera.capture` and `screen.capture` use lightweight inline consent (Take photo / Take screenshot / Cancel). If false, uses full confirm modal flow. |
 
 ## Agent Camera Routing (Operational Guidance)
@@ -46,13 +66,20 @@ When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
 - Always require user consent/authority before camera capture or monitoring.
 - `allowProactiveCameraCapture` (default true): show inline consent UI for `camera.capture` and `screen.capture` requests (Take photo / Take screenshot / Cancel). If false, keep strict confirm modal.
 
-## Telegram Forwarding
+## Telegram Integration
 
 | Field | Type | Description |
 |-------|------|-------------|
 | tgToken | string | Telegram bot token from @BotFather (format: 123456:ABC-DEF...) |
 | tgChatId | string | Telegram chat ID. Personal: positive number. Group: -100 + group ID |
-| tgEnabled | boolean | Toggle Telegram forwarding on/off |
+| tgEnabled | boolean | Toggle one-way Telegram forwarding on/off |
+| tgRelayEnabled | boolean | Enables Telegram Relay transport (legacy compatibility flag; mode should be `telegram-relay`) |
+| tgRelayReceive | boolean | In relay mode, receive inbound Telegram messages into TealClaw chat. Default: true |
+| tgRelaySpeak | boolean | In relay mode, auto-speak inbound Telegram messages via TTS. Default: false |
+| tgRelayPollSec | number | Legacy v1 relay polling interval (compat field). Relay v2 inbound is gateway-native and does not use Bot API polling. Range retained: 2-30. Default: 6 |
+| tgBotId | number | Optional cached Telegram bot id from `getMe` (diagnostics / compatibility metadata) |
+
+**UX note:** Telegram fields are now first-class in Settings (bot token, chat ID, optional bot ID, relay toggles, legacy poll field) with a one-tap Quick Setup Wizard, plus relay diagnostics showing inbound source = gateway-native, runtime state, and startup reconciliation status.
 
 ## Image Generation
 
@@ -68,8 +95,9 @@ When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
 | Field | Type | Description |
 |-------|------|-------------|
 | gifEnabled | boolean | Show fullscreen GIF overlay on AI responses. Default: true |
+| gifScale | number | GIF size multiplier. Default: `1`. Example: `1.5` = 50% larger; `0.8` = smaller |
 
-GIFs use Klipy via server proxy — no API key needed. When enabled, AI responses with `[gif:search term]` trigger a fullscreen GIF overlay. Without a tag, auto-searches based on response text.
+GIFs use Klipy via server proxy — no API key needed. When enabled, AI responses with `[gif:search term]` trigger a fullscreen GIF overlay. Without a tag, auto-searches based on response text. `gifScale` applies to GIF media + Klipy ad embeds and keeps drag/resize behavior intact.
 
 ## Visual Customization — Colors
 
@@ -166,7 +194,7 @@ GIFs use Klipy via server proxy — no API key needed. When enabled, AI response
 | hapticFeedback | boolean | Vibrate on interactions (mobile). Default: true |
 | soundEnabled | boolean | Play subtle tones on send/receive |
 | cameraEnabled | boolean | Enable/disable camera access. Default: true |
-| streamEnabled | boolean | Show AI responses as they generate (token by token streaming). Default: false |
+| streamEnabled | boolean | Show AI responses as they generate (token by token streaming). Default: true |
 | latexEnabled | boolean | Render LaTeX math ($inline$ and $$block$$) using KaTeX. Default: false |
 | contextMessages | number | Number of conversation messages to include as context. Default: 20. Range: 2-50 |
 
