@@ -101,6 +101,7 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/session create` | Time-limited guest access |
 | `/profile save name` | Save/load config profiles |
 | `/help` | All commands |
+| `/grok action` | Quick background automation actions (status, reconnect, relay/provider routing) |
 
 Works by voice too — just say "research quantum physics" or "imagine a sunset over mars".
 

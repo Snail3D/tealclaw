@@ -2703,6 +2703,167 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       return /^\d{5,}$/.test(String(v||'').trim());
     }
 
+    const INTEGRATION_OP_LOG=[];
+    function logIntegrationOp(entry){
+      INTEGRATION_OP_LOG.push({ts:Date.now(),...entry});
+      if(INTEGRATION_OP_LOG.length>60)INTEGRATION_OP_LOG.shift();
+    }
+
+    function integrationProviderFromText(raw){
+      const t=String(raw||'').trim().toLowerCase();
+      if(!t)return null;
+      if(t==='claude')return 'anthropic';
+      if(t==='firework')return 'fireworks';
+      if(t==='router')return 'openrouter';
+      if(t==='gpt')return 'openai';
+      if(t==='x.ai')return 'xai';
+      if(DIRECT_PROVIDER_PRESETS[t])return t;
+      return null;
+    }
+
+    function integrationBoolFromText(raw){
+      const t=String(raw||'').trim().toLowerCase();
+      if(['on','enable','enabled','true','1','yes'].includes(t))return true;
+      if(['off','disable','disabled','false','0','no'].includes(t))return false;
+      return null;
+    }
+
+    function getIntegrationSnapshot(k){
+      const cfg=k||getK();
+      const provider=resolveAiProvider(cfg);
+      const preset=getProviderPreset(provider,cfg);
+      const activeAgent=getActiveAgent();
+      const conn=activeAgent?agentConnections.get(activeAgent.id):null;
+      return{
+        mode:cfg.mode||'direct',
+        provider,
+        providerLabel:preset.label,
+        directFallback:cfg.directFallbackToGroq!==false,
+        gatewayHttpFallback:cfg.gatewayHttpFallback===true,
+        relayEnabled:isTelegramRelayEnabled(cfg),
+        relayConfigured:hasTelegramConfig(cfg),
+        relayReceive:cfg.tgRelayReceive!==false,
+        agentName:activeAgent?.name||'',
+        gatewayState:conn?.connected?'connected':(conn?.state||'offline'),
+        lastOp:INTEGRATION_OP_LOG[INTEGRATION_OP_LOG.length-1]||null
+      };
+    }
+
+    function integrationStatusHtml(snapshot,title='Integration Status'){
+      const s=snapshot||getIntegrationSnapshot();
+      return `<h3>${esc(title)}</h3><ul>
+<li>Mode: <strong>${esc(s.mode)}</strong></li>
+<li>Direct provider: <strong>${esc(s.providerLabel)}</strong></li>
+<li>Direct fallback to Groq: <strong>${s.directFallback?'on':'off'}</strong></li>
+<li>Gateway HTTP fallback: <strong>${s.gatewayHttpFallback?'on':'off'}</strong></li>
+<li>Gateway link: <strong>${esc(s.gatewayState)}</strong>${s.agentName?` (${esc(s.agentName)})`:''}</li>
+<li>Telegram relay: <strong>${s.relayEnabled?'on':'off'}</strong> (${s.relayConfigured?'configured':'not configured'})</li>
+${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}</strong> (${new Date(s.lastOp.ts).toLocaleTimeString()})</li>`:''}
+</ul>`;
+    }
+
+    async function runIntegrationCommand(command,args={},opts={}){
+      const source=opts.source||'ui';
+      const silent=opts.silent===true;
+      const toast=opts.toast!==false;
+      const cmd=String(command||'').trim().toLowerCase();
+      const k=getK();
+      let out={ok:false,command:cmd,message:'Unknown command'};
+
+      try{
+        if(cmd==='status'||cmd==='health.check'||cmd==='health'){
+          out={ok:true,command:cmd,message:'Integration status refreshed',snapshot:getIntegrationSnapshot(k),html:integrationStatusHtml(getIntegrationSnapshot(k),'Automation Status')};
+        }else if(cmd==='provider.set'){
+          const provider=normalizeAiProvider(args.provider||args.value||args.target||'');
+          if(!provider||!DIRECT_PROVIDER_PRESETS[provider])throw new Error('Unknown provider');
+          k.aiProvider=provider;
+          setK(k);
+          renderChannelDropdown();updateStatus();
+          const keyed=hasDirectProvider(provider,k);
+          out={ok:true,command:cmd,message:`Direct provider set to ${getProviderPreset(provider,k).label}${keyed?'':' (key not set yet)'}`,snapshot:getIntegrationSnapshot(k)};
+        }else if(cmd==='provider.fallback'){
+          const next=args.value===undefined?args.enabled:args.value;
+          const bool=typeof next==='boolean'?next:integrationBoolFromText(next);
+          if(bool===null)throw new Error('Set fallback to on/off');
+          k.directFallbackToGroq=bool;
+          setK(k);updateStatus();
+          out={ok:true,command:cmd,message:`Direct fallback ${bool?'enabled':'disabled'}`,snapshot:getIntegrationSnapshot(k)};
+        }else if(cmd==='gateway.httpfallback'){
+          const next=args.value===undefined?args.enabled:args.value;
+          const bool=typeof next==='boolean'?next:integrationBoolFromText(next);
+          if(bool===null)throw new Error('Set gateway fallback to on/off');
+          k.gatewayHttpFallback=bool;
+          setK(k);updateStatus();
+          out={ok:true,command:cmd,message:`Gateway HTTP fallback ${bool?'enabled':'disabled'}`,snapshot:getIntegrationSnapshot(k)};
+        }else if(cmd==='gateway.reconnect'){
+          const a=getActiveAgent();
+          if(!a)throw new Error('No active gateway agent configured');
+          try{disconnectAgent(a.id)}catch{}
+          try{ensureAgentConnection(a)}catch{}
+          await new Promise(r=>setTimeout(r,700));
+          const conn=agentConnections.get(a.id);
+          const connected=!!conn?.connected;
+          out={ok:true,command:cmd,message:connected?`Gateway reconnected (${a.name})`:`Reconnect requested for ${a.name}; still connecting`,snapshot:getIntegrationSnapshot(getK())};
+        }else if(cmd==='relay.on'){
+          k.mode='telegram-relay';
+          k.tgRelayEnabled=true;
+          if(k.tgRelayReceive===undefined)k.tgRelayReceive=true;
+          if(k.tgRelayPollSec===undefined)k.tgRelayPollSec=6;
+          setK(k);
+          startTelegramRelayRuntime();
+          updateStatus();
+          out={ok:true,command:cmd,message:hasTelegramConfig(k)?'Telegram relay enabled':'Telegram relay enabled (missing token/chat id)',snapshot:getIntegrationSnapshot(getK())};
+        }else if(cmd==='relay.off'){
+          k.tgRelayEnabled=false;
+          if(k.mode==='telegram-relay')k.mode='direct';
+          setK(k);
+          stopTelegramRelayRuntime();
+          updateStatus();
+          out={ok:true,command:cmd,message:'Telegram relay disabled',snapshot:getIntegrationSnapshot(getK())};
+        }else if(cmd==='relay.status'){
+          out={ok:true,command:cmd,message:'Telegram relay status',snapshot:getIntegrationSnapshot(k),html:integrationStatusHtml(getIntegrationSnapshot(k),'Telegram Relay Status')};
+        }
+      }catch(err){
+        out={ok:false,command:cmd,message:err?.message||'Integration command failed'};
+      }
+
+      logIntegrationOp({source,command:cmd,ok:out.ok,message:out.message});
+      if(!silent&&toast){showToast(out.message,out.ok?'ok':'err')}
+      return out;
+    }
+
+    function parseGrokQuickActionIntent(raw){
+      const t=String(raw||'').trim().toLowerCase();
+      if(!t)return null;
+      if(/^(status|state|health|health check|check)$/.test(t))return{command:'health.check',args:{}};
+      if(/(reconnect|restart).*(gateway|agent|ws)|^(reconnect|restart)$/.test(t))return{command:'gateway.reconnect',args:{}};
+      if(/(relay|telegram relay).*(status|state)/.test(t))return{command:'relay.status',args:{}};
+      if(/(relay|telegram relay).*(on|enable|start)/.test(t))return{command:'relay.on',args:{}};
+      if(/(relay|telegram relay).*(off|disable|stop)/.test(t))return{command:'relay.off',args:{}};
+      const p=t.match(/(?:provider|route|use)\s+([a-z0-9._-]+)/i);
+      if(p){
+        const provider=integrationProviderFromText(p[1]);
+        if(provider)return{command:'provider.set',args:{provider}};
+      }
+      const directFallback=t.match(/(?:direct\s+)?fallback\s+(on|off|enable|disable|enabled|disabled)/i);
+      if(directFallback){
+        const val=integrationBoolFromText(directFallback[1]);
+        if(val!==null)return{command:'provider.fallback',args:{value:val}};
+      }
+      const gwFallback=t.match(/(?:gateway|http)\s+fallback\s+(on|off|enable|disable|enabled|disabled)/i);
+      if(gwFallback){
+        const val=integrationBoolFromText(gwFallback[1]);
+        if(val!==null)return{command:'gateway.httpfallback',args:{value:val}};
+      }
+      return null;
+    }
+
+    async function runGrokQuickAction(raw,opts={}){
+      const intent=parseGrokQuickActionIntent(raw);
+      if(!intent)return{ok:false,message:'Unknown quick action. Try: status, reconnect gateway, relay on/off, provider fireworks, fallback on/off.'};
+      return runIntegrationCommand(intent.command,intent.args,{source:opts.source||'grok-trigger',silent:opts.silent===true,toast:opts.toast});
+    }
+
     async function fetchTelegramBotMeta(token){
       const clean=String(token||'').trim();
       if(!validTelegramToken(clean))throw new Error('Enter a valid Telegram bot token first');
@@ -3588,18 +3749,22 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <textarea class="sheet-textarea" id="sheetSysPrompt" placeholder="Custom instructions for the AI...">${esc(k.sysPrompt||'')}</textarea>
           <div style="display:flex;gap:5px;margin-top:4px"><button class="btn btn-teal btn-sm" id="sheetSysPromptSave">Save</button>${k.sysPrompt?'<button class="btn btn-ghost btn-sm" id="sheetSysPromptClear">Clear</button>':''}</div>
         </div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Direct Provider</div>
-          <select class="sheet-input" id="sheetAiProvider" style="font-family:var(--font);font-size:11px">
-            ${DIRECT_PROVIDER_ORDER.map(pid=>`<option value="${pid}" ${activeProvider===pid?'selected':''}>${getProviderPreset(pid,k).label}</option>`).join('')}
-          </select>
-          <div style="font-size:9px;color:var(--text-3);margin-top:4px">Groq key powers voice/research features. Direct provider selection routes normal chat + vision calls.</div>
-        </div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Custom API Base URL (optional)</div>
-          <input type="text" class="sheet-input" id="sheetAiBaseUrl" value="${esc(k.aiBaseUrl||'')}" placeholder="https://.../v1" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
-          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Use only if your provider requires a custom gateway URL.</div>
-        </div>
+        <div style="font-size:10px;color:var(--text-3);margin:0 0 8px 0">Routing is background-managed. Use overrides only when needed.</div>
+        <details style="margin-bottom:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px">
+          <summary style="font-size:11px;font-weight:600;color:var(--text);cursor:pointer">Advanced routing overrides</summary>
+          <div style="margin-top:8px">
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Direct Provider</div>
+            <select class="sheet-input" id="sheetAiProvider" style="font-family:var(--font);font-size:11px">
+              ${DIRECT_PROVIDER_ORDER.map(pid=>`<option value="${pid}" ${activeProvider===pid?'selected':''}>${getProviderPreset(pid,k).label}</option>`).join('')}
+            </select>
+            <div style="font-size:9px;color:var(--text-3);margin-top:4px">Groq key powers voice/research features. Provider selection routes normal chat + vision calls.</div>
+          </div>
+          <div style="margin-top:8px">
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Custom API Base URL (optional)</div>
+            <input type="text" class="sheet-input" id="sheetAiBaseUrl" value="${esc(k.aiBaseUrl||'')}" placeholder="https://.../v1" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
+            <div style="font-size:9px;color:var(--text-3);margin-top:3px">Use only if your provider requires a custom gateway URL.</div>
+          </div>
+        </details>
         <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px"><input type="checkbox" id="sheetDirectFallbackToGroq" ${k.directFallbackToGroq!==false?'checked':''} style="accent-color:var(--teal)">Fallback to Groq when selected provider is rate-limited/unavailable</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetGatewayHttpFallback" ${k.gatewayHttpFallback===true?'checked':''} style="accent-color:var(--teal)">Enable gateway HTTP fallback when WebSocket is offline (override)</label>
         <div id="sheetAiRoutingStatus" style="margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input)">
@@ -7427,7 +7592,7 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /providers, /provider <name>, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /providers, /provider <name>, /grok <action>, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -9232,12 +9397,27 @@ Rules:
               break;
             }
             case 'command':{
-              const cmd=action.command||action.text||'';
+              const cmd=String(action.command||action.text||'').trim();
+              const integrationId=String(action.integration||action.commandId||'').trim();
+              if(integrationId){
+                const out=await runIntegrationCommand(integrationId,action.args||{},{source:'tc-action',silent:true,toast:false});
+                results.push({type:'command',ok:out.ok,command:integrationId,message:out.message});
+                break;
+              }
+              if(cmd.startsWith('integration:')){
+                const id=cmd.slice(12).trim();
+                const out=await runIntegrationCommand(id,action.args||{},{source:'tc-action',silent:true,toast:false});
+                results.push({type:'command',ok:out.ok,command:id,message:out.message});
+                break;
+              }
               if(cmd.startsWith('/')){
                 // No in-app confirmation for commands (power-user control surface).
                 // Blocked/slimmed commands should be handled at the command/router layer.
                 setTimeout(()=>pipeline(cmd,null),300);
                 results.push({type:'command',ok:true,command:cmd});
+              } else if(cmd){
+                const out=await runGrokQuickAction(cmd,{source:'tc-action',silent:true,toast:false});
+                results.push({type:'command',ok:out.ok,command:cmd,message:out.message});
               }
               break;
             }
@@ -11525,12 +11705,26 @@ ${agentNote}`);
       if(text.startsWith('/deepsearch'))text='/deepresearch'+text.slice(11);
       else if(/^\/search(?:\s|$)/.test(text))text='/research'+text.slice(7);
 
+      // Grok quick-action triggers (background automation layer)
+      if(!text.startsWith('/')){
+        const trigger=text.match(/^(?:grok|quick\s*action|qa)\s*[:\-]?\s*(.+)$/i);
+        if(trigger){
+          addTyping();
+          runGrokQuickAction(trigger[1],{source:'text-trigger'}).then(res=>{
+            removeTyping();
+            if(res.html)sysBubble(res.html);
+            else sysBubble(`<p>${esc(res.message)}</p>`);
+          }).catch(e=>{removeTyping();sysBubble(`<p>${esc(e.message||'Quick action failed')}</p>`)});
+          return;
+        }
+      }
+
       // Chat commands
       if(text.startsWith('/')){
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -11564,6 +11758,7 @@ ${agentNote}`);
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle one-way forwarding</li>
 <li><code>/telegram relay on</code> / <code>/telegram relay off</code> / <code>/telegram relay status</code> -- run Telegram as primary chat transport</li>
 <li><code>/groq [message]</code> -- send directly to Groq (bypasses agent)</li>
+<li><code>/grok [action]</code> -- run quick background automation actions (status, reconnect gateway, relay on/off, provider switch)</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear context window and start fresh</li>
 <li><code>/restart</code> -- same as /clear</li>
@@ -11624,19 +11819,30 @@ ${agentNote}`);
           return;
         }
         if(cmd==='/reconnect'){
-          const a=getActiveAgent();
-          if(!a){showToast('No agent configured','err');return}
-          showToast('Reconnecting gateway...','ok');
-          try{disconnectAgent(a.id)}catch{}
-          try{ensureAgentConnection(a)}catch{}
-          // Give it a beat to connect
-          setTimeout(()=>{updateStatus();},600);
+          runIntegrationCommand('gateway.reconnect',{}, {source:'slash-reconnect'}).then(res=>{
+            if(!res.ok)sysBubble(`<p>${esc(res.message)}</p>`);
+            else if(res.snapshot)sysBubble(integrationStatusHtml(res.snapshot,'Gateway Reconnect'));
+          }).catch(e=>sysBubble(`<p>${esc(e.message||'Reconnect failed')}</p>`));
+          return;
+        }
+        if(cmd==='/grok'||cmd.startsWith('/grok ')||cmd.startsWith('/grok\n')){
+          const grokAction=text.slice(5).trim();
+          if(!grokAction){
+            sysBubble('<h3>Grok Quick Actions</h3><p>Try: <code>/grok status</code>, <code>/grok reconnect gateway</code>, <code>/grok relay on</code>, <code>/grok provider fireworks</code>, <code>/grok fallback on</code></p>');
+            return;
+          }
+          addTyping();
+          runGrokQuickAction(grokAction,{source:'slash-grok'}).then(res=>{
+            removeTyping();
+            if(res.html)sysBubble(res.html);
+            else sysBubble(`<p>${esc(res.message)}</p>`);
+          }).catch(e=>{removeTyping();sysBubble(`<p>${esc(e.message||'Quick action failed')}</p>`)});
           return;
         }
         if(cmd==='/chron'||cmd.startsWith('/chron ')){
           const chronArg=text.slice(6).trim();
           const ck=getK();
-          if(!(ck.whisperKey||ck.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+          if(!getGroqKey(ck)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           startChronWizard(chronArg||null);
           return;
         }
@@ -11650,7 +11856,7 @@ ${agentNote}`);
             return;
           }
           const ak=getK();
-          if(!(ak.whisperKey||ak.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+          if(!getGroqKey(ak)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           handleAlarmCommand(alarmArg);
           return;
         }
@@ -11667,7 +11873,7 @@ ${agentNote}`);
             return;
           }
           const tk=getK();
-          if(!(tk.whisperKey||tk.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+          if(!getGroqKey(tk)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           handleTimerCommand(timerArg);
           return;
         }
@@ -11683,7 +11889,7 @@ ${agentNote}`);
             startPomodoro({tasks:tasks.map(t=>({text:t,done:false})),source:'local'});
           } else {
             const pk=getK();
-            if(!(pk.whisperKey||pk.aiKey)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
+            if(!getGroqKey(pk)){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
             startPomoWizard(pomoArg||null);
           }
           return;
@@ -11698,7 +11904,7 @@ ${agentNote}`);
           const groqMsg=text.slice(6).trim();
           if(!groqMsg){sysBubble('<p>Usage: <code>/groq your message</code></p>');return}
           const gk=getK();
-          const gKey=gk.whisperKey||gk.aiKey;
+          const gKey=getGroqKey(gk);
           if(!gKey){sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');return}
           // Bypass agent — call Groq directly
           addBubble('user',groqMsg);
@@ -11754,43 +11960,25 @@ ${agentNote}`);
           return;
         }
         if(cmd==='/telegram relay on'){
-          const k=getK();
-          k.mode='telegram-relay';
-          k.tgRelayEnabled=true;
-          if(k.tgRelayReceive===undefined)k.tgRelayReceive=true;
-          if(k.tgRelayPollSec===undefined)k.tgRelayPollSec=6;
-          setK(k);
-          startTelegramRelayRuntime();
-          updateStatus();
-          if(!hasTelegramConfig(k))sysBubble('<p>Telegram Relay <strong>enabled</strong>, but token/chat ID are missing. Type <code>/telegram</code> for setup.</p>');
-          else sysBubble('<p>Telegram Relay <strong>enabled</strong>. Inbound source is now <strong>gateway-native</strong>.</p>');
+          runIntegrationCommand('relay.on',{}, {source:'slash-telegram-relay'}).then(res=>{
+            if(res.snapshot)sysBubble(integrationStatusHtml(res.snapshot,'Telegram Relay Enabled'));
+            else sysBubble(`<p>${esc(res.message)}</p>`);
+          }).catch(e=>sysBubble(`<p>${esc(e.message||'Relay enable failed')}</p>`));
           return;
         }
         if(cmd==='/telegram relay off'){
-          const k=getK();
-          k.tgRelayEnabled=false;
-          if(k.mode==='telegram-relay')k.mode='direct';
-          setK(k);
-          stopTelegramRelayRuntime();
-          updateStatus();
-          sysBubble('<p>Telegram Relay <strong>disabled</strong>. Switched back to direct chat mode.</p>');
+          runIntegrationCommand('relay.off',{}, {source:'slash-telegram-relay'}).then(res=>{
+            if(res.snapshot)sysBubble(integrationStatusHtml(res.snapshot,'Telegram Relay Disabled'));
+            else sysBubble(`<p>${esc(res.message)}</p>`);
+          }).catch(e=>sysBubble(`<p>${esc(e.message||'Relay disable failed')}</p>`));
           return;
         }
         if(cmd==='/telegram relay status'||cmd==='/telegram status'){
-          const k=getK();
-          const relayOn=isTelegramRelayEnabled(k);
-          const ready=hasTelegramConfig(k);
-          const receiveOn=k.tgRelayReceive!==false;
-          const pollSec=Math.max(2,Math.min(30,Number(k.tgRelayPollSec)||6));
-          const lastInbound=_tgRelayBridge.lastInboundAt?new Date(_tgRelayBridge.lastInboundAt).toLocaleString():null;
-          const gatewayAgent=getRelayGatewayAgent();
-          const gatewayConn=gatewayAgent?agentConnections.get(gatewayAgent.id):null;
-          sysBubble(`<h3>Telegram Relay Status</h3><ul>
-<li>Mode: <strong>${relayOn?'ON':'OFF'}</strong></li>
-<li>Configured: <strong>${ready?'yes':'no'}</strong></li>
-<li>Inbound receive: <strong>${receiveOn?'on':'off'}</strong></li>
-<li>Inbound source: <strong>gateway-native</strong></li>
-<li>Gateway link: <strong>${gatewayConn?.connected?'connected':(gatewayConn?.state||'offline')}</strong></li>
+          runIntegrationCommand('relay.status',{}, {source:'slash-telegram-relay',toast:false}).then(res=>{
+            const k=getK();
+            const pollSec=Math.max(2,Math.min(30,Number(k.tgRelayPollSec)||6));
+            const lastInbound=_tgRelayBridge.lastInboundAt?new Date(_tgRelayBridge.lastInboundAt).toLocaleString():null;
+            const runtimeExtra=`<ul>
 <li>Runtime: <strong>${telegramRelayRuntimeLabel()}</strong></li>
 <li>Startup reconciliation: <strong>${_tgRelayBridge.startupState||'idle'}</strong></li>
 <li>Inbound path: <strong>${_tgRelayBridge.inboundPath||'none'}</strong></li>
@@ -11798,7 +11986,9 @@ ${agentNote}`);
 <li>Legacy poll interval: <strong>${pollSec}s</strong> (compat only)</li>
 ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastError)}</strong></li>`:''}
 <li>Adapter note: <strong>${esc(_tgRelayBridge.todo||'none')}</strong></li>
-</ul>`);
+</ul>`;
+            sysBubble((res.html||integrationStatusHtml(getIntegrationSnapshot(k),'Telegram Relay Status'))+runtimeExtra);
+          }).catch(e=>sysBubble(`<p>${esc(e.message||'Relay status failed')}</p>`));
           return;
         }
         if(cmd==='/telegram on'){
@@ -11858,15 +12048,13 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
             sysBubble(`<p>Unknown provider: <code>${esc(arg||'(empty)')}</code>.</p><p>Try <code>/providers</code> for the list.</p>`);
             return;
           }
-          const k=getK();
-          k.aiProvider=next;
-          if(k.mode!=='agent'&&!isTelegramRelayEnabled(k))k.mode='direct';
-          setK(k);
-          updateStatus();
-          renderChannelDropdown();
-          const label=getProviderPreset(next,k).label;
-          const keyed=hasDirectProvider(next,k);
-          sysBubble(`<p>Direct provider set to <strong>${label}</strong>${keyed?'':' (key not set yet)'}. Paste the API key any time.</p>`);
+          runIntegrationCommand('provider.set',{provider:next},{source:'slash-provider',toast:false}).then(res=>{
+            if(!res.ok){sysBubble(`<p>${esc(res.message)}</p>`);return}
+            const k=getK();
+            const label=getProviderPreset(next,k).label;
+            const keyed=hasDirectProvider(next,k);
+            sysBubble(`<p>Direct provider set to <strong>${label}</strong>${keyed?'':' (key not set yet)'}. Paste the API key any time.</p>`);
+          }).catch(e=>sysBubble(`<p>${esc(e.message||'Provider switch failed')}</p>`));
           return;
         }
         if(cmd==='/clear all'){
