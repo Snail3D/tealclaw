@@ -22,6 +22,8 @@ That's it. One key gives you chat, voice, vision, image generation, and deep res
 
 **Voice Chat** — Hold to speak, get spoken replies. Six voice personas with distinct personalities: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive). Powered by Groq Whisper + Orpheus TTS.
 
+**Direct Provider Routing** — Run direct chat/vision through Groq, Fireworks, OpenAI, Anthropic, OpenRouter, xAI, Mistral, Together, or DeepSeek. Provider can be switched in Settings, with optional Groq fallback for resiliency.
+
 **Deep Research** — Type `/research` and get a full sourced report. `/deepresearch` goes deeper with multi-tool analysis.
 
 **Image Generation** — `/imagine` creates images via Google Gemini. Attach a photo and say "make this a watercolor" for image-to-image editing.
@@ -125,7 +127,7 @@ Your Browser ←→ Cloudflare Tunnel ←→ OpenClaw Gateway ←→ Your AI Age
 
 Paste a gateway URL + token, or let your agent generate a one-click connection link.
 
-**Phone note:** TealClaw connects to OpenClaw via **WebSocket**. If you see pairing errors, approve the device on the gateway: `openclaw devices list` → `openclaw devices approve <requestId>`.
+**Phone note:** TealClaw connects to OpenClaw via **WebSocket**. If you see pairing errors, approve the device on the gateway: `openclaw devices list` → `openclaw devices approve <requestId>`. For local/self-hosted gateways, optional HTTP fallback can be enabled in Settings > AI Configuration.
 
 **Device Pairing:** TealClaw uses Ed25519 device authentication on every connection. The first time you connect to a gateway through a Cloudflare Tunnel, the gateway operator must approve your device (one-time). Local connections auto-approve. See [llms.txt](https://tealclaw.ai/llms.txt) for details.
 
