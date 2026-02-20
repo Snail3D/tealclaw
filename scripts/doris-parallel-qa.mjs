@@ -45,6 +45,8 @@ section('Enterprise Security UX Checks');
 checks.push(ok(/Gateway URL must be https/.test(indexHtml), 'Gateway hash import enforces https (toast copy present)'));
 checks.push(ok(/payload\.length>120000/.test(indexHtml), 'Config hash import has size cap'));
 checks.push(ok(/Include API keys\/tokens in the encrypted link\?/.test(indexHtml), 'Encrypted share link prompts include/exclude secrets'));
+checks.push(ok(/Include API keys \(Groq\/OpenAI\/etc\) in this session invitation\?/.test(indexHtml), 'Session invitation prompts include/exclude API keys'));
+checks.push(ok(/No API keys were included \(safer\)\./.test(indexHtml), 'Session share bubble indicates keys excluded'));
 checks.push(ok(/id="obLocalToken"[^>]*type="password"/.test(indexHtml), 'Local gateway onboarding token input is masked'));
 checks.push(ok(/Auth token too large/.test(indexHtml), 'Local gateway onboarding enforces token length cap'));
 
