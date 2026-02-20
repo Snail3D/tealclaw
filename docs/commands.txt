@@ -40,7 +40,8 @@
 | `/telegram on` | Enable Telegram message forwarding |
 | `/telegram off` | Disable Telegram message forwarding |
 | `/template` | Browse and apply pre-built style templates |
-| `/voice` | Show voice settings and current voice ID |
+| `/voice` | Show voice settings (provider, model, persona/voice ID) |
+| `/voice diag` | Show last TTS request diagnostics (provider, model, endpoint, error) |
 | `/save` | Save current chat to Obsidian vault |
 | `/save idea text` | Quick-capture idea to Obsidian Ideas folder |
 | `/save setup` | Show Obsidian integration help |
@@ -143,9 +144,17 @@ Relay v2 behavior:
 ### /voice
 Shows current voice service settings:
 - Active TTS provider (`ttsProvider`: groq / elevenlabs / off)
+- Active TTS model (Groq `groqTtsModel` or ElevenLabs `elevenlabsModel`)
 - Groq persona voice (if Groq is selected)
 - ElevenLabs validation status (if ElevenLabs is selected)
 - Fallback opt-in status (`ttsFallbackEnabled`)
+
+### /voice diag
+Shows the latest in-tab TTS diagnostics:
+- Last provider + model used
+- Voice ID/persona and endpoint
+- Last request status + timestamp
+- Last error text (if any)
 
 ### /imagine
 Generate images using a configured image generation API.

@@ -7533,16 +7533,19 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       const apiKey=cfg.elevenlabsKey;
       const voiceId=cfg.elevenlabsVoiceId||cfg.elevenlabsVoice||'';
       if(!apiKey||!voiceId)return null;
+      const model=cfg.elevenlabsModel||'eleven_multilingual_v2';
+      const endpoint=`${ELEVENLABS_TTS_ENDPOINT}/${encodeURIComponent(voiceId)}`;
       const showErrors=opts.showErrors!==false;
       const chunks=chunkTextForTTS(text,350);
       let firstErr='';
       const fetches=chunks.map(async chunk=>{
-        const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,{
+        recordTtsDiag({provider:'elevenlabs',model,voice:voiceId,endpoint,status:'requesting',error:''});
+        const r=await fetch(endpoint,{
           method:'POST',
           headers:{'xi-api-key':apiKey,'Content-Type':'application/json','Accept':'audio/mpeg'},
           body:JSON.stringify({
             text:chunk,
-            model_id:cfg.elevenlabsModel||'eleven_multilingual_v2',
+            model_id:model,
             voice_settings:{
               stability:(cfg.elevenlabsStability??0.35),
               similarity_boost:(cfg.elevenlabsSimilarity??0.85),
@@ -7551,9 +7554,14 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
             }
           })
         });
-        if(r.ok)return r.arrayBuffer();
+        if(r.ok){
+          recordTtsDiag({provider:'elevenlabs',model,voice:voiceId,endpoint,status:'ok',error:''});
+          return r.arrayBuffer();
+        }
         let d=null;try{d=await r.json()}catch{}
-        if(!firstErr)firstErr=String(d?.detail?.message||d?.detail||d?.message||d?.error?.message||`${r.status} ${r.statusText}`);
+        const err=String(d?.detail?.message||d?.detail||d?.message||d?.error?.message||`${r.status} ${r.statusText}`);
+        if(!firstErr)firstErr=err;
+        recordTtsDiag({provider:'elevenlabs',model,voice:voiceId,endpoint,status:'error',error:err});
         return null;
       });
       const results=await Promise.all(fetches);
@@ -7723,7 +7731,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
         }
         const providerText=provider==='groq'?ttsClean:(stripExprTags(ttsClean)||ttsClean);
         const ttsData=provider==='groq'
-          ?await speakGroq(providerText,k,{showTermsError:(selectedProvider==='groq'||fallbackEnabled),showErrors:true})
+          ?await speakGroq(providerText,k,{showTermsError:(selectedProvider==='groq'),showErrors:true})
           :await speakElevenLabs(providerText,k,{showErrors:true});
         if(ttsData){
           if(i>0)showToast(`Voice fallback in use: ${getTtsProviderLabel(provider)}`,'ok',3500);
@@ -11489,6 +11497,7 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
         let revealedText='';
         const doTTS=ttsMode==='auto'&&hasTTS(k);
         const debateTtsProvider=getActiveTtsProvider(k);
+        const debateSelectedTtsProvider=getSelectedTtsProvider(k);
         const scroll=$('chatScroll');
 
         for(let i=0;i<segments.length;i++){
@@ -11513,7 +11522,7 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
               let wavData=null;
               if(debateTtsProvider==='groq'){
                 const segK={...k,groqTtsVoice:seg.voiceId};
-                wavData=await speakGroq(cleanText,segK,{showTermsError:true,showErrors:true});
+                wavData=await speakGroq(cleanText,segK,{showTermsError:(debateSelectedTtsProvider==='groq'),showErrors:true});
               }else if(debateTtsProvider==='elevenlabs'){
                 wavData=await speakElevenLabs(cleanText,k,{showErrors:true});
               }
@@ -12331,7 +12340,8 @@ ${agentNote}`);
 <li><code>/restart</code> -- same as /clear</li>
 <li><code>/new</code> -- start a new conversation (separate context)</li>
 <li><code>/clear all</code> -- delete all conversations</li>
-<li><code>/voice</code> -- change TTS voice</li>
+<li><code>/voice</code> -- show voice settings (provider, model, persona)</li>
+<li><code>/voice diag</code> -- show last TTS request provider/model/error diagnostics</li>
 <li><code>/group</code> -- toggle group chat (all 6 personas talk together; voice: "group")</li>
 <li><code>/voice-chat</code> -- enter voice-only mode (push-to-talk)</li>
 <li><code>/template</code> -- browse and apply style templates</li>
@@ -12709,13 +12719,37 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
           enterVoiceMode();
           return;
         }
+        if(cmd==='/voice diag'||cmd==='/voicediag'){
+          const k=getK();
+          const d=getTtsDiag();
+          const when=d.at?new Date(d.at).toLocaleString():'No TTS requests yet in this tab.';
+          const provider=d.provider||getSelectedTtsProvider(k)||'none';
+          const model=d.model||(provider==='groq'?getGroqTtsModel(k):(provider==='elevenlabs'?(k.elevenlabsModel||'eleven_multilingual_v2'):''));
+          const errText=d.error?esc(d.error):'<span style="color:var(--ok)">none</span>';
+          const termsHint=(provider==='groq'&&d.error&&isGroqTermsRequiredError(d.error))
+            ?`<p style="font-size:11px;color:var(--warn);margin-top:8px">Groq returned a terms gate. Accept Orpheus once in Groq Console (Models → <code>${GROQ_TTS_DEFAULT_MODEL}</code>) and retry.</p>`
+            :'';
+          sysBubble(`<h3>Voice Diagnostics</h3>
+<ul>
+<li><strong>Last provider:</strong> <code>${esc(provider)}</code></li>
+<li><strong>Last model:</strong> <code>${esc(model||'n/a')}</code></li>
+<li><strong>Last voice:</strong> <code>${esc(d.voice||'n/a')}</code></li>
+<li><strong>Status:</strong> <code>${esc(d.status||'idle')}</code></li>
+<li><strong>Endpoint:</strong> <code>${esc(d.endpoint||'n/a')}</code></li>
+<li><strong>Updated:</strong> ${esc(when)}</li>
+<li><strong>Error:</strong> ${errText}</li>
+</ul>${termsHint}
+<p style="font-size:11px;color:var(--text-2)">This panel shows the most recent TTS request in this browser tab.</p>`);
+          return;
+        }
         if(cmd==='/voice'){
           const k=getK();
           const provider=getSelectedTtsProvider(k);
           if(provider==='off'){
             sysBubble(`<h3>Voice Services</h3>
 <p><strong>Provider:</strong> Off</p>
-<p style="font-size:11px;color:var(--text-2)">Enable Groq or ElevenLabs in Settings > Voice Services.</p>`);
+<p style="font-size:11px;color:var(--text-2)">Enable Groq or ElevenLabs in Settings > Voice Services.</p>
+<p style="font-size:11px;color:var(--text-2)">Run <code>/voice diag</code> for last request diagnostics.</p>`);
             return;
           }
           if(provider==='elevenlabs'){
@@ -12724,17 +12758,19 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
             sysBubble(`<h3>Voice Services</h3>
 <p><strong>Provider:</strong> ElevenLabs</p>
 <p><strong>Voice ID:</strong> <code>${voiceId}</code></p>
+<p><strong>Model:</strong> <code>${esc(k.elevenlabsModel||'eleven_multilingual_v2')}</code></p>
 <p style="font-size:11px;color:${v.state==='ok'?'var(--ok)':(v.state==='err'?'var(--err)':'var(--text-3)')}">${esc(v.text)}</p>
-<p style="font-size:11px;color:var(--text-2)">Manage provider, fallback, and validation in Settings > Voice Services.</p>`);
+<p style="font-size:11px;color:var(--text-2)">Manage provider, fallback, and validation in Settings > Voice Services. Run <code>/voice diag</code> for request diagnostics.</p>`);
             return;
           }
           const vp=getVoicePersona(k);
           const voiceList=Object.entries(VOICE_PERSONAS).map(([id,p])=>`<code>${p.name}</code> <span style="color:var(--text-3)">(${p.tag})</span>`).join(', ');
           sysBubble(`<h3>Voice Personas (Groq)</h3>
 <p><strong>Current:</strong> ${esc(vp.name)} <span style="color:var(--text-3)">(${esc(vp.tag)})</span></p>
+<p><strong>Model:</strong> <code>${esc(getGroqTtsModel(k))}</code></p>
 <p style="font-size:11px;color:var(--text-2);margin:4px 0">${esc(vp.desc)}</p>
 <p style="margin-top:10px"><strong>All voices:</strong> ${voiceList}</p>
-<p style="font-size:11px;color:var(--text-2)">Change voice in Settings > Voice Services, or: <code>{"ttsProvider":"groq","groqTtsVoice":"austin"}</code></p>`);
+<p style="font-size:11px;color:var(--text-2)">Change voice/model in Settings > Voice Services, or: <code>{"ttsProvider":"groq","groqTtsVoice":"austin","groqTtsModel":"${GROQ_TTS_DEFAULT_MODEL}"}</code>. Run <code>/voice diag</code> for request diagnostics.</p>`);
           return;
         }
         if(cmd==='/group'){
