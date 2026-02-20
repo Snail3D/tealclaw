@@ -1121,6 +1121,9 @@
     .watch-ref-del:hover{background:rgba(239,68,68,0.8)}
     .watch-ref-drop{border:2px dashed var(--border);border-radius:var(--r-md);padding:16px;text-align:center;font-size:11px;color:var(--text-3);cursor:pointer;transition:all 0.2s}
     .watch-ref-drop:hover,.watch-ref-drop.dragover{border-color:var(--teal);color:var(--teal);background:rgba(13,148,136,0.05)}
+    .skip-link{position:fixed;top:calc(var(--sat,0px) + 8px);left:16px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:999px;z-index:9999;font-size:13px;font-weight:600;text-decoration:none;transform:translateY(calc(-100% - 12px));opacity:0;pointer-events:none;transition:transform 0.16s ease,opacity 0.16s ease}
+    .skip-link:focus-visible{transform:translateY(0);opacity:1;pointer-events:auto}
+    @media (prefers-reduced-motion: reduce){.skip-link{transition:none}}
     /* Model picker */
     .model-picker{position:relative}
     .model-picker-input{display:flex;gap:4px;align-items:center}
@@ -1142,7 +1145,7 @@
   </style>
 </head>
 <body>
-  <a href="#textIn" class="skip-link" style="position:absolute;top:-100%;left:16px;padding:8px 16px;background:var(--teal);color:#fff;border-radius:0 0 8px 8px;z-index:9999;font-size:13px;font-weight:600;text-decoration:none;transition:top 0.2s" onfocus="this.style.top='var(--sat,0px)'" onblur="this.style.top='-100%'">Skip to chat input</a>
+  <a href="#textIn" class="skip-link" id="skipToInput">Skip to chat input</a>
 
   <!-- Static content visible to agents/crawlers/scrapers. JS hides it on load. -->
   <div id="staticContent" style="max-width:700px;margin:40px auto;padding:20px;font-family:system-ui,sans-serif;color:#ececec;background:#171717">
@@ -10619,6 +10622,19 @@ ${agentNote}`);
       $('textIn').value=text;
       send();
     }
+
+    // Keyboard skip link (hidden by default; visible on :focus-visible)
+    $('skipToInput')?.addEventListener('click',e=>{
+      const input=$('textIn');
+      if(!input)return;
+      e.preventDefault();
+      if(input.disabled){
+        input.scrollIntoView({behavior:'smooth',block:'center'});
+        return;
+      }
+      try{input.focus({preventScroll:true})}catch{input.focus()}
+      input.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
 
     // Send button — clean single click
     $('sendBtn').addEventListener('click',()=>send());
