@@ -53,6 +53,9 @@ Auth compatibility attempts:
 
 - Direct provider selector in Settings > AI Configuration
 - Custom base URL field with normalization
+- Background auto-save for routing changes (no extra save button)
+- Automation status indicator (active provider + fallback states + validation)
+- Override controls only: direct fallback + gateway HTTP fallback toggles
 - Chat key auto-detection for Fireworks/OpenAI/Anthropic/OpenRouter/xAI prefixes
 - OpenRouter chat key auto-seeds image generation key when missing
 - `/keys` command now reports active direct provider + model

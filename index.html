@@ -107,9 +107,6 @@
 
     .cron-add-btn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:none;border-radius:50%;background:rgba(99,102,241,0.12);color:#818cf8;cursor:pointer;font-size:14px;font-weight:600;transition:all var(--t);flex-shrink:0}
     .cron-add-btn:hover{background:rgba(99,102,241,0.25)}
-    .timer-alarm-row{display:none;align-items:center;gap:6px;padding:8px 16px;background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
-    .timer-alarm-row.visible{display:flex}
-    .timer-alarm-row #cronPills{display:flex;flex-wrap:wrap;gap:6px}
 
     /* ── Motion & Alarms Modal ────────────────────────── */
     .ma-modal{position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -216,8 +213,11 @@
     .channel-item .ch-active{font-size:9px;color:var(--teal);font-weight:600}
     .icon-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--r-md);background:transparent;color:var(--text-3);cursor:pointer;transition:all var(--t)}
     .icon-btn:hover{background:var(--bg-hover);color:var(--text)}
-    .icon-btn.cron-quick-btn{color:#818cf8;background:rgba(99,102,241,0.12)}
+    .icon-btn.cron-quick-btn{position:relative;color:#818cf8;background:rgba(99,102,241,0.12)}
     .icon-btn.cron-quick-btn:hover{background:rgba(99,102,241,0.25);color:#a5b4fc}
+    .icon-btn.cron-quick-btn.has-active{box-shadow:inset 0 0 0 1px rgba(129,140,248,0.35)}
+    .cron-quick-count{position:absolute;top:3px;right:3px;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:#f59e0b;color:#fff;font-size:9px;font-weight:700;line-height:14px;text-align:center}
+    .cron-quick-count.hidden{display:none}
     [data-theme="light"] .icon-btn.cron-quick-btn{color:#6366f1;background:rgba(99,102,241,0.14)}
     [data-theme="light"] .icon-btn.cron-quick-btn:hover{color:#4f46e5;background:rgba(99,102,241,0.24)}
     .icon-btn svg{width:16px;height:16px}
@@ -1387,18 +1387,17 @@
       <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span><span class="pill-caret"></span>
         <div class="channel-dropdown" id="channelDropdown"></div>
       </div>
-      <button class="icon-btn cron-quick-btn" id="cronAddBtn" title="Add cron job" aria-label="Add cron job">
+      <button class="icon-btn cron-quick-btn" id="cronAddBtn" title="Schedules & alarms" aria-label="Schedules and alarms">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="13" r="6.5"/>
-          <path d="M12 13V10"/>
-          <path d="M12 13l2.5 1.5"/>
-          <path d="M7.5 4.5L5 7"/>
-          <path d="M16.5 4.5L19 7"/>
-          <path d="M9 20l-1.5 2"/>
-          <path d="M15 20l1.5 2"/>
-          <path d="M8.5 3.5h-2"/>
-          <path d="M17.5 3.5h-2"/>
+          <circle cx="12" cy="13" r="7"/>
+          <path d="M12 13V9.5"/>
+          <path d="M12 13l2.5 1.8"/>
+          <path d="M5 4L2.8 6.2"/>
+          <path d="M19 4l2.2 2.2"/>
+          <path d="M18 13h4"/>
+          <path d="M20 11v4"/>
         </svg>
+        <span class="cron-quick-count hidden" id="cronQuickCount"></span>
       </button>
       <button class="icon-btn" id="helpBtn" title="Help" aria-label="Help">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1450,11 +1449,6 @@
       </div>
     </div>
     <div class="pomo-tasks" id="pomoTasks"></div>
-  </div>
-
-  <!-- Timer/Alarm Row -->
-  <div class="timer-alarm-row" id="timerAlarmRow">
-    <div id="cronPills" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   </div>
 
   <!-- Builder Agent Tabs -->
@@ -3607,8 +3601,12 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           <div style="font-size:9px;color:var(--text-3);margin-top:3px">Use only if your provider requires a custom gateway URL.</div>
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px"><input type="checkbox" id="sheetDirectFallbackToGroq" ${k.directFallbackToGroq!==false?'checked':''} style="accent-color:var(--teal)">Fallback to Groq when selected provider is rate-limited/unavailable</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetGatewayHttpFallback" ${k.gatewayHttpFallback===true?'checked':''} style="accent-color:var(--teal)">Allow HTTP fallback when gateway WebSocket is offline (best for local/self-hosted gateways)</label>
-        <div style="display:flex;gap:5px;margin-top:8px"><button class="btn btn-teal btn-sm" id="sheetAiRoutingSave">Save Routing</button></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetGatewayHttpFallback" ${k.gatewayHttpFallback===true?'checked':''} style="accent-color:var(--teal)">Enable gateway HTTP fallback when WebSocket is offline (override)</label>
+        <div id="sheetAiRoutingStatus" style="margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input)">
+          <div style="font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.04em">Automation Status</div>
+          <div id="sheetAiRoutingStatusText" style="font-size:10px;color:var(--text-3);margin-top:3px">${esc(getProviderPreset(activeProvider,k).label)} active · direct fallback ${k.directFallbackToGroq!==false?'on':'off'} · gateway fallback ${k.gatewayHttpFallback===true?'on':'off'}</div>
+          <div style="font-size:9px;color:var(--text-3);margin-top:4px">Changes auto-save in the background. Use toggles above only as overrides.</div>
+        </div>
       </div>`;
 
       // Models — smart defaults, configurable via agent tc-action if needed
@@ -4115,21 +4113,48 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       $('sheetBody').querySelector('#sheetSysPromptClear')?.addEventListener('click',()=>{
         const k2=getK();delete k2.sysPrompt;setK(k2);renderSheetContent();showToast('System prompt cleared','ok');
       });
-      $('sheetBody').querySelector('#sheetAiRoutingSave')?.addEventListener('click',()=>{
+      const _routingProviderEl=$('sheetBody').querySelector('#sheetAiProvider');
+      const _routingBaseEl=$('sheetBody').querySelector('#sheetAiBaseUrl');
+      const _routingFallbackEl=$('sheetBody').querySelector('#sheetDirectFallbackToGroq');
+      const _routingGatewayFallbackEl=$('sheetBody').querySelector('#sheetGatewayHttpFallback');
+      const _routingStatusEl=$('sheetBody').querySelector('#sheetAiRoutingStatusText');
+      const refreshRoutingStatus=(state)=>{
+        if(!_routingStatusEl)return;
+        const p=state.provider;
+        const label=getProviderPreset(p,state.k).label;
+        const custom=state.baseUrl?' · custom base url':'',invalid=state.invalid?' · base url invalid':'';
+        _routingStatusEl.textContent=`${label} active · direct fallback ${state.fallbackOn?'on':'off'} · gateway fallback ${state.gatewayFallbackOn?'on':'off'}${custom}${invalid}`;
+        _routingStatusEl.style.color=state.invalid?'var(--err)':'var(--text-3)';
+      };
+      const getRoutingDraft=()=>{
         const k2=getK();
-        const provider=normalizeAiProvider($('sheetBody').querySelector('#sheetAiProvider')?.value||resolveAiProvider(k2));
-        const baseRaw=($('sheetBody').querySelector('#sheetAiBaseUrl')?.value||'').trim();
+        const provider=normalizeAiProvider(_routingProviderEl?.value||resolveAiProvider(k2));
+        const baseRaw=(_routingBaseEl?.value||'').trim();
         const baseUrl=normalizeProviderBaseUrl(baseRaw);
-        if(baseRaw&&!baseUrl){showToast('Invalid base URL. Use HTTPS (HTTP only for localhost).','err');return}
-        k2.aiProvider=provider;
-        if(baseUrl)k2.aiBaseUrl=baseUrl;else delete k2.aiBaseUrl;
-        k2.directFallbackToGroq=$('sheetBody').querySelector('#sheetDirectFallbackToGroq')?.checked!==false;
-        k2.gatewayHttpFallback=$('sheetBody').querySelector('#sheetGatewayHttpFallback')?.checked===true;
-        setK(k2);
+        const fallbackOn=_routingFallbackEl?.checked!==false;
+        const gatewayFallbackOn=_routingGatewayFallbackEl?.checked===true;
+        return{k:k2,provider,baseRaw,baseUrl,invalid:!!(baseRaw&&!baseUrl),fallbackOn,gatewayFallbackOn};
+      };
+      const autoSaveRouting=({showErrorToast=false}={})=>{
+        const state=getRoutingDraft();
+        refreshRoutingStatus(state);
+        if(state.invalid){if(showErrorToast)showToast('Invalid base URL. Use HTTPS (HTTP only for localhost).','err');return false}
+        state.k.aiProvider=state.provider;
+        if(state.baseUrl)state.k.aiBaseUrl=state.baseUrl;else delete state.k.aiBaseUrl;
+        state.k.directFallbackToGroq=state.fallbackOn;
+        state.k.gatewayHttpFallback=state.gatewayFallbackOn;
+        setK(state.k);
         renderChannelDropdown();
         updateStatus();
-        showToast(`Routing saved (${getProviderPreset(provider,k2).label})`,'ok');
-      });
+        return true;
+      };
+      _routingProviderEl?.addEventListener('change',()=>{autoSaveRouting()});
+      _routingFallbackEl?.addEventListener('change',()=>{autoSaveRouting()});
+      _routingGatewayFallbackEl?.addEventListener('change',()=>{autoSaveRouting()});
+      _routingBaseEl?.addEventListener('input',()=>{refreshRoutingStatus(getRoutingDraft())});
+      _routingBaseEl?.addEventListener('blur',()=>{autoSaveRouting({showErrorToast:true})});
+      _routingBaseEl?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();autoSaveRouting({showErrorToast:true});_routingBaseEl.blur()}});
+      refreshRoutingStatus(getRoutingDraft());
       // Wire up integrations
       $('sheetBody').querySelector('#sheetObsidianSave')?.addEventListener('click',()=>{
         const val=$('sheetBody').querySelector('#sheetObsidianVault').value.trim();
@@ -10188,84 +10213,38 @@ Rules:
     let _cronDetailOpen=null;
     let _timerPillInterval=null;
     function renderCronBar(){
-      const bar=$('timerAlarmRow');
-      if(!bar)return;
       const alarms=getAlarms();
       const timers=getTimers();
       const jobs=getCronJobs();
       const pomo=getPomodoro();
-      if(!alarms.length&&!timers.length&&!jobs.length&&!pomo){bar.classList.remove('visible');if(_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}return}
-      bar.classList.add('visible');
-      const pills=$('cronPills');
-      pills.innerHTML='';
-      // Alarms (orange)
-      alarms.forEach(alarm=>{
-        const el=document.createElement('div');
-        el.className='cron-pill alarm-pill';
-        el.innerHTML=`<span class="cron-pill-dot on"></span>${esc(alarm.time)} ${esc((alarm.message||'').slice(0,20))}<span class="cron-pill-x" data-alarm-del="${alarm.id}">&times;</span>`;
-        el.addEventListener('click',e=>{
-          if(e.target.dataset.alarmDel){e.stopPropagation();removeAlarm(e.target.dataset.alarmDel);closeCronDetail();return}
-          e.stopPropagation();
-          toggleAlarmDetail(alarm,el);
-        });
-        pills.appendChild(el);
-      });
-      // Timers (blue, show countdown)
-      timers.forEach(timer=>{
-        const el=document.createElement('div');
-        el.className='cron-pill timer-pill';
-        el.dataset.timerId=timer.id;
-        el.dataset.timerEnds=timer.endsAt;
-        const remaining=Math.max(0,Math.round((new Date(timer.endsAt).getTime()-Date.now())/1000));
-        el.innerHTML=`<span class="cron-pill-dot on"></span><span class="timer-cd">${fmtCountdown(remaining)}</span> ${esc((timer.message||'').slice(0,16))}<span class="cron-pill-x" data-timer-del="${timer.id}">&times;</span>`;
-        el.addEventListener('click',e=>{
-          if(e.target.dataset.timerDel){e.stopPropagation();removeTimer(e.target.dataset.timerDel);closeCronDetail();return}
-          e.stopPropagation();
-          toggleTimerDetail(timer,el);
-        });
-        pills.appendChild(el);
-      });
-      // Cron jobs (indigo)
-      jobs.forEach(job=>{
-        const el=document.createElement('div');
-        el.className='cron-pill';
-        el.innerHTML=`<span class="cron-pill-dot ${job.enabled?'on':'off'}"></span>${esc(job.title||'Untitled')}<span class="cron-pill-x" data-cron-del="${job.id}">&times;</span>`;
-        el.addEventListener('click',e=>{
-          if(e.target.dataset.cronDel){e.stopPropagation();deleteCronJob(e.target.dataset.cronDel);closeCronDetail();return}
-          e.stopPropagation();
-          toggleCronDetail(job,el);
-        });
-        pills.appendChild(el);
-      });
-      // Pomodoro pill (tomato red)
-      if(pomo){
-        const pel=document.createElement('div');
-        pel.className='cron-pill pomo-pill';
-        const cdTxt=fmtPomoCd(pomo.timeLeft);
-        const phaseIcon=pomo.phase==='focus'?'🍅':'☕';
-        pel.innerHTML=`<span class="cron-pill-dot on"></span>${phaseIcon} <span class="pomo-cd">${cdTxt}</span> R${pomo.round}/${pomo.totalRounds}${pomo.paused?' ⏸':''}<span class="cron-pill-x" data-pomo-cancel="1">&times;</span>`;
-        pel.addEventListener('click',e=>{
-          if(e.target.dataset.pomoCancel){e.stopPropagation();endPomodoro('Cancelled');return}
-          e.stopPropagation();
-          const banner=$('pomodoroBanner');
-          if(banner)banner.classList.toggle('hidden');
-        });
-        pills.appendChild(pel);
+      const total=alarms.length+timers.length+jobs.length+(pomo?1:0);
+
+      const cronBtn=$('cronAddBtn');
+      const countEl=$('cronQuickCount');
+      if(cronBtn){
+        const title=total>0
+          ?`Schedules & alarms (${total} active)`
+          :'Schedules & alarms';
+        cronBtn.title=title;
+        cronBtn.setAttribute('aria-label',title);
+        cronBtn.classList.toggle('has-active',total>0);
       }
-      // Timer countdown interval
-      if(timers.length&&!_timerPillInterval){
-        _timerPillInterval=setInterval(()=>{
-          const tPills=document.querySelectorAll('.timer-pill');
-          if(!tPills.length){clearInterval(_timerPillInterval);_timerPillInterval=null;return}
-          tPills.forEach(el=>{
-            const ends=el.dataset.timerEnds;
-            if(!ends)return;
-            const rem=Math.max(0,Math.round((new Date(ends).getTime()-Date.now())/1000));
-            const cd=el.querySelector('.timer-cd');
-            if(cd)cd.textContent=fmtCountdown(rem);
-          });
-        },1000);
-      } else if(!timers.length&&_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}
+      if(countEl){
+        if(total>0){
+          countEl.textContent=total>99?'99+':String(total);
+          countEl.classList.remove('hidden');
+        }else{
+          countEl.textContent='';
+          countEl.classList.add('hidden');
+        }
+      }
+
+      // Legacy row/pill rendering removed: cron quick action now lives in top toolbar.
+      if(_timerPillInterval){
+        clearInterval(_timerPillInterval);
+        _timerPillInterval=null;
+      }
+      closeCronDetail();
     }
     function fmtCountdown(sec){
       if(sec>=3600)return Math.floor(sec/3600)+'h'+String(Math.floor((sec%3600)/60)).padStart(2,'0')+'m';
