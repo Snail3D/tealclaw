@@ -216,6 +216,10 @@
     .channel-item .ch-active{font-size:9px;color:var(--teal);font-weight:600}
     .icon-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--r-md);background:transparent;color:var(--text-3);cursor:pointer;transition:all var(--t)}
     .icon-btn:hover{background:var(--bg-hover);color:var(--text)}
+    .icon-btn.cron-quick-btn{color:#818cf8;background:rgba(99,102,241,0.12)}
+    .icon-btn.cron-quick-btn:hover{background:rgba(99,102,241,0.25);color:#a5b4fc}
+    [data-theme="light"] .icon-btn.cron-quick-btn{color:#6366f1;background:rgba(99,102,241,0.14)}
+    [data-theme="light"] .icon-btn.cron-quick-btn:hover{color:#4f46e5;background:rgba(99,102,241,0.24)}
     .icon-btn svg{width:16px;height:16px}
 
     /* ── Conversation Picker ──────────────────────────── */
@@ -920,33 +924,42 @@
     .sheet.open{transform:translateY(0)}
     .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border-2);margin:10px auto 0;flex-shrink:0}
     .sheet-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 8px;flex-shrink:0}
-    .sheet-title{font-size:15px;font-weight:600}
-    .sheet-close{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg-hover);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;line-height:1}
+    .sheet-title{font-size:17px;font-weight:700}
+    .sheet-close{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:50%;border:none;background:var(--bg-hover);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;line-height:1}
     .sheet-body{flex:1;overflow-y:auto;padding:0 20px 24px;-webkit-overflow-scrolling:touch}
-    .sheet-section{margin-top:16px}
-    .sheet-section-title{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
-    .sheet-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:8px;cursor:pointer;transition:all var(--t)}
+    .sheet-section{margin-top:18px}
+    .sheet-section-title{font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
+    .sheet-row{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:44px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:8px;cursor:pointer;transition:all var(--t)}
     .sheet-row:hover{border-color:var(--border-2)}
     .sheet-row-icon{width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .sheet-row-icon svg{width:16px;height:16px}
     .sheet-row-icon.ok{background:rgba(34,197,94,0.12);color:var(--ok)}
     .sheet-row-icon.off{background:var(--bg-hover);color:var(--text-3)}
     .sheet-row-info{flex:1;min-width:0}
-    .sheet-row-label{font-size:13px;font-weight:500}
-    .sheet-row-desc{font-size:10px;color:var(--text-3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .sheet-row-action{font-size:11px;color:var(--teal);font-weight:500;white-space:nowrap}
+    .sheet-row-label{font-size:14px;font-weight:600}
+    .sheet-row-desc{font-size:12px;color:var(--text-3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sheet-row-action{font-size:12px;color:var(--teal);font-weight:600;white-space:nowrap}
     .sheet-input-group{margin-bottom:12px}
-    .sheet-input-label{font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px}
-    .sheet-input{width:100%;padding:10px 12px;font-size:12px;font-family:var(--mono);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none;transition:border var(--t)}
+    .sheet-input-label{font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:6px}
+    .sheet-input{width:100%;padding:10px 12px;font-size:12px;min-height:44px;font-family:var(--mono);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none;transition:border var(--t)}
     .sheet-input:focus{border-color:var(--teal)}
     .sheet-input::placeholder{color:var(--text-3)}
-    .sheet-btn{width:100%;padding:12px;font-size:13px;font-weight:600;font-family:var(--font);border:none;border-radius:var(--r-md);cursor:pointer;transition:all var(--t)}
+    .sheet-btn{width:100%;padding:12px;font-size:13px;font-weight:600;min-height:44px;font-family:var(--font);border:none;border-radius:var(--r-md);cursor:pointer;transition:all var(--t)}
     .sheet-btn-teal{background:var(--teal);color:#fff} .sheet-btn-teal:hover{background:var(--teal-hover)}
     .sheet-btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border)} .sheet-btn-ghost:hover{background:var(--bg-hover)}
     .sheet-btn-danger{background:rgba(239,68,68,0.1);color:var(--err)} .sheet-btn-danger:hover{background:var(--err);color:#fff}
-    .sheet-link{color:var(--teal);text-decoration:none;font-size:11px}
+    .sheet-link{color:var(--teal);text-decoration:none;font-size:12px}
     .sheet-link:hover{text-decoration:underline}
     .sheet-divider{height:1px;background:var(--border);margin:16px 0}
+    .sheet .btn,.sheet .mode-btn,.sheet .sheet-btn,.sheet .sheet-row,.sheet .accent-swatch,.sheet .font-choice-btn,.sheet .groq-voice-chip,.sheet .gl-copy-btn,.sheet .gl-toggle-btn,.sheet .gl-del-btn{min-height:44px;min-width:44px}
+    .sheet button{touch-action:manipulation}
+    .sheet input[type="text"],.sheet input[type="password"],.sheet input[type="number"],.sheet input[type="url"],.sheet select{min-height:44px}
+    .sheet textarea{font-size:12px;line-height:1.45}
+    .sheet-body [style*="font-size:9px"]{font-size:11px !important}
+    .sheet-body [style*="font-size:10px"]{font-size:12px !important}
+    .sheet-danger-zone{padding:12px;border:1px solid rgba(239,68,68,0.35);border-radius:var(--r-md);background:rgba(239,68,68,0.06)}
+    .sheet-section-title-danger{color:var(--err)}
+    .sheet-danger-note{font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:10px}
 
     /* ── Camera ───────────────────────────────────────── */
     .cam-overlay{position:fixed;inset:0;background:var(--bg-root);z-index:1000;display:flex;flex-direction:column}
@@ -1050,7 +1063,7 @@
     @keyframes ws-pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
     /* ── Settings Extras ──────────────────────────────── */
-    .sheet-textarea{width:100%;min-height:80px;padding:10px;font-size:11px;font-family:var(--mono);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);resize:vertical;outline:none}
+    .sheet-textarea{width:100%;min-height:80px;padding:10px;font-size:12px;font-family:var(--mono);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);resize:vertical;outline:none}
     .sheet-textarea:focus{border-color:var(--teal)}
     .sheet-chip-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
     .sheet-chip{padding:3px 8px;font-size:10px;font-weight:500;font-family:var(--font);background:var(--bg-input);border:1px solid var(--border);border-radius:100px;color:var(--text-2);cursor:pointer;transition:all var(--t)}
@@ -1374,6 +1387,19 @@
       <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span><span class="pill-caret"></span>
         <div class="channel-dropdown" id="channelDropdown"></div>
       </div>
+      <button class="icon-btn cron-quick-btn" id="cronAddBtn" title="Add cron job" aria-label="Add cron job">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="13" r="6.5"/>
+          <path d="M12 13V10"/>
+          <path d="M12 13l2.5 1.5"/>
+          <path d="M7.5 4.5L5 7"/>
+          <path d="M16.5 4.5L19 7"/>
+          <path d="M9 20l-1.5 2"/>
+          <path d="M15 20l1.5 2"/>
+          <path d="M8.5 3.5h-2"/>
+          <path d="M17.5 3.5h-2"/>
+        </svg>
+      </button>
       <button class="icon-btn" id="helpBtn" title="Help" aria-label="Help">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </button>
@@ -1429,7 +1455,6 @@
   <!-- Timer/Alarm Row -->
   <div class="timer-alarm-row" id="timerAlarmRow">
     <div id="cronPills" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-    <button class="cron-add-btn" id="cronAddBtn" title="Add cron job">+</button>
   </div>
 
   <!-- Builder Agent Tabs -->
@@ -1542,7 +1567,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Share
         </h3>
-        <button class="btn btn-ghost btn-sm" id="shareModalClose" style="padding:4px 8px;font-size:16px;line-height:1">&times;</button>
+        <button class="btn btn-ghost btn-sm" id="shareModalClose" aria-label="Close share options" style="padding:4px 8px;font-size:16px;line-height:1">&times;</button>
       </div>
       <div id="shareModalBody" style="display:flex;flex-direction:column;gap:8px">
         <button class="sheet-btn" id="smEncrypted" style="background:var(--teal);color:#fff;border-color:var(--teal)">
@@ -1569,7 +1594,7 @@
     <div class="ma-modal-card">
       <div class="ma-modal-header">
         <h3>Motion &amp; Alarms</h3>
-        <button class="ma-modal-close" id="maModalClose">&times;</button>
+        <button class="ma-modal-close" id="maModalClose" aria-label="Close Motion and Alarms">&times;</button>
       </div>
       <div class="ma-modal-body" id="maModalBody"></div>
     </div>
@@ -1577,11 +1602,11 @@
 
   <!-- ═══ Settings Bottom Sheet ═══ -->
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" id="settingsSheet">
+  <div class="sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true" tabindex="-1">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-title">Settings</div>
-      <button class="sheet-close" id="sheetClose">&times;</button>
+      <div class="sheet-title" id="settingsTitle">Settings</div>
+      <button class="sheet-close" id="sheetClose" aria-label="Close settings">&times;</button>
     </div>
     <div class="sheet-body" id="sheetBody"></div>
   </div>
@@ -2003,7 +2028,7 @@
     async function compactConversation(){
       if(_compacting)return;
       const k=getK();
-      const apiKey=k.whisperKey||k.aiKey;
+      const apiKey=getGroqKey(k);
       if(!apiKey)return;
       _compacting=true;
       document.documentElement.classList.add('heartbeat-compacting');
@@ -2494,6 +2519,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     function detectKey(val){
       val=val.trim();
       if(val.startsWith('gsk_'))return{field:'whisperKey',provider:'groq',label:'Groq Key (chat + vision + voice)'};
+      if(val.startsWith('fw_'))return{field:'aiKey',provider:'fireworks',label:'Fireworks Key (direct chat/vision)'};
+      if(val.startsWith('sk-ant-'))return{field:'aiKey',provider:'anthropic',label:'Anthropic Key (direct chat)'};
+      if(val.startsWith('xai-'))return{field:'aiKey',provider:'xai',label:'xAI Key (direct chat)'};
+      if(val.startsWith('sk-or-v1-'))return{field:'aiKey',provider:'openrouter',label:'OpenRouter Key (direct chat + image gen)'};
+      if(/^(sk-proj-|sk-[A-Za-z0-9]{20,})/.test(val)&&!val.startsWith('sk-ant-')&&!val.startsWith('sk-or-v1-'))return{field:'aiKey',provider:'openai',label:'OpenAI-compatible key (direct chat)'};
 
       if(/^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(val))return{field:'tgToken',label:'Telegram Bot Token'};
       if(/^-?\d{6,}$/.test(val))return{field:'tgChatId',label:'Telegram Chat ID'};
@@ -2501,7 +2531,6 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(/^[a-f0-9]{32,}$/.test(val))return{field:'gwToken',label:'Gateway Token'};
       if(/^https?:\/\/.*\/(images|generate|img)/i.test(val))return{field:'imageGenUrl',label:'Image Gen Endpoint'};
       if(val.startsWith('AIza'))return{field:'imageGenKey',label:'Google AI Key (Image Gen — Nano Banana)'};
-      if(val.startsWith('sk-or-v1-'))return{field:'imageGenKey',label:'OpenRouter Key (Image Gen)'};
       // GIF key is hardcoded — no user detection needed
       return null;
     }
@@ -2541,9 +2570,111 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       else stopTelegramRelayRuntime();
     }
 
+    const DIRECT_PROVIDER_PRESETS={
+      groq:{label:'Groq',apiType:'openai',baseUrl:'https://api.groq.com/openai/v1',chatModel:'groq/compound-mini',visionModel:'meta-llama/llama-4-maverick-17b-128e-instruct',maxTokens:8192},
+      fireworks:{label:'Fireworks',apiType:'openai',baseUrl:'https://api.fireworks.ai/inference/v1',chatModel:'accounts/fireworks/models/llama-v3p1-70b-instruct',visionModel:'accounts/fireworks/models/qwen2p5-vl-72b-instruct',maxTokens:4096},
+      openai:{label:'OpenAI',apiType:'openai',baseUrl:'https://api.openai.com/v1',chatModel:'gpt-4o-mini',visionModel:'gpt-4o-mini',maxTokens:4096},
+      anthropic:{label:'Anthropic',apiType:'anthropic',baseUrl:'https://api.anthropic.com/v1/messages',chatModel:'claude-3-5-sonnet-latest',visionModel:'claude-3-5-sonnet-latest',maxTokens:4096},
+      openrouter:{label:'OpenRouter',apiType:'openai',baseUrl:'https://openrouter.ai/api/v1',chatModel:'openai/gpt-4o-mini',visionModel:'openai/gpt-4o-mini',maxTokens:4096},
+      xai:{label:'xAI',apiType:'openai',baseUrl:'https://api.x.ai/v1',chatModel:'grok-3-mini',visionModel:'grok-2-vision-1212',maxTokens:4096},
+      mistral:{label:'Mistral',apiType:'openai',baseUrl:'https://api.mistral.ai/v1',chatModel:'mistral-small-latest',visionModel:'pixtral-12b-2409',maxTokens:4096},
+      together:{label:'Together',apiType:'openai',baseUrl:'https://api.together.xyz/v1',chatModel:'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',visionModel:'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',maxTokens:4096},
+      deepseek:{label:'DeepSeek',apiType:'openai',baseUrl:'https://api.deepseek.com/v1',chatModel:'deepseek-chat',visionModel:'deepseek-chat',maxTokens:4096}
+    };
+    const DIRECT_PROVIDER_ORDER=['groq','fireworks','openai','anthropic','openrouter','xai','mistral','together','deepseek'];
+
+    function normalizeAiProvider(raw){
+      const key=String(raw||'').trim().toLowerCase();
+      if(!key)return 'groq';
+      if(DIRECT_PROVIDER_PRESETS[key])return key;
+      if(key==='claude')return 'anthropic';
+      if(key==='firework')return 'fireworks';
+      return 'groq';
+    }
+
+    function inferProviderFromKey(raw){
+      const key=String(raw||'').trim();
+      if(!key)return null;
+      if(key.startsWith('gsk_'))return 'groq';
+      if(key.startsWith('fw_'))return 'fireworks';
+      if(key.startsWith('sk-ant-'))return 'anthropic';
+      if(key.startsWith('sk-or-v1-'))return 'openrouter';
+      if(key.startsWith('xai-'))return 'xai';
+      if(/^(sk-proj-|sk-[A-Za-z0-9]{20,})/.test(key)&&!key.startsWith('sk-ant-')&&!key.startsWith('sk-or-v1-'))return 'openai';
+      return null;
+    }
+
+    function inferProviderFromBaseUrl(raw){
+      const val=String(raw||'').toLowerCase();
+      if(!val)return null;
+      if(val.includes('api.fireworks.ai'))return 'fireworks';
+      if(val.includes('api.anthropic.com'))return 'anthropic';
+      if(val.includes('openrouter.ai'))return 'openrouter';
+      if(val.includes('api.x.ai'))return 'xai';
+      if(val.includes('api.mistral.ai'))return 'mistral';
+      if(val.includes('api.together.xyz'))return 'together';
+      if(val.includes('api.deepseek.com'))return 'deepseek';
+      if(val.includes('api.openai.com'))return 'openai';
+      if(val.includes('api.groq.com'))return 'groq';
+      return null;
+    }
+
+    function normalizeProviderBaseUrl(raw){
+      const val=String(raw||'').trim();
+      if(!val)return '';
+      try{
+        const withProto=/^https?:\/\//i.test(val)?val:`https://${val}`;
+        const u=new URL(withProto);
+        const host=(u.hostname||'').toLowerCase();
+        const isLocal=host==='localhost'||host==='127.0.0.1'||host==='::1'||host.endsWith('.local');
+        if(u.protocol!=='https:'&&!(u.protocol==='http:'&&isLocal))return '';
+        return (u.origin+u.pathname).replace(/\/+$/,'');
+      }catch{return ''}
+    }
+
+    function resolveAiProvider(k){
+      const cfg=k||getK();
+      if(cfg.aiProvider)return normalizeAiProvider(cfg.aiProvider);
+      const byBase=inferProviderFromBaseUrl(cfg.aiBaseUrl);
+      if(byBase)return byBase;
+      const byKey=inferProviderFromKey(cfg.aiKey);
+      if(byKey)return byKey;
+      if(cfg.whisperKey)return 'groq';
+      return 'groq';
+    }
+
+    function getProviderPreset(provider,k){
+      const cfg=k||getK();
+      const id=normalizeAiProvider(provider||resolveAiProvider(cfg));
+      const base=DIRECT_PROVIDER_PRESETS[id]||DIRECT_PROVIDER_PRESETS.groq;
+      const customUrl=normalizeProviderBaseUrl(cfg.aiBaseUrl||'');
+      return customUrl?{...base,baseUrl:customUrl}:base;
+    }
+
+    function getDirectApiKey(provider,k){
+      const cfg=k||getK();
+      const id=normalizeAiProvider(provider||resolveAiProvider(cfg));
+      if(id==='groq')return cfg.whisperKey||(resolveAiProvider(cfg)==='groq'?(cfg.aiKey||''):'');
+      return cfg.aiKey||'';
+    }
+
+    function hasDirectProvider(provider,k){
+      return !!getDirectApiKey(provider,k);
+    }
+
+    function getGroqKey(k){
+      const cfg=k||getK();
+      if(cfg.whisperKey)return cfg.whisperKey;
+      if(resolveAiProvider(cfg)==='groq')return cfg.aiKey||'';
+      return '';
+    }
+
     function getProviderLabel(k){
-      if(!k)k=getK();
-      if(k.whisperKey)return 'Groq';
+      const cfg=k||getK();
+      const provider=resolveAiProvider(cfg);
+      if(provider==='groq'&&cfg.whisperKey)return 'Groq';
+      if(cfg.aiKey)return getProviderPreset(provider,cfg).label;
+      if(cfg.whisperKey)return 'Groq';
       return 'Setup';
     }
 
@@ -2807,9 +2938,18 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         });
       }
       // Direct providers
-      if(k.whisperKey){
-        channels.push({type:'direct',id:'groq',name:'Groq',status:'ok',badge:'Free',active:!isTelegramRelayEnabled(k)&&k.mode!=='agent'});
-      }
+      const directSet=new Set();
+      if(k.whisperKey)directSet.add('groq');
+      if(k.aiKey)directSet.add(resolveAiProvider(k));
+      const activeDirect=resolveAiProvider(k);
+      [...directSet].sort((a,b)=>DIRECT_PROVIDER_ORDER.indexOf(a)-DIRECT_PROVIDER_ORDER.indexOf(b)).forEach(pid=>{
+        const preset=getProviderPreset(pid,k);
+        channels.push({
+          type:'direct',id:pid,name:preset.label,status:'ok',
+          badge:pid==='groq'?'Free':'Direct',
+          active:!isTelegramRelayEnabled(k)&&k.mode!=='agent'&&activeDirect===pid
+        });
+      });
       return channels;
     }
 
@@ -2857,10 +2997,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         setK(k);
         startTelegramRelayRuntime();
       } else {
-        // Switch to direct mode (Groq) but keep WS alive for inbound agent replies
+        // Switch to direct mode (provider-specific) but keep WS alive for inbound agent replies
         k.mode='direct';
         k.tgRelayEnabled=false;
-        k.aiProvider='groq';
+        k.aiProvider=normalizeAiProvider(id||resolveAiProvider(k));
         const active=getAgents().find(a=>a.active)||getAgents()[0];
         if(active?.url&&active?.token)ensureAgentConnection(active);
         setK(k);
@@ -2868,7 +3008,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       }
       updateStatus();
       renderAgentSelector();
-      showToast(`Switched to ${type==='agent'?getAgents().find(a=>a.id===id)?.name||'Agent':(type==='relay'?'Telegram Relay':id.charAt(0).toUpperCase()+id.slice(1))}`,'ok');
+      const directLabel=type==='direct'?(getProviderPreset(id,k).label):'';
+      showToast(`Switched to ${type==='agent'?getAgents().find(a=>a.id===id)?.name||'Agent':(type==='relay'?'Telegram Relay':directLabel)}`,'ok');
     }
 
     // Pill click toggles channel dropdown
@@ -3011,9 +3152,86 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
     // ── Bottom Sheet ───────────────────────────────────
     const sheetBackdrop=$('sheetBackdrop'), settingsSheet=$('settingsSheet');
+    let sheetLastFocusedEl=null;
+    const SHEET_FOCUSABLE='a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
-    function openSheet(){if(document.body.classList.contains('ble-locked')){showToast('BLE beacon required','err');return}settingsSheet.classList.add('open');sheetBackdrop.classList.add('open');renderSheetContent()}
-    function closeSheet(){settingsSheet.classList.remove('open');sheetBackdrop.classList.remove('open')}
+    function getSheetFocusable(){
+      return [...settingsSheet.querySelectorAll(SHEET_FOCUSABLE)].filter(el=>!el.hasAttribute('disabled')&&el.getAttribute('aria-hidden')!=='true'&&el.offsetParent!==null);
+    }
+    function trapSheetFocus(e){
+      if(!settingsSheet.classList.contains('open'))return;
+      if(e.key==='Escape'){
+        e.preventDefault();
+        e.stopPropagation();
+        closeSheet();
+        return;
+      }
+      if(e.key!=='Tab')return;
+      const focusables=getSheetFocusable();
+      if(!focusables.length){e.preventDefault();return}
+      const first=focusables[0],last=focusables[focusables.length-1];
+      const active=document.activeElement;
+      if(!settingsSheet.contains(active)){
+        e.preventDefault();
+        (e.shiftKey?last:first).focus();
+        return;
+      }
+      if(e.shiftKey){
+        if(active===first){e.preventDefault();last.focus()}
+      }else if(active===last){
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    function setBackgroundInert(isInert){
+      [...document.body.children].forEach(el=>{
+        if(el===settingsSheet||el===sheetBackdrop)return;
+        if(isInert){
+          if(!el.hasAttribute('data-sheet-prev-aria-hidden')){
+            const prev=el.getAttribute('aria-hidden');
+            el.setAttribute('data-sheet-prev-aria-hidden',prev===null?'':prev);
+          }
+          el.setAttribute('aria-hidden','true');
+          el.inert=true;
+        }else{
+          const prev=el.getAttribute('data-sheet-prev-aria-hidden');
+          if(prev!==null){
+            if(prev==='')el.removeAttribute('aria-hidden');
+            else el.setAttribute('aria-hidden',prev);
+            el.removeAttribute('data-sheet-prev-aria-hidden');
+          }
+          el.inert=false;
+        }
+      });
+    }
+
+    function openSheet(){
+      if(document.body.classList.contains('ble-locked')){showToast('BLE beacon required','err');return}
+      if(settingsSheet.classList.contains('open')){renderSheetContent();return}
+      sheetLastFocusedEl=document.activeElement instanceof HTMLElement?document.activeElement:null;
+      settingsSheet.classList.add('open');
+      sheetBackdrop.classList.add('open');
+      settingsSheet.setAttribute('aria-hidden','false');
+      setBackgroundInert(true);
+      document.addEventListener('keydown',trapSheetFocus,true);
+      renderSheetContent();
+      requestAnimationFrame(()=>{
+        const first=getSheetFocusable()[0]||$('sheetClose');
+        first?.focus?.({preventScroll:true});
+      });
+    }
+    function closeSheet({restoreFocus=true}={}){
+      if(!settingsSheet.classList.contains('open'))return;
+      settingsSheet.classList.remove('open');
+      sheetBackdrop.classList.remove('open');
+      settingsSheet.setAttribute('aria-hidden','true');
+      document.removeEventListener('keydown',trapSheetFocus,true);
+      setBackgroundInert(false);
+      if(restoreFocus&&sheetLastFocusedEl&&document.contains(sheetLastFocusedEl)){
+        try{sheetLastFocusedEl.focus({preventScroll:true})}catch{}
+      }
+      sheetLastFocusedEl=null;
+    }
 
     // Long-press settings gear → Motion & Alarms modal; normal tap → settings sheet
     (function(){
@@ -3081,7 +3299,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
             <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
               <button class="mode-btn ma-pl-cam ${plCam==='user'?'active':''}" data-cam="user" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plCam==='user'?'var(--teal)':'transparent'};border:none;color:${plCam==='user'?'#fff':'var(--text-3)'};cursor:pointer">Front</button>
               <button class="mode-btn ma-pl-cam ${plCam==='environment'?'active':''}" data-cam="environment" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plCam==='environment'?'var(--teal)':'transparent'};border:none;color:${plCam==='environment'?'#fff':'var(--text-3)'};cursor:pointer">Back</button>
+              <button class="mode-btn ma-pl-cam ${plCam==='both'?'active':''}" data-cam="both" style="flex:1;padding:6px;font-size:10px;font-family:var(--font);background:${plCam==='both'?'var(--teal)':'transparent'};border:none;color:${plCam==='both'?'#fff':'var(--text-3)'};cursor:pointer">Both</button>
             </div>
+            <div style="font-size:9px;color:var(--text-3);margin-top:3px">Both alternates front/back captures (best effort by browser/device)</div>
           </div>
           <div style="margin-bottom:6px">
             <div style="display:flex;justify-content:space-between"><div style="font-size:10px;font-weight:500;color:var(--text-2)">Capture Interval</div><span style="font-size:10px;font-family:var(--mono);color:var(--teal)" id="maPlIntVal">${plInt}s</span></div>
@@ -3172,8 +3392,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
     function renderSheetContent(){
       const k=getK();
+      const stateLabel=(label,on)=>`${label}: ${on?'On':'Off'}`;
       const keys=[
         {label:'Groq Key',desc:'Chat + vision + voice + TTS (free)',field:'whisperKey',val:k.whisperKey,link:'https://console.groq.com/keys',linkText:'Get key',prefix:'gsk_'},
+        {label:'Direct AI Key',desc:'Fireworks / OpenAI / Anthropic / OpenRouter / xAI / Mistral / Together / DeepSeek',field:'aiKey',val:k.aiKey,link:'https://api.fireworks.ai/',linkText:'Provider docs',prefix:'fw_ / sk_ / sk-ant- / ...'},
 
         {label:'ElevenLabs Key',desc:'ElevenLabs TTS (custom voices)',field:'elevenlabsKey',val:k.elevenlabsKey,link:'https://elevenlabs.io/app/settings/api-keys',linkText:'Get key',prefix:'sk_'},
         {label:'ElevenLabs Voice ID',desc:'Voice id (e.g. Burt Reynolds)',field:'elevenlabsVoiceId',val:k.elevenlabsVoiceId,link:'https://elevenlabs.io/app/voice-lab',linkText:'Find voice',prefix:''},
@@ -3183,8 +3405,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
       // Connected Services summary
       const svcs=[
-        {name:'AI Chat',active:!!(k.whisperKey||getAgents().length)},
-        {name:'Voice In',active:!!k.whisperKey},
+        {name:'AI Chat',active:!!(hasDirectProvider(resolveAiProvider(k),k)||hasDirectProvider('groq',k)||getAgents().length)},
+        {name:'Voice In',active:!!getGroqKey(k)},
         {name:'Voice Out',active:hasTTS()},
         {name:'Image Gen',active:!!(k.imageGenKey||k.imageGenUrl)},
         {name:'GIF',active:true},
@@ -3224,6 +3446,14 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         <div class="sheet-row-info"><div class="sheet-row-label">Gateway</div><div class="sheet-row-desc">${agents.length?agents.find(a=>a.active)?.name||agents[0]?.name:'Not configured'}</div></div>
         <div class="sheet-row-action">${agents.length?'Manage':'Add'}</div>
       </div></div>`;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Automation &amp; Devices</div>
+        <button type="button" class="sheet-row" id="sheetMotionAlarmsRow" aria-label="Open Motion and Alarms settings" style="width:100%;text-align:left">
+          <div class="sheet-row-icon off"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div>
+          <div class="sheet-row-info"><div class="sheet-row-label">Motion &amp; Alarms</div><div class="sheet-row-desc">Gesture control, watch mode, alarms, and timers.</div></div>
+          <div class="sheet-row-action">Open</div>
+        </button>
+        <div style="font-size:10px;color:var(--text-3);margin-top:4px;padding:0 2px">Tip: long-press the settings gear as a shortcut.</div>
+      </div>`;
       const proactiveCamOn=k.allowProactiveCameraCapture!==false;
       html+=`<div class="sheet-section"><div class="sheet-section-title">Agent Capture Access</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
@@ -3231,7 +3461,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
             <div style="font-size:12px;font-weight:600;color:var(--text)">Inline capture consent</div>
             <div style="font-size:10px;color:var(--text-3)">For incoming <code>camera.capture</code> and <code>screen.capture</code>: ON shows lightweight Take photo / Take screenshot prompts, OFF uses full confirm modal.</div>
           </div>
-          <button class="camera-consent-toggle btn ${proactiveCamOn?'btn-teal':'btn-ghost'} btn-sm" data-on="${proactiveCamOn}">${proactiveCamOn?'On':'Off'}</button>
+          <button class="camera-consent-toggle btn ${proactiveCamOn?'btn-teal':'btn-ghost'} btn-sm" data-on="${proactiveCamOn}" aria-pressed="${proactiveCamOn}" aria-label="Inline capture consent ${proactiveCamOn?'enabled':'disabled'}">${stateLabel('Inline consent',proactiveCamOn)}</button>
         </div>
       </div>`;
 
@@ -3280,14 +3510,15 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       // Mode toggle
       const mode=(k.mode==='agent'||k.mode==='telegram-relay'||k.tgRelayEnabled===true)?(k.mode==='agent'?'agent':'telegram-relay'):'direct';
       const relayReady=hasTelegramConfig(k);
+      const directLabel=getProviderPreset(resolveAiProvider(k),k).label;
       const modeDesc=mode==='direct'
-        ?'Groq free tier — fast chat, vision, voice, and TTS'
+        ?`${directLabel} direct mode — chat + vision in browser${resolveAiProvider(k)==='groq'?', plus free voice/research':''}`
         :(mode==='agent'
           ?'Routes through your OpenClaw gateway — shared context across all channels'
           :'Telegram Relay v2: inbound is gateway-native fanout (single consumer model, no Bot API getUpdates in TealClaw).');
       html+=`<div class="sheet-section"><div class="sheet-section-title">Chat Mode</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
-          <button class="mode-btn ${mode==='direct'?'active':''}" data-mode="direct" style="flex:1;padding:10px;font-size:11px;font-weight:500;font-family:var(--font);background:${mode==='direct'?'var(--teal)':'transparent'};border:none;color:${mode==='direct'?'#fff':'var(--text-3)'};cursor:pointer">Direct (Groq)</button>
+          <button class="mode-btn ${mode==='direct'?'active':''}" data-mode="direct" style="flex:1;padding:10px;font-size:11px;font-weight:500;font-family:var(--font);background:${mode==='direct'?'var(--teal)':'transparent'};border:none;color:${mode==='direct'?'#fff':'var(--text-3)'};cursor:pointer">Direct (${esc(directLabel)})</button>
           <button class="mode-btn ${mode==='agent'?'active':''}" data-mode="agent" style="flex:1;padding:10px;font-size:11px;font-weight:500;font-family:var(--font);background:${mode==='agent'?'var(--teal)':'transparent'};border:none;color:${mode==='agent'?'#fff':'var(--text-3)'};cursor:pointer">Agent</button>
           <button class="mode-btn ${mode==='telegram-relay'?'active':''}" data-mode="telegram-relay" style="flex:1;padding:10px;font-size:11px;font-weight:500;font-family:var(--font);background:${mode==='telegram-relay'?'var(--teal)':'transparent'};border:none;color:${mode==='telegram-relay'?'#fff':'var(--text-3)'};cursor:pointer">Telegram Relay</button>
         </div>
@@ -3347,12 +3578,28 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       }
 
       // AI Configuration
+      const activeProvider=resolveAiProvider(k);
       html+=`<div class="sheet-section"><div class="sheet-section-title">AI Configuration</div>
         <div style="margin-bottom:10px">
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">System Prompt</div>
           <textarea class="sheet-textarea" id="sheetSysPrompt" placeholder="Custom instructions for the AI...">${esc(k.sysPrompt||'')}</textarea>
           <div style="display:flex;gap:5px;margin-top:4px"><button class="btn btn-teal btn-sm" id="sheetSysPromptSave">Save</button>${k.sysPrompt?'<button class="btn btn-ghost btn-sm" id="sheetSysPromptClear">Clear</button>':''}</div>
         </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Direct Provider</div>
+          <select class="sheet-input" id="sheetAiProvider" style="font-family:var(--font);font-size:11px">
+            ${DIRECT_PROVIDER_ORDER.map(pid=>`<option value="${pid}" ${activeProvider===pid?'selected':''}>${getProviderPreset(pid,k).label}</option>`).join('')}
+          </select>
+          <div style="font-size:9px;color:var(--text-3);margin-top:4px">Groq key powers voice/research features. Direct provider selection routes normal chat + vision calls.</div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Custom API Base URL (optional)</div>
+          <input type="text" class="sheet-input" id="sheetAiBaseUrl" value="${esc(k.aiBaseUrl||'')}" placeholder="https://.../v1" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
+          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Use only if your provider requires a custom gateway URL.</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px"><input type="checkbox" id="sheetDirectFallbackToGroq" ${k.directFallbackToGroq!==false?'checked':''} style="accent-color:var(--teal)">Fallback to Groq when selected provider is rate-limited/unavailable</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetGatewayHttpFallback" ${k.gatewayHttpFallback===true?'checked':''} style="accent-color:var(--teal)">Allow HTTP fallback when gateway WebSocket is offline (best for local/self-hosted gateways)</label>
+        <div style="display:flex;gap:5px;margin-top:8px"><button class="btn btn-teal btn-sm" id="sheetAiRoutingSave">Save Routing</button></div>
       </div>`;
 
       // Models — smart defaults, configurable via agent tc-action if needed
@@ -3408,8 +3655,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const hasPin=!!k.pinHash;
       html+=`<div class="sheet-section"><div class="sheet-section-title">Password Lock</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
-          <button class="mode-btn pin-mode-btn ${pinOn?'active':''}" data-pin="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${pinOn?'var(--teal)':'transparent'};border:none;color:${pinOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
-          <button class="mode-btn pin-mode-btn ${!pinOn?'active':''}" data-pin="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!pinOn?'var(--teal)':'transparent'};border:none;color:${!pinOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+          <button class="mode-btn pin-mode-btn ${pinOn?'active':''}" data-pin="true" aria-label="Password lock on" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${pinOn?'var(--teal)':'transparent'};border:none;color:${pinOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+          <button class="mode-btn pin-mode-btn ${!pinOn?'active':''}" data-pin="false" aria-label="Password lock off" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!pinOn?'var(--teal)':'transparent'};border:none;color:${!pinOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
         </div>
         <div style="margin-top:8px">
           <input type="password" class="sheet-input" id="sheetPinCode" value="" placeholder="${hasPin?'Password set (enter new to change)':'Enter password (4-8 characters)'}" maxlength="8" autocomplete="off" style="font-family:var(--mono);font-size:12px;letter-spacing:3px;text-align:center">
@@ -3429,8 +3676,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         html+=`<div class="sheet-section"><div class="sheet-section-title">BLE Beacon Lock</div>
           <div style="font-size:11px;color:var(--text-2);margin-bottom:8px">Require a BLE beacon in range to send messages</div>
           <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
-            <button class="mode-btn ble-mode-btn ${bleOn?'active':''}" data-ble="true" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${bleOn?'var(--teal)':'transparent'};border:none;color:${bleOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
-            <button class="mode-btn ble-mode-btn ${!bleOn?'active':''}" data-ble="false" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!bleOn?'var(--teal)':'transparent'};border:none;color:${!bleOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+            <button class="mode-btn ble-mode-btn ${bleOn?'active':''}" data-ble="true" aria-label="BLE beacon lock on" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${bleOn?'var(--teal)':'transparent'};border:none;color:${bleOn?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+            <button class="mode-btn ble-mode-btn ${!bleOn?'active':''}" data-ble="false" aria-label="BLE beacon lock off" style="flex:1;padding:10px;font-size:12px;font-weight:500;font-family:var(--font);background:${!bleOn?'var(--teal)':'transparent'};border:none;color:${!bleOn?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
           </div>`;
         if(blePaired){
           const dotColor=bleConnected?'var(--ok)':'var(--err, #e74c3c)';
@@ -3533,7 +3780,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       html+=`<div class="sheet-section"><div class="sheet-section-title">Animations</div>
         <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1"><div style="font-size:12px;font-weight:500">Typing Animation</div><div style="font-size:10px;color:var(--text-3)">Reveal AI responses character by character</div></div>
-          <button class="anim-toggle btn ${typingOn?'btn-teal':'btn-ghost'} btn-sm" data-key="typingAnimation" data-on="${typingOn}">${typingOn?'On':'Off'}</button>
+          <button class="anim-toggle btn ${typingOn?'btn-teal':'btn-ghost'} btn-sm" data-key="typingAnimation" data-on="${typingOn}" aria-pressed="${typingOn}" aria-label="Typing animation ${typingOn?'enabled':'disabled'}">${stateLabel('Typing',typingOn)}</button>
         </div>
         <div style="margin:8px 0">
           <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Typing Speed</div>
@@ -3561,7 +3808,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         const on=def?k[key]!==false:!!k[key];
         html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1"><div style="font-size:12px;font-weight:500">${label}</div><div style="font-size:10px;color:var(--text-3)">${desc}</div></div>
-          <button class="a11y-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}" data-def="${!!def}">${on?'On':'Off'}</button>
+          <button class="a11y-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}" data-def="${!!def}" aria-pressed="${on}" aria-label="${label}: ${on?'On':'Off'}">${stateLabel(label,on)}</button>
         </div>`;
       });
       html+=`</div>`;
@@ -3578,7 +3825,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         const on=def?k[key]!==false:!!k[key];
         html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
           <div style="flex:1"><div style="font-size:12px;font-weight:500">${label}</div><div style="font-size:10px;color:var(--text-3)">${desc}</div></div>
-          <button class="exp-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}" data-def="${!!def}">${on?'On':'Off'}</button>
+          <button class="exp-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}" data-def="${!!def}" aria-pressed="${on}" aria-label="${label}: ${on?'On':'Off'}">${stateLabel(label,on)}</button>
         </div>`;
       });
       html+=`</div>`;
@@ -3609,15 +3856,15 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       }
       html+=`</div>`;
 
-      // Actions — two buttons: Share and Clear All
-      html+=`<div class="sheet-section" style="display:flex;gap:8px">
-        <button class="sheet-btn" id="sheetShareOpen" style="flex:1;background:var(--teal);color:#fff;border-color:var(--teal)">
+      // Actions — sharing
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Share &amp; Backup</div>
+        <button class="sheet-btn" id="sheetShareOpen" style="background:var(--teal);color:#fff;border-color:var(--teal)">
           <span style="display:flex;align-items:center;justify-content:center;gap:6px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Share
+            Share Settings Securely
           </span>
         </button>
-        <button class="sheet-btn sheet-btn-danger" id="sheetClearAll" style="flex:1">Clear All</button>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Create encrypted share links, QR codes, or JSON exports without deleting local data.</div>
       </div>`;
 
       // Privacy & Security
@@ -3629,7 +3876,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           </div>
           <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
             <div style="color:var(--teal);font-size:16px;flex-shrink:0;margin-top:1px">&#128640;</div>
-            <div><strong style="color:var(--text)">Direct API calls.</strong> Your browser talks directly to your AI provider (Groq) or through your private OpenClaw gateway. No middleman. No proxy. tealclaw.ai serves static files only.</div>
+            <div><strong style="color:var(--text)">Direct API calls.</strong> Your browser talks directly to your selected AI provider (Groq, Fireworks, OpenAI, Anthropic, OpenRouter, etc.) or through your private OpenClaw gateway. No middleman. No proxy. tealclaw.ai serves static files only.</div>
           </div>
           <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
             <div style="color:var(--teal);font-size:16px;flex-shrink:0;margin-top:1px">&#128279;</div>
@@ -3649,6 +3896,14 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
           </div>
         </div>
         <a href="https://github.com/Snail3D/tealclaw/blob/main/SECURITY.md" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:14px;font-size:11px;color:var(--teal);text-decoration:none">Read full Security Philosophy on GitHub &rarr;</a>
+      </div>`;
+
+      // Danger Zone
+      html+=`<div class="sheet-section sheet-danger-zone">
+        <div class="sheet-section-title sheet-section-title-danger">Danger Zone</div>
+        <div class="sheet-danger-note"><strong style="color:var(--err)">Clear All Local Data</strong> permanently removes this browser's chat history, API keys, agents, and custom settings.</div>
+        <button class="sheet-btn sheet-btn-danger" id="sheetClearAll">Clear All Local Data</button>
+        <div style="font-size:10px;color:var(--err);margin-top:6px">You will confirm twice, including typing <strong>CLEAR</strong>.</div>
       </div>`;
 
       // Footer
@@ -3851,6 +4106,21 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       $('sheetBody').querySelector('#sheetSysPromptClear')?.addEventListener('click',()=>{
         const k2=getK();delete k2.sysPrompt;setK(k2);renderSheetContent();showToast('System prompt cleared','ok');
       });
+      $('sheetBody').querySelector('#sheetAiRoutingSave')?.addEventListener('click',()=>{
+        const k2=getK();
+        const provider=normalizeAiProvider($('sheetBody').querySelector('#sheetAiProvider')?.value||resolveAiProvider(k2));
+        const baseRaw=($('sheetBody').querySelector('#sheetAiBaseUrl')?.value||'').trim();
+        const baseUrl=normalizeProviderBaseUrl(baseRaw);
+        if(baseRaw&&!baseUrl){showToast('Invalid base URL. Use HTTPS (HTTP only for localhost).','err');return}
+        k2.aiProvider=provider;
+        if(baseUrl)k2.aiBaseUrl=baseUrl;else delete k2.aiBaseUrl;
+        k2.directFallbackToGroq=$('sheetBody').querySelector('#sheetDirectFallbackToGroq')?.checked!==false;
+        k2.gatewayHttpFallback=$('sheetBody').querySelector('#sheetGatewayHttpFallback')?.checked===true;
+        setK(k2);
+        renderChannelDropdown();
+        updateStatus();
+        showToast(`Routing saved (${getProviderPreset(provider,k2).label})`,'ok');
+      });
       // Wire up integrations
       $('sheetBody').querySelector('#sheetObsidianSave')?.addEventListener('click',()=>{
         const val=$('sheetBody').querySelector('#sheetObsidianVault').value.trim();
@@ -3948,6 +4218,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
       // Wire up agent row
       $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
+      $('sheetBody').querySelector('#sheetMotionAlarmsRow')?.addEventListener('click',()=>{
+        closeSheet({restoreFocus:false});
+        openMAModal();
+      });
 
       // Wire up Share button — opens share sub-modal
       $('sheetBody').querySelector('#sheetShareOpen')?.addEventListener('click',()=>{
@@ -3956,6 +4230,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       // Wire up Clear All button
       $('sheetBody').querySelector('#sheetClearAll')?.addEventListener('click',()=>{
         if(!confirm('Clear all chat history, keys, and settings? This cannot be undone.'))return;
+        const typed=prompt('Type CLEAR to permanently erase all local TealClaw data.');
+        if(typed!=='CLEAR'){showToast('Clear all cancelled','err');return}
         stopPhotoLog();stopWatchMode();
         localStorage.removeItem('tc-keys');localStorage.removeItem('tc-agents');localStorage.removeItem('tc-active-conv');
         ConvDB.clearAll().catch(()=>{});
@@ -5343,6 +5619,283 @@ RULES:
       return prompt;
     }
 
+    function buildDirectMessages(k,userText,imageBase64){
+      const sys=buildSysPrompt(k);
+      const histMsgs=buildContextMessages();
+      const userContent=imageBase64
+        ?[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}]
+        :(userText||'');
+      return [{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
+    }
+
+    function parseDataUrl(dataUrl){
+      const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/);
+      if(!m)return null;
+      return{mime:m[1],data:m[2]};
+    }
+
+    function providerError(provider,msg,meta={}){
+      const e=new Error(msg);
+      e.provider=provider;
+      e.status=meta.status;
+      e.recoverable=meta.recoverable!==false;
+      e.code=meta.code||'';
+      return e;
+    }
+
+    function normalizeProviderError(provider,status,payload){
+      const preset=getProviderPreset(provider);
+      const detail=payload?.error?.message||payload?.message||payload?.error||'';
+      const code=payload?.error?.code||payload?.code||'';
+      if(status===401||status===403){
+        return providerError(provider,`${preset.label} auth failed (${status}). Check API key and provider selection. ${detail}`.trim(),{status,recoverable:false,code:'auth'});
+      }
+      if(status===429){
+        return providerError(provider,`${preset.label} rate limit hit (429). Retry in a moment or use fallback provider.`,{status,recoverable:true,code:'rate_limit'});
+      }
+      if(status>=500){
+        return providerError(provider,`${preset.label} is temporarily unavailable (${status}).`,{status,recoverable:true,code:'server'});
+      }
+      if(status===404){
+        return providerError(provider,`${preset.label} endpoint/model not found (404). Verify base URL + model. ${detail}`.trim(),{status,recoverable:false,code:'not_found'});
+      }
+      return providerError(provider,detail||`${preset.label} request failed (${status})`,{status,recoverable:status>=500||status===408||status===409||status===425,code});
+    }
+
+    function getDirectMaxTokens(k,provider){
+      const preset=getProviderPreset(provider,k);
+      let maxTok=k.maxTokens||(k.skillContext===false?400:1024);
+      if(maxTok>preset.maxTokens)maxTok=preset.maxTokens;
+      return maxTok;
+    }
+
+    function modelForProvider(k,provider,imageBase64){
+      const preset=getProviderPreset(provider,k);
+      if(imageBase64&&k.visionModel)return k.visionModel;
+      if(!imageBase64&&k.aiModel)return k.aiModel;
+      return imageBase64?preset.visionModel:preset.chatModel;
+    }
+
+    async function callOpenAiCompat(provider,k,key,messages,model,maxTok,{stream=false,onToken,signal}={}){
+      const preset=getProviderPreset(provider,k);
+      const base=normalizeProviderBaseUrl(preset.baseUrl||'');
+      if(!base)throw providerError(provider,`${preset.label} base URL is invalid. Use HTTPS (HTTP only for localhost).`,{recoverable:false,code:'bad_base_url'});
+      const url=`${base}/chat/completions`;
+      const headers={'Authorization':`Bearer ${key}`,'Content-Type':'application/json'};
+      if(provider==='openrouter'){
+        headers['HTTP-Referer']=location.origin;
+        headers['X-Title']='TealClaw';
+      }
+      const body={model,messages,max_tokens:maxTok};
+      if(k.temperature!==undefined)body.temperature=Number(k.temperature);
+      if(stream)body.stream=true;
+
+      const timeoutMs=Math.max(5000,Number(k.requestTimeoutMs)||45000);
+      const reqCtrl=new AbortController();
+      const timer=setTimeout(()=>reqCtrl.abort(),timeoutMs);
+      const forwardAbort=()=>reqCtrl.abort();
+      if(signal){
+        if(signal.aborted)reqCtrl.abort();
+        else signal.addEventListener('abort',forwardAbort,{once:true});
+      }
+
+      let res;
+      try{
+        res=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:reqCtrl.signal});
+      }catch(err){
+        if(signal?.aborted||err?.name==='AbortError'&&signal?.aborted)throw err;
+        if(err?.name==='AbortError')throw providerError(provider,`${preset.label} request timed out after ${Math.round(timeoutMs/1000)}s.`,{recoverable:true,code:'timeout'});
+        throw providerError(provider,`${preset.label} network error. Check API base URL and connectivity.`,{recoverable:true,code:'network'});
+      } finally {
+        clearTimeout(timer);
+        if(signal)signal.removeEventListener('abort',forwardAbort);
+      }
+
+      if(!res.ok){
+        const d=await res.json().catch(()=>null);
+        throw normalizeProviderError(provider,res.status,d);
+      }
+      if(!stream){
+        const d=await res.json().catch(()=>null);
+        const txt=d?.choices?.[0]?.message?.content||'';
+        const usage=d?.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:d.model||model}:null;
+        return{text:txt,usage};
+      }
+      const reader=res.body?.getReader();
+      if(!reader)return{text:'',usage:null};
+      window._tcActiveReader=reader;
+      const decoder=new TextDecoder();
+      let full='',buffer='',usage=null;
+      while(true){
+        const{done,value}=await reader.read();
+        if(done)break;
+        buffer+=decoder.decode(value,{stream:true});
+        const lines=buffer.split('\n');
+        buffer=lines.pop()||'';
+        for(const line of lines){
+          if(!line.startsWith('data: '))continue;
+          const raw=line.slice(6).trim();
+          if(!raw||raw==='[DONE]')continue;
+          try{
+            const j=JSON.parse(raw);
+            const delta=j?.choices?.[0]?.delta?.content;
+            if(delta){full+=delta;if(onToken)onToken(full)}
+            if(j?.usage)usage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model:j.model||model};
+          }catch{}
+        }
+      }
+      return{text:full,usage};
+    }
+
+    function mapAnthropicMessages(messages){
+      let system='';
+      const out=[];
+      messages.forEach(m=>{
+        if(m.role==='system'){
+          if(typeof m.content==='string')system+=(system?'\n\n':'')+m.content;
+          return;
+        }
+        if(Array.isArray(m.content)){
+          const parts=[];
+          m.content.forEach(p=>{
+            if(p?.type==='text')parts.push({type:'text',text:p.text||''});
+            if(p?.type==='image_url'){
+              const parsed=parseDataUrl(p?.image_url?.url||'');
+              if(parsed)parts.push({type:'image',source:{type:'base64',media_type:parsed.mime,data:parsed.data}});
+            }
+          });
+          out.push({role:m.role==='assistant'?'assistant':'user',content:parts.length?parts:[{type:'text',text:''}]});
+        } else {
+          out.push({role:m.role==='assistant'?'assistant':'user',content:[{type:'text',text:String(m.content||'')} ]});
+        }
+      });
+      return{system,messages:out};
+    }
+
+    async function callAnthropicCompat(k,key,messages,model,maxTok,{stream=false,onToken,signal}={}){
+      const url='https://api.anthropic.com/v1/messages';
+      const mapped=mapAnthropicMessages(messages);
+      const headers={
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'Content-Type':'application/json'
+      };
+      const body={model,max_tokens:maxTok,messages:mapped.messages};
+      if(mapped.system)body.system=mapped.system;
+      if(k.temperature!==undefined)body.temperature=Number(k.temperature);
+      if(stream)body.stream=true;
+
+      const timeoutMs=Math.max(5000,Number(k.requestTimeoutMs)||45000);
+      const reqCtrl=new AbortController();
+      const timer=setTimeout(()=>reqCtrl.abort(),timeoutMs);
+      const forwardAbort=()=>reqCtrl.abort();
+      if(signal){
+        if(signal.aborted)reqCtrl.abort();
+        else signal.addEventListener('abort',forwardAbort,{once:true});
+      }
+
+      let res;
+      try{res=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal:reqCtrl.signal})}
+      catch(err){
+        if(signal?.aborted||err?.name==='AbortError'&&signal?.aborted)throw err;
+        if(err?.name==='AbortError')throw providerError('anthropic',`Anthropic request timed out after ${Math.round(timeoutMs/1000)}s.`,{recoverable:true,code:'timeout'});
+        throw providerError('anthropic','Anthropic network error. Check connectivity and key.',{recoverable:true,code:'network'});
+      } finally {
+        clearTimeout(timer);
+        if(signal)signal.removeEventListener('abort',forwardAbort);
+      }
+      if(!res.ok){
+        const d=await res.json().catch(()=>null);
+        throw normalizeProviderError('anthropic',res.status,d);
+      }
+      if(!stream){
+        const d=await res.json().catch(()=>null);
+        const txt=(d?.content||[]).filter(c=>c?.type==='text').map(c=>c.text||'').join('');
+        const usage=d?.usage?{prompt:d.usage.input_tokens,completion:d.usage.output_tokens,total:(d.usage.input_tokens||0)+(d.usage.output_tokens||0),model:d.model||model}:null;
+        return{text:txt,usage};
+      }
+      const reader=res.body?.getReader();
+      if(!reader)return{text:'',usage:null};
+      window._tcActiveReader=reader;
+      const decoder=new TextDecoder();
+      let full='',buffer='',usage=null;
+      while(true){
+        const{done,value}=await reader.read();
+        if(done)break;
+        buffer+=decoder.decode(value,{stream:true});
+        const lines=buffer.split('\n');
+        buffer=lines.pop()||'';
+        for(const line of lines){
+          if(!line.startsWith('data: '))continue;
+          const raw=line.slice(6).trim();
+          if(!raw)continue;
+          try{
+            const evt=JSON.parse(raw);
+            if(evt?.type==='content_block_delta'&&evt?.delta?.text){
+              full+=evt.delta.text;
+              if(onToken)onToken(full);
+            }
+            if(evt?.type==='message_stop'&&evt?.message?.usage){
+              const u=evt.message.usage;
+              usage={prompt:u.input_tokens,completion:u.output_tokens,total:(u.input_tokens||0)+(u.output_tokens||0),model:evt.message.model||model};
+            }
+          }catch{}
+        }
+      }
+      return{text:full,usage};
+    }
+
+    async function callProviderDirect(provider,userText,imageBase64,{stream=false,onToken,signal}={}){
+      const k=getK();
+      const key=getDirectApiKey(provider,k);
+      if(!key)throw providerError(provider,`${getProviderPreset(provider,k).label} key missing`,{recoverable:false,code:'no_key'});
+      const model=modelForProvider(k,provider,imageBase64);
+      const maxTok=getDirectMaxTokens(k,provider);
+      const messages=buildDirectMessages(k,userText,imageBase64);
+      const preset=getProviderPreset(provider,k);
+      if(preset.apiType==='anthropic'){
+        return callAnthropicCompat(k,key,messages,model,maxTok,{stream,onToken,signal});
+      }
+      return callOpenAiCompat(provider,k,key,messages,model,maxTok,{stream,onToken,signal});
+    }
+
+    function shouldTryFallback(err){
+      if(!err)return false;
+      if(err.code==='network'||err.code==='rate_limit'||err.code==='server'||err.code==='timeout')return true;
+      if(err.status&&err.status>=500)return true;
+      return !!err.recoverable;
+    }
+
+    async function callDirectAI(userText,imageBase64,opts={}){
+      const k=getK();
+      const primary=resolveAiProvider(k);
+      const chain=[primary];
+      const fallbackToGroq=k.directFallbackToGroq!==false&&primary!=='groq'&&!!k.whisperKey;
+      if(fallbackToGroq)chain.push('groq');
+      let lastErr=null;
+      for(let i=0;i<chain.length;i++){
+        const provider=chain[i];
+        if(!hasDirectProvider(provider,k)){
+          if(chain[i+1])continue;
+          lastErr=providerError(provider,`${getProviderPreset(provider,k).label} key missing`,{recoverable:false,code:'no_key'});
+          break;
+        }
+        try{
+          const result=await callProviderDirect(provider,userText,imageBase64,opts);
+          if(i>0)showToast(`Direct fallback: ${getProviderPreset(provider,k).label}`,'ok');
+          if(result?.usage&&!result.usage.model)result.usage.model=modelForProvider(k,provider,imageBase64);
+          if(result)result.provider=provider;
+          return result;
+        }catch(err){
+          if(err?.name==='AbortError')throw err;
+          lastErr=err;
+          const next=chain[i+1];
+          if(!next||!shouldTryFallback(err))break;
+        }
+      }
+      throw lastErr||new Error('Direct provider request failed');
+    }
+
     // ── AI Call ─────────────────────────────────────────
     async function callAI(userText,imageBase64){
       if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
@@ -5353,39 +5906,9 @@ RULES:
         return callAgent(userText,imageBase64);
       }
 
-      // Groq direct chat
-      const aiKey=k.whisperKey||k.aiKey;
-      if(!aiKey)return '__NO_KEY__';
-      const url='https://api.groq.com/openai/v1/chat/completions';
-      let model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.aiModel||'groq/compound-mini');
-
-      const sys=buildSysPrompt(k);
-
-      // Build messages with conversation history (compaction-aware)
-      const histMsgs=buildContextMessages();
-
-      let userContent;
-      if(imageBase64){
-        userContent=[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}];
-      } else {
-        userContent=userText;
-      }
-
-      const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
-      let maxTok=k.maxTokens||(k.skillContext===false?400:1024);
-      if(maxTok>8192)maxTok=8192; // Groq max output limit
-      const body={model,messages:msgs,max_tokens:maxTok};
-      if(k.temperature!==undefined)body.temperature=Number(k.temperature);
-      const res=await fetch(url,{
-        method:'POST',
-        headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},
-        body:JSON.stringify(body)
-      });
-      const d=await res.json();
-      if(d.error) throw new Error(d.error.message||'API error');
-      const aiText=d.choices?.[0]?.message?.content||'';
-      const usage=d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model}:null;
-      return {text:aiText,usage};
+      const provider=resolveAiProvider(k);
+      if(!hasDirectProvider(provider,k)&&!(provider!=='groq'&&hasDirectProvider('groq',k)))return '__NO_KEY__';
+      return callDirectAI(userText,imageBase64,{stream:false});
     }
 
     // ── OpenClaw WebSocket Transport ─────────────────────
@@ -5757,7 +6280,7 @@ RULES:
 
     async function groqDigest(rawText,mode){
       const k=getK();
-      const apiKey=k.whisperKey||k.aiKey;
+      const apiKey=getGroqKey(k);
       if(!apiKey)return rawText;
       const ctxSummary=agentContext.recentEvents.slice(-10)
         .map(e=>`[${e.stream}] ${e.text}`).join('\n');
@@ -5801,7 +6324,7 @@ Example: "I built a login page with email/password validation." or "I compared 3
     // Cast an agent's single-voice response into group chat personas
     async function castAgentToGroup(text){
       const k=getK();
-      const apiKey=k.whisperKey||k.aiKey;
+      const apiKey=getGroqKey(k);
       if(!apiKey)return '[TREY] '+text;
       try{
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -6048,6 +6571,17 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       });
     }
 
+    function gatewayHttpFallbackAllowed(agent,k){
+      if(k?.gatewayHttpFallback===true)return true;
+      // Auto-allow for localhost/same-origin self-hosted gateways.
+      try{
+        const u=new URL(gwUrl(agent.url));
+        if(['localhost','127.0.0.1','::1'].includes(u.hostname))return true;
+        if(u.origin===location.origin)return true;
+      }catch{}
+      return false;
+    }
+
     // HTTP-based agent call (OpenAI-compatible fallback)
     async function callAgentHTTP(agent,text,imageBase64){
       let content;
@@ -6056,29 +6590,41 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       } else {
         content=text;
       }
-      const url=gwUrl(agent.url);
-      let res;
-      try{
-        res=await fetch(`${url}/v1/chat/completions`,{
-          method:'POST',
-          headers:{'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
-          body:JSON.stringify({messages:[{role:'user',content}],max_tokens:getK().maxTokens||400})
-        });
-      }catch(e){
-        const host=new URL(url).hostname;
-        const hint='Check that the gateway is running and the URL is reachable from this device.';
-        throw new Error(`Cannot reach gateway "${agent.name}" at ${url}. ${hint}`);
+      const base=gwUrl(agent.url).replace(/\/+$/,'');
+      const endpoints=['/v1/chat/completions','/chat/completions','/api/v1/chat/completions'];
+      const authVariants=[
+        {'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
+        {'x-api-key':agent.token,'Content-Type':'application/json'}
+      ];
+      let lastErr='';
+
+      for(const ep of endpoints){
+        for(const headers of authVariants){
+          let res;
+          try{
+            res=await fetch(base+ep,{method:'POST',headers,body:JSON.stringify({messages:[{role:'user',content}],max_tokens:getK().maxTokens||400})});
+          }catch(e){
+            lastErr='network';
+            continue;
+          }
+          if(res.ok){
+            const d=await res.json().catch(()=>({}));
+            const c=d.choices?.[0]?.message?.content||d.message||'';
+            if(c&&c.includes&&c.includes('Unhandled stop reason')) throw new Error('Agent busy, try again');
+            const usage=d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:d.model||'agent'}:null;
+            return {text:c,usage};
+          }
+          if([404,405].includes(res.status)){lastErr=`${res.status} ${ep}`;continue}
+          if([401,403].includes(res.status))throw new Error(`Gateway auth failed (${res.status}). Check token.`);
+          const detail=await res.text().catch(()=>'');
+          throw new Error(`Gateway returned ${res.status} on ${ep}${detail?`: ${detail.slice(0,180)}`:''}`);
+        }
       }
-      if(!res.ok) throw new Error(`Gateway "${agent.name}" returned ${res.status}. Check the gateway logs.`);
-      const d=await res.json();
-      const c=d.choices?.[0]?.message?.content||'';
-      if(c.includes('Unhandled stop reason')) throw new Error('Agent busy, try again');
-      const usage=d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:d.model||'agent'}:null;
-      return {text:c,usage};
+      if(lastErr==='network')throw new Error(`Cannot reach gateway "${agent.name}" at ${base}. Check URL/certificate and gateway status.`);
+      throw new Error(`Gateway HTTP fallback unavailable (tried ${endpoints.join(', ')}).`);
     }
 
-    // Dual-transport agent call: prefer WS, fall back to HTTP.
-    // NOTE: Many OpenClaw gateways do NOT expose /v1/chat/completions (HTTP 405). So we try hard to ensure WS.
+    // Dual-transport agent call: prefer WS, optional HTTP fallback.
     async function callAgent(text,imageBase64,onToken){
       const agent=getActiveAgent();
       if(!agent)throw new Error('No agent configured. Open Settings and add a gateway agent, or switch to Direct mode.');
@@ -6088,7 +6634,6 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       let conn=agentConnections.get(agent.id);
       if(!conn||!conn.connected){
         try{conn=ensureAgentConnection(agent)}catch{}
-        // Wait up to ~10s for WS connect (most networks are fast; Cloudflare can take a beat)
         const start=Date.now();
         while((!conn||!conn.connected) && Date.now()-start<10000){
           await new Promise(r=>setTimeout(r,250));
@@ -6100,19 +6645,30 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         return callAgentWS(conn,text,imageBase64,onToken);
       }
 
-      // Root fix: In Agent mode we speak to OpenClaw via WebSocket. Do NOT fall back to HTTP
-      // /v1/chat/completions (it is often unsupported and triggers CORS failures in browsers).
-      throw new Error('Gateway not connected yet (WebSocket offline or pairing required). Try /reconnect (or refresh). If this is a new device, approve it on the gateway: openclaw devices list → openclaw devices approve <requestId>.');
+      const k=getK();
+      if(gatewayHttpFallbackAllowed(agent,k)){
+        try{return await callAgentHTTP(agent,text,imageBase64)}
+        catch(httpErr){
+          throw new Error(`Gateway WS offline and HTTP fallback failed: ${httpErr.message}`);
+        }
+      }
+
+      throw new Error('Gateway not connected yet (WebSocket offline or pairing required). Try /reconnect (or refresh). For self-hosted/local gateways you can enable HTTP fallback in Settings > AI Configuration. If this is a new device, approve it on the gateway: openclaw devices list → openclaw devices approve <requestId>.');
     }
 
     // ── Transcribe ─────────────────────────────────────
     async function transcribe(blob){
       const k=getK();
-      const key=k.whisperKey||k.aiKey;
-      if(!key){showToast('No transcription key','err');return ''}
+      const key=getGroqKey(k);
+      if(!key){showToast('No Groq key for transcription','err');return ''}
       const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-large-v3');fd.append('response_format','json');
       const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':`Bearer ${key}`},body:fd});
-      const d=await res.json();return d.text||'';
+      if(!res.ok){
+        const err=await res.json().catch(()=>({}));
+        throw new Error(err?.error?.message||`Transcription failed (${res.status})`);
+      }
+      const d=await res.json();
+      return d.text||'';
     }
 
     // ── TTS ────────────────────────────────────────────
@@ -6296,7 +6852,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
     }
 
     async function speakGroq(text,k){
-      const groqKey=k.whisperKey||k.aiKey;
+      const groqKey=getGroqKey(k);
       if(!groqKey)return null;
       const voice=k.groqTtsVoice||'troy';
       const model=k.groqTtsModel||'canopylabs/orpheus-v1-english';
@@ -6373,7 +6929,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
     }
 
     async function ttsPreprocess(text,k){
-      const groqKey=k.whisperKey||k.aiKey;
+      const groqKey=getGroqKey(k);
       // Strip any expression tags the AI included in the text
       const cleaned=stripExprTags(text);
       if(!groqKey)return ttsQuickClean(cleaned)||cleaned;
@@ -6494,7 +7050,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
 
     function hasTTS(k){
       if(!k)k=getK();
-      return !!(k.elevenlabsKey&&(k.elevenlabsVoiceId||k.elevenlabsVoice)) || !!(k.whisperKey||k.aiKey);
+      return !!(k.elevenlabsKey&&(k.elevenlabsVoiceId||k.elevenlabsVoice)) || !!(getGroqKey(k));
     }
 
     function guessAudioMime(data){
@@ -6823,7 +7379,7 @@ AVAILABLE ACTION TYPES:
 - guest-link: {"type":"guest-link","action":"create","name":"...","instructions":"...","expires":"7d"}
 - request-config: {"type":"request-config"} — read current config
 - prompt: {"type":"prompt","question":"Pick one","options":["A","B","C"]}
-- camera-capture: {"type":"camera-capture","facing":"user"|"environment","autoSend":true,"message":"what is this?"} (or {"kind":"camera.capture",...)
+- camera-capture: {"type":"camera-capture","facing":"user"|"environment"|"both","autoSend":true,"message":"what is this?"} (or {"kind":"camera.capture",...)
 - screen-capture: {"type":"screen-capture","autoSend":true,"message":"what should I check?"} (or {"kind":"screen.capture",...)
 
 CONFIG FIELDS YOU CAN SET:
@@ -6885,7 +7441,7 @@ RULES:
         const helpMsg='[Help Mode activated — guide me through TealClaw]';
         addBubble('user',helpMsg);
         const pk=getK();
-        const helpModel=pk.aiModel||'groq/compound-mini';
+        const helpModel=pk.aiModel||modelForProvider(pk,resolveAiProvider(pk),false);
         const useStream=pk.streamEnabled!==false&&!/compound/i.test(helpModel);
         if(useStream){
           const streamIdx=chatHistory.length;
@@ -6905,7 +7461,7 @@ RULES:
             if(pk.autoScroll!==false&&!_userScrolledUp)snapScrollToBottom(scroll2);
           }).then(async aiResult=>{
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
-            if(aiText==='__NO_KEY__'){chatHistory.pop();sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free direct chat</li></ul>`);return}
+            if(aiText==='__NO_KEY__'){chatHistory.pop();sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);return}
             let displayText=aiText||'How can I help you with TealClaw?';
             const{cleanText,actions}=parseTcActions(displayText);
             let actionResults=[];
@@ -6923,7 +7479,7 @@ RULES:
           callAI(helpMsg,null).then(async aiResult=>{
             removeTyping();
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
-            if(aiText==='__NO_KEY__'){sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free direct chat</li></ul>`);return}
+            if(aiText==='__NO_KEY__'){sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);return}
             let displayText=aiText||'How can I help you with TealClaw?';
             const{cleanText,actions}=parseTcActions(displayText);
             let actionResults=[];
@@ -6974,6 +7530,10 @@ RULES:
       if(det.field==='whisperKey'&&!k.aiKey){
         k.aiProvider='groq';
       }
+      // OpenRouter key can power both chat and image generation
+      if(det.field==='aiKey'&&det.provider==='openrouter'&&!k.imageGenKey){
+        k.imageGenKey=val;
+      }
       // Switch to direct mode when setting a direct API key (not gateway URL/token)
       if(det.provider&&det.field!=='gwUrl'&&det.field!=='gwToken'){
         k.mode='direct';
@@ -6992,7 +7552,13 @@ RULES:
 
       // Respond based on what was just set
       const responses={
-        aiKey:getNextSetupStep,
+        aiKey:()=>{
+          const provider=getProviderPreset(resolveAiProvider(getK()),getK()).label;
+          return `<h3>${provider} Key Saved</h3>
+<p>Direct chat is now routed through <strong>${provider}</strong>.</p>
+<p style="font-size:11px;color:var(--text-2)">Tip: keep a Groq key too if you want voice input, /research, and fallback routing.</p>
+${getOptionalSteps()}`;
+        },
         whisperKey:()=>{
           const k2=getK();
           if(!k2.aiKey){
@@ -7051,11 +7617,17 @@ ${getOptionalSteps()}`
 
     function getNextSetupStep(){
       const k=getK();
-      let html=`<h3>Connected!</h3>
-<p>You're using <strong>Groq</strong>. One key covers chat (Compound), vision, voice input, and voice output (TTS). You're all set!</p>`;
+      const provider=getProviderPreset(resolveAiProvider(k),k).label;
+      const hasGroq=!!getGroqKey(k);
+      let html=`<h3>Connected!</h3>`;
+      if(hasGroq&&resolveAiProvider(k)==='groq'){
+        html+=`<p>You're using <strong>Groq</strong>. One key covers chat, vision, voice input, and voice output (TTS). You're all set!</p>`;
+      } else {
+        html+=`<p>You're using <strong>${provider}</strong> for direct chat/vision.</p>`;
+      }
 
       html+=`<hr><p><strong>Optional upgrades</strong> (paste a key anytime, or skip):</p><ul>`;
-
+      if(!hasGroq)html+=`<li><strong>Groq key</strong> (<code>gsk_...</code>) for Whisper voice input, /research, and direct fallback routing</li>`;
       html+=`<li><strong>Image Gen</strong> -- <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI key</a> (<code>AIza...</code>) for <code>/imagine</code> (Nano Banana)</li>`;
       html+=`<li><strong>Agent Mode</strong> -- connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full tool access</li>`;
       html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to set up forwarding or Telegram Relay mode</li>`;
@@ -7067,7 +7639,8 @@ ${getOptionalSteps()}`
     function getOptionalSteps(){
       const k=getK();
       const missing=[];
-      if(!k.whisperKey)missing.push('Groq key for chat + voice (<code>gsk_</code>)');
+      if(!getGroqKey(k))missing.push('Groq key for voice + research + fallback (<code>gsk_</code>)');
+      if(!k.aiKey&&!k.whisperKey)missing.push('direct AI key for Fireworks/OpenAI/Anthropic/etc (<code>fw_</code>, <code>sk-...</code>, <code>sk-ant-...</code>)');
 
       if(!missing.length)return '<p>All set! Type <code>/help</code> to see available commands.</p>';
       return `<p>You can also add: ${missing.join(', ')}. Just paste anytime.</p>`;
@@ -7728,7 +8301,7 @@ Rules:
 
     async function researchPipeline(query,imageBase64,deep=false){
       const k=getK();
-      const groqKey=k.whisperKey||k.aiKey;
+      const groqKey=getGroqKey(k);
       if(!groqKey){
         sysBubble(`<p>Research requires a <strong>Groq API key</strong>. Get one free at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a> and paste the <code>gsk_</code> key in the chat.</p>`);
         return;
@@ -8109,8 +8682,9 @@ Rules:
 
     // ── Share Modal ─────────────────────────────────
     function openShareModal(){
-      closeSheet();
+      closeSheet({restoreFocus:false});
       $('shareModal').classList.remove('hidden');
+      requestAnimationFrame(()=>$('smEncrypted')?.focus?.());
     }
     function closeShareModal(){
       $('shareModal').classList.add('hidden');
@@ -8481,7 +9055,7 @@ Rules:
       return{cleanText,actions};
     }
 
-    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','imageGenKey','webhookUrl','webhookEvents','customCSS']);
+    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','aiBaseUrl','aiProvider','directFallbackToGroq','gatewayHttpFallback','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','imageGenKey','webhookUrl','webhookEvents','customCSS']);
     const TC_HELPMODE_AUTO_KEYS=new Set([
       'accentColor','fontSize','fontFamily','bgColor','bgImage','textColor','themeMode',
       'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
@@ -8520,10 +9094,10 @@ Rules:
     function requestInlineCameraConsent({facing='environment',autoSend=true}={}){
       return new Promise(resolve=>{
         const id='tc-cam-'+Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>b.toString(16).padStart(2,'0')).join('');
-        const facingLabel=facing==='user'?'front':'back';
+        const facingLabel=facing==='both'?'front + back':(facing==='user'?'front':'back');
         sysBubble(`<div style="display:flex;flex-direction:column;gap:8px">
           <div style="font-size:11px;font-weight:600;color:var(--text)">AI requests a photo (${facingLabel} camera)</div>
-          <div style="font-size:10px;color:var(--text-3)">Take photo to continue. You still tap shutter ${autoSend?'before send.':'.'}</div>
+          <div style="font-size:10px;color:var(--text-3)">${facing==='both'?'Capture both front and back in one flow.':'Take photo to continue. You still tap shutter '+(autoSend?'before send.':'.')}</div>
           <div style="display:flex;gap:8px;justify-content:flex-start">
             <button class="btn btn-teal" id="${id}-take">Take photo</button>
             <button class="btn btn-ghost" id="${id}-cancel">Cancel</button>
@@ -8744,15 +9318,16 @@ Rules:
               break;
             }
             case 'camera-capture':case 'camera.capture':{
-              const facing=action.facing==='user'?'user':'environment';
+              const facing=normalizeFacingMode(action.facing||action.camera||'environment');
               const autoSend=action.autoSend!==false;
               const msg=(action.message||action.prompt||action.text||'').trim();
               const proactiveOn=getK().allowProactiveCameraCapture!==false;
+              const facingLabel=facing==='both'?'front + back':(facing==='user'?'front':'back');
               // If the owner explicitly enables proactive capture, don't add extra in-app consent friction.
               // The browser will still enforce camera permissions.
               const ok=proactiveOn
                 ? true
-                : await confirmTcAction('Open Camera Capture',`Open ${facing} camera. ${autoSend?'Photo will send to AI after you tap shutter.':'Photo will stay in draft until you send.'}`);
+                : await confirmTcAction('Open Camera Capture',`Open ${facingLabel} camera${facing==='both'?'s':''}. ${autoSend?'Photo will send to AI after capture.':'Photo will stay in draft until you send.'}`);
               if(!ok){results.push({type:'camera-capture',ok:false,error:'denied by user'});break}
               const opened=await openCamera({facing,autoSend,autoSnap:true,silent:true,message:msg,source:'tc-action'});
               results.push({type:'camera-capture',ok:!!opened,facing,autoSend});
@@ -9004,34 +9579,92 @@ Rules:
     }
 
     // ── Model Search API ──────────────────────────────
-    let _modelCache={groq:null,ts:0};
+    let _modelCache={key:'',models:null,provider:'groq',ts:0};
+    const MODEL_FALLBACKS={
+      groq:[
+        {id:'groq/compound-mini',name:'Compound Mini (web+code+wolfram)',tags:['fast']},
+        {id:'groq/compound',name:'Compound (multi-tool, deep)',tags:['reasoning']},
+        {id:'meta-llama/llama-4-maverick-17b-128e-instruct',name:'LLaMA 4 Maverick 17B',tags:['vision']},
+        {id:'meta-llama/llama-4-scout-17b-16e-instruct',name:'LLaMA 4 Scout 17B',tags:['vision']}
+      ],
+      fireworks:[
+        {id:'accounts/fireworks/models/llama-v3p1-70b-instruct',name:'Fireworks Llama 3.1 70B',tags:['chat']},
+        {id:'accounts/fireworks/models/qwen2p5-vl-72b-instruct',name:'Qwen2.5 VL 72B',tags:['vision']}
+      ],
+      openai:[
+        {id:'gpt-4o-mini',name:'GPT-4o Mini',tags:['chat','vision']},
+        {id:'gpt-4.1-mini',name:'GPT-4.1 Mini',tags:['chat']}
+      ],
+      anthropic:[
+        {id:'claude-3-5-sonnet-latest',name:'Claude 3.5 Sonnet',tags:['chat','vision']},
+        {id:'claude-3-5-haiku-latest',name:'Claude 3.5 Haiku',tags:['fast']}
+      ],
+      openrouter:[
+        {id:'openai/gpt-4o-mini',name:'OpenAI GPT-4o Mini',tags:['chat','vision']},
+        {id:'anthropic/claude-3.5-sonnet',name:'Claude 3.5 Sonnet',tags:['chat']}
+      ],
+      xai:[
+        {id:'grok-3-mini',name:'Grok 3 Mini',tags:['chat']},
+        {id:'grok-2-vision-1212',name:'Grok 2 Vision',tags:['vision']}
+      ],
+      mistral:[
+        {id:'mistral-small-latest',name:'Mistral Small Latest',tags:['chat']},
+        {id:'pixtral-12b-2409',name:'Pixtral 12B',tags:['vision']}
+      ],
+      together:[
+        {id:'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',name:'Llama 3.1 70B Turbo',tags:['chat']},
+        {id:'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',name:'Llama 3.2 11B Vision',tags:['vision']}
+      ],
+      deepseek:[
+        {id:'deepseek-chat',name:'DeepSeek Chat',tags:['chat']},
+        {id:'deepseek-reasoner',name:'DeepSeek Reasoner',tags:['reasoning']}
+      ]
+    };
+
+    function fallbackModelsFor(provider,k){
+      const pid=normalizeAiProvider(provider);
+      const label=getProviderPreset(pid,k).label;
+      const rows=MODEL_FALLBACKS[pid]||[];
+      return rows.map(m=>({id:m.id,name:m.name||m.id,provider:label,owned:'',free:pid==='groq',tags:m.tags||[]}));
+    }
+
     async function fetchModelList(){
       const now=Date.now();
-      if(_modelCache.ts&&now-_modelCache.ts<300000)return _modelCache; // 5min cache
       const k=getK();
-      const results={groq:null,ts:now};
-      // Groq models
-      const gKey=k.whisperKey||k.aiKey;
-      if(gKey){
+      const provider=resolveAiProvider(k);
+      const preset=getProviderPreset(provider,k);
+      const key=getDirectApiKey(provider,k);
+      const cacheKey=[provider,preset.baseUrl,key?key.slice(0,8):'nokey'].join('|');
+      if(_modelCache.ts&&_modelCache.key===cacheKey&&now-_modelCache.ts<300000)return _modelCache;
+
+      let models=[];
+      if(key&&preset.apiType==='openai'){
         try{
-          const res=await fetch('https://api.groq.com/openai/v1/models',{headers:{'Authorization':'Bearer '+gKey}});
-          if(res.ok){const j=await res.json();results.groq=(j.data||[]).map(m=>({id:m.id,name:m.id,provider:'Groq',owned:m.owned_by||'',free:true}))}
+          const base=normalizeProviderBaseUrl(preset.baseUrl||'');
+          if(base){
+            const headers={'Authorization':'Bearer '+key};
+            if(provider==='openrouter'){
+              headers['HTTP-Referer']=location.origin;
+              headers['X-Title']='TealClaw';
+            }
+            const res=await fetch(`${base}/models`,{headers});
+            if(res.ok){
+              const j=await res.json().catch(()=>null);
+              models=(j?.data||[]).map(m=>({
+                id:m.id,
+                name:m.id,
+                provider:preset.label,
+                owned:m.owned_by||'',
+                free:provider==='groq',
+                tags:[]
+              }));
+            }
+          }
         }catch{}
       }
-      // Fallback static list if no key or fetch failed
-      if(!results.groq){
-        results.groq=[
-          {id:'groq/compound-mini',name:'Compound Mini (web+code+wolfram)',provider:'Groq',free:true,tags:[]},
-          {id:'groq/compound',name:'Compound (multi-tool, deep)',provider:'Groq',free:true,tags:[]},
-          {id:'meta-llama/llama-4-maverick-17b-128e-instruct',name:'LLaMA 4 Maverick 17B',provider:'Groq',free:true,tags:['vision']},
-          {id:'meta-llama/llama-4-scout-17b-16e-instruct',name:'LLaMA 4 Scout 17B (tool use)',provider:'Groq',free:true,tags:['vision']},
-          {id:'llama-3.3-70b-versatile',name:'LLaMA 3.3 70B',provider:'Groq',free:true,tags:[]},
-          {id:'llama-3.1-8b-instant',name:'LLaMA 3.1 8B Instant',provider:'Groq',free:true,tags:['fast']},
-          {id:'whisper-large-v3-turbo',name:'Whisper Large V3 Turbo',provider:'Groq',free:true,tags:[]},
-        ];
-      }
-      _modelCache=results;
-      return results;
+      if(!models.length)models=fallbackModelsFor(provider,k);
+      _modelCache={key:cacheKey,models,provider,ts:now};
+      return _modelCache;
     }
 
     async function searchModels(input){
@@ -9044,9 +9677,7 @@ Rules:
       results.classList.add('open');
 
       const cache=await fetchModelList();
-      const all=[];
-      if(cache.groq)all.push(...cache.groq);
-
+      const all=cache.models||[];
       // Filter
       let filtered=all;
       if(query){
@@ -9055,11 +9686,15 @@ Rules:
           return searchable.includes(query);
         });
       }
-      // Sort: exact matches first, then by provider (Groq first = free), then alphabetical
+      // Sort: exact matches first, active provider next, Groq next, then alphabetical
+      const activeLabel=getProviderPreset(resolveAiProvider(getK()),getK()).label;
       filtered.sort((a,b)=>{
         const aExact=a.id.toLowerCase()===query?0:1;
         const bExact=b.id.toLowerCase()===query?0:1;
         if(aExact!==bExact)return aExact-bExact;
+        const aActive=a.provider===activeLabel?0:1;
+        const bActive=b.provider===activeLabel?0:1;
+        if(aActive!==bActive)return aActive-bActive;
         if(a.provider==='Groq'&&b.provider!=='Groq')return -1;
         if(b.provider==='Groq'&&a.provider!=='Groq')return 1;
         return a.name.localeCompare(b.name);
@@ -9158,39 +9793,13 @@ Rules:
       if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
       const k=getK();
       if(k.mode==='agent'&&getActiveAgent())return callAgent(userText,imageBase64,onToken);
-      // Groq direct chat (streaming)
-      const aiKey=k.whisperKey||k.aiKey;
-      if(!aiKey)return {text:'__NO_KEY__',usage:null};
-      const url='https://api.groq.com/openai/v1/chat/completions';
-      let model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):(k.aiModel||'groq/compound-mini');
-      const sys=buildSysPrompt(k);
-      const histMsgs=buildContextMessages();
-      let userContent=imageBase64?[{type:'text',text:userText||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}]:userText;
-      const msgs=[{role:'system',content:sys},...histMsgs,{role:'user',content:userContent}];
-      let maxTok=k.maxTokens||(k.skillContext===false?400:1024);if(maxTok>8192)maxTok=8192;
-      const body={model,messages:msgs,max_tokens:maxTok,stream:true};
-      if(k.temperature!==undefined)body.temperature=Number(k.temperature);
+      const provider=resolveAiProvider(k);
+      if(!hasDirectProvider(provider,k)&&!(provider!=='groq'&&hasDirectProvider('groq',k)))return {text:'__NO_KEY__',usage:null};
       const ctrl=new AbortController();
       window._tcAbort=ctrl;
-      let reader=null;
       try{
-        const res=await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${aiKey}`,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal});
-        if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`API error: ${res.status}`)}
-        reader=res.body.getReader();
-        window._tcActiveReader=reader;
-        const decoder=new TextDecoder();
-        let full='',buffer='',streamUsage=null;
-        while(true){
-          const{done,value}=await reader.read();if(done)break;
-          buffer+=decoder.decode(value,{stream:true});
-          const lines=buffer.split('\n');buffer=lines.pop()||'';
-          for(const line of lines){
-            if(!line.startsWith('data: '))continue;
-            const data=line.slice(6);if(data==='[DONE]')continue;
-            try{const j=JSON.parse(data);const delta=j.choices?.[0]?.delta?.content;if(delta){full+=delta;onToken(full)}if(j.usage)streamUsage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model}}catch{}
-          }
-        }
-        return {text:full,usage:streamUsage};
+        const res=await callDirectAI(userText,imageBase64,{stream:true,onToken,signal:ctrl.signal});
+        return res;
       } finally {
         window._tcActiveReader=null;
         if(window._tcAbort===ctrl)window._tcAbort=null;
@@ -9564,14 +10173,11 @@ Rules:
     function renderCronBar(){
       const bar=$('timerAlarmRow');
       if(!bar)return;
-      const k=getK();
-      const ag=getActiveAgent();
-      const conn=ag?agentConnections.get(ag.id):null;
-      const gwConnected=k.mode==='agent'&&conn&&conn.connected;
       const alarms=getAlarms();
       const timers=getTimers();
       const jobs=getCronJobs();
-      if(!alarms.length&&!timers.length&&!jobs.length&&!gwConnected&&!getPomodoro()){bar.classList.remove('visible');if(_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}return}
+      const pomo=getPomodoro();
+      if(!alarms.length&&!timers.length&&!jobs.length&&!pomo){bar.classList.remove('visible');if(_timerPillInterval){clearInterval(_timerPillInterval);_timerPillInterval=null}return}
       bar.classList.add('visible');
       const pills=$('cronPills');
       pills.innerHTML='';
@@ -9615,7 +10221,6 @@ Rules:
         pills.appendChild(el);
       });
       // Pomodoro pill (tomato red)
-      const pomo=getPomodoro();
       if(pomo){
         const pel=document.createElement('div');
         pel.className='cron-pill pomo-pill';
@@ -9846,7 +10451,7 @@ Time format: HH:MM (24h). Days: mon,tue,wed,thu,fri,sat,sun.`+TC_CORE_POLICY;
 
     async function chronWizardCall(){
       const k=getK();
-      const key=k.whisperKey||k.aiKey;
+      const key=getGroqKey(k);
       if(!key){endChronWizard('No Groq API key configured.');return}
       addTyping();
       try{
@@ -9951,7 +10556,7 @@ Keep tasks short and actionable. Duration in minutes. Rounds 1-8.`+TC_CORE_POLIC
 
     async function pomoWizardCall(){
       const k=getK();
-      const key=k.whisperKey||k.aiKey;
+      const key=getGroqKey(k);
       if(!key){endPomoWizard('No Groq API key configured.');return}
       addTyping();
       try{
@@ -10106,7 +10711,7 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
       _debateSkipRequested=false;
       setDebateSkipUI(true,false);
       const k=getK();
-      const key=k.whisperKey||k.aiKey;
+      const key=getGroqKey(k);
       if(!key){
         sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');
         resetDebateState();
@@ -10241,7 +10846,7 @@ Return ONLY valid JSON, no explanation.`;
 
     async function handleAlarmCommand(arg){
       const k=getK();
-      const key=k.whisperKey||k.aiKey;
+      const key=getGroqKey(k);
       const now=new Date();
       const timeCtx=`Current time: ${now.toLocaleTimeString('en-US',{hour12:true})} on ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
       addTyping();
@@ -10281,7 +10886,7 @@ Return ONLY valid JSON, no explanation.`;
 
     async function handleTimerCommand(arg){
       const k=getK();
-      const key=k.whisperKey||k.aiKey;
+      const key=getGroqKey(k);
       addTyping();
       try{
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -10356,13 +10961,14 @@ Return ONLY valid JSON, no explanation.`;
       // LaTeX: always load KaTeX
       if(!katexLoaded)loadKaTeX().catch(()=>{});
 
-      const curModel=pk.aiModel||'groq/compound-mini';
+      const curModel=pk.aiModel||modelForProvider(pk,resolveAiProvider(pk),false);
       const isCompound=/compound/i.test(curModel);
       const activeAgent=getActiveAgent();
       const isAgentMode=pk.mode==='agent'&&activeAgent;
       const useStream=pk.streamEnabled!==false&&!imageBase64&&!isAgentMode&&!isCompound;
       const agentMeta={providerTag:agentBadgeLabel(activeAgent?.id),providerType:'agent',agentId:activeAgent?.id};
-      const directMeta={providerTag:'Groq',providerType:'direct'};
+      const directProvider=resolveAiProvider(pk);
+      const directMeta={providerTag:getProviderPreset(directProvider,pk).label,providerType:'direct'};
 
       if(isAgentMode){
         // Agent mode: route through OpenClaw gateway WebSocket
@@ -10461,7 +11067,7 @@ Return ONLY valid JSON, no explanation.`;
           const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
           if(aiText==='__NO_KEY__'){
             chatHistory.pop();
-            sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free direct chat</li></ul>`);
+            sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);
             return;
           }
           // Finalize
@@ -10520,7 +11126,8 @@ Return ONLY valid JSON, no explanation.`;
             sysBubble(`<p>I need an AI connection to respond.</p>
 <ul>
 <li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li>
-<li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- paste a <code>gsk_...</code> key for free direct chat</li>
+<li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li>
+<li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li>
 </ul>`);
             return;
           }
@@ -10810,9 +11417,11 @@ Return ONLY valid JSON, no explanation.`;
         const docText=docs.map(d=>`--- ${d.name} ---\n${d.text}`).join('\n\n');
         text=text?(docText+'\n\n'+text):docText;
       }
-      // Append EXIF metadata for images so the AI has camera/location context
+      // Append metadata for images so the AI has camera/location context
       const exifTexts=imageFiles.filter(f=>f.exifText).map(f=>f.exifText);
-      if(exifTexts.length){text=(text||'')+'\n'+exifTexts.join('\n')}
+      const captureMetaTexts=imageFiles.filter(f=>f.captureMeta).map(f=>f.captureMeta);
+      const imageMeta=[...exifTexts,...captureMetaTexts];
+      if(imageMeta.length){text=(text||'')+'\n'+imageMeta.join('\n')}
 
       // Password lock gate — intercept input for unlock
       if(chatLocked){
@@ -10942,7 +11551,7 @@ ${agentNote}`);
 <li><code>/research [query]</code> -- research report (alias: /search; voice: "research..." or "search...")</li>
 <li><code>/deepresearch [query]</code> -- deep multi-tool research (alias: /deepsearch; voice: "deep research..." or "deep search...")</li>
 <li><code>/imagine [prompt]</code> -- generate an image (attach a photo to edit/remix it; works by voice: "imagine...")</li>
-<li><code>/photo [optional question]</code> -- open camera, take a photo, and send to AI for analysis</li>
+<li><code>/photo [front|back|both] [optional question]</code> -- open camera, capture photo(s), and send to AI for analysis</li>
 <li><code>/capture [optional question]</code> -- alias for /photo</li>
 <li><code>/takephoto [optional question]</code> -- alias for /photo</li>
 <li><code>/screenshot [optional question]</code> -- choose a tab/window/screen, capture one frame, and send for AI analysis</li>
@@ -10990,14 +11599,24 @@ ${agentNote}`);
           return;
         }
         if(cmd==='/photo'||cmd.startsWith('/photo ')||cmd==='/capture'||cmd.startsWith('/capture ')||cmd==='/takephoto'||cmd.startsWith('/takephoto ')){
-          const cArg=text.replace(/^\/(?:photo|capture|takephoto)\s*/i,'').trim();
+          const rawArg=text.replace(/^\/(?:photo|capture|takephoto)\s*/i,'').trim();
+          let requestedFacing=facingMode||'environment';
+          let cArg=rawArg;
+          const facingToken=rawArg.match(/^(front|selfie|back|rear|both)\b\s*/i);
+          if(facingToken){
+            const token=facingToken[1].toLowerCase();
+            if(token==='front'||token==='selfie')requestedFacing='user';
+            else if(token==='back'||token==='rear')requestedFacing='environment';
+            else if(token==='both')requestedFacing='both';
+            cArg=rawArg.slice(facingToken[0].length).trim();
+          }
           openCamera({
             autoSend:true,
             message:cArg,
             source:'slash',
-            facing:facingMode||'environment'
+            facing:requestedFacing
           }).then(opened=>{
-            if(opened)showToast('Take photo to send','ok');
+            if(opened)showToast(requestedFacing==='both'?'Captured front + back':'Take photo to send','ok');
           });
           return;
         }
@@ -11204,9 +11823,12 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
           if(mode==='agent'&&activeAg){
             lines.push(`Agent: <strong>${esc(activeAg.name)}</strong> -- <code>${esc(activeAg.url||'no url')}</code>`);
           }
-          lines.push(k.whisperKey?`AI: <strong>Groq</strong> (${k.whisperKey.slice(0,8)}...)`:'AI: <strong>not set</strong>');
-          if(mode==='direct')lines.push(`Model: <code>${k.aiModel||'groq/compound-mini'}</code>`);
-          lines.push(k.whisperKey?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>');
+          const directProvider=resolveAiProvider(k);
+          const directLabel=getProviderPreset(directProvider,k).label;
+          const directKey=(directProvider==='groq'?getGroqKey(k):k.aiKey)||'';
+          lines.push(directKey?`AI: <strong>${esc(directLabel)}</strong> (${esc(directKey.slice(0,8))}...)`:'AI: <strong>not set</strong>');
+          if(mode==='direct')lines.push(`Model: <code>${esc(k.aiModel||modelForProvider(k,directProvider,false))}</code>`);
+          lines.push(getGroqKey(k)?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>');
           {const vp=getVoicePersona(k);lines.push(hasTTS(k)?`Voice Out: <strong>${vp.name}</strong> (${vp.tag})`:'Voice Out: <strong>not set</strong> (text-only)')}
           if(k.tgToken&&k.tgChatId){
             const relayOn=isTelegramRelayEnabled(k);
@@ -12324,12 +12946,15 @@ ${statusLine}
       'message',
       'message.inbound',
       'channel.message',
+      'channel.message.inbound',
+      'channel.message.receive',
       'channel.inbound',
       'telegram.message',
       'telegram.inbound',
+      'telegram.update',
       'relay.telegram.inbound'
     ];
-    const TG_RELAY_TODO_NOTE='TODO: confirm gateway channel event contract names/shapes and remove legacy adapter guesses.';
+    const TG_RELAY_TODO_NOTE='Gateway adapters active: auto-negotiating inbound event + outbound method variants.';
     let _tgRelayRunning=false;
     let _tgRelaySeen=[];
     let _tgRelayRecentOutbound=[];
@@ -12439,7 +13064,10 @@ ${statusLine}
         out.push(`agent:${aid}:telegram:group:${chatId}`);
         out.push(`agent:${aid}:telegram:channel:${chatId}`);
         out.push(`agent:${aid}:telegram:direct:${chatId}`);
+        out.push(`agent:${aid}:telegram:${chatId}`);
         out.push(`agent:${aid}:direct:${chatId}`);
+        out.push(`telegram:${chatId}`);
+        out.push(`chat:telegram:${chatId}`);
       }
       // Fallback disabled by default — avoid accidental non-Telegram history leakage.
       if(localStorage.getItem('tc-tg-relay-main-fallback')==='1')out.push(`agent:${aid}:main`);
@@ -12456,6 +13084,29 @@ ${statusLine}
       if(typeof conn.supportsMethod==='function')return conn.supportsMethod(method);
       const methods=conn.serverInfo?.features?.methods;
       return Array.isArray(methods)&&methods.includes(method);
+    }
+
+    function isUnknownRelayMethodError(err){
+      const msg=String(err?.message||err||'');
+      return /unknown method|method not found|INVALID_REQUEST|not supported/i.test(msg);
+    }
+
+    async function tryRelayMethods(conn,candidates=[]){
+      let lastErr=null;
+      for(const c of candidates){
+        if(!c?.method)continue;
+        if(!relaySupportsMethod(conn,c.method)&&!c.allowBlind)continue;
+        try{
+          const out=await conn.request(c.method,c.params||{});
+          return{ok:true,out,path:c.path||c.method,method:c.method};
+        }catch(err){
+          lastErr=err;
+          if(isUnknownRelayMethodError(err))continue;
+          throw err;
+        }
+      }
+      if(lastErr)throw lastErr;
+      return null;
     }
 
     function extractTextFromGatewayMessage(msg){
@@ -12595,6 +13246,8 @@ ${statusLine}
       if(!isTelegramLike(event,payload))return null;
       const data=payload?.data&&typeof payload.data==='object'?payload.data:payload;
       const msg=data.message&&typeof data.message==='object'?data.message:data;
+      const direction=String(data.direction||msg.direction||payload.direction||'').toLowerCase();
+      if(direction&&/out|sent|egress|bot/.test(direction))return null;
       const role=String(data.role||msg.role||'').toLowerCase();
       if(role&&role!=='user'&&role!=='human'&&role!=='inbound')return null;
       const text=(data.text||data.body||extractTextFromGatewayMessage(msg)||extractTelegramMessageText(msg)||'').trim();
@@ -12633,6 +13286,29 @@ ${statusLine}
       };
     }
 
+    async function relayFetchHistory(conn,sessionKey,limit=120){
+      const attempts=[
+        {method:'chat.history',params:{sessionKey,limit}},
+        {method:'history.get',params:{sessionKey,limit}},
+        {method:'chat.sync',params:{sessionKey,limit}},
+        {method:'message.history',params:{sessionKey,limit}}
+      ];
+      for(const a of attempts){
+        if(!relaySupportsMethod(conn,a.method))continue;
+        try{
+          const out=await conn.request(a.method,a.params);
+          const messages=Array.isArray(out?.messages)
+            ?out.messages
+            :(Array.isArray(out?.items)?out.items:(Array.isArray(out)?out:[]));
+          return{messages,method:a.method};
+        }catch(err){
+          if(isUnknownRelayMethodError(err))continue;
+          throw err;
+        }
+      }
+      return{messages:[],method:null};
+    }
+
     async function reconcileTelegramRelayStartup(conn,agent){
       const k=getK();
       if(!isTelegramRelayEnabled(k)||k.tgRelayReceive===false||!hasTelegramConfig(k)||!conn?.connected)return;
@@ -12640,7 +13316,8 @@ ${statusLine}
       _tgRelayBridge.lastError='';
       updateStatus();
 
-      if(!relaySupportsMethod(conn,'chat.history')){
+      const historyCapable=['chat.history','history.get','chat.sync','message.history'].some(m=>relaySupportsMethod(conn,m));
+      if(!historyCapable){
         _tgRelayBridge.startupState='ready-stream-only';
         _tgRelayBridge.lastSyncAt=Date.now();
         updateStatus();
@@ -12658,10 +13335,12 @@ ${statusLine}
 
       const backlog=[];
       let maxTs=cursor;
+      let historyMethod='';
       for(const sessionKey of candidates){
         try{
-          const history=await conn.request('chat.history',{sessionKey,limit:120});
-          const messages=Array.isArray(history?.messages)?history.messages:(Array.isArray(history)?history:[]);
+          const history=await relayFetchHistory(conn,sessionKey,120);
+          if(history?.method)historyMethod=history.method;
+          const messages=Array.isArray(history?.messages)?history.messages:[];
           messages.forEach(msg=>{
             const parsed=parseRelayHistoryMessage(msg,sessionKey);
             if(!parsed)return;
@@ -12670,8 +13349,7 @@ ${statusLine}
             if(parsed.timestamp>maxTs)maxTs=parsed.timestamp;
           });
         }catch(err){
-          const msg=String(err?.message||err||'');
-          if(/unknown method:\s*chat\.history/i.test(msg)||/INVALID_REQUEST/i.test(msg)){
+          if(isUnknownRelayMethodError(err)){
             _tgRelayBridge.startupState='ready-stream-only';
             _tgRelayBridge.lastSyncAt=Date.now();
             updateStatus();
@@ -12683,6 +13361,7 @@ ${statusLine}
       backlog.sort((a,b)=>a.timestamp-b.timestamp);
       backlog.forEach(item=>emitTelegramRelayInbound(item,{path:item.path,fromReconcile:true}));
       if(maxTs>cursor)setTelegramRelayCursor(k,agent.id,maxTs);
+      if(historyMethod)_tgRelayBridge.inboundPath=`gateway-history:${historyMethod}`;
       _tgRelayBridge.lastSyncAt=Date.now();
       _tgRelayBridge.startupState='ready';
       updateStatus();
@@ -12818,29 +13497,23 @@ ${statusLine}
 
       const target=String(chatId||'').trim();
       if(!target)return null;
+      const idem=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
 
-      // Preferred path: gateway "send" method (single-consumer model).
-      if(relaySupportsMethod(conn,'send')){
-        const idem=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
-        const out=await conn.request('send',{
-          channel:'telegram',
-          to:target,
-          message:content,
-          idempotencyKey:idem,
-          bestEffort:true
-        });
-        _tgRelayBridge.outboundPath='gateway.send';
-        return out;
-      }
+      const attempt=await tryRelayMethods(conn,[
+        {method:'send',path:'gateway.send',params:{channel:'telegram',to:target,message:content,idempotencyKey:idem,bestEffort:true}},
+        {method:'message.send',path:'gateway.message.send',params:{channel:'telegram',target,message:content,idempotencyKey:idem,bestEffort:true}},
+        {method:'channel.send',path:'gateway.channel.send',params:{channel:'telegram',target,message:content,idempotencyKey:idem,bestEffort:true}},
+        {method:'channels.send',path:'gateway.channels.send',params:{channel:'telegram',target,message:content,idempotencyKey:idem,bestEffort:true}},
+        {method:'telegram.send',path:'gateway.telegram.send',params:{chatId:target,text:content,idempotencyKey:idem}}
+      ]).catch(err=>{
+        _tgRelayBridge.lastError=String(err?.message||err||'relay send failed');
+        return null;
+      });
 
-      // Optional future adapter. Disabled by default when contract is absent.
-      if(relaySupportsMethod(conn,'message.send')&&localStorage.getItem('tc-tg-relay-message-send-adapter')==='1'){
-        const out=await conn.request('message.send',{channel:'telegram',target,message:content,bestEffort:true});
-        _tgRelayBridge.outboundPath='gateway.message.send';
-        return out;
-      }
-
-      return null;
+      if(!attempt)return null;
+      _tgRelayBridge.outboundPath=attempt.path;
+      _tgRelayBridge.todo=`Adapter active via ${attempt.method}`;
+      return attempt.out;
     }
 
     async function sendTelegramRelayMessage(text,imageBase64){
@@ -13030,7 +13703,7 @@ ${statusLine}
         }
 
         // Send to Groq vision (Maverick) for commentary — only when no agent is connected
-        const groqKey=k.whisperKey||k.aiKey;
+        const groqKey=getGroqKey(k);
         if(groqKey&&imgUrl.startsWith('data:')&&!(k.mode==='agent'&&getActiveAgent())){
           const visionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
           fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -13076,7 +13749,288 @@ ${statusLine}
 
     // ── Camera ──────────────────────────────────────────
     let camStream=null,facingMode='environment',torchOn=false;
-    let cameraCaptureRequest={autoSend:false,message:'',source:'manual'};
+    let cameraCaptureRequest={autoSend:false,message:'',source:'manual',facing:'environment'};
+    const CAM_WARMUP_MS=300;
+    const CAM_AUTO_TORCH_LUMA=44;
+
+    function normalizeFacingMode(mode){
+      if(mode==='user'||mode==='environment'||mode==='both')return mode;
+      return 'environment';
+    }
+
+    function cameraLabel(mode){
+      const m=normalizeFacingMode(mode);
+      if(m==='user')return 'front';
+      if(m==='environment')return 'back';
+      return 'front+back';
+    }
+
+    function waitMs(ms){return new Promise(r=>setTimeout(r,ms));}
+
+    function getVideoTrack(stream){
+      try{return stream?.getVideoTracks?.()[0]||null}catch{return null}
+    }
+
+    function trackHasTorch(track){
+      try{return !!track?.getCapabilities?.().torch}catch{return false}
+    }
+
+    function updateTorchButton(track){
+      const btn=$('camTorch');
+      if(!btn)return;
+      const hasTorch=trackHasTorch(track);
+      btn.style.display=hasTorch?'':'none';
+      if(!hasTorch){
+        torchOn=false;
+        btn.classList.remove('on');
+      }
+    }
+
+    function buildCameraConstraintSet(facing,{preferLowLight=true,maxWidth=1920,maxHeight=1080}={}){
+      const facingOpt=(facing==='user'||facing==='environment')?{facingMode:{ideal:facing}}:{};
+      const base={
+        ...facingOpt,
+        width:{ideal:maxWidth},
+        height:{ideal:maxHeight},
+        frameRate:{ideal:30,max:30}
+      };
+      if(preferLowLight){
+        base.advanced=[
+          {exposureMode:'continuous'},
+          {whiteBalanceMode:'continuous'},
+          {focusMode:'continuous'}
+        ];
+      }
+      return {video:base,audio:false};
+    }
+
+    async function getCameraStream(facing,opts={}){
+      const preferred=normalizeFacingMode(facing)==='both'?'environment':normalizeFacingMode(facing);
+      const maxWidth=opts.maxWidth||1920;
+      const maxHeight=opts.maxHeight||1080;
+      const attempts=[
+        buildCameraConstraintSet(preferred,{preferLowLight:true,maxWidth,maxHeight}),
+        buildCameraConstraintSet(preferred,{preferLowLight:false,maxWidth,maxHeight}),
+        {video:{facingMode:{ideal:preferred},width:{ideal:Math.min(maxWidth,1280)},height:{ideal:Math.min(maxHeight,720)}},audio:false},
+        {video:true,audio:false}
+      ];
+      let lastErr=null;
+      for(const constraints of attempts){
+        try{return await navigator.mediaDevices.getUserMedia(constraints)}catch(e){lastErr=e}
+      }
+      throw lastErr||new Error('Camera unavailable');
+    }
+
+    async function waitForVideoReady(video,timeoutMs=2500){
+      if(!video)return false;
+      if(video.videoWidth&&video.videoHeight&&video.readyState>=2)return true;
+      return await new Promise(resolve=>{
+        let done=false;
+        const cleanup=()=>{
+          if(done)return;
+          done=true;
+          video.removeEventListener('loadedmetadata',onReady);
+          video.removeEventListener('canplay',onReady);
+          clearTimeout(timer);
+        };
+        const onReady=()=>{
+          if(video.videoWidth&&video.videoHeight&&video.readyState>=2){cleanup();resolve(true)}
+        };
+        const timer=setTimeout(()=>{cleanup();resolve(false)},timeoutMs);
+        video.addEventListener('loadedmetadata',onReady);
+        video.addEventListener('canplay',onReady);
+      });
+    }
+
+    async function settleCameraExposure(video,extraDelayMs=CAM_WARMUP_MS){
+      const ready=await waitForVideoReady(video);
+      if(!ready)return false;
+      if(extraDelayMs>0)await waitMs(extraDelayMs);
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      return true;
+    }
+
+    function estimateLuma(video){
+      try{
+        const w=Math.max(16,Math.min(160,video.videoWidth||160));
+        const h=Math.max(16,Math.min(120,video.videoHeight||120));
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const ctx=c.getContext('2d',{willReadFrequently:true});
+        ctx.drawImage(video,0,0,w,h);
+        const data=ctx.getImageData(0,0,w,h).data;
+        let sum=0;
+        for(let i=0;i<data.length;i+=4){
+          sum+=(0.2126*data[i])+(0.7152*data[i+1])+(0.0722*data[i+2]);
+        }
+        return sum/(data.length/4);
+      }catch{return NaN}
+    }
+
+    async function maybeAutoTorch(track,video,facing){
+      if(!track||normalizeFacingMode(facing)!=='environment')return false;
+      if(!trackHasTorch(track)||torchOn)return false;
+      const luma=estimateLuma(video);
+      if(!Number.isFinite(luma)||luma>CAM_AUTO_TORCH_LUMA)return false;
+      try{
+        await track.applyConstraints({advanced:[{torch:true}]});
+        await waitMs(180);
+        return true;
+      }catch{return false}
+    }
+
+    async function switchCameraFacing(nextFacing,{showErrors=true}={}){
+      const normalized=normalizeFacingMode(nextFacing);
+      const target=normalized==='both'?'environment':normalized;
+      if(camStream){try{camStream.getTracks().forEach(t=>t.stop())}catch{}}
+      camStream=null;
+      torchOn=false;
+      $('camTorch').classList.remove('on');
+      try{
+        camStream=await getCameraStream(target);
+        const vid=$('camVideo');
+        vid.srcObject=camStream;
+        try{await vid.play()}catch{}
+        await settleCameraExposure(vid,180);
+        updateTorchButton(getVideoTrack(camStream));
+        facingMode=target;
+        return true;
+      }catch(e){
+        if(showErrors)showToast('Camera switch failed','err');
+        return false;
+      }
+    }
+
+    async function captureActiveCameraFrame({quality=0.85,allowAutoTorch=true}={}){
+      const video=$('camVideo'),canvas=$('camCanvas');
+      if(!video||!canvas||!camStream)return null;
+      const settled=await settleCameraExposure(video,CAM_WARMUP_MS);
+      if(!settled)return null;
+
+      const track=getVideoTrack(camStream);
+      const autoTorch=allowAutoTorch?await maybeAutoTorch(track,video,facingMode):false;
+
+      canvas.width=video.videoWidth||1280;
+      canvas.height=video.videoHeight||720;
+      canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+      const rawUrl=canvas.toDataURL('image/jpeg',quality);
+      const meta={
+        source:'camera',
+        facing:facingMode,
+        camera:cameraLabel(facingMode),
+        timestamp:new Date().toISOString(),
+        luma:Math.round(estimateLuma(video)||0)
+      };
+
+      if(autoTorch){
+        try{await track.applyConstraints({advanced:[{torch:false}]})}catch{}
+      }
+
+      return {rawUrl,meta};
+    }
+
+    function buildCaptureMetaText(meta){
+      if(!meta||meta.source!=='camera')return '';
+      const parts=[
+        '[Capture Metadata]',
+        `source: ${meta.source}`,
+        `camera: ${meta.camera||cameraLabel(meta.facing)}`,
+        `facing: ${normalizeFacingMode(meta.facing||'environment')}`,
+        `captured_at: ${meta.timestamp||new Date().toISOString()}`
+      ];
+      if(Array.isArray(meta.cameras)&&meta.cameras.length)parts.push(`cameras: ${meta.cameras.join(', ')}`);
+      if(Number.isFinite(meta.luma)&&meta.luma>0)parts.push(`brightness_luma: ${meta.luma}`);
+      return parts.join('\n');
+    }
+
+    function withCaptureMeta(message,meta){
+      const note=buildCaptureMetaText(meta);
+      if(!note)return (message||'').trim();
+      const base=(message||'').trim();
+      return base?`${base}
+
+${note}`:note;
+    }
+
+    async function queueCapturedImage(rawUrl,req,meta){
+      const sendText=(req.message||'').trim();
+      const msgWithMeta=withCaptureMeta(sendText,meta);
+      if(req.autoSend){
+        addTyping();
+        compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
+          removeTyping();
+          pipeline(msgWithMeta,comp?.dataUrl||rawUrl);
+        }).catch(()=>{removeTyping();pipeline(msgWithMeta,rawUrl)});
+        return true;
+      }
+      const n=pendingFiles.filter(f=>f.type==='image').length+1;
+      const idx=pendingFiles.length;
+      const origSize=Math.round(rawUrl.length*0.75);
+      pendingFiles.push({name:`Photo ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl,captureMeta:buildCaptureMetaText(meta)||null});
+      renderFileStack();updateActionBtn();
+      compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
+        pendingFiles[idx]={name:`Photo ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false,captureMeta:buildCaptureMetaText(meta)||null};
+        renderFileStack();
+      });
+      return true;
+    }
+
+    async function composeDualCameraCollage(captures){
+      const valid=(captures||[]).filter(c=>c&&c.rawUrl);
+      if(valid.length===0)return null;
+      if(valid.length===1)return {dataUrl:valid[0].rawUrl,meta:valid[0].meta};
+
+      const imgs=[];
+      for(const c of valid){
+        const img=new Image();
+        await new Promise(r=>{img.onload=r;img.onerror=r;img.src=c.rawUrl});
+        imgs.push({img,meta:c.meta});
+      }
+
+      const cellW=640,cellH=480,pad=6;
+      const canvas=document.createElement('canvas');
+      canvas.width=(cellW*imgs.length)+(pad*(imgs.length-1));
+      canvas.height=cellH;
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      imgs.forEach((entry,i)=>{
+        const x=i*(cellW+pad),y=0;
+        ctx.drawImage(entry.img,x,y,cellW,cellH);
+        const label=(entry.meta?.camera||cameraLabel(entry.meta?.facing||'environment')).toUpperCase();
+        ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(x,cellH-26,cellW,26);
+        ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.fillText(label,x+8,cellH-9);
+      });
+
+      const meta={
+        source:'camera',
+        facing:'both',
+        camera:'front+back',
+        timestamp:new Date().toISOString(),
+        cameras:valid.map(c=>cameraLabel(c.meta?.facing||'environment'))
+      };
+      return {dataUrl:canvas.toDataURL('image/jpeg',0.85),meta};
+    }
+
+    async function captureBothCameras(req){
+      const captures=[];
+      for(const targetFacing of ['environment','user']){
+        const switched=await switchCameraFacing(targetFacing,{showErrors:false});
+        if(!switched)continue;
+        const cap=await captureActiveCameraFrame({quality:0.85,allowAutoTorch:true});
+        if(cap)captures.push(cap);
+      }
+      if(captures.length===0)return false;
+
+      const merged=await composeDualCameraCollage(captures);
+      if(!merged)return false;
+
+      closeCamera();
+      const msg=(req.message||'').trim();
+      const caption=msg?`${msg}
+
+[Dual capture: back + front camera]`:'Dual capture: back + front camera';
+      return queueCapturedImage(merged.dataUrl,{...req,message:caption},merged.meta);
+    }
 
     async function captureScreenFrame(opts={}){
       if(!navigator.mediaDevices?.getDisplayMedia){
@@ -13108,9 +14062,9 @@ ${statusLine}
         const n=pendingFiles.filter(f=>f.type==='image').length+1;
         const idx=pendingFiles.length;
         const origSize=Math.round(rawUrl.length*0.75);
-        pendingFiles.push({name:`Screenshot ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl});
+        pendingFiles.push({name:`Screenshot ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl,captureMeta:'[Capture Metadata]\nsource: screen\ncaptured_at: '+new Date().toISOString()});
         renderFileStack();updateActionBtn();
-        compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{pendingFiles[idx]={name:`Screenshot ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false};renderFileStack();});
+        compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{pendingFiles[idx]={name:`Screenshot ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false,captureMeta:'[Capture Metadata]\nsource: screen\ncaptured_at: '+new Date().toISOString()};renderFileStack();});
         return true;
       }catch(e){
         const msg=(e&&e.name==='NotAllowedError')?'Screen capture cancelled':'Screen capture failed';
@@ -13127,66 +14081,36 @@ ${statusLine}
 
     async function openCamera(opts={}){
       if(getK().cameraEnabled===false){showToast('Camera disabled','err');haptic('error');return false}
+
+      const requestedFacing=normalizeFacingMode(opts.facing||facingMode||'environment');
       cameraCaptureRequest={
         autoSend:!!opts.autoSend,
         message:typeof opts.message==='string'?opts.message.trim():'',
-        source:opts.source||'manual'
+        source:opts.source||'manual',
+        facing:requestedFacing
       };
-      if(opts.facing==='user'||opts.facing==='environment')facingMode=opts.facing;
-      const autoSnap=!!opts.autoSnap;
+
+      const autoSnap=!!opts.autoSnap||requestedFacing==='both';
       const silent=!!opts.silent;
       if(!silent)$('camOverlay').classList.remove('hidden');
+
       try{
-        camStream=await navigator.mediaDevices.getUserMedia({
-          video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
-        });
-        const vid=$('camVideo');
-        vid.srcObject=camStream;
-        try{await vid.play()}catch{}
+        const initialFacing=requestedFacing==='both'?'environment':requestedFacing;
+        const switched=await switchCameraFacing(initialFacing,{showErrors:false});
+        if(!switched)throw new Error('Camera unavailable');
 
-        const snapNow=()=>{
-          const video=$('camVideo'),canvas=$('camCanvas');
-          if(!video||!canvas||!video.videoWidth||!video.videoHeight)return false;
-          canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-          canvas.getContext('2d').drawImage(video,0,0);
-          const rawUrl=canvas.toDataURL('image/jpeg',0.85);
-          const req={...cameraCaptureRequest};
-          closeCamera();
-          const sendText=(req.message||'').trim();
-          if(req.autoSend){
-            addTyping();
-            compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
-              removeTyping();
-              pipeline(sendText,comp?.dataUrl||rawUrl);
-            }).catch(()=>{removeTyping();pipeline(sendText,rawUrl)});
-            return true;
-          }
-          const n=pendingFiles.filter(f=>f.type==='image').length+1;
-          const idx=pendingFiles.length;
-          const origSize=Math.round(rawUrl.length*0.75);
-          pendingFiles.push({name:`Photo ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl});
-          renderFileStack();updateActionBtn();
-          compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
-            pendingFiles[idx]={name:`Photo ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false};
-            renderFileStack();
-          });
-          return true;
-        };
+        if(requestedFacing==='both'){
+          if(!silent)showToast('Capturing back + front camera…','ok');
+          const ok=await captureBothCameras(cameraCaptureRequest);
+          if(!ok){showToast('Dual capture failed','err');closeCamera();}
+          return ok;
+        }
 
-        // Auto-snap: capture without showing the selfie UI.
         if(autoSnap){
-          const trySnap=()=>{
-            if(snapNow())return;
-            // Retry a few times while camera warms up
-            let tries=0;
-            const t=setInterval(()=>{
-              tries++;
-              if(snapNow()||tries>=15)clearInterval(t);
-            },60);
-          };
-          // If dimensions ready, snap; else wait for canplay.
-          if(vid.videoWidth&&vid.videoHeight)trySnap();
-          else vid.addEventListener('canplay',trySnap,{once:true});
+          const cap=await captureActiveCameraFrame({quality:0.85,allowAutoTorch:true});
+          if(!cap){showToast('Capture failed','err');closeCamera();return false}
+          closeCamera();
+          await queueCapturedImage(cap.rawUrl,cameraCaptureRequest,cap.meta);
         }
 
         return true;
@@ -13197,70 +14121,53 @@ ${statusLine}
       }
     }
 
-    $('camShutter').addEventListener('click',()=>{
+    $('camShutter').addEventListener('click',async()=>{
       haptic('shutter');
-      const video=$('camVideo'),canvas=$('camCanvas');
-      canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-      canvas.getContext('2d').drawImage(video,0,0);
-      const rawUrl=canvas.toDataURL('image/jpeg',0.85);
-      const req={...cameraCaptureRequest};
+      const req={...cameraCaptureRequest,facing:normalizeFacingMode(cameraCaptureRequest?.facing||facingMode)};
+      const cap=await captureActiveCameraFrame({quality:0.85,allowAutoTorch:true});
+      if(!cap){showToast('Capture failed','err');return}
       closeCamera();
-      const sendText=(req.message||'').trim();
-      if(req.autoSend){
-        addTyping();
-        compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
-          removeTyping();
-          pipeline(sendText,comp?.dataUrl||rawUrl);
-        }).catch(()=>{removeTyping();pipeline(sendText,rawUrl)});
-        return;
-      }
-      const n=pendingFiles.filter(f=>f.type==='image').length+1;
-      const idx=pendingFiles.length;
-      const origSize=Math.round(rawUrl.length*0.75);
-      pendingFiles.push({name:`Photo ${n}`,type:'image',processing:true,origSize,dataUrl:rawUrl});
-      renderFileStack();updateActionBtn();
-      compressImage(rawUrl,{type:'image/jpeg'}).then(comp=>{
-        pendingFiles[idx]={name:`Photo ${n}`,type:'image',dataUrl:comp.dataUrl,origSize,compSize:comp.compSize,processing:false};
-        renderFileStack();
-      });
+      await queueCapturedImage(cap.rawUrl,req,cap.meta);
     });
 
     $('camFlip').addEventListener('click',async()=>{
-      facingMode=facingMode==='environment'?'user':'environment';
-      if(camStream){camStream.getTracks().forEach(t=>t.stop())}
-      torchOn=false;$('camTorch').classList.remove('on');
-      try{
-        camStream=await navigator.mediaDevices.getUserMedia({
-          video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
-        });
-        $('camVideo').srcObject=camStream;
-      }catch(e){showToast('Camera flip failed','err')}
+      const next=facingMode==='environment'?'user':'environment';
+      await switchCameraFacing(next,{showErrors:true});
     });
 
     $('camTorch').addEventListener('click',async()=>{
       if(!camStream)return;
-      const track=camStream.getVideoTracks()[0];
-      if(!track)return;
+      const track=getVideoTrack(camStream);
+      if(!track||!trackHasTorch(track)){
+        showToast('Flashlight not available','err');
+        return;
+      }
       try{
         torchOn=!torchOn;
         await track.applyConstraints({advanced:[{torch:torchOn}]});
         $('camTorch').classList.toggle('on',torchOn);
-      }catch{showToast('Flashlight not available','err');torchOn=false}
+      }catch{
+        showToast('Flashlight not available','err');
+        torchOn=false;
+        $('camTorch').classList.remove('on');
+      }
     });
 
     $('camClose').addEventListener('click',closeCamera);
 
     function closeCamera(){
-      if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
-      $('camOverlay').classList.add('hidden');torchOn=false;$('camTorch').classList.remove('on');
-      cameraCaptureRequest={autoSend:false,message:'',source:'manual'};
+      if(camStream){try{camStream.getTracks().forEach(t=>t.stop())}catch{};camStream=null}
+      $('camOverlay').classList.add('hidden');
+      torchOn=false;
+      $('camTorch').classList.remove('on');
+      $('camTorch').style.display='';
+      cameraCaptureRequest={autoSend:false,message:'',source:'manual',facing:'environment'};
     }
-
 
 
     // ── Config Import (shared by hash, file drop, paste) ──
     const CONFIG_KEYS={
-      aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',
+      aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',aiBaseUrl:'aiBaseUrl',directFallbackToGroq:'directFallbackToGroq',gatewayHttpFallback:'gatewayHttpFallback',
       whisperKey:'whisperKey',ttsAutoPlay:'ttsAutoPlay',ttsMode:'ttsMode',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',groqTtsExpression:'groqTtsExpression',
       elevenlabsKey:'elevenlabsKey',elevenlabsVoiceId:'elevenlabsVoiceId',elevenlabsVoice:'elevenlabsVoice',elevenlabsModel:'elevenlabsModel',
       elevenlabsStability:'elevenlabsStability',elevenlabsSimilarity:'elevenlabsSimilarity',elevenlabsStyle:'elevenlabsStyle',elevenlabsSpeakerBoost:'elevenlabsSpeakerBoost',
@@ -13343,7 +14250,11 @@ ${statusLine}
       tgRelayReceive:'Relay inbound receive',
       tgRelaySpeak:'Relay auto-speak',
       tgRelayPollSec:'Legacy relay poll interval (v1 compat)',
-      aiKey:'AI key',
+      aiKey:'Direct AI key',
+      aiProvider:'Direct AI provider',
+      aiBaseUrl:'Direct AI base URL',
+      directFallbackToGroq:'Direct fallback to Groq',
+      gatewayHttpFallback:'Gateway HTTP fallback',
       whisperKey:'Groq key',
       imageGenKey:'Image generation key',
       pinHash:'PIN hash',
@@ -13965,7 +14876,7 @@ ${statusLine}
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
-    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',tgRelayEnabled:false,tgRelayReceive:true,tgRelaySpeak:false,tgRelayPollSec:6,streamEnabled:true,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:true,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',directFallbackToGroq:true,gatewayHttpFallback:false,tgRelayEnabled:false,tgRelayReceive:true,tgRelaySpeak:false,tgRelayPollSec:6,streamEnabled:true,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:true,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
 
     function buildConfigPayload(includeSensitive=false){
       const k=getK();
@@ -14350,8 +15261,9 @@ ${statusLine}
     async function startSurveillance(opts){
       if(_survState)stopSurveillance();
       try{
-        const facingMode=opts.camera==='environment'?'environment':'user';
-        const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode,width:{ideal:640},height:{ideal:480}},audio:false});
+        let facingMode=normalizeFacingMode(opts.camera||'user');
+        if(facingMode==='both')facingMode='environment';
+        const stream=await getCameraStream(facingMode,{maxWidth:640,maxHeight:480});
 
         // Create preview
         const preview=document.createElement('div');
@@ -14382,6 +15294,7 @@ ${statusLine}
         makeDraggable(badge,'tc-surv-badge-pos');
 
         await video.play();
+        await settleCameraExposure(video,220);
         canvas.width=video.videoWidth||640;
         canvas.height=video.videoHeight||480;
         const ctx=canvas.getContext('2d');
@@ -14397,7 +15310,7 @@ ${statusLine}
           detector='motion';
         }
 
-        _survState={stream,video,canvas,ctx,detector,interval:null,badge,preview,opts,lastAlert:0,prevFrame:null};
+        _survState={stream,video,canvas,ctx,detector,interval:null,badge,preview,opts,lastAlert:0,prevFrame:null,facingMode};
 
         // Start detection loop
         _survState.interval=setInterval(()=>survDetect(),1000); // 1 FPS for efficiency
@@ -14408,7 +15321,7 @@ ${statusLine}
           if(snap)showToast('Snapshot captured','ok');
         });
         controls.querySelector('#survToggleCam')?.addEventListener('click',async()=>{
-          const newFacing=opts.camera==='environment'?'user':'environment';
+          const newFacing=(_survState?.facingMode||facingMode)==='environment'?'user':'environment';
           stopSurveillance();
           startSurveillance({...opts,camera:newFacing});
         });
@@ -14446,7 +15359,7 @@ ${statusLine}
             if(diff>60)diffPixels++;
           }
           const ratio=diffPixels/(len/16);
-          if(ratio>0.05){detected=true;detectionData={type:'motion',ratio:Math.round(ratio*100)+'%'}}
+          if(ratio>0.05){detected=true;detectionData={type:'motion',ratio:Math.round(ratio*100)+'%',camera:_survState?.facingMode||'environment'}}
         }
         _survState.prevFrame=frame;
       } else if(detector&&detector.detect){
@@ -14455,7 +15368,7 @@ ${statusLine}
           const faces=await detector.detect(video);
           if(faces.length>0){
             detected=true;
-            detectionData={type:'face',count:faces.length};
+            detectionData={type:'face',count:faces.length,camera:_survState?.facingMode||'environment'};
             // Draw face boxes
             ctx.strokeStyle='#ef4444';ctx.lineWidth=2;
             faces.forEach(f=>{
@@ -14478,8 +15391,9 @@ ${statusLine}
 
     async function survAlert(data){
       haptic('heavy');
+      const camUsed=cameraLabel(data?.camera||_survState?.facingMode||'environment');
       const typeLabel=data.type==='face'?`${data.count} face${data.count>1?'s':''} detected`:'Motion detected ('+data.ratio+' change)';
-      showToast(typeLabel,'err');
+      showToast(`${typeLabel} (${camUsed} camera)`,'err');
 
       // Send alert to connected agent
       const k=getK();
@@ -14491,7 +15405,7 @@ ${statusLine}
           const snap=await survSnap();
           const dev=getDeviceTag();
           const devLabel=dev.name+(dev.location?' ('+dev.location+')':'');
-          const alertMsg=`[Surveillance Alert] ${typeLabel} at ${new Date().toLocaleTimeString()} from ${devLabel} [device:${dev.id}]. ${snap?'Snapshot attached.':''}`;
+          const alertMsg=`[Surveillance Alert] ${typeLabel} on ${camUsed} camera at ${new Date().toLocaleTimeString()} from ${devLabel} [device:${dev.id}]. ${snap?'Snapshot attached.':''}`;
           if(snap){
             conn.chatSend(alertMsg,[{type:'image',data:snap}]).catch(()=>{});
           } else {
@@ -14501,13 +15415,14 @@ ${statusLine}
       }
 
       // Also add to chat
-      const bubble=sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">\uD83D\uDC41</span><div><strong style="color:#ef4444">${typeLabel}</strong><div style="font-size:10px;color:var(--text-3)">${new Date().toLocaleTimeString()} — ${_survState?.opts?.label||'Camera'}</div></div></div>`);
+      const bubble=sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">\uD83D\uDC41</span><div><strong style="color:#ef4444">${typeLabel}</strong><div style="font-size:10px;color:var(--text-3)">${new Date().toLocaleTimeString()} — ${_survState?.opts?.label||'Camera'} (${camUsed})</div></div></div>`);
     }
 
     async function survSnap(){
       if(!_survState)return null;
       const{video,canvas,ctx}=_survState;
       if(video.readyState<2)return null;
+      await settleCameraExposure(video,140);
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
       return canvas.toDataURL('image/jpeg',0.8);
     }
@@ -14534,7 +15449,7 @@ ${statusLine}
       // If facing mode changed, release old
       if(_owState)releaseOverwatchCameraForce();
 
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode,width:{ideal:640},height:{ideal:480}},audio:false});
+      const stream=await getCameraStream(facingMode,{maxWidth:640,maxHeight:480});
       const preview=document.createElement('div');
       preview.className='tc-overwatch-preview';preview.id='tcOwPreview';
       const video=document.createElement('video');
@@ -14561,6 +15476,7 @@ ${statusLine}
       makeDraggable(badge,'tc-ow-badge-pos');
 
       await video.play();
+      await settleCameraExposure(video,200);
 
       controls.querySelector('#owTogglePreview')?.addEventListener('click',()=>{
         const v=preview.querySelector('video');
@@ -14615,14 +15531,20 @@ ${statusLine}
     }
 
     // ── Photo Log ──────────────────────────────────────
+    function photoLogCameraModeLabel(mode){
+      const m=normalizeFacingMode(mode);
+      return m==='both'?'front+back':cameraLabel(m);
+    }
+
     async function startPhotoLog(){
       if(_plState)stopPhotoLog();
       const k=getK();
-      const facingMode=k.photoLogCamera||'user';
+      const cameraMode=normalizeFacingMode(k.photoLogCamera||'user');
+      const initialFacing=cameraMode==='both'?'environment':cameraMode;
       const interval=(k.photoLogInterval||5)*1000;
       const maxFrames=k.photoLogFrames||12;
       try{
-        const ow=await getOverwatchCamera(facingMode);
+        const ow=await getOverwatchCamera(initialFacing);
         ow.users.add('photoLog');
 
         let elapsed=0;
@@ -14632,17 +15554,28 @@ ${statusLine}
           const s=String(elapsed%60).padStart(2,'0');
           if(_owState?.timerEl){
             const wmLabel=_wmState?' + Watch':'';
-            _owState.timerEl.textContent=`Photo ${m}:${s}${wmLabel}`;
+            const camLabel=cameraMode==='both'?' • front+back':'';
+            _owState.timerEl.textContent=`Photo ${m}:${s}${camLabel}${wmLabel}`;
           }
         },1000);
 
-        _plState={interval:null,elapsed:0,elapsedTimer,buffer:[],narrative:'',pass:0};
+        _plState={
+          interval:null,
+          elapsed:0,
+          elapsedTimer,
+          buffer:[],
+          narrative:'',
+          pass:0,
+          cameraMode,
+          nextFacing:cameraMode==='both'?'environment':cameraMode,
+          captureInFlight:false
+        };
 
         _plState.interval=setInterval(()=>{
-          photoLogCapture(maxFrames);
+          photoLogCapture(maxFrames).catch(()=>{});
         },interval);
 
-        showToast('Photo Log active','ok');
+        showToast(`Photo Log active (${photoLogCameraModeLabel(cameraMode)})`,'ok');
       }catch(e){
         showToast('Camera access denied: '+e.message,'err');
         const k2=getK();k2.photoLogEnabled=false;setK(k2);
@@ -14659,25 +15592,52 @@ ${statusLine}
       if(_owState?.timerEl&&_wmState){_owState.timerEl.textContent='Watch Mode'}
     }
 
-    function photoLogCapture(maxFrames){
-      if(!_plState||!_owState)return;
-      const{video}=_owState;
-      if(video.readyState<2)return;
-      const c=document.createElement('canvas');
-      c.width=video.videoWidth||640;c.height=video.videoHeight||480;
-      const ctx=c.getContext('2d');ctx.drawImage(video,0,0,c.width,c.height);
-      const ts=new Date().toLocaleTimeString('en-US',{hour12:false});
-      _plState.buffer.push({data:c.toDataURL('image/jpeg',0.6),ts});
-      if(_plState.buffer.length>=maxFrames){
-        const frames=_plState.buffer.splice(0);
-        photoLogAssembleAndAnalyze(frames);
+    async function photoLogCapture(maxFrames){
+      if(!_plState)return;
+      if(_plState.captureInFlight)return;
+      _plState.captureInFlight=true;
+
+      try{
+        const mode=normalizeFacingMode(_plState.cameraMode||'user');
+        let targetFacing=mode==='both'?normalizeFacingMode(_plState.nextFacing||'environment'):mode;
+        if(targetFacing==='both')targetFacing='environment';
+
+        if(!_owState||_owState.facingMode!==targetFacing){
+          const ow=await getOverwatchCamera(targetFacing);
+          ow.users.add('photoLog');
+          if(_wmState)ow.users.add('watchMode');
+        }
+
+        const video=_owState?.video;
+        if(!video)return;
+        const settled=await settleCameraExposure(video,120);
+        if(!settled||video.readyState<2)return;
+
+        const c=document.createElement('canvas');
+        c.width=video.videoWidth||640;c.height=video.videoHeight||480;
+        const ctx=c.getContext('2d');ctx.drawImage(video,0,0,c.width,c.height);
+        const ts=new Date().toLocaleTimeString('en-US',{hour12:false});
+        _plState.buffer.push({data:c.toDataURL('image/jpeg',0.6),ts,camera:targetFacing});
+
+        if(mode==='both'){
+          _plState.nextFacing=targetFacing==='environment'?'user':'environment';
+        }
+
+        if(_plState.buffer.length>=maxFrames){
+          const frames=_plState.buffer.splice(0);
+          photoLogAssembleAndAnalyze(frames,mode);
+        }
+      }finally{
+        if(_plState)_plState.captureInFlight=false;
       }
     }
 
-    async function photoLogAssembleAndAnalyze(frames){
+    async function photoLogAssembleAndAnalyze(frames,cameraMode){
       if(!_plState)return;
       _plState.pass++;
       const pass=_plState.pass;
+      const modeLabel=photoLogCameraModeLabel(cameraMode);
+
       // Build collage: 3 columns, rows = ceil(frames/3)
       const cols=3,cellW=213,cellH=160;
       const rows=Math.ceil(frames.length/cols);
@@ -14692,10 +15652,11 @@ ${statusLine}
         const col=i%cols,row=Math.floor(i/cols);
         const x=col*cellW,y=row*cellH;
         ctx.drawImage(img,x,y,cellW,cellH);
-        // Timestamp overlay
-        ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(x,y+cellH-16,cellW,16);
-        ctx.fillStyle='#fff';ctx.font='bold 11px monospace';
-        ctx.fillText(frames[i].ts,x+4,y+cellH-4);
+        // Timestamp + camera overlay
+        ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(x,y+cellH-18,cellW,18);
+        ctx.fillStyle='#fff';ctx.font='bold 10px monospace';
+        const frameCam=cameraLabel(frames[i].camera||cameraMode);
+        ctx.fillText(`${frames[i].ts} • ${frameCam}`,x+4,y+cellH-5);
       }
 
       const collageData=canvas.toDataURL('image/jpeg',0.6);
@@ -14704,7 +15665,7 @@ ${statusLine}
 
       // Build prompt
       const prevNarrative=_plState?.narrative||'';
-      let prompt='Photos are L-R, top-to-bottom. Timestamps shown. One-sentence summary of what you see.';
+      let prompt='Photos are L-R, top-to-bottom. Each frame includes timestamp and camera label (front/back). One-sentence summary of what you see.';
       if(prevNarrative){
         prompt+=` Previous summary: "${prevNarrative}" — note any changes.`;
       }
@@ -14712,7 +15673,7 @@ ${statusLine}
       // Always use direct Groq vision API — agents can't process images
       try{
         const k=getK();
-        const groqKey=k.whisperKey||k.aiKey;
+        const groqKey=getGroqKey(k);
         let responseText='';
 
         if(groqKey){
@@ -14746,12 +15707,12 @@ ${statusLine}
           const agent=getActiveAgent();
           const conn=agent?agentConnections.get(agent.id):null;
           if(conn?.connected){
-            conn.request('chat.inject',{sessionKey:conn.sessionKey,message:`[Photo Log — Pass ${pass}] ${responseText}`,label:'photo-log'}).catch(()=>{});
+            conn.request('chat.inject',{sessionKey:conn.sessionKey,message:`[Photo Log — Pass ${pass} — ${modeLabel}] ${responseText}`,label:'photo-log'}).catch(()=>{});
           }
         }
 
         // Show text-only summary in chat
-        sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">\uD83D\uDCF7</span><div><strong style="color:var(--teal)">Photo Log — Pass ${pass}</strong><div style="font-size:11px;color:var(--text-2);margin-top:2px">${esc(responseText)}</div><div style="font-size:9px;color:var(--text-3);margin-top:2px">${new Date().toLocaleTimeString()}</div></div></div>`);
+        sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📷</span><div><strong style="color:var(--teal)">Photo Log — Pass ${pass}</strong><div style="font-size:10px;color:var(--text-3)">camera: ${esc(modeLabel)}</div><div style="font-size:11px;color:var(--text-2);margin-top:2px">${esc(responseText)}</div><div style="font-size:9px;color:var(--text-3);margin-top:2px">${new Date().toLocaleTimeString()}</div></div></div>`);
       }catch(e){
         sysBubble(`<div style="color:#ef4444;font-size:11px">Photo Log error: ${esc(e.message)}</div>`);
       }
@@ -14761,7 +15722,11 @@ ${statusLine}
     async function startWatchMode(){
       if(_wmState)stopWatchMode();
       const k=getK();
-      const facingMode=k.watchModeCamera||'user';
+      let facingMode=normalizeFacingMode(k.watchModeCamera||'user');
+      if(facingMode==='both'){
+        facingMode='environment';
+        showToast('Watch Mode uses one camera at a time; defaulting to back camera','ok');
+      }
       try{
         const ow=await getOverwatchCamera(facingMode);
         ow.users.add('watchMode');
@@ -14818,7 +15783,7 @@ ${statusLine}
             if(diff>60)diffPixels++;
           }
           const ratio=diffPixels/(len/16);
-          if(ratio>sensitivity){detected=true;detectionData={type:'motion',ratio:Math.round(ratio*100)+'%'}}
+          if(ratio>sensitivity){detected=true;detectionData={type:'motion',ratio:Math.round(ratio*100)+'%',camera:_owState?.facingMode||'environment'}}
         }
         _wmState.prevFrame=frame;
       } else if(_wmState.detector&&_wmState.detector.detect){
@@ -14829,7 +15794,7 @@ ${statusLine}
             if(now-_wmState.lastAlert>cooldownMs){
               _wmState.lastAlert=now;
               const snap=c.toDataURL('image/jpeg',0.7);
-              watchModeAlert(snap,{type:'face',count:faces.length});
+              watchModeAlert(snap,{type:'face',count:faces.length,camera:_owState?.facingMode||'environment'});
             }
           }
         }).catch(()=>{});
@@ -14850,8 +15815,9 @@ ${statusLine}
     async function watchModeAlert(snapshot,detectionData){
       haptic('heavy');
       const k=getK();
+      const cameraUsed=cameraLabel(detectionData?.camera||_owState?.facingMode||'environment');
       const typeLabel=detectionData.type==='face'?`${detectionData.count} face${detectionData.count>1?'s':''} detected`:'Motion detected ('+detectionData.ratio+' change)';
-      showToast('Watch: '+typeLabel,'err');
+      showToast(`Watch (${cameraUsed}): `+typeLabel,'err');
 
       const userPrompt=k.watchModePrompt||'Describe what you see. Is there anything notable?';
       const mode=k.mode||'direct';
@@ -14869,7 +15835,7 @@ ${statusLine}
             // Agent mode: send multiple attachments
             const attachments=[{type:'image',data:snapshot}];
             refPhotos.forEach(r=>attachments.push({type:'image',data:r.data}));
-            const prompt=`[Watch Mode Alert] ${typeLabel} at ${new Date().toLocaleTimeString()}.\n${refPhotos.length?`${refPhotos.length} reference photo(s) attached for comparison.\n`:''}User instruction: ${userPrompt}`;
+            const prompt=`[Watch Mode Alert] ${typeLabel} on ${cameraUsed} camera at ${new Date().toLocaleTimeString()}.\n${refPhotos.length?`${refPhotos.length} reference photo(s) attached for comparison.\n`:''}User instruction: ${userPrompt}`;
             const result=await new Promise((resolve,reject)=>{
               let full='',settled=false;
               const onChat=p=>{
@@ -14891,15 +15857,15 @@ ${statusLine}
           } else {
             // Fallback: composite into single image
             const composite=refPhotos.length?await composeWatchImages(snapshot,refPhotos.map(r=>r.data)):snapshot;
-            responseText=(await callAI(userPrompt+'\n['+typeLabel+']',composite))?.text||'';
+            responseText=(await callAI(userPrompt+'\n['+typeLabel+'; camera='+cameraUsed+']',composite))?.text||'';
           }
         } else {
           // Direct mode: composite all into one image (Groq single image limit)
           const composite=refPhotos.length?await composeWatchImages(snapshot,refPhotos.map(r=>r.data)):snapshot;
-          responseText=(await callAI(userPrompt+'\n['+typeLabel+']',composite))?.text||'';
+          responseText=(await callAI(userPrompt+'\n['+typeLabel+'; camera='+cameraUsed+']',composite))?.text||'';
         }
 
-        sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">\uD83D\uDC41</span><div><strong style="color:#ef4444">Watch Alert — ${esc(typeLabel)}</strong><div style="font-size:11px;color:var(--text-2);margin-top:2px">${esc(responseText)}</div><div style="font-size:9px;color:var(--text-3);margin-top:2px">${new Date().toLocaleTimeString()}</div></div></div>`);
+        sysBubble(`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">\uD83D\uDC41</span><div><strong style="color:#ef4444">Watch Alert — ${esc(typeLabel)}</strong><div style="font-size:10px;color:var(--text-3)">camera: ${esc(cameraUsed)}</div><div style="font-size:11px;color:var(--text-2);margin-top:2px">${esc(responseText)}</div><div style="font-size:9px;color:var(--text-3);margin-top:2px">${new Date().toLocaleTimeString()}</div></div></div>`);
       }catch(e){
         sysBubble(`<div style="color:#ef4444;font-size:11px">Watch Mode error: ${esc(e.message)}</div>`);
       }
