@@ -11,7 +11,6 @@
 | highContrast | boolean | false | Boost text and border contrast. Works in both dark and light modes |
 | dyslexiaFont | boolean | false | Load OpenDyslexic font for improved readability |
 | focusHighlight | boolean | false | Show visible 3px focus outlines on all interactive elements |
-| skipLinkEnabled | boolean | false | Enable keyboard “Skip to chat input” link |
 | compactMode | boolean | false | Reduce padding and spacing throughout the UI |
 | lineHeight | string | "1.5" | Custom line height for all text |
 | letterSpacing | string | "normal" | Custom letter spacing (e.g. "0.03em") |
@@ -111,9 +110,9 @@ Reduces padding and margins throughout:
 - Settings rows: 8px 10px padding, 4px margin
 
 ### Keyboard Skip Link
-TealClaw includes an optional “Skip to chat input” link for keyboard users.
-Enable it with `skipLinkEnabled: true`. When enabled, it stays visually hidden by default
-and appears only on `:focus-visible`. Activating it moves focus directly to the message input.
+TealClaw includes a built-in “Skip to chat input” link for keyboard users.
+It stays visually hidden by default and appears only on `:focus-visible`.
+Activating it moves focus directly to the message input.
 
 ## PWA Note
 
