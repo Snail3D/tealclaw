@@ -488,6 +488,7 @@ Only include fields you want to set/change. TC uses partial merge.
 | letterSpacing | string | e.g. "0.05em" |
 | wordSpacing | string | e.g. "0.1em" |
 | focusHighlight | boolean | Visible focus outlines |
+| skipLinkEnabled | boolean | Show keyboard "Skip to chat input" link (dflt: false) |
 | compactMode | boolean | Reduce spacing |
 | autoScroll | boolean | Auto-scroll on new msgs (dflt: true) |
 | hapticFeedback | boolean | Vibrate on send (mobile) |

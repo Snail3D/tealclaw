@@ -183,6 +183,7 @@ GIFs use Klipy via server proxy — no API key needed. When enabled, AI response
 | highContrast | boolean | Boost text and border contrast for visibility |
 | dyslexiaFont | boolean | Use OpenDyslexic font for better readability |
 | focusHighlight | boolean | Show visible focus outlines on all focused elements |
+| skipLinkEnabled | boolean | Show keyboard "Skip to chat input" link (default: false) |
 | compactMode | boolean | Reduce spacing throughout UI for more content on screen |
 
 ## Chat Behavior
