@@ -1,0 +1,126 @@
+# Camera QA Addendum (for upcoming Bob changes)
+
+Use this checklist after Bob’s camera updates land.
+
+Scope:
+- Front/back camera selection correctness
+- Camera event logging coverage
+- Low-light capture quality improvement (exposure stabilization / warm-up)
+- No regressions in existing camera flows
+
+---
+
+## 0) Test setup
+
+- Device A: phone/tablet with both front + rear cameras
+- Device B: laptop/desktop webcam (single camera fallback)
+- Browser: latest Chrome + Safari (or mobile Safari)
+- TealClaw in both Direct and Agent mode
+- Prepare two scenes:
+  - Bright scene (normal indoor light)
+  - Low-light scene (dim room, readable object with fine detail/text)
+
+Record build SHA and device model in your QA notes.
+
+---
+
+## 1) Front/back selection checks
+
+### 1.1 Slash command path
+1. Run `/photo back test`
+2. Verify rear/environment camera opens
+3. Tap **Switch camera**
+4. Verify front/user camera opens
+5. Capture and send
+
+Pass criteria:
+- Camera opens reliably on first request
+- Flip toggles environment <-> user each tap
+- Capture succeeds after flip (no frozen frame, no black frame)
+- Chat remains responsive after capture
+
+### 1.2 tc-action path (agent)
+Trigger camera capture with both facings:
+- `{ "type":"camera-capture", "facing":"environment", "autoSend":true }`
+- `{ "type":"camera-capture", "facing":"user", "autoSend":true }`
+
+Pass criteria:
+- Requested facing is honored
+- Consent UX still works (inline prompt when ON, full confirm when OFF)
+- Cancel path exits cleanly and does not leave camera active
+
+### 1.3 Single-camera fallback
+On device with only one camera:
+- Flip action should not crash
+- If facing constraint cannot be met, app should gracefully use available camera
+
+Pass criteria:
+- No unhandled errors
+- User receives clear behavior (capture still possible)
+
+---
+
+## 2) Camera logging checks
+
+Validate Bob’s logging for camera actions.
+
+Minimum events expected:
+- `camera.open` (requested facing, resolved facing)
+- `camera.flip` (from -> to)
+- `camera.capture` (facing, resolution, processing time)
+- `camera.cancel` / denied / error states
+
+Pass criteria:
+- Each capture session produces structured logs for open/flip/capture or cancel
+- Logs include enough detail to reconstruct which camera was used
+- No sensitive leakage (no API keys/tokens/raw secrets in logs)
+
+Fail if:
+- Facing cannot be audited from logs
+- Errors occur without corresponding failure event
+
+---
+
+## 3) Low-light quality improvement checks
+
+Goal: confirm exposure stabilization/warm-up improves usable image quality in dim light.
+
+### 3.1 A/B capture sequence
+For the same low-light scene, capture:
+- A: immediate capture (no warm-up path)
+- B: capture with Bob’s warm-up/stabilization path
+
+Run at least 5 pairs.
+
+### 3.2 Visual quality criteria
+Pass criteria (B vs A):
+- Subject detail is clearer or equal in >= 4/5 pairs
+- Severe underexposure in first frame is reduced
+- White balance/color cast is not worse overall
+- No new blur/pump artifacts introduced by stabilization
+
+### 3.3 Performance guardrails
+Pass criteria:
+- Additional capture latency from warm-up is acceptable (target <= ~800ms added)
+- No camera lockups, repeated permission prompts, or stalled UI
+- Capture still auto-sends when `autoSend:true`
+
+---
+
+## 4) Regression sweep (must stay green)
+
+- `/photo`, `/capture`, `/takephoto` still work
+- Camera overlay controls still work: Cancel, Shutter, Flip, Torch
+- `/screenshot` flow still unaffected
+- Agent inline consent toggle still works
+- No residual camera tracks after cancel/close
+- No syntax/runtime errors in console from camera path
+
+---
+
+## 5) Current baseline notes (pre-Bob)
+
+- Facing selection exists via `facingMode` in `openCamera()` and flip handler.
+- tc-action and slash capture routes are functional.
+- Dedicated structured camera event logging is limited/absent in current baseline.
+- Use this checklist to confirm Bob’s logging + low-light work closes that gap without regressions.

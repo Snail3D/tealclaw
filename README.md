@@ -109,6 +109,7 @@ Works by voice too — just say "research quantum physics" or "imagine a sunset 
 - Proto-BOLO is a watchlist-matching target workflow (v3), not general image Q&A.
 - Always confirm consent/authority before any camera capture or monitoring.
 - New setting (default ON): **Inline agent capture consent**. When an agent sends `camera.capture` or `screen.capture`, TealClaw shows lightweight prompts (photo: "Take photo / Cancel", screenshot: "Take screenshot / Cancel"). Screenshot capture stops screen-share tracks immediately after one frame.
+- Camera QA addendum for upcoming capture changes: `docs/qa-camera-bob-checklist.txt`
 
 ---
 
