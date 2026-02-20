@@ -97,7 +97,8 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/imagine prompt` | Generate an image |
 | `/photo` / `/capture` / `/takephoto` | Open camera, capture, and send photo for AI analysis |
 | `/screenshot` / `/screen` / `/capture-screen` | Open screen picker, capture one frame, and send screenshot for AI analysis |
-| `/voice` | Voice settings and personas |
+| `/voice` | Voice settings, provider, and persona/model |
+| `/voice diag` | Last TTS request diagnostics (provider/model/error) |
 | `/providers` / `/provider <name>` | List/switch direct AI provider quickly |
 | `/save` | Save to Obsidian |
 | `/template` | Browse style templates |
