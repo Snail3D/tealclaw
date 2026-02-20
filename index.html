@@ -9153,9 +9153,13 @@ Rules:
     }
 
     async function generateEncryptedLink(){
+      // Default to safer sharing: give the user a choice to exclude keys/tokens.
+      const includeSensitive=confirm(
+        'Include API keys/tokens in the encrypted link?\n\nOK = include keys (recipient can use immediately)\nCancel = exclude keys (safer)'
+      );
       sysBubble('<p style="color:var(--text-3)">Encrypting config...</p>');
       try{
-        const{url,passphrase}=await exportEncryptedUrl(true);
+        const{url,passphrase}=await exportEncryptedUrl(includeSensitive);
         removeLast();
         sysBubble(`<div style="text-align:center">
           <h3 style="margin-bottom:12px">Encrypted Share Link</h3>
@@ -9165,7 +9169,7 @@ Rules:
           <div style="margin-bottom:8px;font-size:11px;color:var(--text-3)">Passphrase (share separately):</div>
           <div style="font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:0.12em;color:var(--teal);margin-bottom:12px;user-select:all">${esc(passphrase)}</div>
           <button class="btn btn-ghost" id="encCopyPass">Copy Passphrase</button>
-          <p style="font-size:10px;color:var(--text-3);margin-top:16px">The recipient opens the link and enters the passphrase to unlock. API keys and all settings are included.</p>
+          <p style="font-size:10px;color:var(--text-3);margin-top:16px">The recipient opens the link and enters the passphrase to unlock. ${includeSensitive?'API keys/tokens and all settings are included.':'No API keys/tokens were included (safer).'} </p>
         </div>`);
         const last=document.querySelector('.chat-bubble:last-child');
         last?.querySelector('#encCopyLink')?.addEventListener('click',()=>{navigator.clipboard?.writeText(url);showToast('Encrypted link copied','ok');haptic('success')});
