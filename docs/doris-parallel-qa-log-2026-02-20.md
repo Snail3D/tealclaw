@@ -35,7 +35,7 @@ node scripts/doris-parallel-qa.mjs
 Result:
 - **19 passed, 0 failed**
 - Includes syntax pass + provider/command/doc integrity checks
-- Watch-mode evidence: `node scripts/doris-qa-watch.mjs --once` passed on HEAD `016f934e532b23031c472d2a2bbf4a804cf30b7e`
+- Watch-mode evidence: `node scripts/doris-qa-watch.mjs --once` passed on HEAD `1fdb8e85820d38235be852c985ac4a428361fe4f`
 
 ## Notes
 - Existing unrelated modified firmware files were intentionally excluded from this QA scope.
