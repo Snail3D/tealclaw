@@ -9120,8 +9120,16 @@ Rules:
       try{
         const k=getK();
         const passphrase=generatePassphrase();
+        // Default to safer sharing: exclude API keys unless explicitly included.
+        const includeApiKeys=confirm(
+          'Include API keys (Groq/OpenAI/etc) in this session invitation?\n\nOK = include keys (recipient can use direct mode immediately)\nCancel = exclude keys (safer; gateway access still works)'
+        );
         // Build the config payload with session metadata
         const payload=JSON.parse(buildConfigPayload(true));
+        if(!includeApiKeys){
+          const sensitive=['aiKey','whisperKey','tgToken','imageGenKey','pinHash','pinCode'];
+          sensitive.forEach(s=>{try{delete payload[s]}catch{}});
+        }
         payload._session={
           id:Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>b.toString(16).padStart(2,'0')).join(''),
           expiresAt:Date.now()+ms,
@@ -9142,7 +9150,7 @@ Rules:
           <div style="margin-bottom:8px;font-size:11px;color:var(--text-3)">Passphrase (share separately):</div>
           <div style="font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:0.12em;color:var(--teal);margin-bottom:12px;user-select:all">${esc(passphrase)}</div>
           <button class="btn btn-ghost" id="sessCopyPass">Copy Passphrase</button>
-          <p style="font-size:10px;color:var(--text-3);margin-top:16px">After expiry, the recipient's gateway access is automatically removed. Your actual tokens stay safe.</p>
+          <p style="font-size:10px;color:var(--text-3);margin-top:16px">After expiry, the recipient's gateway access is automatically removed. ${includeApiKeys?'API keys were included in this link.':'No API keys were included (safer).'} </p>
         </div>`);
         const last=document.querySelector('.chat-bubble:last-child');
         last?.querySelector('#sessCopyLink')?.addEventListener('click',()=>{navigator.clipboard?.writeText(url);showToast('Session link copied','ok');haptic('success')});
