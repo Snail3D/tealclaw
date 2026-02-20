@@ -14865,7 +14865,8 @@ ${note}`:note;
       const gwUrl=params.get('gw');
       const token=params.get('token');
       if(!gwUrl||!token)return false;
-      history.replaceState(null,'',location.pathname);
+      // Scrub sensitive fragments (token) from the URL while preserving any query params.
+      history.replaceState(null,'',location.pathname+location.search);
       // Confirm before importing — this overwrites agent config
       let host;try{host=new URL(gwUrl).hostname}catch(e){host=gwUrl}
       const msg=`A gateway link wants to connect you to:\n\n${host}\n\nThis will set your active agent. Continue?`;
@@ -14895,14 +14896,16 @@ ${note}`:note;
       // Encrypted config: starts with enc: prefix
       if(payload.startsWith('enc:')){
         pendingEncBlob=payload.slice(4);
-        history.replaceState(null,'',location.pathname);
+        // Scrub sensitive fragments (encrypted config blob) from the URL while preserving any query params.
+        history.replaceState(null,'',location.pathname+location.search);
         showDecryptPrompt();
         return true;
       }
       // Plain base64 JSON (legacy / unencrypted)
       try{
         const cfg=JSON.parse(atob(payload));
-        history.replaceState(null,'',location.pathname);
+        // Scrub sensitive fragments (config payload) from the URL while preserving any query params.
+        history.replaceState(null,'',location.pathname+location.search);
         showConfigImportConfirm(cfg);
         return true;
       }catch(e){console.warn('Config import failed:',e);return false}

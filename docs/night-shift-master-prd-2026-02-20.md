@@ -402,3 +402,34 @@ Night-shift harness:
 - [x] Concrete implementation completed for feasible high-impact items
 - [x] Explicit deferred list with blockers
 - [x] Evidence-based notes tied to actual repo files and behavior
+
+---
+
+## 15) Hourly Stack (Night Shift)
+
+### Hour 3 (05:00–06:00 MST) — Next actions
+
+#### A) Doris QA (must run in parallel, visible browser windows)
+- [ ] Keep **two visible windows** up:
+  - Window 1: `https://tealclaw.ai/` (prod)
+  - Window 2: local build (run `npm run dev -- --host`, then open the printed `http://127.0.0.1:<port>/`)
+- [ ] Smoke test (both windows):
+  1) `/providers`
+  2) `/provider perplexity` then send a tiny prompt
+  3) `/provider cerebras` then send a tiny prompt
+  4) `/control status` then `/control on` (verify CTL badge / diagnostics)
+  5) `/desktop status` then `/desktop on` (verify badge + permission checklist)
+- [ ] Log pass/fail notes into `docs/doris-parallel-qa-log-2026-02-20.md`
+
+#### B) Bob implementation (next shippable slice)
+- [ ] Open PR(s) from:
+  - `fix/control-loop-selfheal`
+  - `feat/desktop-control-foundation`
+  (or prep clean merge commits) and ensure they’re aligned with `main`.
+- [ ] Desktop control polish:
+  - Add periodic permission re-check (e.g. every 60s)
+  - Make Screen Recording state explicitly “manual/unknown” with clear copy + steps
+
+#### C) Hygiene
+- [ ] Close non-essential tabs; leave only the two QA windows visible.
+- [ ] End-of-hour: send Snail a 3-line status (what shipped / what’s running / blockers).
