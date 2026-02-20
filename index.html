@@ -2728,6 +2728,89 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       return null;
     }
 
+    const CONTEXT_TEXT_MAX=6000;
+
+    function clipContextText(text,max=CONTEXT_TEXT_MAX){
+      const clean=String(text||'').replace(/\u0000/g,'').trim();
+      if(clean.length<=max)return clean;
+      return clean.slice(0,max)+`\n\n[truncated to ${max} chars]`;
+    }
+
+    function normalizeGatewayConfigUrl(raw){
+      const val=String(raw||'').trim();
+      if(!val)return '';
+      try{
+        const withProto=/^(https?|wss?|ws):\/\//i.test(val)?val:`https://${val}`;
+        const u=new URL(withProto);
+        const host=(u.hostname||'').toLowerCase();
+        const isLocal=host==='localhost'||host==='127.0.0.1'||host==='::1'||host.endsWith('.local');
+        const sameOrigin=u.origin===location.origin;
+        if(!['https:','http:','wss:','ws:'].includes(u.protocol))return '';
+        if((u.protocol==='http:'||u.protocol==='ws:')&&!(isLocal||sameOrigin))return '';
+        return (u.origin+u.pathname).replace(/\/+$/,'');
+      }catch{return ''}
+    }
+
+    function normalizeContextSourceUrl(raw){
+      const val=String(raw||'').trim();
+      if(!val)return '';
+      try{
+        const withProto=/^https?:\/\//i.test(val)
+          ?val
+          :(val.startsWith('/')?`${location.origin}${val}`:`${location.origin}/${val}`);
+        const u=new URL(withProto);
+        const host=(u.hostname||'').toLowerCase();
+        const isLocal=host==='localhost'||host==='127.0.0.1'||host==='::1'||host.endsWith('.local');
+        const sameOrigin=u.origin===location.origin;
+        if(u.protocol==='https:')return u.href;
+        if(u.protocol==='http:'&&(isLocal||sameOrigin))return u.href;
+        return '';
+      }catch{return ''}
+    }
+
+    async function fetchContextSourceText(rawUrl){
+      const url=normalizeContextSourceUrl(rawUrl);
+      if(!url)throw new Error('Invalid context URL (HTTPS required; HTTP allowed only for localhost/same-origin)');
+      const res=await fetch(url,{method:'GET'});
+      if(!res.ok)throw new Error(`Context load failed (${res.status})`);
+      const text=await res.text();
+      return{url,text:clipContextText(text)};
+    }
+
+    function parseSettingsImportPayload(raw){
+      if(raw&&typeof raw==='object'&&!Array.isArray(raw))return raw;
+      const txt=String(raw||'').trim();
+      if(!txt)return null;
+      try{return JSON.parse(txt)}catch{}
+      try{return JSON.parse(atob(txt))}catch{}
+      return null;
+    }
+
+    function upsertGatewayAgentConfig({id,name,url,token,active=true,switchMode=true}={}){
+      const cleanUrl=normalizeGatewayConfigUrl(url);
+      if(!cleanUrl)throw new Error('Invalid gateway URL (use HTTPS; HTTP/WS only for localhost)');
+      const cleanToken=String(token||'').trim();
+      if(!cleanToken)throw new Error('Gateway token required');
+      const agents=getAgents();
+      const existing=agents.find(a=>a.id===id)||agents.find(a=>a.name===name&&a.url===cleanUrl);
+      const agentId=existing?.id||id||('gw_'+Date.now().toString(36));
+      const agentName=String(name||existing?.name||'Agent').trim()||'Agent';
+      const next={id:agentId,name:agentName,url:cleanUrl,token:cleanToken,active:active!==false};
+      const merged=agents.filter(a=>a.id!==agentId).concat([next]);
+      if(next.active)merged.forEach(a=>a.active=(a.id===agentId));
+      setAgents(merged);
+      if(switchMode&&next.active){
+        const k=getK();
+        k.mode='agent';
+        setK(k);
+      }
+      try{disconnectAgent(agentId)}catch{}
+      if(next.active){try{ensureAgentConnection(next)}catch{}}
+      renderAgentSelector();
+      updateStatus();
+      return next;
+    }
+
     function getIntegrationSnapshot(k){
       const cfg=k||getK();
       const provider=resolveAiProvider(cfg);
@@ -2740,11 +2823,18 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         providerLabel:preset.label,
         directFallback:cfg.directFallbackToGroq!==false,
         gatewayHttpFallback:cfg.gatewayHttpFallback===true,
+        gatewaySelfHeal:isGatewaySelfHealEnabled(cfg),
+        gatewaySelfHealStatus:controlStatusLine(),
         relayEnabled:isTelegramRelayEnabled(cfg),
         relayConfigured:hasTelegramConfig(cfg),
         relayReceive:cfg.tgRelayReceive!==false,
         agentName:activeAgent?.name||'',
+        agentCount:getAgents().length,
         gatewayState:conn?.connected?'connected':(conn?.state||'offline'),
+        gatewayTarget:activeAgent?.url||'',
+        skillContextLoaded:!!cfg.skillContextFileText,
+        workflowContextLoaded:!!cfg.agentWorkflowContextText,
+        diagnostics:getRecentControlDiags(3),
         lastOp:INTEGRATION_OP_LOG[INTEGRATION_OP_LOG.length-1]||null
       };
     }
@@ -2756,8 +2846,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 <li>Direct provider: <strong>${esc(s.providerLabel)}</strong></li>
 <li>Direct fallback to Groq: <strong>${s.directFallback?'on':'off'}</strong></li>
 <li>Gateway HTTP fallback: <strong>${s.gatewayHttpFallback?'on':'off'}</strong></li>
-<li>Gateway link: <strong>${esc(s.gatewayState)}</strong>${s.agentName?` (${esc(s.agentName)})`:''}</li>
+<li>Gateway self-heal loop: <strong>${s.gatewaySelfHeal?'on':'off'}</strong> (${esc(s.gatewaySelfHealStatus||'off')})</li>
+<li>Gateway link: <strong>${esc(s.gatewayState)}</strong>${s.agentName?` (${esc(s.agentName)})`:''} · ${s.agentCount||0} configured${s.gatewayTarget?` · <code>${esc(s.gatewayTarget)}</code>`:''}</li>
 <li>Telegram relay: <strong>${s.relayEnabled?'on':'off'}</strong> (${s.relayConfigured?'configured':'not configured'})</li>
+<li>Loaded skill/context files: <strong>${(s.skillContextLoaded||s.workflowContextLoaded)?`${s.skillContextLoaded?'skill':''}${s.skillContextLoaded&&s.workflowContextLoaded?' + ':''}${s.workflowContextLoaded?'workflow':''}`:'none'}</strong></li>
+${Array.isArray(s.diagnostics)&&s.diagnostics.length?`<li>Recent control diagnostics: <code>${esc(s.diagnostics.map(d=>`${d.level}:${d.message}`).join(' | ').slice(0,260))}</code></li>`:''}
 ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}</strong> (${new Date(s.lastOp.ts).toLocaleTimeString()})</li>`:''}
 </ul>`;
     }
@@ -2781,6 +2874,55 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           renderChannelDropdown();updateStatus();
           const keyed=hasDirectProvider(provider,k);
           out={ok:true,command:cmd,message:`Direct provider set to ${getProviderPreset(provider,k).label}${keyed?'':' (key not set yet)'}`,snapshot:getIntegrationSnapshot(k)};
+        }else if(cmd==='provider.configure'){
+          const provider=normalizeAiProvider(args.provider||args.value||args.target||k.aiProvider||'groq');
+          if(!provider||!DIRECT_PROVIDER_PRESETS[provider])throw new Error('Unknown provider');
+          if(args.key||args.apiKey){
+            const rawKey=String(args.key||args.apiKey).trim();
+            const detected=detectKey(rawKey);
+            if(provider==='groq')k.whisperKey=rawKey;
+            else k.aiKey=rawKey;
+            if(detected?.provider)k.aiProvider=detected.provider;
+            else k.aiProvider=provider;
+            if((detected?.provider||provider)==='openrouter'&&!k.imageGenKey)k.imageGenKey=rawKey;
+          } else {
+            k.aiProvider=provider;
+          }
+          if(args.baseUrl!==undefined||args.url!==undefined){
+            const baseRaw=String(args.baseUrl??args.url??'').trim();
+            const base=normalizeProviderBaseUrl(baseRaw);
+            if(baseRaw&&!base)throw new Error('Invalid provider base URL');
+            if(base)k.aiBaseUrl=base;else delete k.aiBaseUrl;
+          }
+          if(args.directFallback!==undefined||args.fallback!==undefined){
+            const b=integrationBoolFromText(args.directFallback??args.fallback);
+            if(b!==null)k.directFallbackToGroq=b;
+          }
+          if(args.gatewayHttpFallback!==undefined){
+            const b=integrationBoolFromText(args.gatewayHttpFallback);
+            if(b!==null)k.gatewayHttpFallback=b;
+          }
+          setK(k);
+          renderChannelDropdown();updateStatus();
+          out={ok:true,command:cmd,message:`Provider configured (${getProviderPreset(resolveAiProvider(k),k).label})`,snapshot:getIntegrationSnapshot(getK())};
+        }else if(cmd==='provider.key.set'){
+          const rawKey=String(args.key||args.apiKey||args.value||'').trim();
+          if(!rawKey)throw new Error('API key required');
+          const det=detectKey(rawKey);
+          const forced=integrationProviderFromText(args.provider||'');
+          if(det?.field==='whisperKey'||forced==='groq'){
+            k.whisperKey=rawKey;
+            k.aiProvider='groq';
+          }else if(det?.field==='aiKey'||forced){
+            k.aiKey=rawKey;
+            k.aiProvider=det?.provider||forced||resolveAiProvider(k);
+            if((det?.provider||forced)==='openrouter'&&!k.imageGenKey)k.imageGenKey=rawKey;
+          }else{
+            k.aiKey=rawKey;
+          }
+          setK(k);
+          renderChannelDropdown();updateStatus();
+          out={ok:true,command:cmd,message:`Key saved for ${getProviderPreset(resolveAiProvider(k),k).label}`,snapshot:getIntegrationSnapshot(getK())};
         }else if(cmd==='provider.fallback'){
           const next=args.value===undefined?args.enabled:args.value;
           const bool=typeof next==='boolean'?next:integrationBoolFromText(next);
@@ -2795,15 +2937,78 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           k.gatewayHttpFallback=bool;
           setK(k);updateStatus();
           out={ok:true,command:cmd,message:`Gateway HTTP fallback ${bool?'enabled':'disabled'}`,snapshot:getIntegrationSnapshot(k)};
+        }else if(cmd==='control.on'||cmd==='gateway.control.on'){
+          setGatewaySelfHealEnabled(true,{toast:false,source:source||'command'});
+          await runGatewaySelfHealTick('manual-on');
+          out={ok:true,command:cmd,message:'Gateway self-heal loop enabled',snapshot:getIntegrationSnapshot(getK()),control:gatewayControlStatusSnapshot()};
+        }else if(cmd==='control.off'||cmd==='gateway.control.off'){
+          setGatewaySelfHealEnabled(false,{toast:false,source:source||'command'});
+          out={ok:true,command:cmd,message:'Gateway self-heal loop disabled',snapshot:getIntegrationSnapshot(getK()),control:gatewayControlStatusSnapshot()};
+        }else if(cmd==='control.status'||cmd==='gateway.control.status'){
+          out={ok:true,command:cmd,message:'Gateway self-heal status',snapshot:getIntegrationSnapshot(getK()),control:gatewayControlStatusSnapshot(),html:integrationStatusHtml(getIntegrationSnapshot(getK()),'Gateway Control Status')};
+        }else if(cmd==='control.heal'||cmd==='gateway.control.heal'){
+          await runGatewaySelfHealTick('manual-heal');
+          out={ok:true,command:cmd,message:'Gateway self-heal check complete',snapshot:getIntegrationSnapshot(getK()),control:gatewayControlStatusSnapshot()};
+        }else if(cmd==='gateway.configure'){
+          const url=args.url||args.gatewayUrl||args.gwUrl;
+          const token=args.token||args.gatewayToken||args.gwToken;
+          if(!url||!token)throw new Error('gateway.configure requires url + token');
+          const active=args.active===undefined?true:args.active!==false;
+          const switchMode=args.switchMode===undefined?true:args.switchMode!==false;
+          const agent=upsertGatewayAgentConfig({
+            id:String(args.id||args.agentId||'').trim()||undefined,
+            name:String(args.name||args.agentName||'Agent').trim()||'Agent',
+            url,
+            token,
+            active,
+            switchMode
+          });
+          out={ok:true,command:cmd,message:`Gateway configured (${agent.name})`,snapshot:getIntegrationSnapshot(getK())};
+        }else if(cmd==='gateway.select'){
+          const target=String(args.id||args.agentId||args.name||args.value||'').trim();
+          if(!target)throw new Error('gateway.select requires id or name');
+          const agents=getAgents();
+          const found=agents.find(a=>a.id===target||a.name.toLowerCase()===target.toLowerCase());
+          if(!found)throw new Error(`Gateway not found: ${target}`);
+          agents.forEach(a=>a.active=(a.id===found.id));
+          setAgents(agents);
+          const k2=getK();k2.mode='agent';setK(k2);
+          try{ensureAgentConnection(found)}catch{}
+          renderAgentSelector();updateStatus();
+          out={ok:true,command:cmd,message:`Gateway selected (${found.name})`,snapshot:getIntegrationSnapshot(getK())};
+        }else if(cmd==='gateway.remove'){
+          const target=String(args.id||args.agentId||args.name||args.value||'').trim();
+          if(!target)throw new Error('gateway.remove requires id or name');
+          const agents=getAgents();
+          const found=agents.find(a=>a.id===target||a.name.toLowerCase()===target.toLowerCase());
+          if(!found)throw new Error(`Gateway not found: ${target}`);
+          const next=agents.filter(a=>a.id!==found.id);
+          setAgents(next);
+          try{disconnectAgent(found.id)}catch{}
+          if(next.length&&next.every(a=>!a.active))next[0].active=true;
+          if(next.length){setAgents(next);try{ensureAgentConnection(next.find(a=>a.active)||next[0])}catch{}}
+          renderAgentSelector();updateStatus();
+          out={ok:true,command:cmd,message:`Gateway removed (${found.name})`,snapshot:getIntegrationSnapshot(getK())};
         }else if(cmd==='gateway.reconnect'){
           const a=getActiveAgent();
           if(!a)throw new Error('No active gateway agent configured');
           try{disconnectAgent(a.id)}catch{}
           try{ensureAgentConnection(a)}catch{}
           await new Promise(r=>setTimeout(r,700));
-          const conn=agentConnections.get(a.id);
-          const connected=!!conn?.connected;
-          out={ok:true,command:cmd,message:connected?`Gateway reconnected (${a.name})`:`Reconnect requested for ${a.name}; still connecting`,snapshot:getIntegrationSnapshot(getK())};
+          let conn=agentConnections.get(a.id);
+          let connected=!!conn?.connected;
+          if(!connected&&isGatewaySelfHealEnabled()){
+            await maybeHealGatewayTarget(a,'manual reconnect failed',{notify:true,allowSwitch:true}).catch(()=>{});
+            const healed=getActiveAgent()||a;
+            if(healed.url!==a.url){
+              try{disconnectAgent(healed.id)}catch{}
+              try{ensureAgentConnection(healed)}catch{}
+              await new Promise(r=>setTimeout(r,700));
+              conn=agentConnections.get(healed.id);
+              connected=!!conn?.connected;
+            }
+          }
+          out={ok:true,command:cmd,message:connected?`Gateway reconnected (${(getActiveAgent()||a).name})`:`Reconnect requested for ${a.name}; still connecting`,snapshot:getIntegrationSnapshot(getK()),control:gatewayControlStatusSnapshot()};
         }else if(cmd==='relay.on'){
           k.mode='telegram-relay';
           k.tgRelayEnabled=true;
@@ -2822,6 +3027,53 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           out={ok:true,command:cmd,message:'Telegram relay disabled',snapshot:getIntegrationSnapshot(getK())};
         }else if(cmd==='relay.status'){
           out={ok:true,command:cmd,message:'Telegram relay status',snapshot:getIntegrationSnapshot(k),html:integrationStatusHtml(getIntegrationSnapshot(k),'Telegram Relay Status')};
+        }else if(cmd==='settings.import'||cmd==='settings.patch'){
+          const payload=parseSettingsImportPayload(args.config??args.settings??args.payload??args.value??args.json);
+          if(!payload||typeof payload!=='object')throw new Error('settings.import requires a config object or JSON/base64 payload');
+          const report=importConfig(payload,{returnReport:true});
+          applyVisualConfig();updateStatus();renderAgentSelector();renderChannelDropdown();
+          if(report.failed.length)showImportFailureCard(report.failed,buildRetryConfigForFailedKeys(report.failed),'integration command');
+          const failed=report.failed.length;
+          out={ok:failed===0,command:cmd,message:failed?`Imported ${report.applied}/${report.attempted} fields (${failed} failed)`:`Imported ${report.applied} field${report.applied===1?'':'s'}`,snapshot:getIntegrationSnapshot(getK()),report};
+        }else if(cmd==='skill.load'||cmd==='context.load'){
+          const isWorkflow=cmd==='context.load';
+          const sourceUrl=args.url||args.source||args.value;
+          if(!sourceUrl)throw new Error(`${cmd} requires url`);
+          const loaded=await fetchContextSourceText(sourceUrl);
+          const k2=getK();
+          if(isWorkflow){
+            k2.agentWorkflowContextText=loaded.text;
+            k2.agentWorkflowContextUrl=loaded.url;
+          } else {
+            k2.skillContextFileText=loaded.text;
+            k2.skillContextFileUrl=loaded.url;
+            if(k2.skillContext===false)k2.skillContext=true;
+          }
+          setK(k2);
+          out={ok:true,command:cmd,message:`${isWorkflow?'Workflow':'Skill'} context loaded (${loaded.text.length} chars)`,snapshot:getIntegrationSnapshot(k2)};
+        }else if(cmd==='skill.set'||cmd==='context.set'){
+          const isWorkflow=cmd==='context.set';
+          const rawText=args.text??args.value??'';
+          const text=clipContextText(rawText);
+          if(!text)throw new Error(`${cmd} requires text`);
+          const k2=getK();
+          if(isWorkflow){
+            k2.agentWorkflowContextText=text;
+            if(args.url!==undefined)k2.agentWorkflowContextUrl=String(args.url||'').trim();
+          } else {
+            k2.skillContextFileText=text;
+            if(args.url!==undefined)k2.skillContextFileUrl=String(args.url||'').trim();
+            if(k2.skillContext===false)k2.skillContext=true;
+          }
+          setK(k2);
+          out={ok:true,command:cmd,message:`${isWorkflow?'Workflow':'Skill'} context saved`,snapshot:getIntegrationSnapshot(k2)};
+        }else if(cmd==='skill.clear'||cmd==='context.clear'){
+          const isWorkflow=cmd==='context.clear';
+          const k2=getK();
+          if(isWorkflow){delete k2.agentWorkflowContextText;delete k2.agentWorkflowContextUrl;}
+          else{delete k2.skillContextFileText;delete k2.skillContextFileUrl;}
+          setK(k2);
+          out={ok:true,command:cmd,message:`${isWorkflow?'Workflow':'Skill'} context cleared`,snapshot:getIntegrationSnapshot(k2)};
         }
       }catch(err){
         out={ok:false,command:cmd,message:err?.message||'Integration command failed'};
@@ -2837,6 +3089,10 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       if(!t)return null;
       if(/^(status|state|health|health check|check)$/.test(t))return{command:'health.check',args:{}};
       if(/(reconnect|restart).*(gateway|agent|ws)|^(reconnect|restart)$/.test(t))return{command:'gateway.reconnect',args:{}};
+      if(/(control|self[- ]?heal).*(status|state|health)/.test(t))return{command:'control.status',args:{}};
+      if(/(control|self[- ]?heal).*(on|enable|start)/.test(t))return{command:'control.on',args:{}};
+      if(/(control|self[- ]?heal).*(off|disable|stop)/.test(t))return{command:'control.off',args:{}};
+      if(/(control|self[- ]?heal).*(run|heal|check|tick)/.test(t))return{command:'control.heal',args:{}};
       if(/(relay|telegram relay).*(status|state)/.test(t))return{command:'relay.status',args:{}};
       if(/(relay|telegram relay).*(on|enable|start)/.test(t))return{command:'relay.on',args:{}};
       if(/(relay|telegram relay).*(off|disable|stop)/.test(t))return{command:'relay.off',args:{}};
@@ -2855,12 +3111,20 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         const val=integrationBoolFromText(gwFallback[1]);
         if(val!==null)return{command:'gateway.httpfallback',args:{value:val}};
       }
+      const loadSkill=t.match(/(?:load|pull|sync)\s+skill(?:\s+from)?\s+(https?:\/\/\S+|\/\S+)/i);
+      if(loadSkill)return{command:'skill.load',args:{url:loadSkill[1]}};
+      const loadContext=t.match(/(?:load|pull|sync)\s+(?:workflow\s+)?context(?:\s+from)?\s+(https?:\/\/\S+|\/\S+)/i);
+      if(loadContext)return{command:'context.load',args:{url:loadContext[1]}};
+      const clearSkill=t.match(/clear\s+skill(?:\s+context)?/i);
+      if(clearSkill)return{command:'skill.clear',args:{}};
+      const clearContext=t.match(/clear\s+(?:workflow\s+)?context/i);
+      if(clearContext)return{command:'context.clear',args:{}};
       return null;
     }
 
     async function runGrokQuickAction(raw,opts={}){
       const intent=parseGrokQuickActionIntent(raw);
-      if(!intent)return{ok:false,message:'Unknown quick action. Try: status, reconnect gateway, relay on/off, provider fireworks, fallback on/off.'};
+      if(!intent)return{ok:false,message:'Unknown quick action. Try: status, reconnect gateway, control on/off/status, relay on/off, provider fireworks, fallback on/off, load skill <url>, load context <url>.'};
       return runIntegrationCommand(intent.command,intent.args,{source:opts.source||'grok-trigger',silent:opts.silent===true,toast:opts.toast});
     }
 
@@ -3053,7 +3317,11 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         pill.className=connState==='connected'?'pill ok':connState==='connecting'?'pill ok':'pill off';
         const label=ag?.name||'Agent';
         const badge=transport==='ws'?'WS':'HTTP';
-        $('pillLabel').innerHTML=`${esc(label)} <span class="pill-transport">${badge}</span>`;
+        const selfHealOn=isGatewaySelfHealEnabled(k);
+        const controlBadge=selfHealOn
+          ?` <span class="pill-transport" style="color:${_controlLoopState.lastFailureReason?'var(--warn)':'var(--ok)'}">CTL</span>`
+          :'';
+        $('pillLabel').innerHTML=`${esc(label)} <span class="pill-transport">${badge}</span>${controlBadge}`;
       } else if(k.aiKey||k.whisperKey){
         pill.className='pill ok';$('pillLabel').textContent=getProviderLabel(k);
       } else {
@@ -3066,6 +3334,8 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       updateMuteBtn();
       // Keep cron bar in sync with agent connection
       if(typeof renderCronBar==='function')renderCronBar();
+      // Keep gateway self-heal loop aligned with mode + toggle
+      syncGatewaySelfHealLoop();
       // BLE proximity gate indicator
       if(bleGateActive()){
         if(bleConnected){
@@ -3766,10 +4036,11 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           </div>
         </details>
         <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px"><input type="checkbox" id="sheetDirectFallbackToGroq" ${k.directFallbackToGroq!==false?'checked':''} style="accent-color:var(--teal)">Fallback to Groq when selected provider is rate-limited/unavailable</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetGatewayHttpFallback" ${k.gatewayHttpFallback===true?'checked':''} style="accent-color:var(--teal)">Enable gateway HTTP fallback when WebSocket is offline (override)</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px"><input type="checkbox" id="sheetGatewayHttpFallback" ${k.gatewayHttpFallback===true?'checked':''} style="accent-color:var(--teal)">Enable gateway HTTP fallback when WebSocket is offline (override)</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetGatewaySelfHeal" ${isGatewaySelfHealEnabled(k)?'checked':''} style="accent-color:var(--teal)">Enable gateway self-heal control loop (/control on)</label>
         <div id="sheetAiRoutingStatus" style="margin-top:8px;padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input)">
           <div style="font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.04em">Automation Status</div>
-          <div id="sheetAiRoutingStatusText" style="font-size:10px;color:var(--text-3);margin-top:3px">${esc(getProviderPreset(activeProvider,k).label)} active · direct fallback ${k.directFallbackToGroq!==false?'on':'off'} · gateway fallback ${k.gatewayHttpFallback===true?'on':'off'}</div>
+          <div id="sheetAiRoutingStatusText" style="font-size:10px;color:var(--text-3);margin-top:3px">${esc(getProviderPreset(activeProvider,k).label)} active · direct fallback ${k.directFallbackToGroq!==false?'on':'off'} · gateway fallback ${k.gatewayHttpFallback===true?'on':'off'} · control ${isGatewaySelfHealEnabled(k)?'on':'off'}</div>
           <div style="font-size:9px;color:var(--text-3);margin-top:4px">Changes auto-save in the background. Use toggles above only as overrides.</div>
         </div>
       </div>`;
@@ -4282,14 +4553,16 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       const _routingBaseEl=$('sheetBody').querySelector('#sheetAiBaseUrl');
       const _routingFallbackEl=$('sheetBody').querySelector('#sheetDirectFallbackToGroq');
       const _routingGatewayFallbackEl=$('sheetBody').querySelector('#sheetGatewayHttpFallback');
+      const _routingSelfHealEl=$('sheetBody').querySelector('#sheetGatewaySelfHeal');
       const _routingStatusEl=$('sheetBody').querySelector('#sheetAiRoutingStatusText');
       const refreshRoutingStatus=(state)=>{
         if(!_routingStatusEl)return;
         const p=state.provider;
         const label=getProviderPreset(p,state.k).label;
         const custom=state.baseUrl?' · custom base url':'',invalid=state.invalid?' · base url invalid':'';
-        _routingStatusEl.textContent=`${label} active · direct fallback ${state.fallbackOn?'on':'off'} · gateway fallback ${state.gatewayFallbackOn?'on':'off'}${custom}${invalid}`;
-        _routingStatusEl.style.color=state.invalid?'var(--err)':'var(--text-3)';
+        const controlState=state.selfHealOn?`on${_controlLoopState.lastFailureReason?` (${_controlLoopState.lastFailureReason.slice(0,60)})`:''}`:'off';
+        _routingStatusEl.textContent=`${label} active · direct fallback ${state.fallbackOn?'on':'off'} · gateway fallback ${state.gatewayFallbackOn?'on':'off'} · control ${controlState}${custom}${invalid}`;
+        _routingStatusEl.style.color=state.invalid?'var(--err)':(_controlLoopState.lastFailureReason?'var(--warn)':'var(--text-3)');
       };
       const getRoutingDraft=()=>{
         const k2=getK();
@@ -4298,7 +4571,8 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         const baseUrl=normalizeProviderBaseUrl(baseRaw);
         const fallbackOn=_routingFallbackEl?.checked!==false;
         const gatewayFallbackOn=_routingGatewayFallbackEl?.checked===true;
-        return{k:k2,provider,baseRaw,baseUrl,invalid:!!(baseRaw&&!baseUrl),fallbackOn,gatewayFallbackOn};
+        const selfHealOn=_routingSelfHealEl?.checked===true;
+        return{k:k2,provider,baseRaw,baseUrl,invalid:!!(baseRaw&&!baseUrl),fallbackOn,gatewayFallbackOn,selfHealOn};
       };
       const autoSaveRouting=({showErrorToast=false}={})=>{
         const state=getRoutingDraft();
@@ -4308,7 +4582,9 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         if(state.baseUrl)state.k.aiBaseUrl=state.baseUrl;else delete state.k.aiBaseUrl;
         state.k.directFallbackToGroq=state.fallbackOn;
         state.k.gatewayHttpFallback=state.gatewayFallbackOn;
+        state.k[CONTROL_SELF_HEAL_KEY]=state.selfHealOn;
         setK(state.k);
+        if(state.selfHealOn)syncGatewaySelfHealLoop();else stopGatewaySelfHealLoop();
         renderChannelDropdown();
         updateStatus();
         return true;
@@ -4316,6 +4592,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       _routingProviderEl?.addEventListener('change',()=>{autoSaveRouting()});
       _routingFallbackEl?.addEventListener('change',()=>{autoSaveRouting()});
       _routingGatewayFallbackEl?.addEventListener('change',()=>{autoSaveRouting()});
+      _routingSelfHealEl?.addEventListener('change',()=>{autoSaveRouting()});
       _routingBaseEl?.addEventListener('input',()=>{refreshRoutingStatus(getRoutingDraft())});
       _routingBaseEl?.addEventListener('blur',()=>{autoSaveRouting({showErrorToast:true})});
       _routingBaseEl?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();autoSaveRouting({showErrorToast:true});_routingBaseEl.blur()}});
@@ -5681,7 +5958,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture/screen-capture require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), browser-control(run browser relay actions with click→evaluate fallback + diagnostics), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture/screen-capture require user approval.
 IMPORTANT: When the user asks to change settings, customize the app, or modify their configuration — activate help mode first with {"type":"navigate","target":"help-mode"} so you have full context to make changes accurately. You can also show the help menu with {"type":"navigate","target":"help"} to let the user see available commands.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
@@ -5700,7 +5977,7 @@ Timers: \`\`\`tc-action\n{"type":"timer","duration":"5m","message":"Pizza is rea
 Cron jobs: \`\`\`tc-action\n{"type":"cron","title":"Morning Briefing","message":"Give me a briefing","times":["09:00"],"recurring":true,"days":["mon","tue","wed","thu","fri"],"action":"pipeline"}\n\`\`\` Creates a scheduled job. action can be: pipeline (send to you), research, deepresearch, imagine, snap, notify. Requires user approval. source:'agent' — you're notified when it fires.
 Pomodoro: \`\`\`tc-action\n{"type":"pomodoro","duration":25,"breakDuration":5,"rounds":4,"tasks":["Task 1","Task 2"]}\n\`\`\` Starts a Pomodoro focus timer with task checklist. You're notified on phase changes (focus_start, break_start) and completion. Control: {"type":"pomodoro","action":"pause|resume|stop"}.
 Debate: \`\`\`tc-action\n{"type":"debate","topic":"cats vs dogs"}\n\`\`\` Triggers a mini-debate between 2 TealClaw personas (auto-selected by topic). A 3rd persona judges. Short 4-exchange debate + verdict + winner thanks. If you trigger it, you receive the full debate transcript when it completes.
-User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /photo /capture /takephoto /screenshot /screen /capture-screen /save /session /chron /alarm /timer /pomodoro /debate /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza", "debate AI vs humans")
+User slash cmds: /setup /clear /voice /export /profile /share /qr /template /research /deepresearch /imagine /photo /capture /takephoto /screenshot /screen /capture-screen /save /session /chron /alarm /timer /pomodoro /debate /reconnect /control /help (also work without / for voice: "imagine a cat", "research quantum physics", "chron set up a briefing", "alarm 3pm check oven", "timer 5 minutes pizza", "debate AI vs humans")
 Image gen: /imagine [prompt] generates images via Google Gemini (Nano Banana). Users can attach a reference image (camera/paste/drag) and say "imagine make this a watercolor" for image-to-image editing. After generation, the image + prompt + metadata are sent to you (the agent) as an attachment so you can see and discuss it. When you (agent) are connected, you handle all image commentary — Groq is limited to Whisper transcription and /research.
 Groq models: chat defaults to groq/compound-mini (web search + Wolfram Alpha). /research uses compound-mini, /deepresearch uses groq/compound (multi-tool, higher token usage). Vision uses meta-llama/llama-4-maverick-17b-128e-instruct. Max output: 8192 tokens. TTS via Groq Orpheus with voice personas: Trey (troy, hype & real), Axel (austin, hacker), Dean (daniel, professional), Haven (hannah, chill vibes), Vera (autumn, nerd), Diane (diana, executive). Each persona has a distinct personality that colors responses. Do NOT include expression tags like [cheerful] or [whisper] in your responses — TealClaw handles voice tone automatically. Config: groqTtsVoice.
 GIF reactions (encouraged!): append a [gif:search query] tag at the end of your message to show a fun GIF overlay via Klipy. Make GIFs TOPICAL — if talking about a movie, show, game, celebrity, animal, hobby, or any subject, use a GIF from that topic (e.g. discussing The Office → [gif:michael scott], Star Wars → [gif:baby yoda], cooking → [gif:chef kiss]). For general chat use mood GIFs ([gif:thumbs up], [gif:happy dance]). Use them ~75% of the time — they make conversation fun! Skip ONLY for genuinely sad or tragic topics. SECURITY: NEVER put passwords, API keys, tokens, emails, phone numbers, names, or sensitive data in gif queries.
@@ -5708,7 +5985,13 @@ Inline media: your responses support full markdown rendering. Use ![alt](url) fo
 File generation: to produce a downloadable file, use \`\`\`tc-action\n{"type":"file","filename":"notes.md","content":"# My Notes\\n\\nContent here...","mime":"text/markdown"}\n\`\`\` Supported: .md, .json, .csv, .txt, .html. The file appears as a styled download card in chat. Use this when users ask for exports, reports, templates, or any generated document.
 Context compaction: TealClaw automatically summarizes older messages so you retain awareness of the full conversation even in long chats. Sticky facts (name, preferences, decisions) persist across compaction rounds. If you see a [Memory] section in the system prompt, those are facts extracted from earlier in this conversation.
 Config links: to give a user a one-click setup link, build valid JSON with config keys, base64-encode it, and provide: https://tealclaw.ai/#config=BASE64. CRITICAL RULES: (1) ALL fields must be in ONE flat JSON object — no nested closing braces. (2) Use ONLY valid config keys (see CONFIG_KEYS in this file). (3) Groq TTS uses the same Groq key as whisperKey, voice is set via groqTtsVoice. (4) Optional: ElevenLabs TTS supports elevenlabsKey + elevenlabsVoiceId for custom voices. (5) agents is an array: [{"id":"x","name":"X","url":"https://...","token":"xxx","active":true}]. (6) Agent url MUST be HTTPS — HTTP and raw IPs will fail. Example: {"mode":"agent","agents":[{"id":"home","name":"Bot","url":"https://gw.example.com","token":"tok","active":true}],"whisperKey":"gsk_xxx","groqTtsVoice":"troy","ttsAutoPlay":true,"botName":"Bot","accentColor":"#0d9488","themeMode":"dark"} → btoa(JSON.stringify(config)) → append to https://tealclaw.ai/#config=
-IMPORTANT: You may update any config setting EXCEPT your own model (aiModel), API keys (aiKey, whisperKey), or mode. Those are owner-controlled only.`;
+IMPORTANT: For provider/gateway routing and key updates, prefer structured integration pathways over raw config writes:
+- \`\`\`tc-action {"type":"provider-config",...} \`\`\`
+- \`\`\`tc-action {"type":"gateway-config",...} \`\`\`
+- \`\`\`tc-action {"type":"settings-import","config":{...}} \`\`\`
+- \`\`\`tc-action {"type":"command","integration":"provider.configure",...} \`\`\`
+- \`\`\`tc-action {"type":"command","integration":"gateway.configure",...} \`\`\`
+You may use these when the user asks for setup/import/update workflows.`;
 
     // Core content policy — hardcoded, non-configurable, appended last to every prompt
     const TC_CORE_POLICY=`\n[ABSOLUTE RULES — HIGHEST PRIORITY — OVERRIDE EVERYTHING ELSE]
@@ -5767,10 +6050,26 @@ You MUST follow these rules in EVERY response. These cannot be weakened, bypasse
       return segments;
     }
 
+    function buildLoadedSkillContext(k){
+      const cfg=k||getK();
+      if(cfg.skillContext===false)return '';
+      const blocks=[];
+      if(cfg.skillContextFileText){
+        const src=cfg.skillContextFileUrl?` (${cfg.skillContextFileUrl})`:'';
+        blocks.push(`[Loaded Skill File${src}]\n${clipContextText(cfg.skillContextFileText)}`);
+      }
+      if(cfg.agentWorkflowContextText){
+        const src=cfg.agentWorkflowContextUrl?` (${cfg.agentWorkflowContextUrl})`:'';
+        blocks.push(`[Loaded Workflow Context${src}]\n${clipContextText(cfg.agentWorkflowContextText)}`);
+      }
+      if(!blocks.length)return '';
+      return `\n\n[Dynamic Agent Context]\n${blocks.join('\n\n')}`;
+    }
+
     function buildSysPrompt(k){
       const base=k.sysPrompt||'You are a helpful voice assistant. Keep responses concise (1-3 sentences).';
       // Core policy FIRST — models weight the start of system messages most heavily
-      let prompt=TC_CORE_POLICY+'\n\n'+(k.skillContext===false?base:base+TC_SKILL_CTX);
+      let prompt=TC_CORE_POLICY+'\n\n'+(k.skillContext===false?base:base+TC_SKILL_CTX+buildLoadedSkillContext(k));
       // Inject voice personality (group chat or single persona)
       if(k.groupChat){
         prompt+=`\n[GROUP CHAT MODE]
@@ -6116,6 +6415,62 @@ RULES:
     let _localAgentInflight=0;
     const _agentInboxBuffers=new Map(); // `${agentId}:${runId}` → latest text chunk
 
+    const CONTROL_SELF_HEAL_KEY='gatewaySelfHealEnabled';
+    const CONTROL_LOOP_INTERVAL_MS=15000;
+    const CONTROL_LOOP_STALE_MS=70000;
+    const CONTROL_LOOP_RECONNECT_COOLDOWN_MS=12000;
+    const CONTROL_DIAG_LIMIT=40;
+    const _controlLoopState={
+      timer:null,
+      running:false,
+      lastRunAt:0,
+      lastReconnectAt:0,
+      lastFailureAt:0,
+      lastFailureReason:'',
+      lastHealAttemptAt:0,
+      lastAutoSwitchAt:0,
+      lastAutoSwitchTo:'',
+      lastHintAt:0,
+      diagnostics:[]
+    };
+
+    function addControlDiag(level,message,meta={}){
+      _controlLoopState.diagnostics.push({
+        ts:Date.now(),
+        level:String(level||'info'),
+        message:String(message||''),
+        ...meta
+      });
+      if(_controlLoopState.diagnostics.length>CONTROL_DIAG_LIMIT)_controlLoopState.diagnostics.shift();
+    }
+
+    function getRecentControlDiags(limit=6){
+      return _controlLoopState.diagnostics.slice(-Math.max(1,limit));
+    }
+
+    function isGatewaySelfHealEnabled(k){
+      const cfg=k||getK();
+      return cfg[CONTROL_SELF_HEAL_KEY]===true;
+    }
+
+    function shouldShowControlHint(){
+      return Date.now()-(_controlLoopState.lastHintAt||0)>9000;
+    }
+
+    function rememberGatewayFailure(reason){
+      _controlLoopState.lastFailureAt=Date.now();
+      _controlLoopState.lastFailureReason=String(reason||'Gateway failure');
+      addControlDiag('warn',_controlLoopState.lastFailureReason);
+    }
+
+    function controlStatusLine(){
+      const enabled=isGatewaySelfHealEnabled();
+      if(!enabled)return 'off';
+      if(_controlLoopState.lastAutoSwitchTo)return `on · auto-switched ${_controlLoopState.lastAutoSwitchTo}`;
+      if(_controlLoopState.lastFailureReason)return `on · watching (${_controlLoopState.lastFailureReason})`;
+      return 'on · healthy';
+    }
+
     function chatPayloadText(msg){
       if(!msg)return '';
       if(typeof msg==='string')return msg;
@@ -6195,6 +6550,7 @@ RULES:
         this._eventHandlers=new Map();this._reqId=0;this._tickTimer=null;
         this._reconnectMs=1000;this._tickIntervalMs=30000;this._closed=false;
         this.serverInfo=null;this.sessionKey=`tc-web-${agentId}`;
+        this.lastFrameAt=0;this.lastConnectAt=0;this.lastErrorAt=0;this.lastError='';
       }
 
       // Convert URL: https→wss, http→ws, or leave ws/wss
@@ -6214,6 +6570,7 @@ RULES:
           let settled=false;
           const timeout=setTimeout(()=>{if(!settled){settled=true;this.ws.close();reject(new Error('connect timeout'))}},10000);
           this.ws.onmessage=(e)=>{
+            this.lastFrameAt=Date.now();
             let frame;try{frame=JSON.parse(e.data)}catch{return}
             if(frame.type==='event'){
               // Challenge → respond with connect
@@ -6230,13 +6587,16 @@ RULES:
               if(!settled&&frame.ok&&frame.payload?.server){
                 settled=true;clearTimeout(timeout);
                 this.state='connected';this.serverInfo=frame.payload;
+                this.lastConnectAt=Date.now();
+                this.lastError='';
                 this._tickIntervalMs=frame.payload.policy?.tickIntervalMs||30000;
                 this._reconnectMs=1000;this._resetTick();this._emitState();
                 resolve(frame.payload);
               } else if(!settled&&!frame.ok){
                 settled=true;clearTimeout(timeout);
-                this.state='error';this._emitState();
-                reject(new Error(frame.error?.message||'connect rejected'));
+                this.state='error';this.lastErrorAt=Date.now();this.lastError=frame.error?.message||'connect rejected';
+                this._emitState();
+                reject(new Error(this.lastError));
               } else {
                 // Regular response
                 const handler=this._reqMap.get(frame.id);
@@ -6247,10 +6607,14 @@ RULES:
           this.ws.onclose=(e)=>{
             clearTimeout(timeout);
             if(!settled){settled=true;reject(new Error(`ws closed: ${e.code} ${e.reason}`))}
+            this.lastErrorAt=Date.now();
+            this.lastError=`ws closed: ${e.code||0} ${e.reason||''}`.trim();
             this.state='disconnected';this._emitState();this._clearTick();
             if(!this._closed)this._scheduleReconnect();
           };
           this.ws.onerror=()=>{
+            this.lastErrorAt=Date.now();
+            this.lastError='ws error';
             if(!settled){settled=true;clearTimeout(timeout);this.state='error';this._emitState();reject(new Error('ws error'))}
           };
         });
@@ -6277,12 +6641,12 @@ RULES:
         }});
       }
 
-      request(method,params){
+      request(method,params,timeoutMs=30000){
         return new Promise((resolve,reject)=>{
           const id=this._nextId();
           this._reqMap.set(id,{resolve,reject});
           this._send({type:'req',id,method,params});
-          setTimeout(()=>{if(this._reqMap.has(id)){this._reqMap.delete(id);reject(new Error('request timeout'))}},30000);
+          setTimeout(()=>{if(this._reqMap.has(id)){this._reqMap.delete(id);reject(new Error('request timeout'))}},Math.max(1000,Number(timeoutMs)||30000));
         });
       }
 
@@ -6362,7 +6726,7 @@ RULES:
     function ensureAgentConnection(agent){
       if(!agent?.url||!agent?.token)return null;
       let conn=agentConnections.get(agent.id);
-      if(conn&&conn.connected)return conn;
+      if(conn&&conn.connected&&conn.url===agent.url&&conn.token===agent.token)return conn;
       if(conn)conn.stop();
       conn=new OpenClawWS(agent.url,agent.token,agent.id);
       agentConnections.set(agent.id,conn);
@@ -6370,6 +6734,7 @@ RULES:
       conn.on('chat',(payload)=>{handlePassiveAgentReply(payload,conn)});
       // Listen for agent (builder) events
       conn.on('agent',(payload)=>{handleAgentEvent(payload,conn)});
+      conn.on('_state',()=>{updateStatus()});
       // Listen for cross-device sync events (if supported by the gateway)
       // Some OpenClaw gateways do not implement chat.sync; repeated calls can destabilize the WS connection.
       const disableSync=localStorage.getItem('tc-disable-chat-sync')==='1';
@@ -6381,6 +6746,7 @@ RULES:
       }
       conn.start().then(hello=>{
         agentContext.agentName=agent.name||'';
+        _controlLoopState.lastFailureReason='';
         updateStatus();
         if(hello.server?.version)console.log(`[OpenClaw] Connected to ${agent.name} v${hello.server.version}`);
         // QR onboarding confirmation
@@ -6390,10 +6756,117 @@ RULES:
           conn.chatSend(`[ONBOARDING] TealClaw connected via secure QR transfer. Device: ${dev}`,[{type:'image',data:img}]).catch(()=>{});
         }
       }).catch(e=>{
-        console.warn(`[OpenClaw] ${agent.name} connect failed:`,e.message);
+        const reason=e?.message||'connect failed';
+        console.warn(`[OpenClaw] ${agent.name} connect failed:`,reason);
+        rememberGatewayFailure(reason);
         updateStatus();
+        maybeHealGatewayTarget(agent,reason,{notify:true,allowSwitch:isGatewaySelfHealEnabled()}).then(heal=>{
+          if(heal?.switched){
+            const updated=getAgents().find(a=>a.id===agent.id);
+            if(updated){
+              disconnectAgent(agent.id);
+              ensureAgentConnection(updated);
+            }
+          }
+        }).catch(()=>{});
       });
       return conn;
+    }
+
+    async function runGatewaySelfHealTick(trigger='interval'){
+      if(_controlLoopState.running)return;
+      _controlLoopState.running=true;
+      try{
+        const k=getK();
+        if(!isGatewaySelfHealEnabled(k))return;
+        if((k.mode||'direct')!=='agent')return;
+        const agent=getActiveAgent();
+        if(!agent){
+          _controlLoopState.lastFailureReason='No active gateway agent configured';
+          return;
+        }
+        if(!agent.url||!agent.token){
+          _controlLoopState.lastFailureReason='Agent URL/token missing';
+          return;
+        }
+
+        let conn=agentConnections.get(agent.id);
+        const now=Date.now();
+        const stale=conn?.connected&&conn.lastFrameAt&&(now-conn.lastFrameAt>CONTROL_LOOP_STALE_MS);
+        const mismatched=conn&&(conn.url!==agent.url||conn.token!==agent.token);
+        const disconnected=!conn||!conn.connected;
+        const canReconnect=(now-(_controlLoopState.lastReconnectAt||0))>CONTROL_LOOP_RECONNECT_COOLDOWN_MS;
+
+        if((mismatched||disconnected||stale)&&canReconnect){
+          _controlLoopState.lastReconnectAt=now;
+          addControlDiag('info',`Self-heal reconnect (${trigger})`,{stale:!!stale,disconnected:!!disconnected,mismatched:!!mismatched});
+          if(conn)disconnectAgent(agent.id);
+          conn=ensureAgentConnection(agent);
+        }
+
+        if(stale){
+          rememberGatewayFailure('Gateway heartbeat stale — reconnecting');
+          await maybeHealGatewayTarget(agent,'stale heartbeat',{notify:false,allowSwitch:true});
+        }
+
+        if(conn?.connected&&conn.supportsMethod&&conn.supportsMethod('status')){
+          // Fast health probe (optional): unknown method is ignored by supportsMethod.
+          conn.request('status',{},3500).catch(err=>{
+            rememberGatewayFailure(`Gateway status probe failed: ${err?.message||'request timeout'}`);
+          });
+        }
+      }finally{
+        _controlLoopState.lastRunAt=Date.now();
+        _controlLoopState.running=false;
+      }
+    }
+
+    function stopGatewaySelfHealLoop(){
+      if(_controlLoopState.timer){
+        clearInterval(_controlLoopState.timer);
+        _controlLoopState.timer=null;
+      }
+    }
+
+    function syncGatewaySelfHealLoop(){
+      const k=getK();
+      const shouldRun=isGatewaySelfHealEnabled(k)&&(k.mode||'direct')==='agent';
+      if(!shouldRun){
+        stopGatewaySelfHealLoop();
+        return;
+      }
+      if(_controlLoopState.timer)return;
+      _controlLoopState.timer=setInterval(()=>{runGatewaySelfHealTick('interval').catch(()=>{})},CONTROL_LOOP_INTERVAL_MS);
+      runGatewaySelfHealTick('start').catch(()=>{});
+    }
+
+    function setGatewaySelfHealEnabled(enabled,{toast=true,source='manual'}={}){
+      const k=getK();
+      k[CONTROL_SELF_HEAL_KEY]=!!enabled;
+      setK(k);
+      if(enabled){
+        addControlDiag('ok',`Self-heal enabled (${source})`);
+        syncGatewaySelfHealLoop();
+      }else{
+        addControlDiag('info',`Self-heal disabled (${source})`);
+        stopGatewaySelfHealLoop();
+      }
+      updateStatus();
+      if(toast)showToast(`Gateway self-heal ${enabled?'ON':'OFF'}`,'ok');
+      return !!enabled;
+    }
+
+    function gatewayControlStatusSnapshot(){
+      const enabled=isGatewaySelfHealEnabled();
+      return {
+        enabled,
+        status:controlStatusLine(),
+        lastRunAt:_controlLoopState.lastRunAt,
+        lastReconnectAt:_controlLoopState.lastReconnectAt,
+        lastFailureReason:_controlLoopState.lastFailureReason,
+        lastAutoSwitchTo:_controlLoopState.lastAutoSwitchTo,
+        diagnostics:getRecentControlDiags(5)
+      };
     }
 
     // ── Cross-Device Chat Sync ──────────────────────────
@@ -6704,6 +7177,117 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return baseUrl;
     }
 
+    function gatewayWsUrl(baseUrl){
+      if(!baseUrl)return '';
+      if(baseUrl.startsWith('https://'))return baseUrl.replace('https://','wss://');
+      if(baseUrl.startsWith('http://'))return baseUrl.replace('http://','ws://');
+      return baseUrl;
+    }
+
+    function gatewayHost(baseUrl){
+      try{return new URL(gwUrl(baseUrl)).hostname.toLowerCase()}catch{return ''}
+    }
+
+    function isLikelyTailscaleHost(host){
+      const h=String(host||'').toLowerCase();
+      if(!h)return false;
+      if(h.endsWith('.ts.net')||h.endsWith('.tailnet')||h.includes('.tail'))return true;
+      return /^100\.(?:\d{1,3}\.){2}\d{1,3}$/.test(h);
+    }
+
+    function localGatewayApplicable(baseUrl){
+      const h=String(location.hostname||'').toLowerCase();
+      if(['localhost','127.0.0.1','::1'].includes(h))return true;
+      const gwHost=gatewayHost(baseUrl);
+      return ['localhost','127.0.0.1','::1'].includes(gwHost);
+    }
+
+    function gatewayFallbackCandidates(agent){
+      if(!agent?.url)return [];
+      const current=normalizeGatewayConfigUrl(agent.url)||agent.url;
+      const out=[];
+      const host=gatewayHost(current);
+      if(isLikelyTailscaleHost(host)&&host!=='gw.tealclaw.ai')out.push('https://gw.tealclaw.ai');
+      if(localGatewayApplicable(current))out.push('ws://127.0.0.1:18789');
+      return out.filter((u,i,a)=>u&&u!==current&&a.indexOf(u)===i);
+    }
+
+    async function probeGatewayEndpoint(rawUrl,timeoutMs=2200){
+      const target=gatewayWsUrl(rawUrl).replace(/\/+$/,'');
+      if(!target)return{ok:false,error:'invalid target'};
+      return new Promise(resolve=>{
+        let done=false;
+        let ws=null;
+        const finish=(ok,error='')=>{
+          if(done)return;
+          done=true;
+          try{if(ws&&ws.readyState<=1)ws.close(1000,'probe')}catch{}
+          resolve({ok,error,target});
+        };
+        const timer=setTimeout(()=>finish(false,'probe timeout'),Math.max(900,timeoutMs));
+        try{ws=new WebSocket(target)}catch(e){clearTimeout(timer);finish(false,e?.message||'ws init failed');return}
+        ws.onopen=()=>{clearTimeout(timer);finish(true,'')};
+        ws.onerror=()=>{clearTimeout(timer);finish(false,'ws error')};
+        ws.onclose=(evt)=>{clearTimeout(timer);finish(false,`closed ${evt?.code||0}`)};
+      });
+    }
+
+    async function maybeHealGatewayTarget(agent,reason,{notify=true,allowSwitch=true}={}){
+      if(!agent?.id)return null;
+      const candidates=gatewayFallbackCandidates(agent);
+      if(!candidates.length)return null;
+      const now=Date.now();
+      if(now-(_controlLoopState.lastHealAttemptAt||0)<6000)return null;
+      _controlLoopState.lastHealAttemptAt=now;
+      rememberGatewayFailure(reason||'Gateway connect failed');
+      const probes=[];
+      let switchedTo='';
+      for(const target of candidates){
+        const probe=await probeGatewayEndpoint(target,2200).catch(e=>({ok:false,error:e?.message||'probe failed'}));
+        probes.push({target,...probe});
+        if(!switchedTo&&probe.ok&&allowSwitch){
+          switchedTo=target;
+        }
+      }
+      if(switchedTo){
+        const agents=getAgents();
+        const idx=agents.findIndex(a=>a.id===agent.id);
+        if(idx>=0&&agents[idx].url!==switchedTo){
+          agents[idx]={...agents[idx],url:switchedTo};
+          setAgents(agents);
+          _controlLoopState.lastAutoSwitchAt=Date.now();
+          _controlLoopState.lastAutoSwitchTo=switchedTo;
+          addControlDiag('ok',`Auto-switched gateway target to ${switchedTo}`,{reason:String(reason||'')});
+          if(notify&&shouldShowControlHint()){
+            _controlLoopState.lastHintAt=Date.now();
+            showToast(`Gateway self-heal switched to ${switchedTo}`,'ok',4500);
+          }
+          renderAgentSelector();
+          updateStatus();
+          return{switched:true,target:switchedTo,probes};
+        }
+      }
+      if(notify&&shouldShowControlHint()){
+        const reachable=probes.filter(p=>p.ok).map(p=>p.target);
+        if(reachable.length){
+          _controlLoopState.lastHintAt=Date.now();
+          showToast(`Gateway fallback available: ${reachable[0]}`,'ok',4200);
+        }else if(candidates.length){
+          _controlLoopState.lastHintAt=Date.now();
+          showToast(`Gateway issue. Try fallback target: ${candidates[0]}`,'err',5200);
+        }
+      }
+      addControlDiag('warn','Gateway fallback probe complete',{reason:String(reason||''),probes});
+      return{switched:false,probes};
+    }
+
+    function isBrowserClickFailureMessage(msg){
+      const m=String(msg||'');
+      if(!m)return false;
+      return /(click|pointer|intercept|strict mode|not found|timeout|detached|element is not|no node|target closed)/i.test(m)
+        && /(browser|relay|snapshot|ref|selector|act)/i.test(m);
+    }
+
     // WebSocket-based agent call (OpenClaw protocol)
     async function callAgentWS(conn,text,imageBase64,onToken){
       return new Promise((resolve,reject)=>{
@@ -6719,12 +7303,18 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
           settled=true;conn.off('chat',onChat);clearRun();
           // If we truly get stuck, suggest reconnect — but don't aggressively restart the socket here.
           // (Restarting can race with an in-flight run and make things feel worse.)
-          reject(new Error('Gateway unresponsive (no response yet). It may still be thinking. If it never replies, try /reconnect (or refresh) and resend.'));
+          const errMsg='Gateway unresponsive (no response yet). It may still be thinking. If it never replies, try /reconnect (or refresh) and resend.';
+          rememberGatewayFailure(errMsg);
+          const failingAgent=getAgents().find(a=>a.id===conn.agentId)||{id:conn.agentId,url:conn.url};
+          maybeHealGatewayTarget(failingAgent,errMsg,{notify:true,allowSwitch:isGatewaySelfHealEnabled()}).catch(()=>{});
+          reject(new Error(errMsg));
         },FIRST_TOKEN_TIMEOUT_MS);
         let totalTimer=setTimeout(()=>{
           if(settled)return;
           settled=true;conn.off('chat',onChat);clearRun();
-          reject(new Error('Gateway timeout. Try again or restart the gateway.'));
+          const errMsg='Gateway timeout. Try again or restart the gateway.';
+          rememberGatewayFailure(errMsg);
+          reject(new Error(errMsg));
         },TOTAL_TIMEOUT_MS);
         const clearTimers=()=>{try{clearTimeout(firstTokTimer)}catch{}try{clearTimeout(totalTimer)}catch{}};
         const clearRun=()=>{
@@ -6750,7 +7340,14 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
           } else if(payload.state==='error'){
             clearTimers();
             settled=true;conn.off('chat',onChat);clearRun();
-            reject(new Error(payload.errorMessage||'Agent error'));
+            const errMsg=payload.errorMessage||'Agent error';
+            if(isBrowserClickFailureMessage(errMsg)){
+              addControlDiag('warn','Browser control click failed',{
+                detail:errMsg,
+                suggestion:'Retry with browser.act evaluate wrapper and verify snapshot refs'
+              });
+            }
+            reject(new Error(errMsg));
           } else if(payload.state==='aborted'){
             clearTimers();
             settled=true;conn.off('chat',onChat);clearRun();
@@ -6845,6 +7442,19 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       }
 
       const k=getK();
+      if(isGatewaySelfHealEnabled(k)){
+        await maybeHealGatewayTarget(agent,'Gateway socket unavailable before send',{notify:true,allowSwitch:true}).catch(()=>{});
+        const healedAgent=getActiveAgent()||agent;
+        if(healedAgent?.id===agent.id&&healedAgent.url!==agent.url){
+          conn=ensureAgentConnection(healedAgent);
+          const start2=Date.now();
+          while((!conn||!conn.connected) && Date.now()-start2<7000){
+            await new Promise(r=>setTimeout(r,250));
+            conn=agentConnections.get(healedAgent.id);
+          }
+          if(conn?.connected)return callAgentWS(conn,text,imageBase64,onToken);
+        }
+      }
       if(gatewayHttpFallbackAllowed(agent,k)){
         try{return await callAgentHTTP(agent,text,imageBase64)}
         catch(httpErr){
@@ -6852,7 +7462,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         }
       }
 
-      throw new Error('Gateway not connected yet (WebSocket offline or pairing required). Try /reconnect (or refresh). For self-hosted/local gateways you can enable HTTP fallback in Settings > AI Configuration. If this is a new device, approve it on the gateway: openclaw devices list → openclaw devices approve <requestId>.');
+      throw new Error('Gateway not connected yet (WebSocket offline or pairing required). Try /reconnect or /control on (self-heal). For self-hosted/local gateways you can enable HTTP fallback in Settings > AI Configuration. If this is a new device, approve it on the gateway: openclaw devices list → openclaw devices approve <requestId>.');
     }
 
     // ── Transcribe ─────────────────────────────────────
@@ -9199,7 +9809,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture']);
+    const TC_ACTION_TYPES=new Set(['config','command','integration','settings-import','provider-config','gateway-config','skill-context','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -9361,6 +9971,120 @@ Rules:
       return div.innerHTML;
     }
 
+    async function waitForGatewayConnection(agent,timeoutMs=9000){
+      let conn=agentConnections.get(agent.id);
+      if(conn?.connected)return conn;
+      try{conn=ensureAgentConnection(agent)}catch{}
+      const start=Date.now();
+      while((!conn||!conn.connected)&&Date.now()-start<timeoutMs){
+        await new Promise(r=>setTimeout(r,250));
+        conn=agentConnections.get(agent.id);
+      }
+      return conn;
+    }
+
+    async function browserControlRpc(conn,payload){
+      const candidates=[
+        ['browser.act',payload],
+        ['browser.action',payload],
+        ['tool.browser',payload],
+        ['tools.browser',payload],
+        ['tools.call',{name:'browser',arguments:payload}],
+        ['tool.call',{name:'browser',arguments:payload}]
+      ];
+      let lastErr=null;
+      for(const [method,params] of candidates){
+        try{return await conn.request(method,params,18000)}
+        catch(err){
+          lastErr=err;
+          if(typeof isUnknownMethodError==='function'&&isUnknownMethodError(err))continue;
+          if(/method.*not found|unknown method/i.test(String(err?.message||'')))continue;
+          throw err;
+        }
+      }
+      throw(lastErr||new Error('Browser control method unavailable on this gateway'));
+    }
+
+    function buildEvaluateClickFn(selectors=[]){
+      const sel=selectors.filter(Boolean).map(s=>String(s));
+      if(!sel.length)return '';
+      return `(()=>{const selectors=${JSON.stringify(sel)};let node=null;for(const s of selectors){try{node=document.querySelector(s);if(node)break}catch{}}if(!node)return{ok:false,error:'No element found for selectors: '+selectors.join(', ')};try{node.scrollIntoView({block:'center',inline:'center',behavior:'instant'});}catch{};try{['pointerdown','mousedown','mouseup','click'].forEach(type=>node.dispatchEvent(new MouseEvent(type,{view:window,bubbles:true,cancelable:true})));if(typeof node.click==='function')node.click();return{ok:true,tag:node.tagName||'',selector:selectors[0]};}catch(e){return{ok:false,error:String(e&&e.message||e)}}})()`;
+    }
+
+    async function runBrowserControlAction(action){
+      const k=getK();
+      if((k.mode||'direct')!=='agent')throw new Error('browser-control requires agent mode');
+      const agent=getActiveAgent();
+      if(!agent)throw new Error('No active gateway agent configured');
+      const conn=await waitForGatewayConnection(agent,9000);
+      if(!conn?.connected)throw new Error('Gateway offline for browser-control. Try /reconnect or /control on.');
+
+      const base=(action&&typeof action==='object')?action:{};
+      const payloadRaw=(base.payload&&typeof base.payload==='object')?{...base.payload}:{...base};
+      delete payloadRaw.type;delete payloadRaw.payload;
+      const reqRaw=(payloadRaw.request&&typeof payloadRaw.request==='object')?{...payloadRaw.request}:null;
+      const request=reqRaw||{
+        kind:String(payloadRaw.kind||'click'),
+        ref:payloadRaw.ref,
+        element:payloadRaw.element,
+        targetId:payloadRaw.targetId,
+        selector:payloadRaw.selector
+      };
+      const payload={
+        action:payloadRaw.action||'act',
+        profile:payloadRaw.profile||'chrome',
+        target:payloadRaw.target||'host',
+        node:payloadRaw.node,
+        targetId:payloadRaw.targetId||request.targetId,
+        request
+      };
+
+      const result={ok:false,type:'browser-control',kind:request.kind||'act'};
+      try{
+        const primary=await browserControlRpc(conn,payload);
+        result.ok=true;result.primary=primary;
+        addControlDiag('ok','Browser control action executed',{kind:request.kind||'act'});
+        return result;
+      }catch(err){
+        const msg=String(err?.message||err||'browser control failed');
+        result.error=msg;
+        const kind=String(request.kind||'').toLowerCase();
+        const selectors=[request.selector,payloadRaw.selector,payloadRaw.fallbackSelector].filter(Boolean);
+        const canFallback=kind==='click'&&selectors.length>0&&isBrowserClickFailureMessage(msg);
+        if(!canFallback){
+          addControlDiag('warn','Browser control failed',{error:msg,suggestion:'Attach Browser Relay tab, refresh snapshot refs, retry with evaluate fallback'});
+          throw err;
+        }
+        addControlDiag('warn','Browser click failed, trying evaluate fallback',{error:msg,selectors});
+        const fn=buildEvaluateClickFn(selectors);
+        const fallbackPayload={
+          ...payload,
+          request:{kind:'evaluate',targetId:payload.targetId||request.targetId,fn}
+        };
+        try{
+          const fallback=await browserControlRpc(conn,fallbackPayload);
+          result.ok=true;
+          result.fallback=true;
+          result.fallbackResult=fallback;
+          addControlDiag('ok','Browser evaluate fallback succeeded',{selectors});
+          if(shouldShowControlHint()){
+            _controlLoopState.lastHintAt=Date.now();
+            showToast('Browser click fallback succeeded via evaluate','ok',3200);
+          }
+          return result;
+        }catch(fallbackErr){
+          const fm=String(fallbackErr?.message||fallbackErr||'evaluate fallback failed');
+          addControlDiag('err','Browser evaluate fallback failed',{
+            error:fm,
+            suggestion:'Re-snapshot the tab (refs may be stale), verify Relay badge ON, and include selector for fallback'
+          });
+          result.fallback=true;
+          result.fallbackError=fm;
+          throw new Error(`Browser click failed (${msg}); evaluate fallback failed (${fm}). Re-snapshot refs and ensure Browser Relay badge is ON.`);
+        }
+      }
+    }
+
     async function executeTcActions(actions){
       const results=[];
       for(const action of actions){
@@ -9419,6 +10143,49 @@ Rules:
                 const out=await runGrokQuickAction(cmd,{source:'tc-action',silent:true,toast:false});
                 results.push({type:'command',ok:out.ok,command:cmd,message:out.message});
               }
+              break;
+            }
+            case 'integration':{
+              const id=String(action.command||action.integration||action.id||'').trim();
+              if(!id){results.push({type:'integration',ok:false,error:'integration command required'});break}
+              const out=await runIntegrationCommand(id,action.args||action.payload||{},{source:'tc-action',silent:true,toast:false});
+              results.push({type:'integration',ok:out.ok,command:id,message:out.message});
+              break;
+            }
+            case 'browser-control':case 'browser.control':case 'browser-control-click':{
+              const out=await runBrowserControlAction(action);
+              results.push({
+                type:'browser-control',
+                ok:!!out.ok,
+                fallback:!!out.fallback,
+                kind:out.kind||action.kind||action.request?.kind||'act',
+                error:out.error||out.fallbackError||''
+              });
+              break;
+            }
+            case 'settings-import':{
+              const out=await runIntegrationCommand('settings.import',{
+                config:action.config??action.settings??action.payload??action.json??action.base64??action.value
+              },{source:'tc-action',silent:true,toast:false});
+              results.push({type:'settings-import',ok:out.ok,message:out.message,failed:out.report?.failed?.length||0});
+              break;
+            }
+            case 'provider-config':{
+              const out=await runIntegrationCommand('provider.configure',action,{source:'tc-action',silent:true,toast:false});
+              results.push({type:'provider-config',ok:out.ok,message:out.message});
+              break;
+            }
+            case 'gateway-config':{
+              const out=await runIntegrationCommand('gateway.configure',action,{source:'tc-action',silent:true,toast:false});
+              results.push({type:'gateway-config',ok:out.ok,message:out.message});
+              break;
+            }
+            case 'skill-context':{
+              const op=String(action.action||action.command||'').trim().toLowerCase()||'set';
+              const map={load:'skill.load',set:'skill.set',clear:'skill.clear',load_context:'context.load',set_context:'context.set',clear_context:'context.clear'};
+              const cmd=map[op]||op;
+              const out=await runIntegrationCommand(cmd,action,{source:'tc-action',silent:true,toast:false});
+              results.push({type:'skill-context',ok:out.ok,command:cmd,message:out.message});
               break;
             }
             case 'save':{
@@ -9764,7 +10531,7 @@ Rules:
     function renderActionBadge(actions){
       if(!actions.length)return '';
       const types=[...new Set(actions.map(a=>a.type))];
-      const icons={config:'\u2699',command:'\u25B6',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5','video-grid':'\uD83D\uDCF9',gallery:'\uD83D\uDDBC','camera-capture':'\uD83D\uDCF8','screen-capture':'\uD83D\uDDA5\uFE0F',surveillance:'\uD83D\uDC41','guest-link':'\uD83D\uDD17',prompt:'\u2753','request-config':'\uD83D\uDCCB'};
+      const icons={config:'\u2699',command:'\u25B6',integration:'\uD83E\uDDE0','settings-import':'\uD83D\uDCE5','provider-config':'\uD83E\uDDE9','gateway-config':'\uD83C\uDF10','skill-context':'\uD83D\uDCDA',save:'\uD83D\uDCBE',research:'\uD83D\uDD0D',toast:'\uD83D\uDCAC',style:'\uD83C\uDFA8',navigate:'\u2192',bubble:'\uD83D\uDCAD',video:'\uD83C\uDFA5','video-grid':'\uD83D\uDCF9',gallery:'\uD83D\uDDBC','camera-capture':'\uD83D\uDCF8','screen-capture':'\uD83D\uDDA5\uFE0F',surveillance:'\uD83D\uDC41','guest-link':'\uD83D\uDD17',prompt:'\u2753','request-config':'\uD83D\uDCCB'};
       const labels=types.map(t=>icons[t]||'\u26A1').join(' ');
       return `<div class="tc-action-badge" title="${types.length} action${types.length>1?'s':''} executed: ${types.join(', ')}">${labels} ${types.length} action${types.length>1?'s':''}</div>`;
     }
@@ -11724,7 +12491,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect','/control'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -11758,7 +12525,7 @@ ${agentNote}`);
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle one-way forwarding</li>
 <li><code>/telegram relay on</code> / <code>/telegram relay off</code> / <code>/telegram relay status</code> -- run Telegram as primary chat transport</li>
 <li><code>/groq [message]</code> -- send directly to Groq (bypasses agent)</li>
-<li><code>/grok [action]</code> -- run quick background automation actions (status, reconnect gateway, relay on/off, provider switch)</li>
+<li><code>/grok [action]</code> -- run quick background automation actions (status, reconnect gateway, control on/off, relay on/off, provider switch)</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear context window and start fresh</li>
 <li><code>/restart</code> -- same as /clear</li>
@@ -11780,6 +12547,7 @@ ${agentNote}`);
 <li><code>/pomodoro</code> -- AI-guided Pomodoro setup wizard</li>
 <li><code>/debate [topic]</code> -- mini-debate between personas with a judge (voice: "debate cats vs dogs")</li>
 <li><code>/reconnect</code> -- reconnect to your gateway (fixes "Gateway unresponsive" without a page refresh)</li>
+<li><code>/control on|off|status|heal</code> -- toggle/check the gateway self-heal loop and run an immediate health pass</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -11825,10 +12593,22 @@ ${agentNote}`);
           }).catch(e=>sysBubble(`<p>${esc(e.message||'Reconnect failed')}</p>`));
           return;
         }
+        if(cmd==='/control'||cmd.startsWith('/control ')){
+          const arg=text.slice(8).trim().toLowerCase();
+          const map={on:'control.on',off:'control.off',status:'control.status',heal:'control.heal',check:'control.heal',run:'control.heal'};
+          const icmd=map[arg]||'control.status';
+          runIntegrationCommand(icmd,{}, {source:'slash-control'}).then(res=>{
+            if(!res.ok){sysBubble(`<p>${esc(res.message||'Control command failed')}</p>`);return}
+            if(res.html)sysBubble(res.html);
+            else if(res.snapshot)sysBubble(integrationStatusHtml(res.snapshot,'Gateway Control'));
+            else sysBubble(`<p>${esc(res.message||'Done')}</p>`);
+          }).catch(e=>sysBubble(`<p>${esc(e.message||'Control command failed')}</p>`));
+          return;
+        }
         if(cmd==='/grok'||cmd.startsWith('/grok ')||cmd.startsWith('/grok\n')){
           const grokAction=text.slice(5).trim();
           if(!grokAction){
-            sysBubble('<h3>Grok Quick Actions</h3><p>Try: <code>/grok status</code>, <code>/grok reconnect gateway</code>, <code>/grok relay on</code>, <code>/grok provider fireworks</code>, <code>/grok fallback on</code></p>');
+            sysBubble('<h3>Grok Quick Actions</h3><p>Try: <code>/grok status</code>, <code>/grok reconnect gateway</code>, <code>/grok control on</code>, <code>/grok relay on</code>, <code>/grok provider fireworks</code>, <code>/grok fallback on</code></p>');
             return;
           }
           addTyping();
@@ -14381,7 +15161,7 @@ ${note}`:note;
 
     // ── Config Import (shared by hash, file drop, paste) ──
     const CONFIG_KEYS={
-      aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',aiBaseUrl:'aiBaseUrl',directFallbackToGroq:'directFallbackToGroq',gatewayHttpFallback:'gatewayHttpFallback',
+      aiProvider:'aiProvider',aiKey:'aiKey',aiModel:'aiModel',aiBaseUrl:'aiBaseUrl',directFallbackToGroq:'directFallbackToGroq',gatewayHttpFallback:'gatewayHttpFallback',gatewaySelfHealEnabled:'gatewaySelfHealEnabled',
       whisperKey:'whisperKey',ttsAutoPlay:'ttsAutoPlay',ttsMode:'ttsMode',groqTtsVoice:'groqTtsVoice',groqTtsModel:'groqTtsModel',groqTtsExpression:'groqTtsExpression',
       elevenlabsKey:'elevenlabsKey',elevenlabsVoiceId:'elevenlabsVoiceId',elevenlabsVoice:'elevenlabsVoice',elevenlabsModel:'elevenlabsModel',
       elevenlabsStability:'elevenlabsStability',elevenlabsSimilarity:'elevenlabsSimilarity',elevenlabsStyle:'elevenlabsStyle',elevenlabsSpeakerBoost:'elevenlabsSpeakerBoost',
@@ -14438,7 +15218,7 @@ ${note}`:note;
       // Obsidian integration
       obsidianVault:'obsidianVault',
       // Skill context injection
-      skillContext:'skillContext',
+      skillContext:'skillContext',skillContextFileUrl:'skillContextFileUrl',skillContextFileText:'skillContextFileText',agentWorkflowContextUrl:'agentWorkflowContextUrl',agentWorkflowContextText:'agentWorkflowContextText',
       // Voice tuning
       audioVolume:'audioVolume',
       voiceMinDurationMs:'voiceMinDurationMs',
@@ -14469,6 +15249,11 @@ ${note}`:note;
       aiBaseUrl:'Direct AI base URL',
       directFallbackToGroq:'Direct fallback to Groq',
       gatewayHttpFallback:'Gateway HTTP fallback',
+      gatewaySelfHealEnabled:'Gateway self-heal control loop',
+      skillContextFileUrl:'Skill context file URL',
+      skillContextFileText:'Loaded skill context text',
+      agentWorkflowContextUrl:'Workflow context file URL',
+      agentWorkflowContextText:'Loaded workflow context text',
       whisperKey:'Groq key',
       imageGenKey:'Image generation key',
       pinHash:'PIN hash',

@@ -39,6 +39,8 @@
 | `/telegram` | Show Telegram setup instructions (Settings quick wizard + BotFather/Chat ID fallback) |
 | `/telegram on` | Enable Telegram message forwarding |
 | `/telegram off` | Disable Telegram message forwarding |
+| `/reconnect` | Reconnect the active gateway socket without reloading the page |
+| `/control on|off|status|heal` | Toggle/check gateway self-heal control loop and run manual health checks |
 | `/template` | Browse and apply pre-built style templates |
 | `/voice` | Show voice settings and current voice ID |
 | `/save` | Save current chat to Obsidian vault |
@@ -139,6 +141,18 @@ Relay v2 behavior:
 - Inbound source is explicitly **gateway-native** (single-consumer model via OpenClaw gateway stream/events)
 - TealClaw no longer consumes Telegram Bot API `getUpdates` in relay mode
 - Status output includes startup reconciliation + runtime diagnostics
+
+### /reconnect
+Forces a disconnect/reconnect cycle on the active gateway agent. Useful when the gateway is reachable but the socket got stale.
+
+### /control on / off / status / heal
+Gateway self-heal loop controls:
+- `on`: enables periodic health checks (URL/token validation, stale-socket reconnect attempts, gateway fallback probing)
+- `off`: disables the control loop
+- `status`: prints current control-loop + fallback diagnostics
+- `heal`: runs one immediate health pass
+
+When Tailscale targets fail, the loop can auto-suggest or auto-switch to `https://gw.tealclaw.ai` and local `ws://127.0.0.1:18789` when applicable.
 
 ### /voice
 Shows current TTS voice settings:
