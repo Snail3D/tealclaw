@@ -2522,6 +2522,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(val.startsWith('fw_'))return{field:'aiKey',provider:'fireworks',label:'Fireworks Key (direct chat/vision)'};
       if(val.startsWith('sk-ant-'))return{field:'aiKey',provider:'anthropic',label:'Anthropic Key (direct chat)'};
       if(val.startsWith('xai-'))return{field:'aiKey',provider:'xai',label:'xAI Key (direct chat)'};
+      if(val.startsWith('csk-')||val.startsWith('csk_'))return{field:'aiKey',provider:'cerebras',label:'Cerebras Key (direct chat)'};
+      if(val.startsWith('pplx-'))return{field:'aiKey',provider:'perplexity',label:'Perplexity Key (direct chat/search)'};
       if(val.startsWith('sk-or-v1-'))return{field:'aiKey',provider:'openrouter',label:'OpenRouter Key (direct chat + image gen)'};
       if(/^(sk-proj-|sk-[A-Za-z0-9]{20,})/.test(val)&&!val.startsWith('sk-ant-')&&!val.startsWith('sk-or-v1-'))return{field:'aiKey',provider:'openai',label:'OpenAI-compatible key (direct chat)'};
 
@@ -2579,9 +2581,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       xai:{label:'xAI',apiType:'openai',baseUrl:'https://api.x.ai/v1',chatModel:'grok-3-mini',visionModel:'grok-2-vision-1212',maxTokens:4096},
       mistral:{label:'Mistral',apiType:'openai',baseUrl:'https://api.mistral.ai/v1',chatModel:'mistral-small-latest',visionModel:'pixtral-12b-2409',maxTokens:4096},
       together:{label:'Together',apiType:'openai',baseUrl:'https://api.together.xyz/v1',chatModel:'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',visionModel:'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',maxTokens:4096},
-      deepseek:{label:'DeepSeek',apiType:'openai',baseUrl:'https://api.deepseek.com/v1',chatModel:'deepseek-chat',visionModel:'deepseek-chat',maxTokens:4096}
+      deepseek:{label:'DeepSeek',apiType:'openai',baseUrl:'https://api.deepseek.com/v1',chatModel:'deepseek-chat',visionModel:'deepseek-chat',maxTokens:4096},
+      cerebras:{label:'Cerebras',apiType:'openai',baseUrl:'https://api.cerebras.ai/v1',chatModel:'llama-3.3-70b',visionModel:'llama-3.3-70b',maxTokens:4096},
+      perplexity:{label:'Perplexity',apiType:'openai',baseUrl:'https://api.perplexity.ai',chatModel:'sonar-pro',visionModel:'sonar-pro',maxTokens:4096}
     };
-    const DIRECT_PROVIDER_ORDER=['groq','fireworks','openai','anthropic','openrouter','xai','mistral','together','deepseek'];
+    const DIRECT_PROVIDER_ORDER=['groq','fireworks','openai','anthropic','openrouter','xai','mistral','together','deepseek','cerebras','perplexity'];
 
     function normalizeAiProvider(raw){
       const key=String(raw||'').trim().toLowerCase();
@@ -2589,6 +2593,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(DIRECT_PROVIDER_PRESETS[key])return key;
       if(key==='claude')return 'anthropic';
       if(key==='firework')return 'fireworks';
+      if(key==='pplx')return 'perplexity';
       return 'groq';
     }
 
@@ -2600,6 +2605,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(key.startsWith('sk-ant-'))return 'anthropic';
       if(key.startsWith('sk-or-v1-'))return 'openrouter';
       if(key.startsWith('xai-'))return 'xai';
+      if(key.startsWith('csk-')||key.startsWith('csk_'))return 'cerebras';
+      if(key.startsWith('pplx-'))return 'perplexity';
       if(/^(sk-proj-|sk-[A-Za-z0-9]{20,})/.test(key)&&!key.startsWith('sk-ant-')&&!key.startsWith('sk-or-v1-'))return 'openai';
       return null;
     }
@@ -2614,6 +2621,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(val.includes('api.mistral.ai'))return 'mistral';
       if(val.includes('api.together.xyz'))return 'together';
       if(val.includes('api.deepseek.com'))return 'deepseek';
+      if(val.includes('api.cerebras.ai'))return 'cerebras';
+      if(val.includes('api.perplexity.ai'))return 'perplexity';
       if(val.includes('api.openai.com'))return 'openai';
       if(val.includes('api.groq.com'))return 'groq';
       return null;
@@ -3395,7 +3404,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const stateLabel=(label,on)=>`${label}: ${on?'On':'Off'}`;
       const keys=[
         {label:'Groq Key',desc:'Chat + vision + voice + TTS (free)',field:'whisperKey',val:k.whisperKey,link:'https://console.groq.com/keys',linkText:'Get key',prefix:'gsk_'},
-        {label:'Direct AI Key',desc:'Fireworks / OpenAI / Anthropic / OpenRouter / xAI / Mistral / Together / DeepSeek',field:'aiKey',val:k.aiKey,link:'https://api.fireworks.ai/',linkText:'Provider docs',prefix:'fw_ / sk_ / sk-ant- / ...'},
+        {label:'Direct AI Key',desc:'Fireworks / OpenAI / Anthropic / OpenRouter / xAI / Mistral / Together / DeepSeek / Cerebras / Perplexity',field:'aiKey',val:k.aiKey,link:'https://api.fireworks.ai/',linkText:'Provider docs',prefix:'fw_ / sk_ / sk-ant- / csk- / pplx- / ...'},
 
         {label:'ElevenLabs Key',desc:'ElevenLabs TTS (custom voices)',field:'elevenlabsKey',val:k.elevenlabsKey,link:'https://elevenlabs.io/app/settings/api-keys',linkText:'Get key',prefix:'sk_'},
         {label:'ElevenLabs Voice ID',desc:'Voice id (e.g. Burt Reynolds)',field:'elevenlabsVoiceId',val:k.elevenlabsVoiceId,link:'https://elevenlabs.io/app/voice-lab',linkText:'Find voice',prefix:''},
@@ -7393,7 +7402,7 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /providers, /provider <name>, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -7640,7 +7649,7 @@ ${getOptionalSteps()}`
       const k=getK();
       const missing=[];
       if(!getGroqKey(k))missing.push('Groq key for voice + research + fallback (<code>gsk_</code>)');
-      if(!k.aiKey&&!k.whisperKey)missing.push('direct AI key for Fireworks/OpenAI/Anthropic/etc (<code>fw_</code>, <code>sk-...</code>, <code>sk-ant-...</code>)');
+      if(!k.aiKey&&!k.whisperKey)missing.push('direct AI key for Fireworks/OpenAI/Anthropic/etc (<code>fw_</code>, <code>sk-...</code>, <code>sk-ant-...</code>, <code>csk-...</code>, <code>pplx-...</code>)');
 
       if(!missing.length)return '<p>All set! Type <code>/help</code> to see available commands.</p>';
       return `<p>You can also add: ${missing.join(', ')}. Just paste anytime.</p>`;
@@ -9618,6 +9627,14 @@ Rules:
       deepseek:[
         {id:'deepseek-chat',name:'DeepSeek Chat',tags:['chat']},
         {id:'deepseek-reasoner',name:'DeepSeek Reasoner',tags:['reasoning']}
+      ],
+      cerebras:[
+        {id:'llama-3.3-70b',name:'Llama 3.3 70B',tags:['chat']},
+        {id:'qwen-3-32b',name:'Qwen 3 32B',tags:['fast']}
+      ],
+      perplexity:[
+        {id:'sonar-pro',name:'Sonar Pro',tags:['chat','search']},
+        {id:'sonar',name:'Sonar',tags:['fast','search']}
       ]
     };
 
@@ -11841,6 +11858,36 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
           lines.push((k.imageGenKey||k.imageGenUrl)?`Image Gen: <strong>${k.imageGenKey?(k.imageGenKey.startsWith('AIza')?'Google AI':'OpenRouter'):'custom endpoint'}</strong>`:'Image Gen: <strong>not set</strong>');
           sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
 <p>Paste any key to update. Type <code>/clear keys</code> to wipe all keys.</p>`);
+          return;
+        }
+        if(cmd==='/providers'){
+          const k=getK();
+          const current=resolveAiProvider(k);
+          const rows=DIRECT_PROVIDER_ORDER.map(pid=>{
+            const preset=getProviderPreset(pid,k);
+            const hasKey=hasDirectProvider(pid,k)||(pid==='groq'&&!!k.aiKey&&current==='groq');
+            const marker=current===pid?'✅ ':'• ';
+            return `<li>${marker}<strong>${preset.label}</strong>${hasKey?' <span style="color:var(--ok)">(key set)</span>':' <span style="color:var(--text-3)">(no key)</span>'} — <code>/provider ${pid}</code></li>`;
+          }).join('');
+          sysBubble(`<h3>Direct Providers</h3><ul>${rows}</ul><p>Current: <strong>${esc(getProviderPreset(current,k).label)}</strong>. Set provider with <code>/provider &lt;name&gt;</code>.</p>`);
+          return;
+        }
+        if(cmd.startsWith('/provider ')){
+          const arg=text.slice(10).trim().toLowerCase();
+          const next=normalizeAiProvider(arg);
+          if(!DIRECT_PROVIDER_PRESETS[next]||(!DIRECT_PROVIDER_PRESETS[arg]&&next==='groq'&&arg!=='groq')){
+            sysBubble(`<p>Unknown provider: <code>${esc(arg||'(empty)')}</code>.</p><p>Try <code>/providers</code> for the list.</p>`);
+            return;
+          }
+          const k=getK();
+          k.aiProvider=next;
+          if(k.mode!=='agent'&&!isTelegramRelayEnabled(k))k.mode='direct';
+          setK(k);
+          updateStatus();
+          renderChannelDropdown();
+          const label=getProviderPreset(next,k).label;
+          const keyed=hasDirectProvider(next,k);
+          sysBubble(`<p>Direct provider set to <strong>${label}</strong>${keyed?'':' (key not set yet)'}. Paste the API key any time.</p>`);
           return;
         }
         if(cmd==='/clear all'){
