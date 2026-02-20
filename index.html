@@ -5937,12 +5937,22 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       const model=k.groqTtsModel||'canopylabs/orpheus-v1-english';
       // Expression tags are now handled by ttsPreprocess — text already has [tone] prefix
       const chunks=chunkTextForTTS(text,200);
-      const fetches=chunks.map(chunk=>
-        fetch('https://api.groq.com/openai/v1/audio/speech',{
+      const fetches=chunks.map(async chunk=>{
+        const r=await fetch('https://api.groq.com/openai/v1/audio/speech',{
           method:'POST',headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
           body:JSON.stringify({model,input:chunk,voice,response_format:'wav'})
-        }).then(r=>r.ok?r.arrayBuffer():null)
-      );
+        });
+        if(r.ok) return r.arrayBuffer();
+        // Try to surface common Groq failures (e.g. Orpheus terms acceptance)
+        let j=null; try{ j=await r.json(); }catch{}
+        const msg=(j&&j.error&&j.error.message)||r.status+' '+r.statusText;
+        if(/requires terms acceptance/i.test(String(msg))){
+          showToast('Groq Orpheus requires one-time terms acceptance. Open Groq console → Orpheus model → accept terms, then retry.', 9000);
+        } else {
+          showToast('TTS failed: '+msg, 7000);
+        }
+        return null;
+      });
       const results=await Promise.all(fetches);
       const bufs=results.filter(Boolean);
       if(!bufs.length)return null;
