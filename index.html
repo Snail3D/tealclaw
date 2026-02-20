@@ -606,7 +606,7 @@
     .gif-overlay.fade-out{opacity:0;visibility:hidden;transition:opacity 0.8s ease,visibility 0s linear 0.8s}
     .gif-overlay.dragging{cursor:grabbing;transition:none}
     .gif-overlay.resizing{cursor:nwse-resize;transition:none}
-    .gif-overlay img{display:block;border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.4);object-fit:contain;pointer-events:none;max-width:500px;max-height:70vh}
+    .gif-overlay img{display:block;border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.4);object-fit:contain;pointer-events:none;max-width:var(--gif-max-width,500px);max-height:70vh}
     .gif-resize{position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;cursor:nwse-resize;z-index:2;touch-action:none}
     .gif-resize::after{content:'';position:absolute;bottom:2px;right:2px;width:12px;height:12px;border-bottom:2px solid rgba(255,255,255,0.5);border-right:2px solid rgba(255,255,255,0.5);border-radius:0 0 4px 0}
 
@@ -4078,6 +4078,18 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           <button class="exp-toggle btn ${on?'btn-teal':'btn-ghost'} btn-sm" data-key="${key}" data-on="${on}" data-def="${!!def}" aria-pressed="${on}" aria-label="${label}: ${on?'On':'Off'}">${stateLabel(label,on)}</button>
         </div>`;
       });
+      const gifScale=clampGifScale(k.gifScale);
+      const gifScalePct=Math.round(gifScale*100);
+      html+=`<div style="padding:10px 0 2px">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+          <div>
+            <div style="font-size:12px;font-weight:500">GIF Size Scale</div>
+            <div style="font-size:10px;color:var(--text-3)">Scales GIF overlay size. 1.5 = 50% larger.</div>
+          </div>
+          <div style="font-size:10px;color:var(--teal);font-family:var(--mono)"><span id="sheetGifScaleVal">${gifScale.toFixed(2)}x</span> (<span id="sheetGifScalePct">${gifScalePct}%</span>)</div>
+        </div>
+        <input type="range" id="sheetGifScale" min="0.5" max="2" step="0.1" value="${gifScale}" style="width:100%;margin-top:6px;accent-color:var(--teal)">
+      </div>`;
       html+=`</div>`;
 
       // Stats link
@@ -4492,6 +4504,22 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         else{k2[b.dataset.key]=!on}
         setK(k2);applyVisualConfig();renderSheetContent();
       }));
+      $('sheetBody').querySelector('#sheetGifScale')?.addEventListener('input',e=>{
+        const scale=clampGifScale(e.target.value);
+        const valEl=$('sheetBody').querySelector('#sheetGifScaleVal');
+        const pctEl=$('sheetBody').querySelector('#sheetGifScalePct');
+        if(valEl)valEl.textContent=`${scale.toFixed(2)}x`;
+        if(pctEl)pctEl.textContent=`${Math.round(scale*100)}%`;
+      });
+      $('sheetBody').querySelector('#sheetGifScale')?.addEventListener('change',e=>{
+        const scale=clampGifScale(e.target.value);
+        const k2=getK();
+        if(Math.abs(scale-1)<0.001)delete k2.gifScale;
+        else k2.gifScale=scale;
+        setK(k2);
+        applyGifScaleStyles();
+        showToast(`GIF size: ${scale.toFixed(2)}x`,'ok');
+      });
 
       // Wire up agent row
       $('sheetBody').querySelector('#sheetAgentRow')?.addEventListener('click',()=>openAgentEditor());
@@ -8022,23 +8050,48 @@ ${getOptionalSteps()}`
       return null;
     }
 
+    const GIF_BASE_MIN_W=100,GIF_BASE_MAX_W=500,GIF_BASE_DEFAULT_W=180;
+    function clampGifScale(val){
+      const n=Number(val);
+      if(!Number.isFinite(n))return 1;
+      return Math.max(0.5,Math.min(2,n));
+    }
+    function getGifScale(){
+      return clampGifScale(getK().gifScale);
+    }
+    function getGifSizeLimits(){
+      const scale=getGifScale();
+      return{
+        scale,
+        min:Math.round(GIF_BASE_MIN_W*scale),
+        max:Math.round(GIF_BASE_MAX_W*scale),
+        defaultW:Math.round(GIF_BASE_DEFAULT_W*scale)
+      };
+    }
+    function applyGifScaleStyles(){
+      const root=document.documentElement;
+      root.style.setProperty('--gif-max-width',`${Math.round(GIF_BASE_MAX_W*getGifScale())}px`);
+    }
+
     var _gifUserMoved=false;
-    var _gifW=parseInt(localStorage.getItem('tc_gifW'))||180,_gifH=0;
-    const GIF_MIN_W=100,GIF_MAX_W=500;
+    var _gifW=parseInt(localStorage.getItem('tc_gifW'))||GIF_BASE_DEFAULT_W,_gifH=0;
 
     function showGifOverlay(result){
       if(!result)return;
       const overlay=$('gifOverlay'),img=$('gifImg'),adFrame=$('gifAd');
+      const limits=getGifSizeLimits();
+      applyGifScaleStyles();
       if(gifTimer){clearTimeout(gifTimer);gifTimer=null}
       if(gifFadeTimer){clearTimeout(gifFadeTimer);gifFadeTimer=null}
       // Reset both display modes
       img.style.display='';adFrame.style.display='none';adFrame.srcdoc='';
       if(result.ad){
-        // Render Klipy ad HTML in sandboxed iframe (cap to GIF_MAX_W)
+        // Render Klipy ad HTML in sandboxed iframe (scaled + capped to GIF max width)
         img.style.display='none';
         adFrame.style.display='block';
-        const adW=Math.min(result.ad.width||320,GIF_MAX_W);
-        const adH=result.ad.height?(result.ad.height*adW/(result.ad.width||320)):100;
+        const baseAdW=result.ad.width||320;
+        const adW=Math.min(Math.round(baseAdW*limits.scale),limits.max);
+        const adH=result.ad.height?(result.ad.height*adW/baseAdW):Math.round(100*limits.scale);
         adFrame.style.width=adW+'px';
         adFrame.style.height=Math.round(adH)+'px';
         adFrame.srcdoc=result.ad.content;
@@ -8051,7 +8104,8 @@ ${getOptionalSteps()}`
       }
       // Apply persisted size (only for GIF images)
       if(!result.ad){
-        img.style.width=_gifW+'px';img.style.height='auto';
+        const displayW=Math.max(limits.min,Math.min(limits.max,Math.round(_gifW*limits.scale)));
+        img.style.width=displayW+'px';img.style.height='auto';
       }
       overlay.classList.remove('hidden','fade-out','dragging','resizing');
       void overlay.offsetWidth;
@@ -8121,9 +8175,10 @@ ${getOptionalSteps()}`
       }
       function resizeMove(cx){
         if(!resizing)return;
-        const newW=Math.max(GIF_MIN_W,Math.min(GIF_MAX_W,origW+(cx-startX)));
+        const limits=getGifSizeLimits();
+        const newW=Math.max(limits.min,Math.min(limits.max,origW+(cx-startX)));
         img.style.width=newW+'px';img.style.height='auto';
-        _gifW=newW;
+        _gifW=Math.round(newW/limits.scale);
       }
       function resizeEnd(){
         resizing=false;el.classList.remove('resizing');
@@ -8145,17 +8200,19 @@ ${getOptionalSteps()}`
         if(e.touches.length===2){
           e.preventDefault();
           pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-          pinchW=img.getBoundingClientRect().width||_gifW;
+          const limits=getGifSizeLimits();
+          pinchW=img.getBoundingClientRect().width||Math.round(_gifW*limits.scale);
           el.classList.add('resizing');
         }
       },{passive:false});
       el.addEventListener('touchmove',e=>{
         if(e.touches.length===2&&pinchDist){
           e.preventDefault();
+          const limits=getGifSizeLimits();
           const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-          const newW=Math.max(GIF_MIN_W,Math.min(GIF_MAX_W,pinchW*(d/pinchDist)));
+          const newW=Math.max(limits.min,Math.min(limits.max,pinchW*(d/pinchDist)));
           img.style.width=newW+'px';img.style.height='auto';
-          _gifW=newW;
+          _gifW=Math.round(newW/limits.scale);
         }
       },{passive:false});
       el.addEventListener('touchend',e=>{
@@ -14559,7 +14616,7 @@ ${note}`:note;
       elevenlabsStability:'elevenlabsStability',elevenlabsSimilarity:'elevenlabsSimilarity',elevenlabsStyle:'elevenlabsStyle',elevenlabsSpeakerBoost:'elevenlabsSpeakerBoost',
       sysPrompt:'sysPrompt',mode:'mode',
       tgToken:'tgToken',tgChatId:'tgChatId',tgEnabled:'tgEnabled',tgRelayEnabled:'tgRelayEnabled',tgRelayReceive:'tgRelayReceive',tgRelaySpeak:'tgRelaySpeak',tgRelayPollSec:'tgRelayPollSec',tgBotId:'tgBotId',
-      imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',gifEnabled:'gifEnabled',
+      imageGenUrl:'imageGenUrl',imageGenKey:'imageGenKey',imageGenModel:'imageGenModel',imageGenSize:'imageGenSize',gifEnabled:'gifEnabled',gifScale:'gifScale',
       accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
       bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
       chatUserColor:'chatUserColor',chatAiColor:'chatAiColor',
@@ -14995,6 +15052,9 @@ ${note}`:note;
       } else if(customStyle){
         customStyle.remove();
       }
+
+      // GIF overlay sizing
+      applyGifScaleStyles();
     }
 
     // ── AES-GCM Encryption (Web Crypto API) ────────────
@@ -15289,7 +15349,7 @@ ${note}`:note;
 
     // Export config as copyable hash URL
     // Default values — only export fields that differ from defaults
-    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',directFallbackToGroq:true,gatewayHttpFallback:false,tgRelayEnabled:false,tgRelayReceive:true,tgRelaySpeak:false,tgRelayPollSec:6,streamEnabled:true,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:true,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
+    const CONFIG_DEFAULTS={ttsAutoPlay:true,hapticFeedback:true,autoScroll:true,cameraEnabled:true,allowProactiveCameraCapture:true,maxTokens:400,temperature:0.7,contextMessages:20,routingThreshold:80,typingAnimation:true,typingSpeed:'medium',bubbleAnimation:'slide',mode:'direct',directFallbackToGroq:true,gatewayHttpFallback:false,tgRelayEnabled:false,tgRelayReceive:true,tgRelaySpeak:false,tgRelayPollSec:6,streamEnabled:true,latexEnabled:false,pinRequired:false,reduceMotion:false,highContrast:false,dyslexiaFont:false,focusHighlight:false,compactMode:false,soundEnabled:true,gifScale:1,hideTopbar:false,hideAttachBtn:false,hideCameraBtn:false,photoLogEnabled:false,photoLogCamera:'user',photoLogInterval:5,photoLogFrames:12,watchModeEnabled:false,watchModeCamera:'user',watchModePrompt:'',watchModeRateLimit:30,watchModeSensitivity:0.05,};
 
     function buildConfigPayload(includeSensitive=false){
       const k=getK();
