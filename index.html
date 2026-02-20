@@ -544,12 +544,29 @@
     .sys-textarea{width:100%;padding:8px 10px;font-size:11px;font-family:var(--font);color:var(--text);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);outline:none;resize:vertical;min-height:60px;transition:border var(--t)}
     .sys-textarea:focus{border-color:var(--teal)}
 
-    /* ── Toast ──────────────────────────────────────────── */
-    .toast{position:fixed;bottom:16px;right:16px;padding:8px 14px;font-size:11px;font-weight:500;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:200;opacity:0;transform:translateY(6px);transition:all 0.3s;pointer-events:none}
+    /* ── Toast + Notice Modal ───────────────────────────── */
+    .toast{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:14px;padding:8px 14px;font-size:11px;font-weight:500;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:620;opacity:0;transform:translateY(-8px);transition:all 0.3s;pointer-events:none;max-width:min(420px,92vw)}
     .toast.show{opacity:1;transform:translateY(0)} .toast.ok{border-color:var(--ok);color:var(--ok)} .toast.err{border-color:var(--err);color:var(--err)}
+    .toast.top-right{top:calc(14px + env(safe-area-inset-top,0px));right:14px;left:auto;bottom:auto}
+    .toast.bottom-right{top:auto;bottom:16px;right:16px;left:auto;transform:translateY(6px)}
+    .toast.bottom-right.show{transform:translateY(0)}
     .toast.center{top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%) scale(0.96)}
     .toast.center.show{transform:translate(-50%,-50%) scale(1)}
     .toast.lg{padding:14px 18px;font-size:14px;font-weight:700;border-radius:16px;min-width:260px;max-width:min(520px,92vw);text-align:center}
+    body.tc-notice-open{overflow:hidden}
+    .tc-notice-modal{position:fixed;inset:0;z-index:9650;display:flex;align-items:center;justify-content:center;padding:clamp(16px,4vw,36px);background:rgba(0,0,0,0.66);backdrop-filter:blur(5px)}
+    .tc-notice-modal.hidden{display:none}
+    .tc-notice-card{width:min(640px,100%);max-height:min(82dvh,760px);overflow:auto;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:22px 22px 18px;box-shadow:0 18px 60px rgba(0,0,0,0.5);animation:bubble-scale-in 0.16s ease-out}
+    .tc-notice-card.err{border-color:rgba(239,68,68,0.7)}
+    .tc-notice-card.ok{border-color:rgba(34,197,94,0.7)}
+    .tc-notice-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
+    .tc-notice-head h3{margin:0;font-size:18px;font-weight:700;color:var(--text)}
+    .tc-notice-close{width:30px;height:30px;border-radius:999px;border:1px solid var(--border);background:var(--bg-hover);color:var(--text-2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;flex:0 0 auto}
+    .tc-notice-close:hover{background:var(--bg-input);color:var(--text)}
+    .tc-notice-msg{margin:0;color:var(--text);font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+    .tc-notice-actions{display:flex;justify-content:flex-end;margin-top:16px}
+    .tc-notice-btn{padding:10px 18px;border-radius:12px;border:1px solid transparent;background:var(--teal);color:#fff;font-weight:600;font-family:var(--font);cursor:pointer}
+    .tc-notice-btn:hover{background:var(--teal-hover)}
     .tc-notify{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.95);z-index:700;opacity:0;pointer-events:none;transition:opacity 0.4s ease,transform 0.4s ease}
     .tc-notify.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
     .tc-notify.hide{opacity:0;transform:translate(-50%,-50%) scale(0.97)}
@@ -1327,6 +1344,18 @@
     <div class="gif-resize" id="gifResize"></div>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="tc-notice-modal hidden" id="tcNoticeModal" role="alertdialog" aria-modal="true" aria-labelledby="tcNoticeTitle" aria-describedby="tcNoticeMsg" aria-hidden="true">
+    <div class="tc-notice-card err" id="tcNoticeCard">
+      <div class="tc-notice-head">
+        <h3 id="tcNoticeTitle">Needs attention</h3>
+        <button class="tc-notice-close" id="tcNoticeClose" aria-label="Close">&times;</button>
+      </div>
+      <p class="tc-notice-msg" id="tcNoticeMsg"></p>
+      <div class="tc-notice-actions">
+        <button class="tc-notice-btn" id="tcNoticeBtn" type="button">Got it</button>
+      </div>
+    </div>
+  </div>
   <div class="tc-notify" id="tcNotify"><div class="tc-notify-card" id="tcNotifyCard"></div></div>
 
   <!-- ═══ About Modal ═══ -->
@@ -1691,13 +1720,65 @@
       error:''
     };
 
+    function uiModalPosition(k){
+      const v=String((k&&k.modalPosition)||'').trim().toLowerCase();
+      return v==='toast'?'toast':'center';
+    }
+    function hideNoticeModal(){
+      const modal=$('tcNoticeModal');
+      if(!modal)return;
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden','true');
+      document.body.classList.remove('tc-notice-open');
+      if(showNoticeModal._t){clearTimeout(showNoticeModal._t);showNoticeModal._t=null}
+    }
+    function showNoticeModal(message,type='err',dur=7000,opts={}){
+      const modal=$('tcNoticeModal');
+      if(!modal)return false;
+      const cfg=typeof getK==='function'?getK():{};
+      const pref=uiModalPosition(cfg);
+      if(pref!=='center')return false;
+      const card=$('tcNoticeCard');
+      const titleEl=$('tcNoticeTitle');
+      const msgEl=$('tcNoticeMsg');
+      const btn=$('tcNoticeBtn');
+      const title=(opts&&opts.title)||((type==='err')?'Needs attention':'Notice');
+      titleEl.textContent=title;
+      msgEl.textContent=String(message||'');
+      btn.textContent=(opts&&opts.buttonText)||'Got it';
+      card.classList.remove('err','ok');
+      if(type==='err')card.classList.add('err');
+      if(type==='ok')card.classList.add('ok');
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden','false');
+      document.body.classList.add('tc-notice-open');
+      requestAnimationFrame(()=>btn.focus());
+      if(type==='ok')haptic('success');
+      if(type==='err')haptic('error');
+      if(showNoticeModal._t){clearTimeout(showNoticeModal._t);showNoticeModal._t=null}
+      const sticky=opts&&opts.sticky===true;
+      if(!sticky&&dur>0){showNoticeModal._t=setTimeout(hideNoticeModal,dur)}
+      return true;
+    }
+    $('tcNoticeClose')?.addEventListener('click',hideNoticeModal);
+    $('tcNoticeBtn')?.addEventListener('click',hideNoticeModal);
+    $('tcNoticeModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)hideNoticeModal()});
+    document.addEventListener('keydown',e=>{
+      const modal=$('tcNoticeModal');
+      if(e.key==='Escape'&&modal&&!modal.classList.contains('hidden'))hideNoticeModal();
+    });
+
     function showToast(m,t='',dur=3000,opts={}){
       const position=opts&&opts.position;
       const size=opts&&opts.size;
+      const forceToast=opts&&opts.forceToast===true;
+      const wantsModal=(opts&&opts.modal===true)||(!forceToast&&t==='err'&&!position);
+      if(wantsModal&&showNoticeModal(m,t,dur,opts))return;
       toast.textContent=m;
       toast.style.cursor='';
       toast.onclick=null;
-      toast.className='toast show '+t+(position?(' '+position):'')+(size?(' '+size):'');
+      const posClass=position||'top-right';
+      toast.className='toast show '+t+(posClass?(' '+posClass):'')+(size?(' '+size):'');
       if(t==='ok')haptic('success');
       if(t==='err')haptic('error');
       // Avoid stale timers hiding newer toasts.
@@ -4436,7 +4517,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         setK(k2);
         btn.textContent=original;
         renderSheetContent();
-        showToast(res.ok?(res.message||'ElevenLabs validated'):`ElevenLabs validation failed: ${res.error||'Unknown error'}`,res.ok?'ok':'err',res.ok?3500:7000);
+        showToast(res.ok?(res.message||'ElevenLabs validated'):`ElevenLabs validation failed: ${res.error||'Unknown error'}`,res.ok?'ok':'err',res.ok?4500:7000,{modal:true,title:'Provider validation'});
       });
 
       const persistGroqTtsModel=(value,{notify=false}={})=>{
@@ -5577,6 +5658,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         dirty=true;
       }
       if(_k.ttsFallbackEnabled===undefined){_k.ttsFallbackEnabled=false;dirty=true}
+      if(!(_k.modalPosition==='center'||_k.modalPosition==='toast')){_k.modalPosition='center';dirty=true}
       if(dirty)setK(_k);
       ttsMode=_k.ttsMode||(_k.ttsAutoPlay===false?'on':(hasTTS(_k)?'auto':'off'));
     }
@@ -7495,7 +7577,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
 
       if(!bufs.length||hadChunkFailure){
         if(termsErr&&showTermsError){
-          showToast('Groq TTS is blocked until you accept Orpheus terms in Groq Console (Models → canopylabs/orpheus-v1-english). Accept once, then retry.','err',10000);
+          showToast('Groq TTS is blocked until you accept Orpheus terms in Groq Console (Models → canopylabs/orpheus-v1-english). Accept once, then retry.','err',10000,{modal:true,title:'Orpheus terms required'});
         }else if(showErrors&&firstErr){
           showToast('Groq TTS failed: '+firstErr,'err',7000);
         }
@@ -15093,7 +15175,7 @@ ${note}`:note;
       accentColor:'accentColor',fontSize:'fontSize',fontFamily:'fontFamily',
       bgColor:'bgColor',bgImage:'bgImage',textColor:'textColor',
       chatUserColor:'chatUserColor',chatAiColor:'chatAiColor',
-      themeMode:'themeMode',
+      themeMode:'themeMode',modalPosition:'modalPosition',
       botName:'botName',botIcon:'botIcon',botGreeting:'botGreeting',
       inputFontSize:'inputFontSize',buttonSize:'buttonSize',borderRadius:'borderRadius',
       hideTopbar:'hideTopbar',hideAttachBtn:'hideAttachBtn',hideCameraBtn:'hideCameraBtn',
@@ -15174,6 +15256,7 @@ ${note}`:note;
       whisperKey:'Groq key',
       ttsProvider:'TTS provider',
       ttsFallbackEnabled:'TTS fallback',
+      modalPosition:'Modal position',
       imageGenKey:'Image generation key',
       pinHash:'PIN hash',
       pinRequired:'PIN required'
