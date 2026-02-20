@@ -49,6 +49,7 @@ checks.push(ok(/Include API keys \(Groq\/OpenAI\/etc\) in this session invitatio
 checks.push(ok(/No API keys were included \(safer\)\./.test(indexHtml), 'Session share bubble indicates keys excluded'));
 checks.push(ok(/id="obLocalToken"[^>]*type="password"/.test(indexHtml), 'Local gateway onboarding token input is masked'));
 checks.push(ok(/Auth token too large/.test(indexHtml), 'Local gateway onboarding enforces token length cap'));
+checks.push(ok(/A11y: focus trap \+ Escape for cron modal/.test(indexHtml), 'Cron modal focus trap handler present'));
 
 section('Doc Alignment Checks');
 checks.push(ok(/`cerebras`, `perplexity`/.test(cfgRef), 'Config reference lists Cerebras + Perplexity'));

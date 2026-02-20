@@ -10516,6 +10516,7 @@ Rules:
 
     function openCronModal(existingJob){
       const modal=$('cronModal');
+      const card=$('cronModalCard');
       $('cronModalTitle').textContent=existingJob?'Edit Cron Job':'New Cron Job';
       $('cronEditId').value=existingJob?existingJob.id:'';
       $('cronTitleIn').value=existingJob?existingJob.title:'';
@@ -10532,10 +10533,21 @@ Rules:
       renderCronTimeSlots();
       // Toggle fields
       toggleCronRecurring();
+
+      // A11y: trap focus inside modal + move initial focus into first field.
+      modal.dataset.open='1';
       modal.classList.remove('hidden');
+      try{card.setAttribute('role','dialog');card.setAttribute('aria-modal','true');}catch{}
+      setTimeout(()=>{try{$('cronTitleIn')?.focus()}catch{}},0);
     }
 
-    function closeCronModal(){$('cronModal').classList.add('hidden')}
+    function closeCronModal(){
+      const modal=$('cronModal');
+      modal.classList.add('hidden');
+      delete modal.dataset.open;
+      // Return focus to trigger for keyboard users.
+      try{$('cronAddBtn')?.focus()}catch{}
+    }
 
     function toggleCronRecurring(){
       const rec=$('cronRecurring').checked;
@@ -10592,6 +10604,22 @@ Rules:
     // Close cron modal on backdrop click
     $('cronModal')?.addEventListener('click',e=>{
       if(e.target===$('cronModal'))closeCronModal();
+    });
+
+    // A11y: focus trap + Escape for cron modal
+    document.addEventListener('keydown',e=>{
+      const modal=$('cronModal');
+      if(!modal||modal.classList.contains('hidden')||modal.dataset.open!=='1')return;
+      if(e.key==='Escape'){e.preventDefault();closeCronModal();return;}
+      if(e.key!=='Tab')return;
+      const card=$('cronModalCard');
+      const focusables=[...card.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+        .filter(el=>!el.disabled&&el.offsetParent!==null);
+      if(!focusables.length)return;
+      const first=focusables[0];
+      const last=focusables[focusables.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
     });
 
     // ── /chron Wizard ───────────────────────────────────
