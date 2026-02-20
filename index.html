@@ -7421,35 +7421,84 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return out;
     }
 
+    function isGroqTermsRequiredError(msg,code=''){
+      const text=`${String(msg||'')} ${String(code||'')}`;
+      return /requires terms acceptance|accept(?: the)? terms|terms of use|model terms|accept terms in console/i.test(text);
+    }
+    function groqTtsRetryableStatus(status){
+      return status===408||status===409||status===425||status===429||status>=500;
+    }
+
     async function speakGroq(text,k,opts={}){
       const groqKey=getGroqKey(k);
       if(!groqKey)return null;
       const cfg=k||getK();
       const voice=cfg.groqTtsVoice||'troy';
-      const model=cfg.groqTtsModel||'canopylabs/orpheus-v1-english';
+      const model=getGroqTtsModel(cfg);
       const showErrors=opts.showErrors!==false;
       const showTermsError=opts.showTermsError!==false;
       // Expression tags are now handled by ttsPreprocess — text already has [tone] prefix
       const chunks=chunkTextForTTS(text,200);
       let firstErr='';
       let termsErr=false;
-      const fetches=chunks.map(async chunk=>{
-        const r=await fetch('https://api.groq.com/openai/v1/audio/speech',{
-          method:'POST',headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
-          body:JSON.stringify({model,input:chunk,voice,response_format:'wav'})
-        });
-        if(r.ok)return r.arrayBuffer();
-        let j=null;try{j=await r.json()}catch{}
-        const msg=(j&&j.error&&j.error.message)||r.status+' '+r.statusText;
-        if(!firstErr)firstErr=String(msg||'unknown error');
-        if(/requires terms acceptance/i.test(String(msg)))termsErr=true;
-        return null;
-      });
-      const results=await Promise.all(fetches);
-      const bufs=results.filter(Boolean);
-      if(!bufs.length){
-        if(termsErr&&showTermsError)showToast('Groq Orpheus requires one-time terms acceptance. Open Groq console → Orpheus model → accept terms, then retry.','err',9000);
-        else if(showErrors&&firstErr)showToast('Groq TTS failed: '+firstErr,'err',7000);
+      let hadChunkFailure=false;
+      const bufs=[];
+
+      for(let i=0;i<chunks.length;i++){
+        const chunk=chunks[i];
+        let chunkOk=false;
+        for(let attempt=0;attempt<3;attempt++){
+          let status=0;
+          let msg='';
+          let code='';
+          let networkErr=false;
+          try{
+            recordTtsDiag({provider:'groq',model,voice,endpoint:GROQ_TTS_ENDPOINT,status:'requesting',error:''});
+            const r=await fetch(GROQ_TTS_ENDPOINT,{
+              method:'POST',
+              headers:{
+                'Authorization':`Bearer ${groqKey}`,
+                'Content-Type':'application/json',
+                'Accept':'audio/wav'
+              },
+              body:JSON.stringify({model,input:chunk,voice,response_format:'wav'})
+            });
+            status=r.status;
+            if(r.ok){
+              bufs.push(await r.arrayBuffer());
+              recordTtsDiag({provider:'groq',model,voice,endpoint:GROQ_TTS_ENDPOINT,status:'ok',error:''});
+              chunkOk=true;
+              break;
+            }
+            let j=null;try{j=await r.json()}catch{}
+            msg=String(j?.error?.message||j?.message||`${r.status} ${r.statusText}`||'unknown error');
+            code=String(j?.error?.code||j?.code||'').trim();
+          }catch(e){
+            networkErr=true;
+            msg=String(e?.message||'Network error');
+          }
+
+          if(!firstErr)firstErr=msg||'unknown error';
+          if(isGroqTermsRequiredError(msg,code))termsErr=true;
+          recordTtsDiag({provider:'groq',model,voice,endpoint:GROQ_TTS_ENDPOINT,status:'error',error:msg||'unknown error'});
+
+          const shouldRetry=!termsErr&&attempt<2&&(networkErr||groqTtsRetryableStatus(status));
+          if(!shouldRetry)break;
+          await new Promise(r=>setTimeout(r,250*(attempt+1)));
+        }
+
+        if(!chunkOk){
+          hadChunkFailure=true;
+          break;
+        }
+      }
+
+      if(!bufs.length||hadChunkFailure){
+        if(termsErr&&showTermsError){
+          showToast('Groq TTS is blocked until you accept Orpheus terms in Groq Console (Models → canopylabs/orpheus-v1-english). Accept once, then retry.','err',10000);
+        }else if(showErrors&&firstErr){
+          showToast('Groq TTS failed: '+firstErr,'err',7000);
+        }
         return null;
       }
       return bufs.length===1?bufs[0]:stitchWavBuffers(bufs);
