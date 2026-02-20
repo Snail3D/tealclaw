@@ -33,10 +33,17 @@ If any field fails to persist (including sensitive keys on mobile), TealClaw sho
 | directFallbackToGroq | boolean | If true (default), non-Groq direct providers automatically fail over to Groq when recoverable errors occur and a Groq key is present |
 | gatewayHttpFallback | boolean | Allows agent HTTP fallback path when gateway WebSocket is unavailable (useful for local/self-hosted setups) |
 | whisperKey | string | Groq API key for Whisper voice transcription, Groq TTS, and `/research` |
+| ttsProvider | string | Explicit voice provider selector: `groq`, `elevenlabs`, or `off` |
+| ttsMode | string | Voice playback mode: `auto` (speak every reply), `on` (listen button), `off` (mute playback) |
+| ttsFallbackEnabled | boolean | Optional fallback to the other TTS provider **only if you opt in**. Default: false |
 | groqTtsVoice | string | Groq Orpheus TTS voice name. Options: autumn, diana, hannah, austin, daniel, troy. Default: troy |
-| ttsAutoPlay | boolean | Auto-speak AI responses. Default: true. Set false for on-demand playback (tap to hear) |
+| elevenlabsKey | string | ElevenLabs API key (`sk_...`) for custom voice output |
+| elevenlabsVoiceId | string | ElevenLabs voice ID used for playback and validation |
+| ttsAutoPlay | boolean | Legacy compatibility flag. `false` maps to `ttsMode:"on"`; prefer `ttsMode` going forward |
 | maxTokens | number | Max tokens per AI response (provider-capped). Default: 400 |
 | temperature | number | AI creativity. 0=focused, 2=creative. Default: 0.7 |
+
+**Voice Services UX:** Settings now includes an explicit provider selector (`groq` / `elevenlabs` / `off`), fallback opt-in toggle, and ElevenLabs key+voice validation status badge.
 
 ## System Prompt & Mode
 

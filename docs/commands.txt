@@ -104,7 +104,7 @@ Shows current configuration status:
 - AI provider and key status
 - Current model
 - Voice input (Groq Whisper) status
-- Voice output (Groq Orpheus TTS) status
+- Voice output provider status (Groq / ElevenLabs / Off), plus fallback + readiness
 - Telegram forwarding / relay status
 - Image generation status
 
@@ -141,10 +141,11 @@ Relay v2 behavior:
 - Status output includes startup reconciliation + runtime diagnostics
 
 ### /voice
-Shows current TTS voice settings:
-- Current Groq Orpheus voice name (groqTtsVoice)
-- Available voices: autumn, diana, hannah, austin, daniel, troy
-- Instructions to change voice
+Shows current voice service settings:
+- Active TTS provider (`ttsProvider`: groq / elevenlabs / off)
+- Groq persona voice (if Groq is selected)
+- ElevenLabs validation status (if ElevenLabs is selected)
+- Fallback opt-in status (`ttsFallbackEnabled`)
 
 ### /imagine
 Generate images using a configured image generation API.
