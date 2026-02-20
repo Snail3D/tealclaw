@@ -1677,7 +1677,9 @@
       toast.className='toast show '+t+(position?(' '+position):'')+(size?(' '+size):'');
       if(t==='ok')haptic('success');
       if(t==='err')haptic('error');
-      setTimeout(()=>toast.className='toast',dur);
+      // Avoid stale timers hiding newer toasts.
+      if(showToast._t){clearTimeout(showToast._t);showToast._t=null}
+      showToast._t=setTimeout(()=>toast.className='toast',dur);
     }
 
     // Elegant center-screen notification card for key/config changes
