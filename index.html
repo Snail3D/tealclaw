@@ -73,6 +73,9 @@
     .topbar-r{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
     .session-badge{display:flex;align-items:center;padding:3px 8px;border-radius:100px;background:rgba(13,148,136,0.12);color:var(--teal);font-size:9px;font-weight:600;cursor:help;letter-spacing:0.02em}
     .session-badge.hidden{display:none}
+    .desktop-badge{display:flex;align-items:center;padding:3px 8px;border-radius:100px;background:rgba(59,130,246,0.15);color:#60a5fa;font-size:9px;font-weight:700;letter-spacing:0.03em;cursor:help}
+    .desktop-badge.warn{background:rgba(245,158,11,0.16);color:#f59e0b}
+    .desktop-badge.hidden{display:none}
     .webhook-badge{display:flex;align-items:center;padding:3px 6px;border-radius:100px;background:rgba(251,146,60,0.15);color:#fb923c;cursor:help;animation:webhook-pulse 2s ease-in-out infinite}
     .webhook-badge.hidden{display:none}
     @keyframes webhook-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
@@ -1381,6 +1384,7 @@
     <button class="new-chat-btn" id="newChatBtn" title="New chat" aria-label="New chat">+</button>
     <div class="topbar-r">
       <div class="session-badge hidden" id="sessionBadge" title="Time-limited session active">Session</div>
+      <div class="desktop-badge hidden" id="desktopBadge" title="Desktop control mode">Desktop</div>
       <div class="webhook-badge hidden" id="webhookBadge" title="Webhook active — messages are forwarded externally">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </div>
@@ -1663,6 +1667,7 @@
     </div>
   </div>
 
+  <script src="/scripts/desktop-control.js"></script>
   <script>
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
     let ttsMode='off', chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
@@ -2811,12 +2816,128 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       return next;
     }
 
+    const DESKTOP_PERMISSION_ORDER=['accessibility','screenRecording','automation'];
+    const DESKTOP_PERMISSION_LABELS={
+      accessibility:'Accessibility',
+      screenRecording:'Screen Recording',
+      automation:'Automation'
+    };
+
+    const desktopControlAdapter=(()=>{
+      const bridgeRunner=async(script,opts={})=>{
+        const bridge=window.__TC_DESKTOP_BRIDGE__||window.TealClawDesktopBridge||window.__TEALCLAW_DESKTOP_BRIDGE__||null;
+        if(bridge&&typeof bridge.execAppleScript==='function'){
+          return bridge.execAppleScript(script,opts);
+        }
+        if(bridge&&typeof bridge.runCommand==='function'){
+          return bridge.runCommand('osascript',['-e',script],opts);
+        }
+        return {ok:false,error:'No local desktop bridge detected in this runtime',code:1};
+      };
+      if(window.TealClawDesktopControl&&typeof window.TealClawDesktopControl.createDesktopControlAdapter==='function'){
+        try{
+          return window.TealClawDesktopControl.createDesktopControlAdapter({
+            platform:/mac/i.test(navigator.platform||'')?'macos':'other',
+            execAppleScript:bridgeRunner
+          });
+        }catch(e){
+          console.warn('Desktop adapter init failed:',e);
+        }
+      }
+      return {
+        async status(){return{backend:'none',backendLabel:'Unavailable',available:false,checkedAt:new Date().toISOString(),permissions:{accessibility:{state:'unknown',detail:'Desktop adapter failed to load.'},screenRecording:{state:'unknown',detail:'Desktop adapter failed to load.'},automation:{state:'unknown',detail:'Desktop adapter failed to load.'}},notes:['Desktop adapter script missing or failed to initialize.']}},
+        async on(){return{ok:false,message:'Desktop adapter unavailable',status:await this.status()}},
+        async off(){return{ok:true,message:'Desktop adapter unavailable',status:await this.status()}}
+      };
+    })();
+
+    function desktopPermissionState(raw){
+      const t=String(raw||'unknown').trim().toLowerCase();
+      if(['granted','ok','enabled','true','yes'].includes(t))return 'granted';
+      if(['denied','blocked','false','no'].includes(t))return 'denied';
+      if(['unsupported','na','n/a'].includes(t))return 'unsupported';
+      return 'unknown';
+    }
+
+    function normalizeDesktopStatus(raw){
+      const src=raw&&typeof raw==='object'?raw:{};
+      const perms=src.permissions&&typeof src.permissions==='object'?src.permissions:{};
+      const out={
+        backend:String(src.backend||'none'),
+        backendLabel:String(src.backendLabel||'Unavailable'),
+        available:src.available===true,
+        checkedAt:src.checkedAt||null,
+        notes:Array.isArray(src.notes)?src.notes.filter(Boolean).map(String):[]
+      };
+      out.permissions={};
+      DESKTOP_PERMISSION_ORDER.forEach(key=>{
+        const entry=perms[key]&&typeof perms[key]==='object'?perms[key]:{state:'unknown',detail:''};
+        out.permissions[key]={
+          state:desktopPermissionState(entry.state),
+          detail:String(entry.detail||'')
+        };
+      });
+      return out;
+    }
+
+    function desktopPermissionsReady(status){
+      const s=normalizeDesktopStatus(status);
+      const a=s.permissions.accessibility.state;
+      const au=s.permissions.automation.state;
+      const sr=s.permissions.screenRecording.state;
+      return a==='granted'&&au==='granted'&&(sr==='granted'||sr==='unknown');
+    }
+
+    function desktopControlSnapshot(cfg){
+      const k=cfg||getK();
+      const status=normalizeDesktopStatus(k.desktopControlStatus||{});
+      return{
+        enabled:k.desktopControlEnabled===true,
+        backend:k.desktopControlBackend||status.backend,
+        backendLabel:status.backendLabel,
+        available:status.available,
+        checkedAt:status.checkedAt,
+        permissions:status.permissions,
+        notes:status.notes,
+        ready:desktopPermissionsReady(status)
+      };
+    }
+
+    function desktopStatusHtml(snapshot,title='Desktop Control Status'){
+      const s=snapshot||desktopControlSnapshot(getK());
+      const list=DESKTOP_PERMISSION_ORDER.map(key=>{
+        const p=s.permissions[key]||{state:'unknown',detail:''};
+        return `<li>${DESKTOP_PERMISSION_LABELS[key]}: <strong>${esc(p.state)}</strong>${p.detail?` — ${esc(p.detail)}`:''}</li>`;
+      }).join('');
+      return `<h3>${esc(title)}</h3><ul>
+<li>Enabled: <strong>${s.enabled?'on':'off'}</strong></li>
+<li>Backend: <strong>${esc(s.backendLabel||s.backend||'Unavailable')}</strong>${s.available?'':' (unavailable)'}</li>
+<li>Ready: <strong>${s.ready?'yes':'no'}</strong></li>
+<li>Last check: <strong>${s.checkedAt?esc(new Date(s.checkedAt).toLocaleString()):'never'}</strong></li>
+${list}
+${s.notes&&s.notes.length?`<li>Notes: <strong>${esc(s.notes.join(' | '))}</strong></li>`:''}
+</ul>`;
+    }
+
+    async function refreshDesktopControlStatus({persist=true}={}){
+      const statusRaw=await desktopControlAdapter.status({source:'tealclaw-ui'});
+      const status=normalizeDesktopStatus(statusRaw);
+      if(persist){
+        const k=getK();
+        k.desktopControlStatus=status;
+        k.desktopControlBackend=status.backend;
+        setK(k);
+      }
+      return status;
+    }
+
     function getIntegrationSnapshot(k){
       const cfg=k||getK();
       const provider=resolveAiProvider(cfg);
       const preset=getProviderPreset(provider,cfg);
       const activeAgent=getActiveAgent();
       const conn=activeAgent?agentConnections.get(activeAgent.id):null;
+      const desktop=desktopControlSnapshot(cfg);
       return{
         mode:cfg.mode||'direct',
         provider,
@@ -2832,6 +2953,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         agentCount:getAgents().length,
         gatewayState:conn?.connected?'connected':(conn?.state||'offline'),
         gatewayTarget:activeAgent?.url||'',
+        desktopControlEnabled:desktop.enabled,
+        desktopControlReady:desktop.ready,
+        desktopControlBackend:desktop.backendLabel||desktop.backend,
         skillContextLoaded:!!cfg.skillContextFileText,
         workflowContextLoaded:!!cfg.agentWorkflowContextText,
         diagnostics:getRecentControlDiags(3),
@@ -2849,6 +2973,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 <li>Gateway self-heal loop: <strong>${s.gatewaySelfHeal?'on':'off'}</strong> (${esc(s.gatewaySelfHealStatus||'off')})</li>
 <li>Gateway link: <strong>${esc(s.gatewayState)}</strong>${s.agentName?` (${esc(s.agentName)})`:''} · ${s.agentCount||0} configured${s.gatewayTarget?` · <code>${esc(s.gatewayTarget)}</code>`:''}</li>
 <li>Telegram relay: <strong>${s.relayEnabled?'on':'off'}</strong> (${s.relayConfigured?'configured':'not configured'})</li>
+<li>Desktop control: <strong>${s.desktopControlEnabled?'on':'off'}</strong> (${s.desktopControlReady?'ready':'needs permissions'}, backend ${esc(s.desktopControlBackend||'unknown')})</li>
 <li>Loaded skill/context files: <strong>${(s.skillContextLoaded||s.workflowContextLoaded)?`${s.skillContextLoaded?'skill':''}${s.skillContextLoaded&&s.workflowContextLoaded?' + ':''}${s.workflowContextLoaded?'workflow':''}`:'none'}</strong></li>
 ${Array.isArray(s.diagnostics)&&s.diagnostics.length?`<li>Recent control diagnostics: <code>${esc(s.diagnostics.map(d=>`${d.level}:${d.message}`).join(' | ').slice(0,260))}</code></li>`:''}
 ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}</strong> (${new Date(s.lastOp.ts).toLocaleTimeString()})</li>`:''}
@@ -3027,6 +3152,29 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           out={ok:true,command:cmd,message:'Telegram relay disabled',snapshot:getIntegrationSnapshot(getK())};
         }else if(cmd==='relay.status'){
           out={ok:true,command:cmd,message:'Telegram relay status',snapshot:getIntegrationSnapshot(k),html:integrationStatusHtml(getIntegrationSnapshot(k),'Telegram Relay Status')};
+        }else if(cmd==='desktop.on'||cmd==='desktop.enable'){
+          const startResult=await desktopControlAdapter.on({source});
+          const status=normalizeDesktopStatus(startResult.status||await desktopControlAdapter.status({source}));
+          const enabled=startResult.ok!==false;
+          k.desktopControlEnabled=enabled;
+          k.desktopControlStatus=status;
+          k.desktopControlBackend=status.backend;
+          setK(k);
+          updateStatus();
+          out={ok:enabled,command:cmd,message:startResult.message||(enabled?'Desktop control enabled':'Desktop control could not be enabled'),snapshot:getIntegrationSnapshot(getK()),desktop:desktopControlSnapshot(getK()),html:desktopStatusHtml(desktopControlSnapshot(getK()),enabled?'Desktop Control Enabled':'Desktop Control Unavailable')};
+        }else if(cmd==='desktop.off'||cmd==='desktop.disable'){
+          const stopResult=await desktopControlAdapter.off({source});
+          const status=normalizeDesktopStatus(stopResult.status||await desktopControlAdapter.status({source}));
+          k.desktopControlEnabled=false;
+          k.desktopControlStatus=status;
+          k.desktopControlBackend=status.backend;
+          setK(k);
+          updateStatus();
+          out={ok:stopResult.ok!==false,command:cmd,message:stopResult.message||'Desktop control disabled',snapshot:getIntegrationSnapshot(getK()),desktop:desktopControlSnapshot(getK()),html:desktopStatusHtml(desktopControlSnapshot(getK()),'Desktop Control Disabled')};
+        }else if(cmd==='desktop.status'){
+          const status=await refreshDesktopControlStatus({persist:true});
+          const k2=getK();
+          out={ok:true,command:cmd,message:'Desktop control status refreshed',snapshot:getIntegrationSnapshot(k2),desktop:desktopControlSnapshot(k2),html:desktopStatusHtml(desktopControlSnapshot(k2),'Desktop Control Status')};
         }else if(cmd==='settings.import'||cmd==='settings.patch'){
           const payload=parseSettingsImportPayload(args.config??args.settings??args.payload??args.value??args.json);
           if(!payload||typeof payload!=='object')throw new Error('settings.import requires a config object or JSON/base64 payload');
@@ -3096,6 +3244,9 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       if(/(relay|telegram relay).*(status|state)/.test(t))return{command:'relay.status',args:{}};
       if(/(relay|telegram relay).*(on|enable|start)/.test(t))return{command:'relay.on',args:{}};
       if(/(relay|telegram relay).*(off|disable|stop)/.test(t))return{command:'relay.off',args:{}};
+      if(/(desktop|desktop control).*(status|state|check)/.test(t))return{command:'desktop.status',args:{}};
+      if(/(desktop|desktop control).*(on|enable|start)/.test(t))return{command:'desktop.on',args:{}};
+      if(/(desktop|desktop control).*(off|disable|stop)/.test(t))return{command:'desktop.off',args:{}};
       const p=t.match(/(?:provider|route|use)\s+([a-z0-9._-]+)/i);
       if(p){
         const provider=integrationProviderFromText(p[1]);
@@ -3124,7 +3275,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
 
     async function runGrokQuickAction(raw,opts={}){
       const intent=parseGrokQuickActionIntent(raw);
-      if(!intent)return{ok:false,message:'Unknown quick action. Try: status, reconnect gateway, control on/off/status, relay on/off, provider fireworks, fallback on/off, load skill <url>, load context <url>.'};
+      if(!intent)return{ok:false,message:'Unknown quick action. Try: status, reconnect gateway, control on/off/status, relay on/off, desktop on/off/status, provider fireworks, fallback on/off, load skill <url>, load context <url>.'};
       return runIntegrationCommand(intent.command,intent.args,{source:opts.source||'grok-trigger',silent:opts.silent===true,toast:opts.toast});
     }
 
@@ -3326,6 +3477,24 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         pill.className='pill ok';$('pillLabel').textContent=getProviderLabel(k);
       } else {
         pill.className='pill off';$('pillLabel').textContent='Setup';
+      }
+      // Desktop control indicator
+      const db=$('desktopBadge');
+      if(db){
+        const ds=desktopControlSnapshot(k);
+        if(ds.enabled){
+          db.classList.remove('hidden');
+          db.classList.toggle('warn',!ds.ready);
+          db.textContent=ds.ready?'Desktop ON':'Desktop ⚠';
+          db.title=ds.ready
+            ?`Desktop control enabled (${ds.backendLabel||ds.backend||'backend unknown'})`
+            :`Desktop control enabled but permissions need attention (${ds.backendLabel||ds.backend||'backend unknown'})`;
+        }else{
+          db.classList.add('hidden');
+          db.classList.remove('warn');
+          db.textContent='Desktop';
+          db.title='Desktop control mode';
+        }
       }
       // Webhook indicator
       const wb=$('webhookBadge');
@@ -3888,6 +4057,31 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         </button>
         <div style="font-size:10px;color:var(--text-3);margin-top:4px;padding:0 2px">Tip: long-press the settings gear as a shortcut.</div>
       </div>`;
+      const desktopSnap=desktopControlSnapshot(k);
+      const desktopStateTone=desktopSnap.enabled?(desktopSnap.ready?'var(--ok)':'var(--warn)'):'var(--text-3)';
+      const desktopStateLabel=desktopSnap.enabled?(desktopSnap.ready?'Enabled':'Enabled (permissions needed)'):'Disabled';
+      const desktopPermissionRows=DESKTOP_PERMISSION_ORDER.map(key=>{
+        const p=desktopSnap.permissions[key]||{state:'unknown',detail:''};
+        const color=p.state==='granted'?'var(--ok)':(p.state==='denied'?'var(--err)':(p.state==='unsupported'?'var(--text-3)':'var(--warn)'));
+        const detail=p.detail?`<div style="font-size:9px;color:var(--text-3);margin-top:2px">${esc(p.detail)}</div>`:'';
+        return `<div style="padding:7px 8px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:11px;color:var(--text-2)">${esc(DESKTOP_PERMISSION_LABELS[key])}</span><strong style="font-size:10px;color:${color};text-transform:uppercase">${esc(p.state)}</strong></div>
+          ${detail}
+        </div>`;
+      }).join('');
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Desktop Control (macOS)</div>
+        <div style="font-size:10px;color:var(--text-3);margin-bottom:8px">Foundation mode for visible full-screen mouse/keyboard automation. This build only performs safe capability checks (no hidden control, no privilege escalation).</div>
+        <div style="padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg-input);margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div style="font-size:11px;color:var(--text)">Status</div><div style="font-size:10px;color:${desktopStateTone};font-weight:700">${esc(desktopStateLabel)}</div></div>
+          <div style="font-size:9px;color:var(--text-3);margin-top:3px">Backend: ${esc(desktopSnap.backendLabel||desktopSnap.backend||'unknown')} · Last check: ${desktopSnap.checkedAt?esc(new Date(desktopSnap.checkedAt).toLocaleString()):'never'}</div>
+        </div>
+        <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:8px">
+          <button class="mode-btn desktop-mode-btn ${desktopSnap.enabled?'active':''}" data-desktop="on" style="flex:1;padding:10px;font-size:11px;font-weight:600;font-family:var(--font);background:${desktopSnap.enabled?'var(--teal)':'transparent'};border:none;color:${desktopSnap.enabled?'#fff':'var(--text-3)'};cursor:pointer">On</button>
+          <button class="mode-btn desktop-mode-btn ${!desktopSnap.enabled?'active':''}" data-desktop="off" style="flex:1;padding:10px;font-size:11px;font-weight:600;font-family:var(--font);background:${!desktopSnap.enabled?'var(--teal)':'transparent'};border:none;color:${!desktopSnap.enabled?'#fff':'var(--text-3)'};cursor:pointer">Off</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="desktopStatusRefreshBtn" style="margin-bottom:8px">Check Permissions</button>
+        <div style="display:grid;gap:6px">${desktopPermissionRows}</div>
+      </div>`;
       const proactiveCamOn=k.allowProactiveCameraCapture!==false;
       html+=`<div class="sheet-section"><div class="sheet-section-title">Agent Capture Access</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
@@ -4373,6 +4567,18 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         renderSheetContent();
         showToast(on?'Inline capture consent enabled':'Inline capture consent disabled','ok');
       }));
+
+      $('sheetBody').querySelectorAll('.desktop-mode-btn').forEach(b=>b.addEventListener('click',async()=>{
+        const next=b.dataset.desktop==='on'?'desktop.on':'desktop.off';
+        const out=await runIntegrationCommand(next,{}, {source:'settings-desktop',toast:false});
+        renderSheetContent();renderChannelDropdown();updateStatus();
+        showToast(out.message,out.ok?'ok':'err');
+      }));
+      $('sheetBody').querySelector('#desktopStatusRefreshBtn')?.addEventListener('click',async()=>{
+        const out=await runIntegrationCommand('desktop.status',{}, {source:'settings-desktop',toast:false});
+        renderSheetContent();renderChannelDropdown();updateStatus();
+        showToast(out.message,out.ok?'ok':'err');
+      });
 
       // Wire up mode toggle
       $('sheetBody').querySelectorAll('.mode-btn[data-mode]').forEach(b=>b.addEventListener('click',()=>{
@@ -8202,7 +8408,7 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /providers, /provider <name>, /grok <action>, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /desktop on|off|status, /keys, /providers, /provider <name>, /grok <action>, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -12456,6 +12662,7 @@ ${agentNote}`);
         else if(/^alarm\b/i.test(text))text='/alarm'+text.slice(5);
         else if(/^timer\b/i.test(text))text='/timer'+text.slice(5);
         else if(/^chron\b/i.test(text))text='/chron'+text.slice(5);
+        else if(/^desktop\b/i.test(text))text='/desktop '+text.replace(/^desktop\s*/i,'');
         else if(/^pomodoro\b/i.test(text))text='/pomodoro '+text.replace(/^pomodoro\s*/i,'');
         else if(/^debate\b/i.test(text))text='/debate '+text.replace(/^debate\s*/i,'');
         else if(/^deep\s*(?:re)?search\s/i.test(text))text='/deepresearch '+text.replace(/^deep\s*(?:re)?search\s+/i,'');
@@ -12491,7 +12698,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect','/control'];
+        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/alarm','/timer','/pomodoro','/debate','/reconnect','/control','/desktop'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -12525,7 +12732,7 @@ ${agentNote}`);
 <li><code>/telegram on</code> / <code>/telegram off</code> -- toggle one-way forwarding</li>
 <li><code>/telegram relay on</code> / <code>/telegram relay off</code> / <code>/telegram relay status</code> -- run Telegram as primary chat transport</li>
 <li><code>/groq [message]</code> -- send directly to Groq (bypasses agent)</li>
-<li><code>/grok [action]</code> -- run quick background automation actions (status, reconnect gateway, control on/off, relay on/off, provider switch)</li>
+<li><code>/grok [action]</code> -- run quick background automation actions (status, reconnect gateway, control on/off, relay on/off, desktop on/off, provider switch)</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear context window and start fresh</li>
 <li><code>/restart</code> -- same as /clear</li>
@@ -12548,6 +12755,7 @@ ${agentNote}`);
 <li><code>/debate [topic]</code> -- mini-debate between personas with a judge (voice: "debate cats vs dogs")</li>
 <li><code>/reconnect</code> -- reconnect to your gateway (fixes "Gateway unresponsive" without a page refresh)</li>
 <li><code>/control on|off|status|heal</code> -- toggle/check the gateway self-heal loop and run an immediate health pass</li>
+<li><code>/desktop on|off|status</code> -- toggle/check desktop control foundation mode + macOS permission checklist</li>
 </ul>`;
           if(isAgentMode){
             sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
@@ -12605,10 +12813,22 @@ ${agentNote}`);
           }).catch(e=>sysBubble(`<p>${esc(e.message||'Control command failed')}</p>`));
           return;
         }
+        if(cmd==='/desktop'||cmd.startsWith('/desktop ')){
+          const arg=text.slice(8).trim().toLowerCase();
+          const map={on:'desktop.on',off:'desktop.off',status:'desktop.status',state:'desktop.status',check:'desktop.status'};
+          const icmd=map[arg]||'desktop.status';
+          runIntegrationCommand(icmd,{}, {source:'slash-desktop',toast:false}).then(res=>{
+            if(!res.ok){sysBubble(`<p>${esc(res.message||'Desktop command failed')}</p>`);return}
+            if(res.html)sysBubble(res.html);
+            else if(res.desktop)sysBubble(desktopStatusHtml(res.desktop,'Desktop Control'));
+            else sysBubble(`<p>${esc(res.message||'Done')}</p>`);
+          }).catch(e=>sysBubble(`<p>${esc(e.message||'Desktop command failed')}</p>`));
+          return;
+        }
         if(cmd==='/grok'||cmd.startsWith('/grok ')||cmd.startsWith('/grok\n')){
           const grokAction=text.slice(5).trim();
           if(!grokAction){
-            sysBubble('<h3>Grok Quick Actions</h3><p>Try: <code>/grok status</code>, <code>/grok reconnect gateway</code>, <code>/grok control on</code>, <code>/grok relay on</code>, <code>/grok provider fireworks</code>, <code>/grok fallback on</code></p>');
+            sysBubble('<h3>Grok Quick Actions</h3><p>Try: <code>/grok status</code>, <code>/grok reconnect gateway</code>, <code>/grok control on</code>, <code>/grok relay on</code>, <code>/grok desktop on</code>, <code>/grok provider fireworks</code>, <code>/grok fallback on</code></p>');
             return;
           }
           addTyping();
@@ -12804,6 +13024,8 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
           }else{
             lines.push('Telegram: <strong>not set</strong>');
           }
+          const dc=desktopControlSnapshot(k);
+          lines.push(`Desktop Control: <strong>${dc.enabled?'on':'off'}</strong> (${dc.ready?'ready':'needs permissions'}, ${esc(dc.backendLabel||dc.backend||'backend unknown')})`);
           lines.push((k.imageGenKey||k.imageGenUrl)?`Image Gen: <strong>${k.imageGenKey?(k.imageGenKey.startsWith('AIza')?'Google AI':'OpenRouter'):'custom endpoint'}</strong>`:'Image Gen: <strong>not set</strong>');
           sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
 <p>Paste any key to update. Type <code>/clear keys</code> to wipe all keys.</p>`);

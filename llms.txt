@@ -1137,6 +1137,7 @@ Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/sp
 | /clear keys | Remove all API keys |
 | /telegram | TG setup instructions |
 | /telegram on/off | Toggle TG forwarding |
+| /desktop on/off/status | Desktop control foundation toggle + permission checklist (macOS scaffold) |
 | /template | Browse 12 style templates |
 | /voice | Voice settings |
 | /save | Save chat to Obsidian |
@@ -1202,6 +1203,7 @@ settings, quick replies. Regenerate their full cfg from memory on new devices.
 - Accessibility: https://tealclaw.ai/docs/accessibility.txt
 - PWA Guide: https://tealclaw.ai/docs/pwa-guide.txt
 - Chat Commands: https://tealclaw.ai/docs/commands.txt
+- Desktop Control Foundation: https://tealclaw.ai/docs/desktop-control.md
 - Free Setup: https://tealclaw.ai/docs/free-setup.txt
 
 

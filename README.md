@@ -95,6 +95,7 @@ This is scoped agent access with defense in depth. Full technical details: **[Se
 | `/screenshot` / `/screen` / `/capture-screen` | Open screen picker, capture one frame, and send screenshot for AI analysis |
 | `/voice` | Voice settings and personas |
 | `/providers` / `/provider <name>` | List/switch direct AI provider quickly |
+| `/desktop on|off|status` | Desktop control foundation toggle + permission checklist (macOS scaffold) |
 | `/save` | Save to Obsidian |
 | `/template` | Browse style templates |
 | `/share` | Encrypted config link |
