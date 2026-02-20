@@ -1710,6 +1710,15 @@
   <script>
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
     let ttsMode='off', chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
+    let _ttsDiag={
+      at:0,
+      provider:'',
+      model:'',
+      voice:'',
+      endpoint:'',
+      status:'idle',
+      error:''
+    };
 
     function uiModalPosition(k){
       const v=String((k&&k.modalPosition)||'').trim().toLowerCase();
@@ -2771,6 +2780,28 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     const TTS_PROVIDER_LABELS={groq:'Groq Orpheus',elevenlabs:'ElevenLabs',off:'Off'};
+    const GROQ_TTS_ENDPOINT='https://api.groq.com/openai/v1/audio/speech';
+    const GROQ_TTS_DEFAULT_MODEL='canopylabs/orpheus-v1-english';
+    const GROQ_TTS_RECOMMENDED_MODELS=[
+      {id:GROQ_TTS_DEFAULT_MODEL,label:'Orpheus v1 English (recommended)'}
+    ];
+    const ELEVENLABS_TTS_ENDPOINT='https://api.elevenlabs.io/v1/text-to-speech';
+
+    function normalizeGroqTtsModel(v){
+      const model=String(v||'').trim();
+      return model||GROQ_TTS_DEFAULT_MODEL;
+    }
+    function getGroqTtsModel(k){
+      const cfg=k||getK();
+      return normalizeGroqTtsModel(cfg.groqTtsModel);
+    }
+    function recordTtsDiag(update={}){
+      _ttsDiag={..._ttsDiag,...update,at:Date.now()};
+    }
+    function getTtsDiag(){
+      return {..._ttsDiag};
+    }
+
     function normalizeTtsProvider(v){
       const id=String(v||'').trim().toLowerCase();
       if(id==='groq'||id==='elevenlabs'||id==='off')return id;
@@ -3944,6 +3975,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         const elevenValidation=getElevenLabsValidationInfo(k);
         const curTtsMode=k.ttsMode||(hasTTS(k)?'auto':'off');
         const groqVoice=k.groqTtsVoice||'troy';
+        const groqModel=getGroqTtsModel(k);
         const gcOn=k.groupChat===true;
         const providerStatus=selectedTtsProvider==='off'
           ?'Voice provider is disabled.'
@@ -3998,7 +4030,15 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">${curTtsMode==='auto'?'Speaks every AI response automatically.':(curTtsMode==='on'?'Shows a Listen button — TTS only runs when tapped.':'Playback disabled by mode toggle.')}${selectedTtsProvider==='off'?' Provider is currently Off.':''}</div>`;
 
         if(selectedTtsProvider==='groq'){
-          html+=`<div style="margin-top:10px">
+          html+=`<div style="margin-top:10px;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm)">
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:6px">Groq TTS Model</div>
+            <select class="sheet-input" id="sheetGroqTtsModelPreset" style="font-family:var(--font);font-size:11px">
+              ${GROQ_TTS_RECOMMENDED_MODELS.map(m=>`<option value="${m.id}" ${groqModel===m.id?'selected':''}>${m.label}</option>`).join('')}
+            </select>
+            <input type="text" class="sheet-input" id="sheetGroqTtsModel" value="${esc(groqModel)}" placeholder="${GROQ_TTS_DEFAULT_MODEL}" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px;margin-top:6px">
+            <div style="font-size:9px;color:var(--text-3);margin-top:4px">Model sent to <code>/openai/v1/audio/speech</code>. Recommended: <code>${GROQ_TTS_DEFAULT_MODEL}</code>.</div>
+          </div>
+          <div style="margin-top:10px">
             <button id="groupChatToggle" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;margin-bottom:8px;background:${gcOn?'linear-gradient(135deg,#fb923c 0%,#ec4899 50%,#3b82f6 100%)':'var(--bg-input)'};border:2px solid ${gcOn?'transparent':'var(--border)'};border-radius:var(--r-md);cursor:pointer;font-family:var(--font);transition:all 0.2s">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${gcOn?'#fff':'var(--text-3)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <div style="text-align:left"><div style="font-size:13px;font-weight:700;color:${gcOn?'#fff':'var(--text)'}">Group Chat</div><div style="font-size:9px;color:${gcOn?'rgba(255,255,255,0.8)':'var(--text-3)'}">All 6 personas talk together (Groq only)</div></div>
@@ -4478,6 +4518,25 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         btn.textContent=original;
         renderSheetContent();
         showToast(res.ok?(res.message||'ElevenLabs validated'):`ElevenLabs validation failed: ${res.error||'Unknown error'}`,res.ok?'ok':'err',res.ok?4500:7000,{modal:true,title:'Provider validation'});
+      });
+
+      const persistGroqTtsModel=(value,{notify=false}={})=>{
+        const k2=getK();
+        const next=normalizeGroqTtsModel(value);
+        if((k2.groqTtsModel||'')===next)return;
+        k2.groqTtsModel=next;
+        setK(k2);
+        if(notify)showToast(`Groq model: ${next}`,'ok',3500);
+      };
+      $('sheetBody').querySelector('#sheetGroqTtsModelPreset')?.addEventListener('change',e=>{
+        const preset=String(e.target.value||'').trim();
+        const input=$('sheetBody').querySelector('#sheetGroqTtsModel');
+        if(input)input.value=preset;
+        persistGroqTtsModel(preset,{notify:true});
+      });
+      $('sheetBody').querySelector('#sheetGroqTtsModel')?.addEventListener('change',e=>{
+        persistGroqTtsModel(e.target.value,{notify:true});
+        renderSheetContent();
       });
 
       // Wire up TTS mode toggle (auto/on/off)
@@ -7444,35 +7503,84 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return out;
     }
 
+    function isGroqTermsRequiredError(msg,code=''){
+      const text=`${String(msg||'')} ${String(code||'')}`;
+      return /requires terms acceptance|accept(?: the)? terms|terms of use|model terms|accept terms in console/i.test(text);
+    }
+    function groqTtsRetryableStatus(status){
+      return status===408||status===409||status===425||status===429||status>=500;
+    }
+
     async function speakGroq(text,k,opts={}){
       const groqKey=getGroqKey(k);
       if(!groqKey)return null;
       const cfg=k||getK();
       const voice=cfg.groqTtsVoice||'troy';
-      const model=cfg.groqTtsModel||'canopylabs/orpheus-v1-english';
+      const model=getGroqTtsModel(cfg);
       const showErrors=opts.showErrors!==false;
       const showTermsError=opts.showTermsError!==false;
       // Expression tags are now handled by ttsPreprocess — text already has [tone] prefix
       const chunks=chunkTextForTTS(text,200);
       let firstErr='';
       let termsErr=false;
-      const fetches=chunks.map(async chunk=>{
-        const r=await fetch('https://api.groq.com/openai/v1/audio/speech',{
-          method:'POST',headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
-          body:JSON.stringify({model,input:chunk,voice,response_format:'wav'})
-        });
-        if(r.ok)return r.arrayBuffer();
-        let j=null;try{j=await r.json()}catch{}
-        const msg=(j&&j.error&&j.error.message)||r.status+' '+r.statusText;
-        if(!firstErr)firstErr=String(msg||'unknown error');
-        if(/requires terms acceptance/i.test(String(msg)))termsErr=true;
-        return null;
-      });
-      const results=await Promise.all(fetches);
-      const bufs=results.filter(Boolean);
-      if(!bufs.length){
-        if(termsErr&&showTermsError)showToast('Groq Orpheus requires one-time terms acceptance. Open Groq console → Orpheus model → accept terms, then retry.','err',9000,{modal:true,title:'Orpheus terms required'});
-        else if(showErrors&&firstErr)showToast('Groq TTS failed: '+firstErr,'err',7000);
+      let hadChunkFailure=false;
+      const bufs=[];
+
+      for(let i=0;i<chunks.length;i++){
+        const chunk=chunks[i];
+        let chunkOk=false;
+        for(let attempt=0;attempt<3;attempt++){
+          let status=0;
+          let msg='';
+          let code='';
+          let networkErr=false;
+          try{
+            recordTtsDiag({provider:'groq',model,voice,endpoint:GROQ_TTS_ENDPOINT,status:'requesting',error:''});
+            const r=await fetch(GROQ_TTS_ENDPOINT,{
+              method:'POST',
+              headers:{
+                'Authorization':`Bearer ${groqKey}`,
+                'Content-Type':'application/json',
+                'Accept':'audio/wav'
+              },
+              body:JSON.stringify({model,input:chunk,voice,response_format:'wav'})
+            });
+            status=r.status;
+            if(r.ok){
+              bufs.push(await r.arrayBuffer());
+              recordTtsDiag({provider:'groq',model,voice,endpoint:GROQ_TTS_ENDPOINT,status:'ok',error:''});
+              chunkOk=true;
+              break;
+            }
+            let j=null;try{j=await r.json()}catch{}
+            msg=String(j?.error?.message||j?.message||`${r.status} ${r.statusText}`||'unknown error');
+            code=String(j?.error?.code||j?.code||'').trim();
+          }catch(e){
+            networkErr=true;
+            msg=String(e?.message||'Network error');
+          }
+
+          if(!firstErr)firstErr=msg||'unknown error';
+          if(isGroqTermsRequiredError(msg,code))termsErr=true;
+          recordTtsDiag({provider:'groq',model,voice,endpoint:GROQ_TTS_ENDPOINT,status:'error',error:msg||'unknown error'});
+
+          const shouldRetry=!termsErr&&attempt<2&&(networkErr||groqTtsRetryableStatus(status));
+          if(!shouldRetry)break;
+          await new Promise(r=>setTimeout(r,250*(attempt+1)));
+        }
+
+        if(!chunkOk){
+          hadChunkFailure=true;
+          break;
+        }
+      }
+
+      if(!bufs.length||hadChunkFailure){
+        if(termsErr&&showTermsError){
+          showToast('Groq TTS is blocked until you accept Orpheus terms in Groq Console (Models → canopylabs/orpheus-v1-english). Accept once, then retry.','err',10000,{modal:true,title:'Orpheus terms required'});
+        }else if(showErrors&&firstErr){
+          showToast('Groq TTS failed: '+firstErr,'err',7000);
+        }
         return null;
       }
       return bufs.length===1?bufs[0]:stitchWavBuffers(bufs);
@@ -7507,16 +7615,19 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       const apiKey=cfg.elevenlabsKey;
       const voiceId=cfg.elevenlabsVoiceId||cfg.elevenlabsVoice||'';
       if(!apiKey||!voiceId)return null;
+      const model=cfg.elevenlabsModel||'eleven_multilingual_v2';
+      const endpoint=`${ELEVENLABS_TTS_ENDPOINT}/${encodeURIComponent(voiceId)}`;
       const showErrors=opts.showErrors!==false;
       const chunks=chunkTextForTTS(text,350);
       let firstErr='';
       const fetches=chunks.map(async chunk=>{
-        const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,{
+        recordTtsDiag({provider:'elevenlabs',model,voice:voiceId,endpoint,status:'requesting',error:''});
+        const r=await fetch(endpoint,{
           method:'POST',
           headers:{'xi-api-key':apiKey,'Content-Type':'application/json','Accept':'audio/mpeg'},
           body:JSON.stringify({
             text:chunk,
-            model_id:cfg.elevenlabsModel||'eleven_multilingual_v2',
+            model_id:model,
             voice_settings:{
               stability:(cfg.elevenlabsStability??0.35),
               similarity_boost:(cfg.elevenlabsSimilarity??0.85),
@@ -7525,9 +7636,14 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
             }
           })
         });
-        if(r.ok)return r.arrayBuffer();
+        if(r.ok){
+          recordTtsDiag({provider:'elevenlabs',model,voice:voiceId,endpoint,status:'ok',error:''});
+          return r.arrayBuffer();
+        }
         let d=null;try{d=await r.json()}catch{}
-        if(!firstErr)firstErr=String(d?.detail?.message||d?.detail||d?.message||d?.error?.message||`${r.status} ${r.statusText}`);
+        const err=String(d?.detail?.message||d?.detail||d?.message||d?.error?.message||`${r.status} ${r.statusText}`);
+        if(!firstErr)firstErr=err;
+        recordTtsDiag({provider:'elevenlabs',model,voice:voiceId,endpoint,status:'error',error:err});
         return null;
       });
       const results=await Promise.all(fetches);
@@ -7697,7 +7813,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
         }
         const providerText=provider==='groq'?ttsClean:(stripExprTags(ttsClean)||ttsClean);
         const ttsData=provider==='groq'
-          ?await speakGroq(providerText,k,{showTermsError:(selectedProvider==='groq'||fallbackEnabled),showErrors:true})
+          ?await speakGroq(providerText,k,{showTermsError:(selectedProvider==='groq'),showErrors:true})
           :await speakElevenLabs(providerText,k,{showErrors:true});
         if(ttsData){
           if(i>0)showToast(`Voice fallback in use: ${getTtsProviderLabel(provider)}`,'ok',3500);
@@ -11463,6 +11579,7 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
         let revealedText='';
         const doTTS=ttsMode==='auto'&&hasTTS(k);
         const debateTtsProvider=getActiveTtsProvider(k);
+        const debateSelectedTtsProvider=getSelectedTtsProvider(k);
         const scroll=$('chatScroll');
 
         for(let i=0;i<segments.length;i++){
@@ -11487,7 +11604,7 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
               let wavData=null;
               if(debateTtsProvider==='groq'){
                 const segK={...k,groqTtsVoice:seg.voiceId};
-                wavData=await speakGroq(cleanText,segK,{showTermsError:true,showErrors:true});
+                wavData=await speakGroq(cleanText,segK,{showTermsError:(debateSelectedTtsProvider==='groq'),showErrors:true});
               }else if(debateTtsProvider==='elevenlabs'){
                 wavData=await speakElevenLabs(cleanText,k,{showErrors:true});
               }
@@ -12305,7 +12422,8 @@ ${agentNote}`);
 <li><code>/restart</code> -- same as /clear</li>
 <li><code>/new</code> -- start a new conversation (separate context)</li>
 <li><code>/clear all</code> -- delete all conversations</li>
-<li><code>/voice</code> -- change TTS voice</li>
+<li><code>/voice</code> -- show voice settings (provider, model, persona)</li>
+<li><code>/voice diag</code> -- show last TTS request provider/model/error diagnostics</li>
 <li><code>/group</code> -- toggle group chat (all 6 personas talk together; voice: "group")</li>
 <li><code>/voice-chat</code> -- enter voice-only mode (push-to-talk)</li>
 <li><code>/template</code> -- browse and apply style templates</li>
@@ -12683,13 +12801,37 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
           enterVoiceMode();
           return;
         }
+        if(cmd==='/voice diag'||cmd==='/voicediag'){
+          const k=getK();
+          const d=getTtsDiag();
+          const when=d.at?new Date(d.at).toLocaleString():'No TTS requests yet in this tab.';
+          const provider=d.provider||getSelectedTtsProvider(k)||'none';
+          const model=d.model||(provider==='groq'?getGroqTtsModel(k):(provider==='elevenlabs'?(k.elevenlabsModel||'eleven_multilingual_v2'):''));
+          const errText=d.error?esc(d.error):'<span style="color:var(--ok)">none</span>';
+          const termsHint=(provider==='groq'&&d.error&&isGroqTermsRequiredError(d.error))
+            ?`<p style="font-size:11px;color:var(--warn);margin-top:8px">Groq returned a terms gate. Accept Orpheus once in Groq Console (Models → <code>${GROQ_TTS_DEFAULT_MODEL}</code>) and retry.</p>`
+            :'';
+          sysBubble(`<h3>Voice Diagnostics</h3>
+<ul>
+<li><strong>Last provider:</strong> <code>${esc(provider)}</code></li>
+<li><strong>Last model:</strong> <code>${esc(model||'n/a')}</code></li>
+<li><strong>Last voice:</strong> <code>${esc(d.voice||'n/a')}</code></li>
+<li><strong>Status:</strong> <code>${esc(d.status||'idle')}</code></li>
+<li><strong>Endpoint:</strong> <code>${esc(d.endpoint||'n/a')}</code></li>
+<li><strong>Updated:</strong> ${esc(when)}</li>
+<li><strong>Error:</strong> ${errText}</li>
+</ul>${termsHint}
+<p style="font-size:11px;color:var(--text-2)">This panel shows the most recent TTS request in this browser tab.</p>`);
+          return;
+        }
         if(cmd==='/voice'){
           const k=getK();
           const provider=getSelectedTtsProvider(k);
           if(provider==='off'){
             sysBubble(`<h3>Voice Services</h3>
 <p><strong>Provider:</strong> Off</p>
-<p style="font-size:11px;color:var(--text-2)">Enable Groq or ElevenLabs in Settings > Voice Services.</p>`);
+<p style="font-size:11px;color:var(--text-2)">Enable Groq or ElevenLabs in Settings > Voice Services.</p>
+<p style="font-size:11px;color:var(--text-2)">Run <code>/voice diag</code> for last request diagnostics.</p>`);
             return;
           }
           if(provider==='elevenlabs'){
@@ -12698,17 +12840,19 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
             sysBubble(`<h3>Voice Services</h3>
 <p><strong>Provider:</strong> ElevenLabs</p>
 <p><strong>Voice ID:</strong> <code>${voiceId}</code></p>
+<p><strong>Model:</strong> <code>${esc(k.elevenlabsModel||'eleven_multilingual_v2')}</code></p>
 <p style="font-size:11px;color:${v.state==='ok'?'var(--ok)':(v.state==='err'?'var(--err)':'var(--text-3)')}">${esc(v.text)}</p>
-<p style="font-size:11px;color:var(--text-2)">Manage provider, fallback, and validation in Settings > Voice Services.</p>`);
+<p style="font-size:11px;color:var(--text-2)">Manage provider, fallback, and validation in Settings > Voice Services. Run <code>/voice diag</code> for request diagnostics.</p>`);
             return;
           }
           const vp=getVoicePersona(k);
           const voiceList=Object.entries(VOICE_PERSONAS).map(([id,p])=>`<code>${p.name}</code> <span style="color:var(--text-3)">(${p.tag})</span>`).join(', ');
           sysBubble(`<h3>Voice Personas (Groq)</h3>
 <p><strong>Current:</strong> ${esc(vp.name)} <span style="color:var(--text-3)">(${esc(vp.tag)})</span></p>
+<p><strong>Model:</strong> <code>${esc(getGroqTtsModel(k))}</code></p>
 <p style="font-size:11px;color:var(--text-2);margin:4px 0">${esc(vp.desc)}</p>
 <p style="margin-top:10px"><strong>All voices:</strong> ${voiceList}</p>
-<p style="font-size:11px;color:var(--text-2)">Change voice in Settings > Voice Services, or: <code>{"ttsProvider":"groq","groqTtsVoice":"austin"}</code></p>`);
+<p style="font-size:11px;color:var(--text-2)">Change voice/model in Settings > Voice Services, or: <code>{"ttsProvider":"groq","groqTtsVoice":"austin","groqTtsModel":"${GROQ_TTS_DEFAULT_MODEL}"}</code>. Run <code>/voice diag</code> for request diagnostics.</p>`);
           return;
         }
         if(cmd==='/group'){
