@@ -54,6 +54,10 @@ TealClaw has **no backend**. The site is static files on Cloudflare Pages.
 
 Full details: **[Security Philosophy](SECURITY.md)**
 
+### Developer safety (no-secrets)
+Before pushing changes, run:
+- `node scripts/security-scan.mjs`
+
 ---
 
 ## Scoped Agent Access
