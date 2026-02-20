@@ -11595,6 +11595,18 @@ ${agentNote}`);
     $('cameraBtn').addEventListener('click',openCamera);
     $('voiceChatBtn').addEventListener('click',enterVoiceMode);
 
+    async function startCameraStream(targetFacing,retryDelayMs=120){
+      const constraints={video:{facingMode:targetFacing,width:{ideal:1920},height:{ideal:1080}},audio:false};
+      try{return await navigator.mediaDevices.getUserMedia(constraints)}catch(err){
+        // Some devices need a short release window after tracks stop before reacquire
+        if(retryDelayMs>0&&(err?.name==='NotReadableError'||err?.name==='AbortError'||err?.name==='OverconstrainedError')){
+          await new Promise(r=>setTimeout(r,retryDelayMs));
+          return await navigator.mediaDevices.getUserMedia(constraints);
+        }
+        throw err;
+      }
+    }
+
     async function openCamera(opts={}){
       if(getK().cameraEnabled===false){showToast('Camera disabled','err');haptic('error');return false}
       cameraCaptureRequest={
@@ -11602,12 +11614,11 @@ ${agentNote}`);
         message:typeof opts.message==='string'?opts.message.trim():'',
         source:opts.source||'manual'
       };
-      if(opts.facing==='user'||opts.facing==='environment')facingMode=opts.facing;
+      const targetFacing=(opts.facing==='user'||opts.facing==='environment')?opts.facing:facingMode;
       $('camOverlay').classList.remove('hidden');
       try{
-        camStream=await navigator.mediaDevices.getUserMedia({
-          video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
-        });
+        camStream=await startCameraStream(targetFacing);
+        facingMode=targetFacing;
         $('camVideo').srcObject=camStream;
         return true;
       }catch(e){
@@ -11646,15 +11657,26 @@ ${agentNote}`);
     });
 
     $('camFlip').addEventListener('click',async()=>{
-      facingMode=facingMode==='environment'?'user':'environment';
-      if(camStream){camStream.getTracks().forEach(t=>t.stop())}
+      const prevFacing=facingMode;
+      const nextFacing=facingMode==='environment'?'user':'environment';
+      if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
       torchOn=false;$('camTorch').classList.remove('on');
       try{
-        camStream=await navigator.mediaDevices.getUserMedia({
-          video:{facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false
-        });
+        camStream=await startCameraStream(nextFacing);
+        facingMode=nextFacing;
         $('camVideo').srcObject=camStream;
-      }catch(e){showToast('Camera flip failed','err')}
+      }catch(e){
+        // Fallback to prior facing so flip failures don't leave a dead preview
+        try{
+          camStream=await startCameraStream(prevFacing,180);
+          facingMode=prevFacing;
+          $('camVideo').srcObject=camStream;
+          showToast('Could not switch camera on this device','err');
+        }catch{
+          showToast('Camera flip failed','err');
+          closeCamera();
+        }
+      }
     });
 
     $('camTorch').addEventListener('click',async()=>{
