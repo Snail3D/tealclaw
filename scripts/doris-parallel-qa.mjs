@@ -52,6 +52,7 @@ checks.push(ok(/Auth token too large/.test(indexHtml), 'Local gateway onboarding
 checks.push(ok(/A11y: focus trap \+ Escape for cron modal/.test(indexHtml), 'Cron modal focus trap handler present'));
 checks.push(ok(/cron-modal-open/.test(indexHtml), 'Cron modal sets body overflow lock class'));
 checks.push(ok(/if\(cmd==='\/cron'\|\|cmd\.startsWith\('\/cron '\)\)/.test(indexHtml), '/cron command handler present'));
+checks.push(ok(/Last TTS error:/.test(indexHtml), '/keys includes recent TTS error observability'));
 
 section('Doc Alignment Checks');
 checks.push(ok(/`cerebras`, `perplexity`/.test(cfgRef), 'Config reference lists Cerebras + Perplexity'));
