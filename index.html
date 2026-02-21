@@ -12735,6 +12735,14 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
             else if(active==='groq'){const vp=getVoicePersona(k);lines.push(`Voice Out: <strong>${vp.name}</strong> (${vp.tag}) via Groq`)}
             else lines.push('Voice Out: <strong>ElevenLabs</strong> active');
             lines.push(`TTS fallback: <strong>${isTtsFallbackEnabled(k)?'on':'off'}</strong>`);
+
+            // Observability: surface last TTS error (if recent)
+            try{
+              const d=getTtsDiag();
+              if(d&&d.status==='error'&&d.error&&(Date.now()-(d.at||0))<10*60*1000){
+                lines.push(`Last TTS error: <strong>${esc(getTtsProviderLabel(d.provider||selected))}</strong> — ${esc(d.error)}`);
+              }
+            }catch{}
           }
           if(k.tgToken&&k.tgChatId){
             const relayOn=isTelegramRelayEnabled(k);
