@@ -37,6 +37,7 @@ If any field fails to persist (including sensitive keys on mobile), TealClaw sho
 | ttsMode | string | Voice playback mode: `auto` (speak every reply), `on` (listen button), `off` (mute playback) |
 | ttsFallbackEnabled | boolean | Optional fallback to the other TTS provider **only if you opt in**. Default: false |
 | groqTtsVoice | string | Groq Orpheus TTS voice name. Options: autumn, diana, hannah, austin, daniel, troy. Default: troy |
+| groqTtsModel | string | Groq TTS model id sent to `/openai/v1/audio/speech`. Default: canopylabs/orpheus-v1-english |
 | groqTtsModel | string | Groq TTS model ID sent to `/openai/v1/audio/speech`. Default/recommended: `canopylabs/orpheus-v1-english` |
 | elevenlabsKey | string | ElevenLabs API key (`sk_...`) for custom voice output |
 | elevenlabsVoiceId | string | ElevenLabs voice ID used for playback and validation |
