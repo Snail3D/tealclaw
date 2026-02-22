@@ -1,4 +1,4 @@
-const CACHE='tealclaw-v214';
+const CACHE='tealclaw-v215';
 // IMPORTANT: Do NOT pre-cache navigation HTML (/, /index.html). If a bad build ever ships,
 // caching can “brick” the app for users until they manually clear site data.
 const ASSETS = ['/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png'];
@@ -49,6 +49,32 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for static assets
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  // Cache-first for same-origin static assets, with runtime caching.
+  // - ignoreSearch lets cached assets still resolve when URL has cache-busting query params.
+  // - We only cache GET + same-origin + “static-ish” request destinations.
+  e.respondWith((async () => {
+    if (e.request.method !== 'GET') return fetch(e.request);
+
+    const url = new URL(e.request.url);
+    const sameOrigin = url.origin === self.location.origin;
+    const dest = e.request.destination; // '' | 'script' | 'style' | 'image' | 'font' | etc.
+    const isStatic = dest === 'script' || dest === 'style' || dest === 'image' || dest === 'font' || dest === 'manifest';
+
+    if (!sameOrigin || !isStatic) {
+      return fetch(e.request);
+    }
+
+    const cached = await caches.match(e.request, { ignoreSearch: true });
+    if (cached) return cached;
+
+    const res = await fetch(e.request);
+
+    // Only cache successful, same-origin, non-opaque responses.
+    if (res && res.ok && res.type === 'basic') {
+      const cache = await caches.open(CACHE);
+      cache.put(e.request, res.clone());
+    }
+
+    return res;
+  })());
 });
