@@ -40,6 +40,7 @@ process.stdout.write('--- git status (porcelain) ---\n');
 process.stdout.write(status || '(clean)\n');
 process.stdout.write('\n');
 
+// First: if sw.js itself is touched, auto-bump immediately.
 if (swTouched) {
   process.stdout.write('sw.js appears modified/staged. Bumping SW cache version...\n');
   const bump = trySh('node', ['scripts/bump-sw-cache.mjs']);
@@ -51,7 +52,16 @@ if (swTouched) {
   process.stdout.write(bump.out + '\n');
   process.stdout.write('Re-check your diff and ensure the CACHE version bump is appropriate.\n\n');
 } else {
-  process.stdout.write('sw.js not detected in git status. (If behavior changed via other files, remember to bump CACHE manually.)\n\n');
+  process.stdout.write('sw.js not detected in git status. Running cache-bump guard (heuristic)...\n');
+  const guard = trySh('node', ['scripts/check-sw-cache-bump.mjs']);
+  if (!guard.ok) {
+    process.stderr.write('\nCACHE-BUMP GUARD FAILED:\n');
+    process.stderr.write(guard.out + '\n');
+    process.stderr.write('Tip: run `node scripts/bump-sw-cache.mjs` if you changed behavior-affecting files.\n\n');
+    // Non-zero exit: forces the bump decision before the dev gets to "push".
+    process.exit(3);
+  }
+  process.stdout.write(guard.out.trimEnd() + '\n\n');
 }
 
 process.stdout.write('NEXT (NON-NEGOTIABLE BEFORE ANY PUSH): run repo-security-sweep\n');
