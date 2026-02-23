@@ -10,7 +10,14 @@ A static JSON-backed gallery of community-generated apps and flows.
 - **Sanitization:** The `Safe Share` protocol runs automatically, stripping `aiKey`, `matonKey`, and any hardcoded PII from the `tc-app` payload.
 - **Distribution:** The app is assigned a short-link (e.g., `tealclaw.ai/app/21ornot`) that instantly unpacks the `tc-app` into the visitor's local cache.
 
-## 3. Agent Memory Sync
-Whenever a user "Installs" or "Pins" an app from the marketplace, TealClaw fires a system message:
-`[System] User installed app: "Asteroids"`
-The agent logs this into `MEMORY.md` so it remembers what tools the user has available in their local OS drawer.
+## 4. Security & Permissions Scoping (Critical)
+When apps are published to the Marketplace, they are grouped by their required "Scope":
+- **Level 0 (Static App):** Basic HTML/JS (like a Calculator or Asteroids). Has NO access to `postMessage` bridge. Cannot talk to the AI. Cannot execute webhooks. 100% safe.
+- **Level 1 (Sensor App):** Uses Camera or Microphone APIs (like 21orNot Scanner). Requires explicit browser permission prompt. No AI communication.
+- **Level 2 (Agentic App):** Uses the `postMessage` bridge to trigger LLM inferences or `tc-action` payloads using the *user's* local API keys. User must explicitly grant "Agent Access" when installing.
+
+By default, all Community Apps are sandboxed at Level 0 to preserve the absolute anonymity and safety promise of TealClaw. Level 2 apps must be heavily vetted or self-signed.
+
+## 5. Ranking & Search
+The marketplace JSON includes `upvotes`, `downvotes`, and tags. 
+Agents can programmatically fetch `https://tealclaw.ai/api/marketplace.json` to regex-search for highly-rated apps when a user says "Find me a good Pomodoro timer."
