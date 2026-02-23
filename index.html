@@ -4062,6 +4062,8 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       }
       html+=`</div></div>`;
 
+      // ── API KEYS & CONNECTIONS ONLY ──
+      
       html+=`<div class="sheet-section"><div class="sheet-section-title">API Keys</div>`;
       keys.forEach(({label,desc,field,val,link,linkText,prefix})=>{
         const on=!!val;
@@ -4632,7 +4634,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         <div class="sheet-section-title sheet-section-title-danger">Danger Zone</div>
         <div class="sheet-danger-note"><strong style="color:var(--err)">Clear All Local Data</strong> permanently removes this browser's chat history, API keys, agents, and custom settings.</div>
         <button class="sheet-btn sheet-btn-danger" id="sheetClearAll">Clear All Local Data</button>
-        <div style="font-size:10px;color:var(--err);margin-top:6px">You will confirm twice, including typing <strong>CLEAR</strong>.</div>
+        <div style="font-size:10px;color:var(--err);margin-top:6px">You will confirm before wiping.</div>
       </div>`;
 
       // Footer
@@ -13140,34 +13142,9 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
           lines.push(directKey?`AI: <strong>${esc(directLabel)}</strong> (${esc(directKey.slice(0,8))}...)`:'AI: <strong>not set</strong>');
           if(mode==='direct')lines.push(`Model: <code>${esc(k.aiModel||modelForProvider(k,directProvider,false))}</code>`);
           lines.push(getGroqKey(k)?'Voice In: <strong>Groq Whisper</strong> (set)':'Voice In: <strong>not set</strong>');
-          {
-            const selected=getSelectedTtsProvider(k);
-            const active=getActiveTtsProvider(k);
-            if(selected==='off')lines.push('Voice Out: <strong>disabled</strong> (provider off)');
-            else if(active==='off')lines.push(`Voice Out: <strong>${esc(getTtsProviderLabel(selected))}</strong> selected (not configured)`);
-            else if(active==='groq'){const vp=getVoicePersona(k);lines.push(`Voice Out: <strong>${vp.name}</strong> (${vp.tag}) via Groq`)}
-            else lines.push('Voice Out: <strong>ElevenLabs</strong> active');
-            lines.push(`TTS fallback: <strong>${isTtsFallbackEnabled(k)?'on':'off'}</strong>`);
-
-            // Observability: surface last TTS error (if recent)
-            try{
-              const d=getTtsDiag();
-              if(d&&d.status==='error'&&d.error&&(Date.now()-(d.at||0))<10*60*1000){
-                lines.push(`Last TTS error: <strong>${esc(getTtsProviderLabel(d.provider||selected))}</strong> — ${esc(d.error)}`);
-              }
-            }catch{}
-          }
-          if(k.tgToken&&k.tgChatId){
-            const relayOn=isTelegramRelayEnabled(k);
-            const relayRx=k.tgRelayReceive!==false;
-            lines.push(`Telegram: <strong>${relayOn?'relay active':(k.tgEnabled?'forwarding active':'configured (off)')}</strong>`);
-            if(relayOn)lines.push(`Relay runtime: <strong>${telegramRelayRuntimeLabel()}</strong> (${relayRx?'inbound on':'inbound off'}, source gateway-native, path ${esc(_tgRelayBridge.inboundPath||'none')})`);
-          }else{
-            lines.push('Telegram: <strong>not set</strong>');
-          }
           lines.push((k.imageGenKey||k.imageGenUrl)?`Image Gen: <strong>${k.imageGenKey?(k.imageGenKey.startsWith('AIza')?'Google AI':'OpenRouter'):'custom endpoint'}</strong>`:'Image Gen: <strong>not set</strong>');
           sysBubble(`<h3>Current Config</h3><ul>${lines.map(l=>'<li>'+l+'</li>').join('')}</ul>
-<p>Paste any key to update. Type <code>/clear keys</code> to wipe all keys.</p>`);
+<p>Open <code>/settings</code> to edit connections.</p>`);
           return;
         }
         if(cmd==='/providers'){
