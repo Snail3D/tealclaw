@@ -3601,7 +3601,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
 
     // ── Theme ──────────────────────────────────────────
     document.documentElement.setAttribute('data-theme',localStorage.getItem('tc-theme')||'dark');
-    $('themeBtn').addEventListener('click',()=>{
+    $('themeBtn')?.addEventListener('click',()=>{
       const cur=document.documentElement.getAttribute('data-theme');
       const n=cur==='dark'?'light':'dark';
       // Smooth crossfade: overlay fades in with midpoint color, theme swaps, overlay fades out
@@ -3799,6 +3799,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
     // Long-press settings gear → Motion & Alarms modal; normal tap → settings sheet
     (function(){
       const btn=$('settingsBtn');
+      if (!btn) return;
       let holdTimer=null,holdVisual=null,startX=0,startY=0,fired=false;
       btn.addEventListener('pointerdown',e=>{
         fired=false;startX=e.clientX;startY=e.clientY;
