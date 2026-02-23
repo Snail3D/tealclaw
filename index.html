@@ -1797,7 +1797,23 @@
       const forceToast=opts&&opts.forceToast===true;
       const wantsModal=(opts&&opts.modal===true)||(!forceToast&&t==='err'&&!position);
       if(wantsModal&&showNoticeModal(m,t,dur,opts))return;
-      toast.textContent=m;
+      
+      // Allow Safe HTML (specifically for BuyMeACoffee links) instead of strict textContent
+      if (m.includes('<a') && m.includes('href="https://buymeacoffee.com/snail3d"')) {
+        toast.innerHTML = m;
+        // Make sure clicks on the link work and don't get eaten by the toast
+        const link = toast.querySelector('a');
+        if (link) {
+          link.style.color = '#ffdd00';
+          link.style.textDecoration = 'underline';
+          link.style.fontWeight = 'bold';
+          link.target = '_blank';
+          link.onclick = (e) => e.stopPropagation();
+        }
+      } else {
+        toast.textContent = m;
+      }
+      
       toast.style.cursor='';
       toast.onclick=null;
       const posClass=position||'top-right';
