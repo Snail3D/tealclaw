@@ -817,6 +817,11 @@
     .chat-bubble.search-hit{outline:2px solid var(--teal);outline-offset:2px}
 
     /* ── Heartbeat Animation ─────────────────────────── */
+    @keyframes pulseGreen {
+      0% { border-color: rgba(34,197,94,0.2); background: linear-gradient(135deg,rgba(34,197,94,0.05),rgba(34,197,94,0.02)); }
+      50% { border-color: rgba(34,197,94,0.6); background: linear-gradient(135deg,rgba(34,197,94,0.15),rgba(34,197,94,0.05)); box-shadow: 0 0 15px rgba(34,197,94,0.2); }
+      100% { border-color: rgba(34,197,94,0.2); background: linear-gradient(135deg,rgba(34,197,94,0.05),rgba(34,197,94,0.02)); }
+    }
     @keyframes heartbeat{
       0%{transform:scale(1)}
       7%{transform:scale(1.25)}
@@ -1392,8 +1397,11 @@
         </ul>
       </div>
 
-      <div style="margin:14px 0;padding:12px;background:linear-gradient(135deg,rgba(13,148,136,0.08),rgba(13,148,136,0.03));border:1px solid rgba(13,148,136,0.2);border-radius:var(--r-md)">
-        <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:6px;display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Project For Sale</div>
+      <div style="margin:14px 0;padding:12px;background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(34,197,94,0.02));border:1px solid rgba(34,197,94,0.3);border-radius:var(--r-md);animation: pulseGreen 4s infinite ease-in-out;">
+        <div style="font-size:13px;font-weight:800;color:#22c55e;margin-bottom:6px;display:flex;align-items:center;gap:6px;letter-spacing:0.5px;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+          PROJECT FOR SALE
+        </div>
         <p style="font-size:11px;line-height:1.6;margin:0;color:var(--text-2)">TealClaw is a 100% free, open-source protocol. However, for serious enterprise inquiries, white-label licensing, or acquisition of the underlying architecture, please reach out directly.</p>
       </div>
 
