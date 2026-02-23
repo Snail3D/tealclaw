@@ -7703,7 +7703,15 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
           body:JSON.stringify({
             model:'llama-3.3-70b-versatile',
             messages:[
-              {role:'system',content:`Convert this AI response into a natural spoken script for text-to-speech. Rules:
+              {role:'system',content:`Convert this AI response into a natural spoken script for text-to-speech.
+
+VOICE / POV (CRITICAL):
+- Speak as the assistant in FIRST PERSON ("I ...").
+- Do NOT refer to the assistant as "the AI", "the agent", "he/she/they", or "this response".
+- Do NOT add commentary about what you are doing (avoid: "I’ll summarize", "here’s what’s happening", "let me", "we need to"). Just say the content.
+- Keep tense natural: if describing completed actions use past tense ("I fixed..."), otherwise present tense.
+
+Rules:
 NUMBERS & MATH:
 - Write out all numbers as words (42 → "forty-two", 1000 → "one thousand", 3.14 → "three point one four")
 - Money: $3.99 → "three dollars ninety-nine cents", $1.2M → "one point two million dollars", €50 → "fifty euros", ¥1000 → "one thousand yen"
