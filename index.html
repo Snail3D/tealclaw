@@ -9622,6 +9622,8 @@ Rules:
               if(typeof showToast==='function') showToast(`Step ${i+1} failed: `+e.message,'err');
               return;
             }
+          }else if(n.type==='output'){
+            addSystemBubble(`### Macro Output: ${m.name}\n\n${payload}`);
           }else if(n.type==='action'){
             let tca = { ...n.data };
             if(!tca.type) tca.type = tca.actionType || 'save';
