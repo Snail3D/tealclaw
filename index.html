@@ -3254,9 +3254,13 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         const conn=agentConnections.get(ag?.id);
         const connState=conn?.state||'disconnected';
         pill.className=connState==='connected'?'pill ok':connState==='connecting'?'pill ok':'pill off';
-        const label=ag?.name||'Agent';
+        const rawLabel=(ag?.name||'Agent').trim();
+        const shortLabel=(()=>{
+          if(/gateway/i.test(rawLabel))return 'Gateway';
+          return rawLabel.length>18?(rawLabel.slice(0,16)+'…'):rawLabel;
+        })();
         const badge=transport==='ws'?'WS':'HTTP';
-        $('pillLabel').innerHTML=`${esc(label)} <span class="pill-transport">${badge}</span>`;
+        $('pillLabel').innerHTML=`${esc(shortLabel)} <span class="pill-transport">${badge}</span>`;
       } else if(k.aiKey||k.whisperKey){
         pill.className='pill ok';$('pillLabel').textContent=getProviderLabel(k);
       } else {
