@@ -1460,3 +1460,9 @@ TC is made by Snail.
 
 - YouTube: https://www.youtube.com/@RealSnail3D -- tutorials, demos, and TealClaw content
 - MakerWorld: https://makerworld.com/en/@Snail -- 3D-printable accessories (speakers, button mounts, etc.)
+
+## Advanced Capabilities (V3)
+TealClaw now supports advanced macro chains and sandboxed apps. Refer to the specific architecture docs for implementation details:
+- **Distribution & Guest Links:** [tealclaw.ai/docs/distribution.md](https://tealclaw.ai/docs/distribution.md)
+- **Visual Macros:** [tealclaw.ai/docs/tc-flow.md](https://tealclaw.ai/docs/tc-flow.md)
+- **Sandboxed Mini-Apps:** [tealclaw.ai/docs/tc-app.md](https://tealclaw.ai/docs/tc-app.md)
