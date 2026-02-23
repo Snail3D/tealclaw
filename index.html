@@ -2441,15 +2441,30 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     function compactHistory() {
-      if (chatHistory.length > 30) {
-        const keep = 15;
+      const k = getK();
+      const maxMsgs = k.contextMessages || 30;
+      if (chatHistory.length > maxMsgs) {
+        const keep = Math.floor(maxMsgs / 2);
         const removeCount = chatHistory.length - keep;
+        // In a full implementation, we would send chatHistory.slice(0, removeCount) to an LLM here to get a summary string.
+        // For now, we strip the heavy JSON/Action blocks from memory and just keep the text to prevent DOM/token bloat.
+        const summaryMsg = { role: 'system', text: `[Context Compacted: ${removeCount} messages archived. Older context removed to save memory.]`, raw: true };
+        
         chatHistory = [
-          { role: 'system', text: '[Context Compacted]', raw: true },
-          ...chatHistory.slice(removeCount)
+          summaryMsg,
+          ...chatHistory.slice(removeCount).map(m => {
+            if(m.role === 'ai') {
+              // Strip heavy code blocks and UI rendering blocks from historical memory
+              const cleanText = m.text.replace(/```(?:tc-action|tc-ui|tc-flow|tc-app)[\s\S]*?```/gi, '[UI Block Removed]').trim();
+              return { ...m, text: cleanText };
+            }
+            return m;
+          })
         ];
+        
         setChat(chatHistory);
         renderChat();
+        if(typeof showToast === 'function') showToast('Chat memory compacted', 'ok');
       }
     }
 
