@@ -1602,6 +1602,7 @@
       <div class="debate-skip-wrap hidden" id="debateSkipWrap">
         <button class="debate-skip-btn" id="debateSkipBtn" type="button" title="Skip to final debate output">Skip to end</button>
       </div>
+      <div class="macro-bar" id="macroBar" style="display:none; overflow-x:auto; padding:8px 10px; gap:6px; margin:0 auto; max-width:760px; scrollbar-width:none; -webkit-overflow-scrolling:touch;"></div>
       <div class="quick-replies" id="quickReplies" style="display:none"></div>
       <div class="input-hint" id="inputHint"></div>
     </div>
@@ -1691,6 +1692,17 @@
       <button class="sheet-close" id="subagentSheetClose">&times;</button>
     </div>
     <div class="sheet-body" id="subagentSheetBody"></div>
+  </div>
+
+  <!-- ═══ Macro Sheet ═══ -->
+  <div class="sheet-backdrop" id="macroBackdrop"></div>
+  <div class="sheet" id="macroSheet" role="dialog" aria-modal="true" tabindex="-1">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="macroSheetTitle">Run Macro</div>
+      <button class="sheet-close" id="macroSheetClose">&times;</button>
+    </div>
+    <div class="sheet-body" id="macroSheetBody"></div>
   </div>
 
   <!-- ═══ Voice-Only Chat Mode ═══ -->
@@ -1998,6 +2010,33 @@
         return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;">
           <iframe class="tc-app-frame" sandbox="allow-scripts" srcdoc="${doc}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;"></iframe>
         </div>`;
+      });
+
+      // tc-flow Engine Macros
+      html=html.replace(/```tc-flow\n([\s\S]*?)```/g,(m,code)=> {
+        const div=document.createElement('div');div.innerHTML=code;
+        try {
+          const flow = JSON.parse(div.textContent.trim());
+          const name = flow.name || 'Macro';
+          let ui = '<div class="tc-flow-preview" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin:8px 0;">';
+          ui += '<div style="font-weight:600;margin-bottom:8px;font-size:14px;">⚡ ' + esc(name) + '</div>';
+          ui += '<div style="display:flex;flex-direction:column;gap:6px;">';
+          if(Array.isArray(flow.nodes)){
+            flow.nodes.forEach(n=>{
+              ui += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-card);border-radius:var(--r-sm);border:1px solid var(--border);">';
+              ui += '<div style="font-size:10px;font-family:var(--mono);color:var(--text-3);background:var(--bg-hover);padding:2px 6px;border-radius:4px;">' + esc(n.type) + '</div>';
+              ui += '<div style="font-size:12px;color:var(--text);">' + esc(n.data?.label || n.id || 'Node') + '</div>';
+              ui += '</div>';
+            });
+          }
+          ui += '</div>';
+          const safeJson = encodeURIComponent(JSON.stringify(flow)).replace(/'/g, "%27");
+          ui += '<button class="sheet-btn sheet-btn-teal" style="margin-top:12px;width:100%;" onclick="window.saveFlowMacro(decodeURIComponent(\'' + safeJson + '\'))">Save as Macro</button>';
+          ui += '</div>';
+          return ui;
+        } catch(e) {
+          return '<pre data-lang="tc-flow"><code>' + code.trim() + '</code></pre>';
+        }
       });
 
       // Code blocks (``` ... ```) - must be first
@@ -9512,6 +9551,79 @@ Rules:
         $('textIn').value=b.textContent;haptic('light');send();
       }));
     }
+
+    // ── tc-flow Macros ───────────────────────────────────
+    window.getFlowMacros=function(){
+      try{ return JSON.parse(localStorage.getItem('tc-macros'))||[] }catch(e){return []}
+    };
+    window.saveFlowMacro=function(jsonStr){
+      try{
+        const macro=JSON.parse(jsonStr);
+        const m=window.getFlowMacros();
+        m.push(macro);
+        localStorage.setItem('tc-macros',JSON.stringify(m));
+        renderMacros();
+        if(typeof showToast==='function') showToast('Macro saved','ok');
+      }catch(e){
+        console.error('save macro err',e);
+        if(typeof showToast==='function') showToast('Failed to save macro','err');
+      }
+    };
+    function renderMacros(){
+      const el=$('macroBar');if(!el)return;
+      const m=window.getFlowMacros();
+      if(!m.length){el.style.display='none';return}
+      el.style.display='flex';
+      el.innerHTML=m.map((mac,i)=>`<button class="quick-reply macro-btn" data-idx="${i}" style="flex-shrink:0;background:var(--bg-hover);color:var(--text);border-color:var(--border-2);">⚡ ${esc(mac.name||'Macro '+(i+1))}</button>`).join('');
+      el.querySelectorAll('.macro-btn').forEach(b=>b.addEventListener('click',(e)=>{
+        runMacro(e.target.dataset.idx);
+      }));
+    }
+    function runMacro(idx){
+      const m=window.getFlowMacros()[idx];if(!m)return;
+      const inputs=(m.nodes||[]).filter(n=>n.type==='input');
+      const body=$('macroSheetBody');$('macroSheetTitle').textContent=m.name||'Run Macro';
+      let html='';
+      if(inputs.length){
+        html+=`<div class="sheet-section-title">Required Inputs</div>`;
+        inputs.forEach(inp=>{
+          const key=inp.data?.key||inp.id;
+          const label=inp.data?.label||key;
+          html+=`<div class="sheet-input-group">
+            <div class="sheet-input-label">${esc(label)}</div>
+            <input type="text" class="sheet-input macro-input-field" data-node-id="${inp.id}" placeholder="Enter value..." autocomplete="off">
+          </div>`;
+        });
+      }else{
+        html+=`<div class="sheet-section-title">No inputs required</div>`;
+      }
+      html+=`<button class="sheet-btn sheet-btn-teal" id="macroRunBtn" style="margin-top:16px">Run</button>`;
+      html+=`<button class="sheet-btn sheet-btn-danger" id="macroDelBtn" style="margin-top:8px" data-idx="${idx}">Delete Macro</button>`;
+      body.innerHTML=html;
+      body.querySelector('#macroRunBtn').addEventListener('click',()=>{
+        // Placeholder for Phase 2
+        closeMacroSheet();
+        if(typeof showToast==='function') showToast('Macro triggered (Phase 2)','ok');
+      });
+      body.querySelector('#macroDelBtn').addEventListener('click',(e)=>{
+        const arr=window.getFlowMacros();
+        arr.splice(Number(e.target.dataset.idx),1);
+        localStorage.setItem('tc-macros',JSON.stringify(arr));
+        renderMacros();
+        closeMacroSheet();
+        if(typeof showToast==='function') showToast('Macro deleted','ok');
+      });
+      const sheet=$('macroSheet'),bd=$('macroBackdrop');
+      if(sheet)sheet.classList.add('open');
+      if(bd)bd.classList.add('open');
+    }
+    function closeMacroSheet(){
+      const sheet=$('macroSheet'),bd=$('macroBackdrop');
+      if(sheet)sheet.classList.remove('open');
+      if(bd)bd.classList.remove('open');
+    }
+    if($('macroSheetClose')) $('macroSheetClose').addEventListener('click',closeMacroSheet);
+    if($('macroBackdrop')) $('macroBackdrop').addEventListener('click',closeMacroSheet);
 
     // ── Export Chat ──────────────────────────────────────
     // ── Template Gallery ───────────────────────────────
@@ -17602,6 +17714,7 @@ ${note}`:note;
     },1500);
     // Quick replies on load
     renderQuickReplies();
+    renderMacros();
 
     // Cron jobs + scheduled messages + alarms + timers — check every 60s
     reconstitueTimers();
