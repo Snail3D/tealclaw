@@ -6095,7 +6095,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
               "🔮 Consulting the oracle", "🍵 Reading the tea leaves", "🪄 Casting a spell", "😈 Summoning demons", "✨ Checking horoscopes", "🧘 Aligning the chakras", "🚀 Warp drive active", "🚀 Engaging thrusters", "📡 Beaming down data", "🌌 Opening the wormhole", "⚡ Charging the laser", "👽 Scanning for lifeforms", "👽 Contacting aliens", "🐄 Abducting a cow", "⚔️ Building a lightsaber", "🐸 Consulting Yoda", "✨ Using the Force", "💎 Mining kyber crystals", "☄️ Dodging asteroids", "🧮 Calculating hyperspace jump",
               "🍝 Compiling spaghetti code", "💾 Defragmenting hard drive", "🗑️ Emptying recycle bin", "🌬️ Blowing into cartridge", "💿 Wiping the CD", "🖱️ Untangling mouse cord", "⌨️ Finding the any key", "⌨️ Pressing the any key", "🔌 Restarting the router", "🔌 Unplugging it", "📼 Rewinding the VHS", "📼 Flipping the cassette", "📞 Dialing the modem", "⏳ Waiting for dial-up", "💾 Installing floppy disk 4 of 28", "🖱️ Cleaning the trackball", "📞 Untangling the phone cord", "🌬️ Blowing the dust out", "🖥️ Smacking the side of the monitor", "🔌 Jiggling the cable",
               "🤖 Waking up Bob", "🤖 Asking Doris for help", "📡 Checking the gateway", "🧬 Spawning a subagent", "💰 Bribing the LLM", "🧮 Counting tokens", "📉 Running out of tokens", "🙏 Begging Groq for mercy", "🛑 Hitting the rate limit", "🏃 Dodging the rate limit", "📡 Pinging Snail3D", "🎼 Orchestrating the swarm", "🐔 Waking the Mother Hen", "💳 Checking the API balance", "💳 Swiping a credit card", "✅ Validating the schema", "📝 Writing the JSON", "📝 Parsing the markdown", "🖼️ Rendering the iframe", "🔓 Bypassing the sandbox",
-              "💼 Reviewing the $10M offer", "💰 Securing the bag", "🖨️ Printing the labels", "🖨️ Checking the Bambu printer", "🆔 Checking the 21orNot scanner", "🔍 Scraping ChatFormed", "🦾 Deploying exoskeleton", "🤯 Blowing the agent's mind", "🔗 Connecting the dots", "🏋️ Doing heavy lifting", "🏋️ Carrying the team", "🧯 Putting out fires", "🧹 Sweeping the floor", "🗑️ Taking out the trash", "🔒 Locking the doors", "💡 Turning out the lights", "❌ Closing the tab", "🆕 Opening a new tab", "💧 Drinking water", "🌱 Touching grass"
+              "💼 Reviewing the $10M offer", "💰 Securing the bag", "🖨️ Printing the labels", "🖨️ Checking the Bambu printer", "🆔 Checking the 21orNot scanner", "🔎 Searching for clues", "🦾 Deploying exoskeleton", "🤯 Blowing the agent's mind", "🔗 Connecting the dots", "🏋️ Doing heavy lifting", "🏋️ Carrying the team", "🧯 Putting out fires", "🧹 Sweeping the floor", "🗑️ Taking out the trash", "🔒 Locking the doors", "💡 Turning out the lights", "❌ Closing the tab", "🆕 Opening a new tab", "💧 Drinking water", "🌱 Touching grass"
             ];
             const word = tcWords[Math.floor(Math.random()*tcWords.length)];
             content+=`<div class="status-word-wrap" style="min-height:54px;">
@@ -6107,7 +6107,9 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
             <script>
               (function(){
                 const words = ${JSON.stringify(tcWords)};
-                const container = document.currentScript.previousElementSibling.querySelector('.status-word-container');
+                // Need to step up a bit since we wrapped it in status-word-wrap
+                const container = document.currentScript.parentElement.querySelector('.status-word-container');
+                if(!container) return;
                 let currentEl = container.querySelector('.tc-dynamic-word');
                 if(!currentEl) return;
                 
