@@ -137,7 +137,7 @@ Paste a gateway URL + token, or let your agent generate a one-click connection l
 
 **Phone note:** TealClaw connects to OpenClaw via **WebSocket**. If you see pairing errors, approve the device on the gateway: `openclaw devices list` → `openclaw devices approve <requestId>`. For local/self-hosted gateways, optional HTTP fallback can be enabled in Settings > AI Configuration.
 
-**Device Pairing:** TealClaw uses Ed25519 device authentication on every connection. The first time you connect to a gateway through a Cloudflare Tunnel, the gateway operator must approve your device (one-time). Local connections auto-approve. See [llms.txt](https://tealclaw.ai/llms.txt) for details.
+**Device Pairing:** TealClaw uses Ed25519 device authentication on every connection. The first time you connect to a gateway through a Cloudflare Tunnel, the **gateway host machine will show an approval request** and the gateway operator must approve your device (one-time). Local connections auto-approve. See [llms.txt](https://tealclaw.ai/llms.txt) for details.
 
 ---
 

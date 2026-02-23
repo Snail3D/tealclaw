@@ -1029,7 +1029,8 @@
 
     /* ── Responsive ────────────────────────────────────── */
     @media(max-width:600px){
-      .topbar{padding:0 8px;height:48px;gap:4px} .logo{font-size:14px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
+      /* Keep the topbar tappable on iPhone PWA (Dynamic Island / notch) */
+      .topbar{padding:env(safe-area-inset-top, 0px) 8px 0;height:calc(48px + env(safe-area-inset-top, 0px));gap:4px} .logo{font-size:14px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
       .topbar-r{gap:1px} .icon-btn{width:34px;height:34px} .icon-btn svg{width:14px;height:14px} .new-chat-btn{width:30px;height:30px;font-size:15px}
       .conv-title-text{max-width:120px}
       .chat-scroll{padding:12px} .input-bar{padding:8px 10px 12px} .input-row{padding:4px 4px 4px 12px} .page-scroll{padding:10px} .card{padding:12px;border-radius:var(--r-md)}
@@ -1041,7 +1042,7 @@
       .chron-wizard-banner{padding:4px 10px;font-size:10px}
     }
     @media(max-width:340px){
-      .topbar{padding:0 6px;gap:3px}
+      .topbar{padding:env(safe-area-inset-top, 0px) 6px 0;gap:3px}
       .topbar-r{gap:0}
       .pill{padding:4px 8px;font-size:10px}
       .icon-btn{width:32px;height:32px}
@@ -7702,7 +7703,15 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
           body:JSON.stringify({
             model:'llama-3.3-70b-versatile',
             messages:[
-              {role:'system',content:`Convert this AI response into a natural spoken script for text-to-speech. Rules:
+              {role:'system',content:`Convert this AI response into a natural spoken script for text-to-speech.
+
+VOICE / POV (CRITICAL):
+- Speak as the assistant in FIRST PERSON ("I ...").
+- Do NOT refer to the assistant as "the AI", "the agent", "he/she/they", or "this response".
+- Do NOT add commentary about what you are doing (avoid: "I’ll summarize", "here’s what’s happening", "let me", "we need to"). Just say the content.
+- Keep tense natural: if describing completed actions use past tense ("I fixed..."), otherwise present tense.
+
+Rules:
 NUMBERS & MATH:
 - Write out all numbers as words (42 → "forty-two", 1000 → "one thousand", 3.14 → "three point one four")
 - Money: $3.99 → "three dollars ninety-nine cents", $1.2M → "one point two million dollars", €50 → "fifty euros", ¥1000 → "one thousand yen"

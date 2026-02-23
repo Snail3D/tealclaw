@@ -115,13 +115,21 @@ ingress:
   <li>Validate the agent URL is <code>https://...</code> (not <code>http://</code>)</li>
 </ul>
 
-<h3>C) Changes “didn’t apply” (Service Worker caching)</h3>
+<h3>C) “pairing required” / WebSocket closed with 1008</h3>
+<ul>
+  <li>This is expected on first connect from a new TealClaw device to a remote OpenClaw gateway.</li>
+  <li><strong>The gateway host machine will show an approval request</strong> (Control UI / CLI). The gateway operator must approve that device once.</li>
+  <li>Approve via CLI: <code>openclaw devices list</code> → <code>openclaw devices approve &lt;requestId&gt;</code></li>
+  <li>After approval, future connections from that device should be automatic.</li>
+</ul>
+
+<h3>D) Changes “didn’t apply” (Service Worker caching)</h3>
 <ul>
   <li>Hard refresh (Shift-Reload)</li>
   <li>DevTools → Application → Service Workers → <strong>Unregister</strong></li>
 </ul>
 
-<h3>D) Gateway reachable locally, not reachable remotely</h3>
+<h3>E) Gateway reachable locally, not reachable remotely</h3>
 <ul>
   <li>Confirm your tunnel is pointing to the right local port</li>
   <li>If you intended LAN access without tunnel, bind gateway to <code>0.0.0.0</code></li>
