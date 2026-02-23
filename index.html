@@ -1935,8 +1935,13 @@
         `<div class="mermaid-block" data-mermaid="${btoa(unescape(encodeURIComponent(code.trim())))}"><div class="mermaid-loading"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg> Rendering diagram...</div></div>`);
 
       // tc-app Sandboxed Apps — render as iframe
-      html=html.replace(/```tc-app\n([\s\S]*?)```/g,(m,code)=>
-        `<iframe class="tc-app-frame" sandbox="allow-scripts" srcdoc="${code.trim().replace(/"/g,'&quot;')}" style="width:100%;min-height:400px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-root);margin:10px 0;"></iframe>`);
+      html=html.replace(/```tc-app\n([\s\S]*?)```/g,(m,code)=> {
+        const doc = code.trim().replace(/"/g,'&quot;');
+        // Wrap the iframe in a responsive container to allow it to fit naturally without breaking bubble width
+        return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;">
+          <iframe class="tc-app-frame" sandbox="allow-scripts" srcdoc="${doc}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;"></iframe>
+        </div>`;
+      });
 
       // Code blocks (``` ... ```) - must be first
       html=html.replace(/```(\w*)\n([\s\S]*?)```/g,(m,lang,code)=>
