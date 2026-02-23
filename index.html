@@ -7171,9 +7171,17 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         let firstTokTimer=setTimeout(()=>{
           if(settled)return;
           settled=true;conn.off('chat',onChat);clearRun();
-          // If we truly get stuck, suggest reconnect — but don't aggressively restart the socket here.
-          // (Restarting can race with an in-flight run and make things feel worse.)
-          reject(new Error('Gateway unresponsive (no response yet). It may still be thinking. If it never replies, try /reconnect (or refresh) and resend.'));
+          // If we truly get stuck, auto-attempt a reconnect once to recover from dropped WS.
+          try{
+            const a=getActiveAgent?.();
+            if(a){
+              const c=agentConnections.get(a.id);
+              if(c){try{c.stop()}catch{}}
+              try{ensureAgentConnection(a)}catch{}
+              setTimeout(()=>updateStatus?.(),250);
+            }
+          }catch{}
+          reject(new Error('Gateway unresponsive (no response yet). I tried reconnecting. If it still hangs, try /reconnect (or refresh) and resend.'));
         },FIRST_TOKEN_TIMEOUT_MS);
         let totalTimer=setTimeout(()=>{
           if(settled)return;
