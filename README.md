@@ -4,7 +4,7 @@
 
 ![TealClaw](og-image.png)
 
-**Private AI voice chat. No servers. No accounts. Your keys, your data.**
+**Blow your agent's mind.**
 
 [**Try it now**](https://tealclaw.ai) &nbsp;&middot;&nbsp; [Skill Guide](https://tealclaw.ai/llms.txt) &nbsp;&middot;&nbsp; [Security](SECURITY.md)
 
@@ -14,12 +14,24 @@
 
 TealClaw is a **bring-your-own-key** AI chat app that runs entirely in your browser. Plug in a free [Groq API key](https://console.groq.com/keys) and get voice chat, image generation, deep research, vision, and 110+ customizable settings — with zero data collection. The entire app is a single HTML file hosted as static assets on Cloudflare Pages. There is no backend, no database, and no telemetry. Your API keys never leave `localStorage`.
 
+## What's New in V3
+
+### ⚡ Native Local LLM Support
+Connect TealClaw directly to your local **Ollama** or **vLLM** instances. No backend or intermediary server required—run powerful models entirely locally while still using the TealClaw UI.
+
+### 🤖 MATON API Integration
+Give your agents real superpowers. TealClaw now natively hooks into the MATON API, enabling seamless external tool execution and real-time environment interaction right from the chat window.
+
+### 🧬 Active Swarm Dashboard
+Keep track of everything your agents are doing with the new **Active Swarm Dashboard** (Subagent Pills UI). Instantly view, monitor, and steer multiple background subagents working concurrently without cluttering your main chat view.
+
 ## Features
 
 | | |
 |---|---|
 | **Voice Chat** | Hold to speak, get spoken replies. Six Groq TTS personas. ElevenLabs support. |
 | **Multi-Provider** | Groq, OpenAI, Anthropic, Fireworks, OpenRouter, xAI, Mistral, Together, DeepSeek, Cerebras, Perplexity. Switch with `/provider`. |
+| **Local Models** | Native support for Ollama and vLLM without a backend. |
 | **Deep Research** | `/research` for sourced reports. `/deepresearch` for multi-tool analysis. |
 | **Image Gen** | `/imagine` creates images via Google Gemini. Attach a photo for image-to-image editing. |
 | **The Claw** | Hand gesture control via camera. Show The Claw to start voice capture — lower your hand to send. |
