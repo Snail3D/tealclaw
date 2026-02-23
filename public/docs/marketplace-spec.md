@@ -28,4 +28,6 @@ When an app is submitted to the marketplace, the AI automatically generates:
 
 Any app that is Level 1 or Level 2 triggers a strict Confirmation Modal prior to installation, explicitly detailing what sensors or API accesses the app is requesting. Level 0 installs silently.
 
-Agents can programmatically fetch `https://tealclaw.ai/api/marketplace.json` to regex-search for highly-rated or most-downloaded apps when a user asks for a tool.
+## 6. Themes & Layouts (Skins)
+The marketplace isn't just for apps and flows. Users can publish entire **Themes/Skins** (the `tc-config` object containing `accentColor`, `bgImage`, `fontFamily`, etc., stripped of API keys). 
+- When an agent searches for a theme (e.g., "Make it look like Halloween"), it can fetch `marketplace.json`, find the top-voted Halloween theme, and apply the config directly via a `tc-action`.
