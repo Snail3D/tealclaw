@@ -32,6 +32,9 @@ Keep track of everything your agents are doing with the new **Active Swarm Dashb
 | **Voice Chat** | Hold to speak, get spoken replies. Six Groq TTS personas. ElevenLabs support. |
 | **Multi-Provider** | Groq, OpenAI, Anthropic, Fireworks, OpenRouter, xAI, Mistral, Together, DeepSeek, Cerebras, Perplexity. Switch with `/provider`. |
 | **Local Models** | Native support for Ollama and vLLM without a backend. |
+| **Shareable Skills** | Package your entire app config + macros into a single JSON file and distribute it instantly. |
+| **tc-flow Macros** | Build and share visual, drag-and-drop prompt chains that execute locally. |
+| **tc-app Mini-Apps** | Agents can inject sandboxed HTML/React widgets directly into the chat bubble. |
 | **Deep Research** | `/research` for sourced reports. `/deepresearch` for multi-tool analysis. |
 | **Image Gen** | `/imagine` creates images via Google Gemini. Attach a photo for image-to-image editing. |
 | **The Claw** | Hand gesture control via camera. Show The Claw to start voice capture — lower your hand to send. |
