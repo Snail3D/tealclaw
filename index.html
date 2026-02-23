@@ -9623,7 +9623,12 @@ Rules:
               return;
             }
           }else if(n.type==='output'){
-            addSystemBubble(`### Macro Output: ${m.name}\n\n${payload}`);
+            let outText = n.format || payload;
+            Object.keys(env).forEach(k => {
+              outText = outText.replace(new RegExp(`\\{${k}\\}`, 'g'), env[k]);
+            });
+            // also allow {node_X_output} references if needed in future
+            addSystemBubble(`### Macro Output: ${m.name}\n\n${outText}`);
           }else if(n.type==='action'){
             let tca = { ...n.data };
             if(!tca.type) tca.type = tca.actionType || 'save';
