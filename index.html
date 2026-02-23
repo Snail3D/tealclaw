@@ -9612,7 +9612,7 @@ Rules:
               payload = payload.replace(/(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g, '[PHONE]');
             }
           }else if(n.type==='llm'){
-            const provider = n.data?.provider || getK().defaultProvider || 'openai';
+            const provider = n.data?.provider || getK().aiProvider || 'groq';
             let prompt = n.data?.prompt || '{payload}';
             prompt = prompt.replace(/\{payload\}/g, payload);
             try {
