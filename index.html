@@ -12308,7 +12308,9 @@ Return ONLY valid JSON, no explanation.`;
               last.classList.add('typing-active');
               const md=last.querySelector('.md-content');
               let rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
-              const withCursor=rendered+'<span class="typing-cursor"></span>';
+              const cursorW = pk.cursorWidth || '2px';
+              const cursorStyle = pk.cursorStyle || 'solid';
+              const withCursor=rendered+`<span class="typing-cursor" style="width:${cursorW}; border-right:${cursorW} ${cursorStyle} var(--teal); background:transparent;"></span>`;
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
             }
@@ -12381,7 +12383,9 @@ Return ONLY valid JSON, no explanation.`;
               const md=last.querySelector('.md-content');
               let rendered=renderMd(visiblePartial);
               rendered=renderLatex(rendered);
-              const withCursor=rendered+'<span class="typing-cursor"></span>';
+              const cursorW = pk.cursorWidth || '2px';
+              const cursorStyle = pk.cursorStyle || 'solid';
+              const withCursor=rendered+`<span class="typing-cursor" style="width:${cursorW}; border-right:${cursorW} ${cursorStyle} var(--teal); background:transparent;"></span>`;
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
             }
