@@ -3636,7 +3636,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
     });
 
     // ── Help Button ─────────────────────────────────
-    $('helpBtn').addEventListener('click',()=>{
+    $('helpBtn')?.addEventListener('click',()=>{
       const k=getK();
       const hasAI=!!(k.aiKey||k.whisperKey||(k.mode==='agent'&&getAgents().some(a=>a.url)));
       if(!hasAI){
@@ -10483,7 +10483,7 @@ Rules:
             case 'navigate':{
               if(action.target==='settings'){openSheet()}
               else if(action.target==='new-chat'){newConversation()}
-              else if(action.target==='help'){$('helpBtn').click()}
+              else if(action.target==='help'){$('helpBtn')?.click()}
               else if(action.target==='help-mode'){showToast('Help mode is disabled.','ok')}
               results.push({type:'navigate',ok:true});
               break;
