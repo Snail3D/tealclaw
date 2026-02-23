@@ -597,10 +597,7 @@
     .overlay-btn{padding:12px 32px;font-size:13px;font-weight:600;font-family:var(--font);background:var(--teal);color:#fff;border:none;border-radius:var(--r-lg);cursor:pointer}
     .overlay-hint{margin-top:8px;font-size:11px;color:var(--text-3)}
 
-    /* ── Help Mode Banner ─────────────────────────────── */
-    .help-mode-banner{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 16px;background:var(--teal);color:#fff;font-size:12px;font-weight:600;font-family:var(--font);animation:slideDown 0.3s ease-out}
-    .help-mode-banner button{padding:5px 14px;border:1.5px solid rgba(255,255,255,0.6);border-radius:100px;background:transparent;color:#fff;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.2s}
-    .help-mode-banner button:hover{background:rgba(255,255,255,0.15);border-color:#fff}
+    /* Help Mode banner removed (2026-02-22) */
     @keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
 
 
@@ -3444,23 +3441,19 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
     $('helpBtn').addEventListener('click',()=>{
       const k=getK();
       const hasAI=!!(k.aiKey||k.whisperKey||(k.mode==='agent'&&getAgents().some(a=>a.url)));
-      if(_helpMode){
-        // Already in help mode — just scroll to top to show banner
-        $('chatScroll').scrollTop=0;return;
-      }
       if(!hasAI){
         // No AI connected — guide through key setup
         sysBubble(`<h3>Get Started</h3>
-<p>To use Help Mode, you need an AI connection first. The fastest way is a free Groq key:</p>
+<p>You need an AI connection first. The fastest way is a free Groq key:</p>
 <ol style="font-size:13px;line-height:1.8">
 <li>Go to <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">console.groq.com/keys</a></li>
 <li>Sign up (free) and create an API key</li>
 <li>Copy the <code>gsk_...</code> key and paste it right here in this chat</li>
 </ol>
-<p style="font-size:11px;color:var(--text-3)">Groq gives you free chat, vision, voice, TTS, web search, and Wolfram Alpha. Or connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full agent mode.</p>`);
+<p style="font-size:11px;color:var(--text-3)">Or connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full agent mode.</p>`);
         return;
       }
-      // Show help commands with Start Help Mode button
+      // Show help commands (Help Mode removed)
       sysBubble(`<h3>TealClaw Help</h3>
 <p>Quick commands:</p>
 <table style="width:100%;border-collapse:collapse;font-size:12px;margin:6px 0">
@@ -3472,9 +3465,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
 <tr><td style="padding:3px 6px"><code>/research</code></td><td>Web research</td></tr>
 <tr><td style="padding:3px 6px"><code>/photo</code></td><td>Capture and send photo for analysis</td></tr>
 </table>
-<p style="margin-top:10px">Or let the AI guide you through everything:</p>
-<button onclick="enterHelpMode()" style="display:flex;align-items:center;gap:7px;margin:8px auto 0;padding:10px 20px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.2s"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Start Help Mode</button>
-<p style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px">The AI will have full TealClaw knowledge and can change settings for you</p>`);
+<p style="font-size:11px;color:var(--text-3);text-align:center;margin-top:8px">Tip: just ask normally (“make the buttons bigger”, “set dark mode”, etc.) — TealClaw can apply changes via tc-action without any mode switch.</p>`);
     });
 
     // ── About Modal ──────────────────────────────────
@@ -6144,8 +6135,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture/screen-capture require user approval.
-IMPORTANT: You can use tc-action blocks at any time — help mode is optional. If the user asks to change settings, you may either respond with the needed tc-action directly, or (optionally) open help mode with {"type":"navigate","target":"help-mode"} if you need the user to see guidance.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture/screen-capture require user approval.
+IMPORTANT: You can use tc-action blocks at any time. There is no special “help mode” — just apply the needed tc-action directly when the user asks for changes.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
 Privacy/consent: confirm requester authority/consent before camera/screen capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
@@ -8127,10 +8118,12 @@ GIF REACTIONS (~75% of responses — encouraged!):
     }
 
     // ── Wizard Step 2b: Groq key ──
-    // ── Help Mode ────────────────────────────────────
+    // ── Help Mode (removed) ───────────────────────────
+    // Help mode created more problems than it solved. TealClaw should accept tc-action at any time
+    // without a special mode switch.
     let _helpMode=false, _helpModeStart=-1;
 
-    const HELP_MODE_CTX=`You are now in TealClaw Help Mode. You are an expert TealClaw assistant. You MUST use tc-action code blocks to make changes — NEVER just describe what to do.
+    const HELP_MODE_CTX=`(Help Mode removed — ignore)
 
 CRITICAL: To change settings or run actions, you MUST output a fenced code block with the language tag "tc-action" containing valid JSON. The app parses these blocks and executes them automatically.
 
@@ -8172,7 +8165,7 @@ AVAILABLE ACTION TYPES:
 - config: {"type":"config", ...fields} — set any config field(s)
 - command: {"type":"command","command":"/slash-command"} — run a slash command
 - toast: {"type":"toast","message":"text","style":"ok"} — show notification
-- navigate: {"type":"navigate","target":"settings"|"new-chat"|"help"|"help-mode"} — open a view or activate help mode
+- navigate: {"type":"navigate","target":"settings"|"new-chat"|"help"} — open a view
 - guest-link: {"type":"guest-link","action":"create","name":"...","instructions":"...","expires":"7d"}
 - request-config: {"type":"request-config"} — read current config
 - prompt: {"type":"prompt","question":"Pick one","options":["A","B","C"]}
@@ -8201,62 +8194,13 @@ RULES:
 - Keep your text responses brief — let the actions speak`;
 
     function enterHelpMode(){
-      if(_helpMode)return;
-      _helpMode=true;
-      _helpModeStart=chatHistory.length;
-      // Show banner
-      const banner=document.createElement('div');
-      banner.className='help-mode-banner';
-      banner.id='helpModeBanner';
-      banner.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Help Mode Active <button id="exitHelpBtn">Exit</button> <button id="sendHelpCtxBtn" title="Optional: send help instructions to the connected agent">Send to agent</button>';
-      const scroll=$('chatScroll');
-      scroll.parentNode.insertBefore(banner,scroll);
-      $('exitHelpBtn').addEventListener('click',exitHelpMode);
-      // Help mode should NOT spam the agent by default.
-      // If the user wants, they can explicitly click “Send to agent”.
-      const k=getK();
-      const sendBtn=$('sendHelpCtxBtn');
-      if(sendBtn){
-        sendBtn.style.display=(k.mode==='agent')?'':'none';
-        sendBtn.addEventListener('click',()=>{
-          const agent=getAgents().find(a=>a.active)||getAgents()[0];
-          const conn=agent?agentConnections.get(agent.id):null;
-          if(conn&&conn.state==='connected'){
-            conn.chatSend('[SYSTEM] TealClaw Help Mode (optional reference). Use tc-action blocks when changing settings/actions.\n\n'+HELP_MODE_CTX);
-            showToast('Sent help context to agent','ok');
-          } else {
-            showToast('Agent not connected','err');
-          }
-        });
-      }
-      if(k.mode!=='agent'){
-        // Direct mode: inject context and send initial message
-        _helpSysBackup=k.sysPrompt||'';
-        k.sysPrompt=(k.sysPrompt||'You are a helpful voice assistant.')+'\n\n'+HELP_MODE_CTX;
-        setK(k);
-        // Trigger a message to the AI
-        const helpMsg='[Help Mode activated — guide me through TealClaw]';
-        addBubble('user',helpMsg);
-        const pk=getK();
-        const helpModel=pk.aiModel||modelForProvider(pk,resolveAiProvider(pk),false);
-        const useStream=pk.streamEnabled!==false&&!/compound/i.test(helpModel);
-        if(useStream){
-          const streamIdx=chatHistory.length;
-          addBubble('ai','...');
-          const scroll2=$('chatScroll');
-          callAIStream(helpMsg,null,(partial)=>{
-            chatHistory[streamIdx].text=partial;
-            const bubbles=scroll2.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
-            const last=bubbles[bubbles.length-1];
-            if(last){
-              last.classList.add('typing-active');
-              const md=last.querySelector('.md-content');
-              let rendered=renderMd(partial);rendered=renderLatex(rendered);
-              if(md)md.innerHTML=rendered+'<span class="typing-cursor"></span>';
-              else last.innerHTML='<div class="md-content">'+rendered+'<span class="typing-cursor"></span></div><div class="chat-meta">'+(chatHistory[streamIdx].time||'')+'</div>';
-            }
-            if(pk.autoScroll!==false&&!_userScrolledUp)snapScrollToBottom(scroll2);
-          }).then(async aiResult=>{
+      // Help mode intentionally removed.
+      showToast('Help mode removed — just ask normally and I will apply changes directly.','ok');
+    }
+
+    /*
+    (legacy help mode implementation removed)
+    */
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
             if(aiText==='__NO_KEY__'){chatHistory.pop();sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);return}
             let displayText=aiText||'How can I help you with TealClaw?';
@@ -8290,27 +8234,9 @@ RULES:
 
     let _helpSysBackup='';
 
+    // Help mode removed — keep a stub in case old code paths call it.
     function exitHelpMode(){
-      if(!_helpMode)return;
       _helpMode=false;
-      // Remove banner
-      const banner=$('helpModeBanner');
-      if(banner)banner.remove();
-      // Restore system prompt in direct mode
-      const k=getK();
-      if(k.mode!=='agent'&&_helpSysBackup!==undefined){
-        k.sysPrompt=_helpSysBackup;
-        setK(k);
-        _helpSysBackup='';
-      }
-      // Remove all help mode messages from history
-      if(_helpModeStart>=0&&_helpModeStart<chatHistory.length){
-        chatHistory.splice(_helpModeStart);
-        setChat(chatHistory);
-      }
-      _helpModeStart=-1;
-      renderChat();
-      showToast('Help mode ended','ok');
     }
 
     // Handle key pasted in chat -- returns true if it was a key (intercepted)
@@ -10121,7 +10047,7 @@ Rules:
               if(action.target==='settings'){openSheet()}
               else if(action.target==='new-chat'){newConversation()}
               else if(action.target==='help'){$('helpBtn').click()}
-              else if(action.target==='help-mode'){enterHelpMode()}
+              else if(action.target==='help-mode'){showToast('Help mode is disabled.','ok')}
               results.push({type:'navigate',ok:true});
               break;
             }
