@@ -10645,7 +10645,7 @@ Rules:
               const k2=getK();
               const agents2=getAgents();
               const cfg={};
-              const sensitive2=['aiKey','whisperKey','tgToken','imageGenKey','pinCode','pinHash'];
+              const sensitive2=['aiKey','whisperKey','tgToken','matonKey','imageGenKey','pinCode','pinHash'];
               for(const[key,val]of Object.entries(k2)){
                 if(val===''||val===null||val===undefined)continue;
                 if(sensitive2.includes(key)){cfg[key+'Set']=true;continue}
@@ -10655,6 +10655,31 @@ Rules:
               cfg.guestLinkCount=getGuestLinks().length;
               cfg.activeAgent=agents2.find(a=>a.active)?.name||'none';
               results.push({type:'request-config',ok:true,config:cfg});
+              break;
+            }
+            case 'export-skill':{
+              const name=action.name||'TealClaw-Skill';
+              let cfg={...getK()};
+              ['aiKey','whisperKey','tgToken','matonKey','imageGenKey','pinCode','pinHash'].forEach(k=>delete cfg[k]);
+              if(Array.isArray(cfg.agents)){
+                cfg.agents=cfg.agents.map(a=>{const clean={...a};delete clean.token;return clean;});
+              }
+              
+              const payload = { config: cfg };
+              if(action.includeFlows!==false) payload.macros = window.getFlowMacros ? window.getFlowMacros() : [];
+              
+              const jsonStr = JSON.stringify(payload, null, 2);
+              const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+              const url = `data:application/json;charset=utf-8;base64,${b64}`;
+              
+              sysBubble(`<div style="text-align:center;padding:10px;">
+                <div style="font-size:24px;margin-bottom:6px">📦</div>
+                <div style="font-size:14px;font-weight:600;color:var(--teal);margin-bottom:8px">Skill Export Ready</div>
+                <div style="font-size:11px;color:var(--text-3);margin-bottom:12px">Your current configuration and macros have been securely packaged.</div>
+                <a href="${url}" download="${name.replace(/[^a-z0-9]/gi,'_')}.json" style="display:inline-block;background:var(--teal);color:#fff;padding:8px 16px;border-radius:var(--r-md);text-decoration:none;font-weight:bold;font-size:12px;">Download ${esc(name)}.json</a>
+              </div>`);
+              
+              results.push({type:'export-skill',ok:true,name});
               break;
             }
             case 'alarm':{
