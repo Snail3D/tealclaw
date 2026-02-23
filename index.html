@@ -6103,10 +6103,27 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
               "💼 Reviewing the $10M offer", "💰 Securing the bag", "🖨️ Printing the labels", "🖨️ Checking the Bambu printer", "🆔 Checking the 21orNot scanner", "🔍 Scraping ChatFormed", "🦾 Deploying exoskeleton", "🤯 Blowing the agent's mind", "🔗 Connecting the dots", "🏋️ Doing heavy lifting", "🏋️ Carrying the team", "🧯 Putting out fires", "🧹 Sweeping the floor", "🗑️ Taking out the trash", "🔒 Locking the doors", "💡 Turning out the lights", "❌ Closing the tab", "🆕 Opening a new tab", "💧 Drinking water", "🌱 Touching grass"
             ];
             const word = tcWords[Math.floor(Math.random()*tcWords.length)];
-            content+=`<div class="status-word-wrap" style="min-height:48px;">
-              <div class="status-word tc-dynamic-word" style="margin-bottom:8px;">${word}...</div>
+            content+=`<div class="status-word-wrap" style="min-height:54px;">
               <div class="typing-dots" aria-label="Thinking"><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span></div>
-            </div>`;
+              <div class="status-word tc-dynamic-word" style="margin-top:12px;">${word}...</div>
+            </div>
+            <script>
+              (function(){
+                const words = ${JSON.stringify(tcWords)};
+                const el = document.currentScript.previousElementSibling.querySelector('.tc-dynamic-word');
+                if(!el) return;
+                let idx = words.indexOf(el.textContent.replace('...', ''));
+                setInterval(() => {
+                  if(!el.isConnected) return;
+                  idx = Math.floor(Math.random() * words.length);
+                  el.style.opacity = 0;
+                  setTimeout(() => {
+                    el.textContent = words[idx] + '...';
+                    el.style.opacity = 1;
+                  }, 500); // Wait for fade out to complete before swapping text
+                }, 3500); // Every 3.5 seconds
+              })();
+            </script>`;
           }
           else if(/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
             // Group chat: render each speaker segment with colored labels, alternating L/R
@@ -6138,8 +6155,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         }
         // Action badge for messages that executed tc-action blocks
         if(m.actionsRun)content+=`<div class="tc-action-badge">\u26A1 ${m.actionsRun} action${m.actionsRun>1?'s':''} executed</div>`;
-        // Show Play/Replay button on AI messages when TTS key is configured
-        if(m.role==='ai'&&hasTts){
+        // Show Play/Replay button on AI messages when TTS key is configured (but ONLY if it's finished generating)
+        if(m.role==='ai'&&hasTts&&displayText!=='...'){
           if(m.audioUrl){
             content+=`<button class="tts-play replay" data-idx="${i}"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Replay</button>`;
           } else {
