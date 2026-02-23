@@ -31,3 +31,11 @@ Any app that is Level 1 or Level 2 triggers a strict Confirmation Modal prior to
 ## 6. Themes & Layouts (Skins)
 The marketplace isn't just for apps and flows. Users can publish entire **Themes/Skins** (the `tc-config` object containing `accentColor`, `bgImage`, `fontFamily`, etc., stripped of API keys). 
 - When an agent searches for a theme (e.g., "Make it look like Halloween"), it can fetch `marketplace.json`, find the top-voted Halloween theme, and apply the config directly via a `tc-action`.
+
+## 7. Creator Monetization (Stripe Premium Locks)
+The marketplace supports paid artifacts (Apps, Flows, or Skins) without requiring a central TealClaw e-commerce backend.
+- **The Listing:** Creators include a `stripePaymentLink` and `price` in their marketplace submission. The actual `tc-app` or `tc-flow` payload is AES-256 encrypted using a secret key held by the creator.
+- **The Checkout:** When a user clicks "Install", they are redirected to the creator's Stripe Checkout page.
+- **The Unlock (Cloudflare Worker):** Upon successful payment, Stripe hits a lightweight Cloudflare Worker webhook. The Worker instantly returns the decryption passphrase to the user on the Stripe "Success/Thank You" page.
+- **The Install:** The user clicks a deep link on the Success page (`tealclaw.ai/#unlock=PASSPHRASE_HASH`), which routes them back to TealClaw, decrypts the payload, and installs the premium artifact.
+- **The Moat:** Creators keep 100% of their revenue. TealClaw acts purely as the decentralized decryption engine.
