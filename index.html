@@ -2839,7 +2839,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
         const withProto=/^https?:\/\//i.test(val)?val:`https://${val}`;
         const u=new URL(withProto);
         const host=(u.hostname||'').toLowerCase();
-        const isLocal=host==='localhost'||host==='127.0.0.1'||host==='::1'||host.endsWith('.local');
+        const isLocal=host==='localhost'||host==='127.0.0.1'||host==='::1'||host.endsWith('.local')||host.indexOf('.')===-1||/^(10|192\.168|172\.(1[6-9]|2[0-9]|3[0-1]))\./.test(host);
         if(u.protocol!=='https:'&&!(u.protocol==='http:'&&isLocal))return '';
         return (u.origin+u.pathname).replace(/\/+$/,'');
       }catch{return ''}
@@ -4201,7 +4201,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
             <input type="text" class="sheet-input" id="sheetAiBaseUrl" value="${esc(k.aiBaseUrl||'')}" placeholder="https://.../v1" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
             <div style="font-size:9px;color:var(--text-3);margin-top:3px">Use only if your provider requires a custom gateway URL.</div>
           </div>
-          <div style="margin-top:8px" id="sheetAiLocalUrlContainer" style="display:${activeProvider==='local'?'block':'none'}">
+          <div id="sheetAiLocalUrlContainer" style="margin-top:8px; display:${activeProvider==='local'?'block':'none'}">
             <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Local Endpoint URL</div>
             <input type="text" class="sheet-input" id="sheetAiLocalUrl" value="${esc(k.aiLocalUrl||'')}" placeholder="http://localhost:11434/api/generate or http://localhost:1234/v1" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
             <div style="font-size:9px;color:var(--text-3);margin-top:3px">Required for Local provider. Use Ollama (/api/generate) or OpenAI-compatible (/v1) endpoints.</div>
@@ -4986,7 +4986,8 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       // Wire up Safe Share button
       $('sheetBody').querySelector('#sheetSafeShareOpen')?.addEventListener('click',()=>{
         closeSheet({restoreFocus:false});
-        let config = JSON.parse(localStorage.getItem('tc-config')||'{}');
+        let config = JSON.parse(localStorage.getItem('tc-keys')||'{}');
+        Object.assign(config, JSON.parse(localStorage.getItem('tc-config')||'{}'));
         delete config.aiKey;
         delete config.whisperKey;
         delete config.tgToken;
@@ -4997,18 +4998,17 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         const url = `https://tealclaw.ai/#config=${b64}`;
         const jsonStr = JSON.stringify(config, null, 2);
         
-        sysBubble(`<div style="text-align:center">
+        const bubble = sysBubble(`<div style="text-align:center">
           <h3 style="margin-bottom:12px">Safe Share</h3>
           <p style="font-size:12px;color:var(--text-2);margin-bottom:16px">Your configuration has been sanitized. All sensitive keys and tokens have been removed.</p>
           <button class="btn btn-teal" id="safeShareCopyLink" style="margin-bottom:8px;width:100%">Copy Safe URL</button>
           <button class="btn btn-ghost" id="safeShareCopyJSON" style="width:100%">Copy Safe JSON</button>
         </div>`);
         
-        const last = document.querySelector('.chat-bubble:last-child');
-        last?.querySelector('#safeShareCopyLink')?.addEventListener('click', () => {
+        bubble?.querySelector('#safeShareCopyLink')?.addEventListener('click', () => {
           navigator.clipboard?.writeText(url).then(() => { showToast('Safe Share Link copied','ok'); haptic('success'); });
         });
-        last?.querySelector('#safeShareCopyJSON')?.addEventListener('click', () => {
+        bubble?.querySelector('#safeShareCopyJSON')?.addEventListener('click', () => {
           navigator.clipboard?.writeText(jsonStr).then(() => { showToast('Safe Share JSON copied','ok'); haptic('success'); });
         });
       });
@@ -6505,7 +6505,18 @@ RULES:
       if (isOllamaGenerate) {
         const prompt = messages.map(m=>`${m.role}: ${typeof m.content==='string'?m.content:JSON.stringify(m.content)}`).join('\n\n');
         body={model, prompt, stream: !!stream};
-        if(k.temperature!==undefined)body.options={temperature:Number(k.temperature)};
+        if(k.temperature!==undefined||maxTok){
+          body.options={};
+          if(k.temperature!==undefined)body.options.temperature=Number(k.temperature);
+          if(maxTok)body.options.num_predict=maxTok;
+        }
+      } else if (isOllamaChat) {
+        body={model, messages, stream: !!stream};
+        if(k.temperature!==undefined||maxTok){
+          body.options={};
+          if(k.temperature!==undefined)body.options.temperature=Number(k.temperature);
+          if(maxTok)body.options.num_predict=maxTok;
+        }
       } else {
         body={model,messages,max_tokens:maxTok};
         if(k.temperature!==undefined)body.temperature=Number(k.temperature);
@@ -7355,7 +7366,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         // Some gateways/models may not emit deltas quickly (they may only emit a final message).
         // Keep this generous to avoid false "Gateway unresponsive" errors.
         const FIRST_TOKEN_TIMEOUT_MS=60000;
-        const TOTAL_TIMEOUT_MS=180000;
+        const TOTAL_TIMEOUT_MS=600000; // Increased to 10 minutes to support long queue times
         let firstTokTimer=setTimeout(()=>{
           if(settled)return;
           settled=true;conn.off('chat',onChat);clearRun();
@@ -7385,6 +7396,13 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         };
         const onChat=(payload)=>{
           if(!runId&&payload.runId){runId=payload.runId;_localAgentRunIds.add(runId)}
+          
+          if(payload.state==='queued') {
+             try{clearTimeout(firstTokTimer)}catch{}
+             if(onToken)onToken(`*(Queued... position ${payload.position||'?'})*`);
+             return;
+          }
+          
           if(payload.state==='delta'&&payload.message){
             clearTimers();
             full=chatPayloadText(payload.message);
@@ -11944,7 +11962,8 @@ Return ONLY valid JSON, no explanation.`;
         try{
           const aiResult=await callAgent(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
-            const visiblePartial=stripExprTags(partial.replace(/\[gif:[^\]]*\]?$/i,'').trim());
+            const strippedPartial=partial.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi,'').replace(/\[gif:[^\]]*\]?$/i,'').trim();
+            const visiblePartial=stripExprTags(strippedPartial);
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
@@ -12015,7 +12034,8 @@ Return ONLY valid JSON, no explanation.`;
         try{
           const aiResult=await callAIStream(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
-            const visiblePartial=stripExprTags(partial.replace(/\[gif:[^\]]*\]?$/i,'').trim());
+            const strippedPartial=partial.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi,'').replace(/\[gif:[^\]]*\]?$/i,'').trim();
+            const visiblePartial=stripExprTags(strippedPartial);
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
