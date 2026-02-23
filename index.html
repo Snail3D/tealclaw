@@ -6099,8 +6099,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
             ];
             const word = tcWords[Math.floor(Math.random()*tcWords.length)];
             content+=`<div class="status-word-wrap" style="min-height:54px;">
-              <div class="typing-dots" aria-label="Thinking"><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span></div>
-              <div class="status-word-container" style="margin-top:12px; height: 16px; overflow: hidden; position: relative;">
+              <div class="typing-dots" aria-label="Thinking" style="margin-bottom: 8px;"><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span></div>
+              <div class="status-word-container" style="height: 16px; overflow: hidden; position: relative; width: 100%;">
                 <div class="status-word tc-dynamic-word" style="position: absolute; width: 100%; text-align: center; transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.5s ease;">${word}...</div>
               </div>
             </div>
