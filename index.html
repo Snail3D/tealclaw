@@ -9594,10 +9594,55 @@ Rules:
       html+=`<button class="sheet-btn sheet-btn-teal" id="macroRunBtn" style="margin-top:16px">Run</button>`;
       html+=`<button class="sheet-btn sheet-btn-danger" id="macroDelBtn" style="margin-top:8px" data-idx="${idx}">Delete Macro</button>`;
       body.innerHTML=html;
-      body.querySelector('#macroRunBtn').addEventListener('click',()=>{
-        // Placeholder for Phase 2
+      body.querySelector('#macroRunBtn').addEventListener('click', async ()=>{
         closeMacroSheet();
-        if(typeof showToast==='function') showToast('Macro triggered (Phase 2)','ok');
+        const inputs=Array.from(document.querySelectorAll('.macro-input-field'));
+        let payload = inputs.length ? inputs[0].value : '';
+        const env = {};
+        inputs.forEach(inp => { env[inp.dataset.nodeId] = inp.value; });
+
+        const nodes = m.nodes || [];
+        for(let i=0; i<nodes.length; i++){
+          const n = nodes[i];
+          if(typeof showToast==='function') showToast(`Step ${i+1}/${nodes.length}: ${n.data?.label||n.type}...`,'ok');
+          
+          if(n.type==='input'){
+            payload = env[n.id] || payload;
+          }else if(n.type==='sanitize'){
+            if(payload){
+              payload = payload.replace(/\b[\w.-]+@[\w.-]+\.\w{2,4}\b/gi, '[EMAIL]');
+              payload = payload.replace(/(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g, '[PHONE]');
+            }
+          }else if(n.type==='llm'){
+            const provider = n.data?.provider || getK().defaultProvider || 'openai';
+            let prompt = n.data?.prompt || '{payload}';
+            prompt = prompt.replace(/\{payload\}/g, payload);
+            try {
+              const res = await callProviderDirect(provider, prompt, null, {stream:false});
+              payload = res?.text || '';
+            } catch(e) {
+              if(typeof showToast==='function') showToast(`Step ${i+1} failed: `+e.message,'err');
+              return;
+            }
+          }else if(n.type==='action'){
+            let tca = { ...n.data };
+            if(!tca.type) tca.type = tca.actionType || 'save';
+            const replaceVars = str => typeof str==='string' ? str.replace(/\{payload\}/g, payload) : str;
+            if(tca.content) tca.content = replaceVars(tca.content);
+            if(tca.text) tca.text = replaceVars(tca.text);
+            if(tca.folder) tca.folder = replaceVars(tca.folder);
+            if(tca.name) tca.name = replaceVars(tca.name);
+            if(tca.type==='save' && !tca.content && !tca.text) {
+              tca.content = payload;
+            }
+            try {
+              await executeTcActions([tca]);
+            } catch(e) {
+              console.error('Action failed:', e);
+            }
+          }
+        }
+        if(typeof showToast==='function') showToast('Macro complete','ok');
       });
       body.querySelector('#macroDelBtn').addEventListener('click',(e)=>{
         const arr=window.getFlowMacros();
