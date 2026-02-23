@@ -1999,7 +1999,7 @@
         const doc = code.trim().replace(/"/g,'&quot;');
         // Wrap the iframe in a responsive container to allow it to fit naturally without breaking bubble width
         return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;pointer-events:auto !important;position:relative;z-index:10;">
-          <iframe class="tc-app-frame" sandbox="allow-scripts" srcdoc="${doc}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;pointer-events:auto !important;"></iframe>
+          <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *" srcdoc="${doc}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;pointer-events:auto !important;"></iframe>
         </div>`;
       });
 
