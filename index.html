@@ -6145,7 +6145,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
 Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help|help-mode), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture/screen-capture require user approval.
-IMPORTANT: When the user asks to change settings, customize the app, or modify their configuration — activate help mode first with {"type":"navigate","target":"help-mode"} so you have full context to make changes accurately. You can also show the help menu with {"type":"navigate","target":"help"} to let the user see available commands.
+IMPORTANT: You can use tc-action blocks at any time — help mode is optional. If the user asks to change settings, you may either respond with the needed tc-action directly, or (optionally) open help mode with {"type":"navigate","target":"help-mode"} if you need the user to see guidance.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
 Privacy/consent: confirm requester authority/consent before camera/screen capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
@@ -8208,28 +8208,28 @@ RULES:
       const banner=document.createElement('div');
       banner.className='help-mode-banner';
       banner.id='helpModeBanner';
-      banner.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Help Mode Active <button id="exitHelpBtn">Exit Help Mode</button>';
+      banner.innerHTML='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Help Mode Active <button id="exitHelpBtn">Exit</button> <button id="sendHelpCtxBtn" title="Optional: send help instructions to the connected agent">Send to agent</button>';
       const scroll=$('chatScroll');
       scroll.parentNode.insertBefore(banner,scroll);
       $('exitHelpBtn').addEventListener('click',exitHelpMode);
-      // Send help context to the model silently
+      // Help mode should NOT spam the agent by default.
+      // If the user wants, they can explicitly click “Send to agent”.
       const k=getK();
-      if(k.mode==='agent'){
-        // Agent mode: send as a message to the agent
-        const agent=getAgents().find(a=>a.active)||getAgents()[0];
-        if(agent){
-          const conn=agentConnections.get(agent.id);
+      const sendBtn=$('sendHelpCtxBtn');
+      if(sendBtn){
+        sendBtn.style.display=(k.mode==='agent')?'':'none';
+        sendBtn.addEventListener('click',()=>{
+          const agent=getAgents().find(a=>a.active)||getAgents()[0];
+          const conn=agent?agentConnections.get(agent.id):null;
           if(conn&&conn.state==='connected'){
-            conn.chatSend('[SYSTEM] Entering TealClaw Help Mode. Here are your full instructions:\n\n'+HELP_MODE_CTX+'\n\nPlease greet the user and ask what they need help with. You can actively change settings and configure TealClaw for them using tc-action blocks.');
-            addBubble('user','[Help Mode activated]',{hidden:true});
-            addTyping();
+            conn.chatSend('[SYSTEM] TealClaw Help Mode (optional reference). Use tc-action blocks when changing settings/actions.\n\n'+HELP_MODE_CTX);
+            showToast('Sent help context to agent','ok');
           } else {
-            // Not connected — fall back to showing help commands
-            sysBubble('<p>Agent not connected. Connect to your agent first, then try help mode again.</p>');
-            _helpMode=false;_helpModeStart=-1;banner.remove();
+            showToast('Agent not connected','err');
           }
-        }
-      } else {
+        });
+      }
+      if(k.mode!=='agent'){
         // Direct mode: inject context and send initial message
         _helpSysBackup=k.sysPrompt||'';
         k.sysPrompt=(k.sysPrompt||'You are a helpful voice assistant.')+'\n\n'+HELP_MODE_CTX;
