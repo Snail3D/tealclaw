@@ -1789,6 +1789,50 @@
       showToast._t=setTimeout(()=>toast.className='toast',dur);
     }
 
+    // ── UI Unbrick (mobile Safari overlay failsafe) ──────────────────────────
+    // Symptom: UI becomes untappable/untypable because an invisible backdrop/overlay
+    // remains with pointer-events enabled. Provide an emergency escape hatch.
+    function unbrickUI(reason='manual'){
+      try{hideNoticeModal()}catch{}
+      try{closeSheet({restoreFocus:false})}catch{}
+      try{closeMAModal?.({restoreFocus:false})}catch{}
+
+      const forceHidden=(id,cls='hidden')=>{
+        const el=$(id);
+        if(!el)return;
+        el.classList.add(cls);
+        el.classList.remove('open','visible','show');
+        try{el.setAttribute('aria-hidden','true')}catch{}
+      };
+      // Known fullscreen blockers
+      ['exportModal','shareModal','guestModal','cronModal','aboutOverlay','overlay','decryptOverlay','qrOnboardOverlay','voiceMode','camOverlay','dragOverlay'].forEach(id=>forceHidden(id));
+
+      // Backdrops / sheets
+      try{$('sheetBackdrop')?.classList?.remove('open')}catch{}
+      try{$('settingsSheet')?.classList?.remove('open')}catch{}
+      try{$('maModal')?.classList?.remove('open')}catch{}
+      document.body.classList.remove('tc-notice-open','cron-modal-open');
+
+      // If focus is stuck, release it
+      try{document.activeElement?.blur?.()}catch{}
+
+      showToast('UI reset ('+reason+')','ok',1800,{forceToast:true});
+    }
+    // 5 taps on the logo area = unbrick
+    (function(){
+      const logo=document.querySelector('.logo');
+      if(!logo)return;
+      let taps=0; let t=null;
+      logo.addEventListener('click',()=>{
+        taps++;
+        clearTimeout(t);
+        t=setTimeout(()=>{taps=0},1200);
+        if(taps>=5){taps=0; unbrickUI('5-tap');}
+      },{passive:true});
+      // Expose for debugging
+      window.__tc_unbrickUI=unbrickUI;
+    })();
+
     // Elegant center-screen notification card for key/config changes
     let _notifyTimer=null;
     function showNotification(title,items,dur=5000){
