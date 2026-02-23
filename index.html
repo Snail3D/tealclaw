@@ -728,6 +728,13 @@
       font-style:italic;
       color:var(--text-3);
     }
+    @keyframes flapWord {
+      0% { opacity: 0; transform: translateY(15px) rotateX(-90deg); }
+      5% { opacity: 1; transform: translateY(0) rotateX(0deg); }
+      15% { opacity: 1; transform: translateY(0) rotateX(0deg); }
+      20% { opacity: 0; transform: translateY(-15px) rotateX(90deg); }
+      100% { opacity: 0; transform: translateY(-15px) rotateX(90deg); }
+    }
 
     /* ── Bubble Animations ──────────────────────────────── */
     @keyframes bubble-fade{from{opacity:0}to{opacity:1}}
@@ -6097,57 +6104,24 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
               "🤖 Waking up Bob", "🤖 Asking Doris for help", "📡 Checking the gateway", "🧬 Spawning a subagent", "💰 Bribing the LLM", "🧮 Counting tokens", "📉 Running out of tokens", "🙏 Begging Groq for mercy", "🛑 Hitting the rate limit", "🏃 Dodging the rate limit", "📡 Pinging Snail3D", "🎼 Orchestrating the swarm", "🐔 Waking the Mother Hen", "💳 Checking the API balance", "💳 Swiping a credit card", "✅ Validating the schema", "📝 Writing the JSON", "📝 Parsing the markdown", "🖼️ Rendering the iframe", "🔓 Bypassing the sandbox",
               "💼 Reviewing the $10M offer", "💰 Securing the bag", "🖨️ Printing the labels", "🖨️ Checking the Bambu printer", "🆔 Checking the 21orNot scanner", "🔎 Searching for clues", "🦾 Deploying exoskeleton", "🤯 Blowing the agent's mind", "🔗 Connecting the dots", "🏋️ Doing heavy lifting", "🏋️ Carrying the team", "🧯 Putting out fires", "🧹 Sweeping the floor", "🗑️ Taking out the trash", "🔒 Locking the doors", "💡 Turning out the lights", "❌ Closing the tab", "🆕 Opening a new tab", "💧 Drinking water", "🌱 Touching grass"
             ];
-            const word = tcWords[Math.floor(Math.random()*tcWords.length)];
+            const word1 = tcWords[Math.floor(Math.random()*tcWords.length)];
+            const word2 = tcWords[Math.floor(Math.random()*tcWords.length)];
+            const word3 = tcWords[Math.floor(Math.random()*tcWords.length)];
+            const word4 = tcWords[Math.floor(Math.random()*tcWords.length)];
+            const word5 = tcWords[Math.floor(Math.random()*tcWords.length)];
+            const word6 = tcWords[Math.floor(Math.random()*tcWords.length)];
+            
             content+=`<div class="status-word-wrap" style="min-height:54px;">
               <div class="typing-dots" aria-label="Thinking" style="margin-bottom: 8px;"><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span></div>
-              <div class="status-word-container" style="height: 16px; overflow: hidden; position: relative; width: 100%;">
-                <div class="status-word tc-dynamic-word" style="position: absolute; width: 100%; text-align: center; transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.5s ease;">${word}...</div>
+              <div class="status-word-container" style="height: 16px; overflow: hidden; position: relative; width: 100%; perspective: 300px;">
+                <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; animation: flapWord 18s linear infinite; animation-delay: 0s; opacity:0;">${word1}</div>
+                <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; animation: flapWord 18s linear infinite; animation-delay: 3s; opacity:0;">${word2}</div>
+                <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; animation: flapWord 18s linear infinite; animation-delay: 6s; opacity:0;">${word3}</div>
+                <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; animation: flapWord 18s linear infinite; animation-delay: 9s; opacity:0;">${word4}</div>
+                <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; animation: flapWord 18s linear infinite; animation-delay: 12s; opacity:0;">${word5}</div>
+                <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; animation: flapWord 18s linear infinite; animation-delay: 15s; opacity:0;">${word6}</div>
               </div>
-            </div>
-            <script>
-              (function(){
-                const words = ${JSON.stringify(tcWords)};
-                // Need to step up a bit since we wrapped it in status-word-wrap
-                const container = document.currentScript.parentElement.querySelector('.status-word-container');
-                if(!container) return;
-                let currentEl = container.querySelector('.tc-dynamic-word');
-                if(!currentEl) return;
-                
-                setInterval(() => {
-                  if(!container.isConnected) return;
-                  const idx = Math.floor(Math.random() * words.length);
-                  
-                  // Create new element (starts below, invisible)
-                  const newEl = document.createElement('div');
-                  newEl.className = 'status-word tc-dynamic-word';
-                  newEl.style.position = 'absolute';
-                  newEl.style.width = '100%';
-                  newEl.style.textAlign = 'center';
-                  newEl.style.transition = 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.5s ease';
-                  newEl.style.transform = 'translateY(20px) rotateX(-90deg)';
-                  newEl.style.opacity = '0';
-                  newEl.textContent = words[idx] + '...';
-                  
-                  container.appendChild(newEl);
-                  
-                  // Animate old element up and out
-                  currentEl.style.transform = 'translateY(-20px) rotateX(90deg)';
-                  currentEl.style.opacity = '0';
-                  
-                  // Animate new element in
-                  // Force reflow
-                  void newEl.offsetWidth;
-                  
-                  newEl.style.transform = 'translateY(0) rotateX(0)';
-                  newEl.style.opacity = '1';
-                  
-                  const oldEl = currentEl;
-                  setTimeout(() => oldEl.remove(), 500);
-                  currentEl = newEl;
-                  
-                }, 3500); // Every 3.5 seconds
-              })();
-            <\/script>`;
+            </div>`;
           }
           else if(/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
             // Group chat: render each speaker segment with colored labels, alternating L/R
