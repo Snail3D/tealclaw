@@ -18,6 +18,13 @@ When apps are published to the Marketplace, they are grouped by their required "
 
 By default, all Community Apps are sandboxed at Level 0 to preserve the absolute anonymity and safety promise of TealClaw. Level 2 apps must be heavily vetted or self-signed.
 
-## 5. Ranking & Search
-The marketplace JSON includes `upvotes`, `downvotes`, and tags. 
-Agents can programmatically fetch `https://tealclaw.ai/api/marketplace.json` to regex-search for highly-rated apps when a user says "Find me a good Pomodoro timer."
+## 5. Ranking, Search & Metadata
+The marketplace JSON includes `upvotes`, `downloads`, and tags.
+When an app is submitted to the marketplace, the AI automatically generates:
+1. **A short, punchy description** of what the app does.
+2. **An auto-captured screenshot** (via `html2canvas` or a headless browser thumbnail) of the app UI.
+3. **The Security Level Badge** (0, 1, or 2).
+
+Any app that is Level 1 or Level 2 triggers a strict Confirmation Modal prior to installation, explicitly detailing what sensors or API accesses the app is requesting. Level 0 installs silently.
+
+Agents can programmatically fetch `https://tealclaw.ai/api/marketplace.json` to regex-search for highly-rated or most-downloaded apps when a user asks for a tool.
