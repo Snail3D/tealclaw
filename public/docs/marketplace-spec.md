@@ -5,10 +5,11 @@ When an agent generates a `tc-app`, TealClaw offers an "Install as App" button.
 Clicking it creates a Blob containing a custom `manifest.json` and a standalone `index.html` wrapper, then redirects the browser to `tealclaw.ai/standalone#...` which triggers the browser's native "Add to Home Screen" prompt.
 
 ## 2. The Marketplace (`tealclaw.ai/apps`)
-A static JSON-backed gallery of community-generated apps and flows.
-- **Submission:** Users click "Publish to Marketplace" from their TealClaw UI.
+A static JSON-backed gallery of community-generated apps and flows based on the "Immutable Fork & Vote" model.
+- **Submission:** Users click "Publish to Marketplace" from their TealClaw UI. Submissions are immutable (cannot be edited).
 - **Sanitization:** The `Safe Share` protocol runs automatically, stripping `aiKey`, `matonKey`, and any hardcoded PII from the `tc-app` payload.
-- **Distribution:** The app is assigned a short-link (e.g., `tealclaw.ai/app/21ornot`) that instantly unpacks the `tc-app` into the visitor's local cache.
+- **Forking:** If a user wants to improve an app, they click "Remix/Fork," edit it with their AI, and submit it as a new immutable entry.
+- **Distribution:** The app is assigned a short-link (e.g., `tealclaw.ai/app/21ornot`) that instantly unpacks the `tc-app` into the visitor's local cache. The community upvotes the best versions to the top.
 
 ## 4. Security & Permissions Scoping (Critical)
 When apps are published to the Marketplace, they are grouped by their required "Scope":
