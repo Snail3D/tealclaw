@@ -6503,15 +6503,31 @@ RULES:
 
       let body;
       if (isOllamaGenerate) {
-        const prompt = messages.map(m=>`${m.role}: ${typeof m.content==='string'?m.content:JSON.stringify(m.content)}`).join('\n\n');
+        let allImages=[];
+        const prompt = messages.map(m=>{
+          if(typeof m.content==='string')return `${m.role}: ${m.content}`;
+          const txt=m.content.find(p=>p.type==='text')?.text||'';
+          const img=m.content.find(p=>p.type==='image_url')?.image_url?.url;
+          if(img)allImages.push(img.split(',')[1]);
+          return `${m.role}: ${txt}`;
+        }).join('\n\n');
         body={model, prompt, stream: !!stream};
+        if(allImages.length)body.images=allImages;
         if(k.temperature!==undefined||maxTok){
           body.options={};
           if(k.temperature!==undefined)body.options.temperature=Number(k.temperature);
           if(maxTok)body.options.num_predict=maxTok;
         }
       } else if (isOllamaChat) {
-        body={model, messages, stream: !!stream};
+        const mappedMsgs=messages.map(m=>{
+          if(typeof m.content==='string')return m;
+          const txt=m.content.find(p=>p.type==='text')?.text||'';
+          const img=m.content.find(p=>p.type==='image_url')?.image_url?.url;
+          const res={role:m.role,content:txt};
+          if(img)res.images=[img.split(',')[1]];
+          return res;
+        });
+        body={model, messages: mappedMsgs, stream: !!stream};
         if(k.temperature!==undefined||maxTok){
           body.options={};
           if(k.temperature!==undefined)body.options.temperature=Number(k.temperature);
@@ -10025,7 +10041,7 @@ Rules:
       return{cleanText,actions};
     }
 
-    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','aiBaseUrl','aiProvider','directFallbackToGroq','gatewayHttpFallback','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','imageGenKey','webhookUrl','webhookEvents','customCSS']);
+    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','aiBaseUrl','aiLocalUrl','aiProvider','directFallbackToGroq','gatewayHttpFallback','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','imageGenKey','webhookUrl','webhookEvents','customCSS']);
     const TC_HELPMODE_AUTO_KEYS=new Set([
       'accentColor','fontSize','fontFamily','bgColor','bgImage','textColor','themeMode',
       'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
