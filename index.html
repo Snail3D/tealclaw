@@ -2134,6 +2134,21 @@
     }
 
     // ── Storage ────────────────────────────────────────
+    function loadSettings() {
+      try {
+        const config = JSON.parse(localStorage.getItem('tc-config') || '{}');
+        const mk = document.getElementById('matonKey');
+        if (mk && config.matonKey) mk.value = config.matonKey;
+      } catch (e) {}
+    }
+    function saveSettings() {
+      try {
+        const config = JSON.parse(localStorage.getItem('tc-config') || '{}');
+        const mk = document.getElementById('matonKey');
+        if (mk) config.matonKey = mk.value;
+        localStorage.setItem('tc-config', JSON.stringify(config));
+      } catch (e) {}
+    }
     function getK(){try{return JSON.parse(localStorage.getItem('tc-keys')||'{}')}catch{return{}}}
     function setK(k){
       try{localStorage.setItem('tc-keys',JSON.stringify(k));return true}
@@ -3937,7 +3952,10 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           <div class="sheet-row-action">${on?'Change':'Set up'}</div>
         </div>`;
       });
-      html+=`</div>`;
+      html+=`<div class="sheet-row" style="flex-direction:column;align-items:flex-start;cursor:default;">
+          <label for="matonKey" class="sheet-input-label">MATON API Key</label>
+          <input type="password" id="matonKey" class="sheet-input" placeholder="maton_sk_..." onchange="saveSettings()" style="width:100%" />
+        </div></div>`;
 
       // Agent section
       const agents=getAgents();
@@ -4492,6 +4510,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       </div>`;
 
       $('sheetBody').innerHTML=html;
+      loadSettings();
 
       // Wire up key rows -> open key editor
       $('sheetBody').querySelectorAll('.sheet-row[data-field]').forEach(row=>{
