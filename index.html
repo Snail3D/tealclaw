@@ -8258,41 +8258,6 @@ RULES:
       showToast('Help mode removed — just ask normally and I will apply changes directly.','ok');
     }
 
-    /*
-    (legacy help mode implementation removed)
-    */
-            const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
-            if(aiText==='__NO_KEY__'){chatHistory.pop();sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);return}
-            let displayText=aiText||'How can I help you with TealClaw?';
-            const{cleanText,actions}=parseTcActions(displayText);
-            let actionResults=[];
-            if(actions.length){displayText=cleanText;actionResults=await executeTcActions(actions).catch(()=>[])}
-            chatHistory[streamIdx].text=displayText;
-            const executed=actionResults.filter(r=>r&&r.ok).length;
-            if(executed)chatHistory[streamIdx].actionsRun=executed;
-            setChat(chatHistory);renderChat();
-          }).catch(()=>{
-            removeTyping();
-            sysBubble('<p>Could not reach the AI. Check your API key and try again.</p>');
-          });
-        } else {
-          addTyping();
-          callAI(helpMsg,null).then(async aiResult=>{
-            removeTyping();
-            const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
-            if(aiText==='__NO_KEY__'){sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);return}
-            let displayText=aiText||'How can I help you with TealClaw?';
-            const{cleanText,actions}=parseTcActions(displayText);
-            let actionResults=[];
-            if(actions.length){displayText=cleanText;actionResults=await executeTcActions(actions).catch(()=>[])}
-            const executed=actionResults.filter(r=>r&&r.ok).length;
-            addBubble('ai',displayText,executed?{actionsRun:executed}:{});
-          }).catch(()=>{removeTyping();sysBubble('<p>Could not reach the AI.</p>')});
-        }
-      }
-    }
-
-    let _helpSysBackup='';
 
     // Help mode removed — keep a stub in case old code paths call it.
     function exitHelpMode(){
