@@ -66,7 +66,10 @@
     body{background:var(--bg-root);color:var(--text);font-family:var(--font);height:100vh;height:100dvh;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;padding-left:var(--sal);padding-right:var(--sar)}
 
     /* ── Topbar ────────────────────────────────────────── */
-    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;padding:env(safe-area-inset-top, 0px) 16px 0;height:calc(52px + env(safe-area-inset-top, 0px));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
+    .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;
+      /* iOS PWA: keep content clear of notch / Dynamic Island AND left/right safe areas */
+      padding:env(safe-area-inset-top, 0px) calc(16px + env(safe-area-inset-right, 0px)) 0 calc(16px + env(safe-area-inset-left, 0px));
+      height:calc(52px + env(safe-area-inset-top, 0px));background:var(--bg-1);border-bottom:1px solid var(--border);flex-shrink:0}
     @supports(padding:max(0px)){@media all and (display-mode:standalone){.topbar{padding-top:max(env(safe-area-inset-top,20px),20px);height:calc(52px + max(env(safe-area-inset-top,20px),20px))}}}
     .logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);user-select:none;letter-spacing:-0.01em;min-width:0;flex-shrink:1;overflow:hidden}
     .logo svg{width:18px;height:18px}
@@ -1030,7 +1033,7 @@
     /* ── Responsive ────────────────────────────────────── */
     @media(max-width:600px){
       /* Keep the topbar tappable on iPhone PWA (Dynamic Island / notch) */
-      .topbar{padding:env(safe-area-inset-top, 0px) 8px 0;height:calc(48px + env(safe-area-inset-top, 0px));gap:4px} .logo{font-size:14px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
+      .topbar{padding:env(safe-area-inset-top, 0px) calc(10px + env(safe-area-inset-right, 0px)) 0 calc(10px + env(safe-area-inset-left, 0px));height:calc(54px + env(safe-area-inset-top, 0px));gap:6px} .logo{font-size:14px} .topbar-nav{margin-left:6px;gap:0} .tab-btn{padding:5px 7px;font-size:10px}
       .topbar-r{gap:1px} .icon-btn{width:34px;height:34px} .icon-btn svg{width:14px;height:14px} .new-chat-btn{width:30px;height:30px;font-size:15px}
       .conv-title-text{max-width:120px}
       .chat-scroll{padding:12px} .input-bar{padding:8px 10px 12px} .input-row{padding:4px 4px 4px 12px} .page-scroll{padding:10px} .card{padding:12px;border-radius:var(--r-md)}
@@ -1042,7 +1045,7 @@
       .chron-wizard-banner{padding:4px 10px;font-size:10px}
     }
     @media(max-width:340px){
-      .topbar{padding:env(safe-area-inset-top, 0px) 6px 0;gap:3px}
+      .topbar{padding:env(safe-area-inset-top, 0px) calc(8px + env(safe-area-inset-right, 0px)) 0 calc(8px + env(safe-area-inset-left, 0px));gap:4px}
       .topbar-r{gap:0}
       .pill{padding:4px 8px;font-size:10px}
       .icon-btn{width:32px;height:32px}
@@ -14751,7 +14754,13 @@ ${statusLine}
       const k=getK();
       if(agents.length<2||k.mode!=='agent'){bar.style.display='none';return}
       bar.style.display='flex';
-      sel.innerHTML=agents.map(a=>`<option value="${a.id}" ${a.active?'selected':''}>${esc(a.name)}</option>`).join('');
+      const shortName=(a)=>{
+        const n=(a?.name||'Agent').trim();
+        if(/gateway/i.test(n))return 'Gateway';
+        // Keep labels tight on mobile.
+        return n.length>18?(n.slice(0,16)+'…'):n;
+      };
+      sel.innerHTML=agents.map(a=>`<option value="${a.id}" ${a.active?'selected':''}>${esc(shortName(a))}</option>`).join('');
     }
 
     // ── Camera ──────────────────────────────────────────
@@ -17919,8 +17928,9 @@ ${note}`:note;
 
     // ── Auto-detect OS preferences ────────────────────
     if(!localStorage.getItem('tc-theme')){
-      const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.setAttribute('data-theme',prefersDark?'dark':'light');
+      // Default to dark mode (night) unless the user explicitly picks otherwise.
+      // iOS Safari sometimes reports light even when the user expects dark.
+      document.documentElement.setAttribute('data-theme','dark');
     }
     const motionQ=window.matchMedia('(prefers-reduced-motion: reduce)');
     if(motionQ.matches&&!getK().reduceMotion&&!localStorage.getItem('tc-motion-override')){
