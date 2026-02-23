@@ -2302,7 +2302,13 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const start=comp?.compactedUpTo||0;
       const recent=chatHistory.slice(start)
         .filter(m=>m.role==='user'||m.role==='ai')
-        .map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}));
+        .map(m=>{
+          let content=m.text;
+          if(m.role==='ai'){
+            content=content.replace(/```tc-action[\s\S]*?```/g,'').replace(/```tc-ui[\s\S]*?```/g,'').trim();
+          }
+          return {role:m.role==='user'?'user':'assistant',content};
+        });
       // Dynamic trim: if still over budget, drop oldest recent msgs
       const budget=100000;
       let tokens=estimateTokens(comp?.summary||'');
@@ -2316,11 +2322,25 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       return [...msgs,...kept];
     }
 
+    function compactHistory() {
+      if (chatHistory.length > 30) {
+        const keep = 15;
+        const removeCount = chatHistory.length - keep;
+        chatHistory = [
+          { role: 'system', text: '[Context Compacted]', raw: true },
+          ...chatHistory.slice(removeCount)
+        ];
+        setChat(chatHistory);
+        renderChat();
+      }
+    }
+
     function triggerCompactionCheck(){
       if(_compacting)return;
       // Skip in agent mode — the gateway manages its own context server-side
       const k=getK();
       if(k.mode==='agent'&&getActiveAgent())return;
+      compactHistory(); // Summarize & Forget placeholder
       if(shouldCompact())compactConversation().catch(()=>{});
     }
 
@@ -2766,9 +2786,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       together:{label:'Together',apiType:'openai',baseUrl:'https://api.together.xyz/v1',chatModel:'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',visionModel:'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',maxTokens:4096},
       deepseek:{label:'DeepSeek',apiType:'openai',baseUrl:'https://api.deepseek.com/v1',chatModel:'deepseek-chat',visionModel:'deepseek-chat',maxTokens:4096},
       cerebras:{label:'Cerebras',apiType:'openai',baseUrl:'https://api.cerebras.ai/v1',chatModel:'llama-3.3-70b',visionModel:'llama-3.3-70b',maxTokens:4096},
-      perplexity:{label:'Perplexity',apiType:'openai',baseUrl:'https://api.perplexity.ai',chatModel:'sonar-pro',visionModel:'sonar-pro',maxTokens:4096}
+      perplexity:{label:'Perplexity',apiType:'openai',baseUrl:'https://api.perplexity.ai',chatModel:'sonar-pro',visionModel:'sonar-pro',maxTokens:4096},
+      local:{label:'Local (Ollama/vLLM)',apiType:'openai',baseUrl:'http://localhost:11434/v1',chatModel:'llama3.2',visionModel:'llama3.2-vision',maxTokens:4096}
     };
-    const DIRECT_PROVIDER_ORDER=['groq','fireworks','openai','anthropic','openrouter','xai','mistral','together','deepseek','cerebras','perplexity'];
+    const DIRECT_PROVIDER_ORDER=['groq','fireworks','openai','anthropic','openrouter','xai','mistral','together','deepseek','cerebras','perplexity','local'];
 
     function normalizeAiProvider(raw){
       const key=String(raw||'').trim().toLowerCase();
@@ -2839,7 +2860,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const cfg=k||getK();
       const id=normalizeAiProvider(provider||resolveAiProvider(cfg));
       const base=DIRECT_PROVIDER_PRESETS[id]||DIRECT_PROVIDER_PRESETS.groq;
-      const customUrl=normalizeProviderBaseUrl(cfg.aiBaseUrl||'');
+      let customUrl=normalizeProviderBaseUrl(cfg.aiBaseUrl||'');
+      if(id==='local') customUrl=normalizeProviderBaseUrl(cfg.aiLocalUrl||'') || base.baseUrl;
       return customUrl?{...base,baseUrl:customUrl}:base;
     }
 
@@ -2851,6 +2873,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     function hasDirectProvider(provider,k){
+      if(normalizeAiProvider(provider||resolveAiProvider(k||getK()))==='local') return true;
       return !!getDirectApiKey(provider,k);
     }
 
@@ -4178,6 +4201,11 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
             <input type="text" class="sheet-input" id="sheetAiBaseUrl" value="${esc(k.aiBaseUrl||'')}" placeholder="https://.../v1" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
             <div style="font-size:9px;color:var(--text-3);margin-top:3px">Use only if your provider requires a custom gateway URL.</div>
           </div>
+          <div style="margin-top:8px" id="sheetAiLocalUrlContainer" style="display:${activeProvider==='local'?'block':'none'}">
+            <div style="font-size:11px;font-weight:500;color:var(--text-2);margin-bottom:4px">Local Endpoint URL</div>
+            <input type="text" class="sheet-input" id="sheetAiLocalUrl" value="${esc(k.aiLocalUrl||'')}" placeholder="http://localhost:11434/api/generate or http://localhost:1234/v1" autocomplete="off" spellcheck="false" style="font-family:var(--mono);font-size:11px">
+            <div style="font-size:9px;color:var(--text-3);margin-top:3px">Required for Local provider. Use Ollama (/api/generate) or OpenAI-compatible (/v1) endpoints.</div>
+          </div>
         </details>
         <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2);margin-bottom:6px"><input type="checkbox" id="sheetDirectFallbackToGroq" ${k.directFallbackToGroq!==false?'checked':''} style="accent-color:var(--teal)">Fallback to Groq when selected provider is rate-limited/unavailable</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-2)"><input type="checkbox" id="sheetGatewayHttpFallback" ${k.gatewayHttpFallback===true?'checked':''} style="accent-color:var(--teal)">Enable gateway HTTP fallback when WebSocket is offline (override)</label>
@@ -4462,7 +4490,13 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
             Share Settings Securely
           </span>
         </button>
-        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Create encrypted share links, QR codes, or JSON exports without deleting local data.</div>
+        <button class="sheet-btn" id="sheetSafeShareOpen" style="margin-top:8px;background:var(--bg-input);color:var(--text);border-color:var(--border)">
+          <span style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+            Safe Share (No Secrets)
+          </span>
+        </button>
+        <div style="font-size:10px;color:var(--text-3);margin-top:6px;padding:0 2px">Create encrypted share links, QR codes, or JSON exports without deleting local data. Safe Share strips all keys and tokens for safe template sharing.</div>
       </div>`;
 
       // Privacy & Security
@@ -4777,12 +4811,16 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       });
       const _routingProviderEl=$('sheetBody').querySelector('#sheetAiProvider');
       const _routingBaseEl=$('sheetBody').querySelector('#sheetAiBaseUrl');
+      const _routingLocalUrlEl=$('sheetBody').querySelector('#sheetAiLocalUrl');
       const _routingFallbackEl=$('sheetBody').querySelector('#sheetDirectFallbackToGroq');
       const _routingGatewayFallbackEl=$('sheetBody').querySelector('#sheetGatewayHttpFallback');
       const _routingStatusEl=$('sheetBody').querySelector('#sheetAiRoutingStatusText');
       const refreshRoutingStatus=(state)=>{
         if(!_routingStatusEl)return;
         const p=state.provider;
+        if($('sheetBody').querySelector('#sheetAiLocalUrlContainer')){
+          $('sheetBody').querySelector('#sheetAiLocalUrlContainer').style.display=p==='local'?'block':'none';
+        }
         const label=getProviderPreset(p,state.k).label;
         const custom=state.baseUrl?' · custom base url':'',invalid=state.invalid?' · base url invalid':'';
         _routingStatusEl.textContent=`${label} active · direct fallback ${state.fallbackOn?'on':'off'} · gateway fallback ${state.gatewayFallbackOn?'on':'off'}${custom}${invalid}`;
@@ -4792,17 +4830,20 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         const k2=getK();
         const provider=normalizeAiProvider(_routingProviderEl?.value||resolveAiProvider(k2));
         const baseRaw=(_routingBaseEl?.value||'').trim();
+        const localUrlRaw=(_routingLocalUrlEl?.value||'').trim();
         const baseUrl=normalizeProviderBaseUrl(baseRaw);
+        const localUrl=normalizeProviderBaseUrl(localUrlRaw);
         const fallbackOn=_routingFallbackEl?.checked!==false;
         const gatewayFallbackOn=_routingGatewayFallbackEl?.checked===true;
-        return{k:k2,provider,baseRaw,baseUrl,invalid:!!(baseRaw&&!baseUrl),fallbackOn,gatewayFallbackOn};
+        return{k:k2,provider,baseRaw,localUrlRaw,baseUrl,localUrl,invalid:!!((baseRaw&&!baseUrl)||(localUrlRaw&&!localUrl)),fallbackOn,gatewayFallbackOn};
       };
       const autoSaveRouting=({showErrorToast=false}={})=>{
         const state=getRoutingDraft();
         refreshRoutingStatus(state);
-        if(state.invalid){if(showErrorToast)showToast('Invalid base URL. Use HTTPS (HTTP only for localhost).','err');return false}
+        if(state.invalid){if(showErrorToast)showToast('Invalid URL. Use HTTPS (HTTP only for localhost).','err');return false}
         state.k.aiProvider=state.provider;
         if(state.baseUrl)state.k.aiBaseUrl=state.baseUrl;else delete state.k.aiBaseUrl;
+        if(state.localUrl)state.k.aiLocalUrl=state.localUrl;else delete state.k.aiLocalUrl;
         state.k.directFallbackToGroq=state.fallbackOn;
         state.k.gatewayHttpFallback=state.gatewayFallbackOn;
         setK(state.k);
@@ -4816,6 +4857,9 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       _routingBaseEl?.addEventListener('input',()=>{refreshRoutingStatus(getRoutingDraft())});
       _routingBaseEl?.addEventListener('blur',()=>{autoSaveRouting({showErrorToast:true})});
       _routingBaseEl?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();autoSaveRouting({showErrorToast:true});_routingBaseEl.blur()}});
+      _routingLocalUrlEl?.addEventListener('input',()=>{refreshRoutingStatus(getRoutingDraft())});
+      _routingLocalUrlEl?.addEventListener('blur',()=>{autoSaveRouting({showErrorToast:true})});
+      _routingLocalUrlEl?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();autoSaveRouting({showErrorToast:true});_routingLocalUrlEl.blur()}});
       refreshRoutingStatus(getRoutingDraft());
       // Wire up integrations
       $('sheetBody').querySelector('#sheetObsidianSave')?.addEventListener('click',()=>{
@@ -4938,6 +4982,35 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       // Wire up Share button — opens share sub-modal
       $('sheetBody').querySelector('#sheetShareOpen')?.addEventListener('click',()=>{
         openShareModal();
+      });
+      // Wire up Safe Share button
+      $('sheetBody').querySelector('#sheetSafeShareOpen')?.addEventListener('click',()=>{
+        closeSheet({restoreFocus:false});
+        let config = JSON.parse(localStorage.getItem('tc-config')||'{}');
+        delete config.aiKey;
+        delete config.whisperKey;
+        delete config.tgToken;
+        delete config.matonKey;
+        delete config.agents;
+        delete config.pinHash;
+        const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+        const url = `https://tealclaw.ai/#config=${b64}`;
+        const jsonStr = JSON.stringify(config, null, 2);
+        
+        sysBubble(`<div style="text-align:center">
+          <h3 style="margin-bottom:12px">Safe Share</h3>
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:16px">Your configuration has been sanitized. All sensitive keys and tokens have been removed.</p>
+          <button class="btn btn-teal" id="safeShareCopyLink" style="margin-bottom:8px;width:100%">Copy Safe URL</button>
+          <button class="btn btn-ghost" id="safeShareCopyJSON" style="width:100%">Copy Safe JSON</button>
+        </div>`);
+        
+        const last = document.querySelector('.chat-bubble:last-child');
+        last?.querySelector('#safeShareCopyLink')?.addEventListener('click', () => {
+          navigator.clipboard?.writeText(url).then(() => { showToast('Safe Share Link copied','ok'); haptic('success'); });
+        });
+        last?.querySelector('#safeShareCopyJSON')?.addEventListener('click', () => {
+          navigator.clipboard?.writeText(jsonStr).then(() => { showToast('Safe Share JSON copied','ok'); haptic('success'); });
+        });
       });
       // Wire up Clear All button
       $('sheetBody').querySelector('#sheetClearAll')?.addEventListener('click',()=>{
@@ -6416,15 +6489,28 @@ RULES:
       const preset=getProviderPreset(provider,k);
       const base=normalizeProviderBaseUrl(preset.baseUrl||'');
       if(!base)throw providerError(provider,`${preset.label} base URL is invalid. Use HTTPS (HTTP only for localhost).`,{recoverable:false,code:'bad_base_url'});
-      const url=`${base}/chat/completions`;
-      const headers={'Authorization':`Bearer ${key}`,'Content-Type':'application/json'};
+      
+      const isOllamaGenerate = provider==='local' && base.endsWith('/api/generate');
+      const isOllamaChat = provider==='local' && base.endsWith('/api/chat');
+      const url = (isOllamaGenerate || isOllamaChat) ? base : `${base}/chat/completions`;
+
+      const headers={'Content-Type':'application/json'};
+      if (provider !== 'local' || key) headers['Authorization']=`Bearer ${key||'sk-none'}`;
       if(provider==='openrouter'){
         headers['HTTP-Referer']=location.origin;
         headers['X-Title']='TealClaw';
       }
-      const body={model,messages,max_tokens:maxTok};
-      if(k.temperature!==undefined)body.temperature=Number(k.temperature);
-      if(stream)body.stream=true;
+
+      let body;
+      if (isOllamaGenerate) {
+        const prompt = messages.map(m=>`${m.role}: ${typeof m.content==='string'?m.content:JSON.stringify(m.content)}`).join('\n\n');
+        body={model, prompt, stream: !!stream};
+        if(k.temperature!==undefined)body.options={temperature:Number(k.temperature)};
+      } else {
+        body={model,messages,max_tokens:maxTok};
+        if(k.temperature!==undefined)body.temperature=Number(k.temperature);
+        if(stream)body.stream=true;
+      }
 
       const timeoutMs=Math.max(5000,Number(k.requestTimeoutMs)||45000);
       const reqCtrl=new AbortController();
@@ -6453,8 +6539,14 @@ RULES:
       }
       if(!stream){
         const d=await res.json().catch(()=>null);
-        const txt=d?.choices?.[0]?.message?.content||'';
-        const usage=d?.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:d.model||model}:null;
+        let txt='';
+        if(isOllamaGenerate) txt=d?.response||'';
+        else if(isOllamaChat) txt=d?.message?.content||'';
+        else txt=d?.choices?.[0]?.message?.content||'';
+        let usage=d?.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:d.model||model}:null;
+        if(!usage&&(isOllamaGenerate||isOllamaChat)&&d?.eval_count){
+          usage={prompt:d.prompt_eval_count||0,completion:d.eval_count,total:(d.prompt_eval_count||0)+d.eval_count,model:d.model||model};
+        }
         return{text:txt,usage};
       }
       const reader=res.body?.getReader();
@@ -6468,16 +6560,29 @@ RULES:
         buffer+=decoder.decode(value,{stream:true});
         const lines=buffer.split('\n');
         buffer=lines.pop()||'';
-        for(const line of lines){
-          if(!line.startsWith('data: '))continue;
-          const raw=line.slice(6).trim();
-          if(!raw||raw==='[DONE]')continue;
-          try{
-            const j=JSON.parse(raw);
-            const delta=j?.choices?.[0]?.delta?.content;
-            if(delta){full+=delta;if(onToken)onToken(full)}
-            if(j?.usage)usage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model:j.model||model};
-          }catch{}
+        for(let line of lines){
+          line=line.trim();
+          if(!line)continue;
+          if(isOllamaGenerate||isOllamaChat){
+            try{
+              const j=JSON.parse(line);
+              const delta=isOllamaGenerate?j.response:j.message?.content;
+              if(delta){full+=delta;if(onToken)onToken(full)}
+              if(j.done&&j.eval_count){
+                usage={prompt:j.prompt_eval_count||0,completion:j.eval_count,total:(j.prompt_eval_count||0)+j.eval_count,model:j.model||model};
+              }
+            }catch{}
+          }else{
+            if(!line.startsWith('data: '))continue;
+            const raw=line.slice(6).trim();
+            if(!raw||raw==='[DONE]')continue;
+            try{
+              const j=JSON.parse(raw);
+              const delta=j?.choices?.[0]?.delta?.content;
+              if(delta){full+=delta;if(onToken)onToken(full)}
+              if(j?.usage)usage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model:j.model||model};
+            }catch{}
+          }
         }
       }
       return{text:full,usage};
@@ -6584,7 +6689,7 @@ RULES:
     async function callProviderDirect(provider,userText,imageBase64,{stream=false,onToken,signal}={}){
       const k=getK();
       const key=getDirectApiKey(provider,k);
-      if(!key)throw providerError(provider,`${getProviderPreset(provider,k).label} key missing`,{recoverable:false,code:'no_key'});
+      if(!key && provider !== 'local')throw providerError(provider,`${getProviderPreset(provider,k).label} key missing`,{recoverable:false,code:'no_key'});
       const model=modelForProvider(k,provider,imageBase64);
       const maxTok=getDirectMaxTokens(k,provider);
       const messages=buildDirectMessages(k,userText,imageBase64);
@@ -8554,8 +8659,25 @@ ${getOptionalSteps()}`
       root.style.setProperty('--gif-max-width',`${Math.round(GIF_BASE_MAX_W*getGifScale())}px`);
     }
 
-    var _gifUserMoved=false;
-    var _gifW=parseInt(localStorage.getItem('tc_gifW'))||GIF_BASE_DEFAULT_W,_gifH=0;
+    let gifPrefs = { x: 0, y: 0, scale: 1 };
+    try {
+      const stored = localStorage.getItem('tc-gif-prefs');
+      if (stored) gifPrefs = JSON.parse(stored);
+    } catch(e) {}
+
+    function applyGifPrefs() {
+      const el = $('gifOverlay');
+      if (el) {
+        el.style.transform = `translate(${gifPrefs.x}px, ${gifPrefs.y}px) scale(${gifPrefs.scale})`;
+      }
+    }
+
+    function saveGifPrefs() {
+      localStorage.setItem('tc-gif-prefs', JSON.stringify(gifPrefs));
+    }
+    
+    // Apply on page load as requested
+    applyGifPrefs();
 
     function showGifOverlay(result){
       if(!result)return;
@@ -8579,13 +8701,12 @@ ${getOptionalSteps()}`
       }else if(result.url){
         img.src=result.url;
       }else return;
-      // Only reset position if user hasn't dragged it
-      if(!_gifUserMoved){
-        overlay.style.left='';overlay.style.top='';overlay.style.right='';
-      }
-      // Apply persisted size (only for GIF images)
+
+      applyGifPrefs();
+
       if(!result.ad){
-        const displayW=Math.max(limits.min,Math.min(limits.max,Math.round(_gifW*limits.scale)));
+        // Ensure image fits limits based on default width
+        const displayW=Math.max(limits.min,Math.min(limits.max,Math.round(GIF_BASE_DEFAULT_W*limits.scale)));
         img.style.width=displayW+'px';img.style.height='auto';
       }
       overlay.classList.remove('hidden','fade-out','dragging','resizing');
@@ -8603,9 +8724,6 @@ ${getOptionalSteps()}`
       if(gifFadeTimer){clearTimeout(gifFadeTimer);gifFadeTimer=null}
       gifTimer=setTimeout(()=>{
         overlay.classList.add('hidden');overlay.classList.remove('fade-out');
-        // Reset position for next GIF (size persists via localStorage)
-        _gifUserMoved=false;
-        overlay.style.left='';overlay.style.top='';overlay.style.right='';
         $('gifImg').style.display='';
         // Clean up ad iframe
         const adFrame=$('gifAd');adFrame.srcdoc='';adFrame.style.display='none';
@@ -8617,25 +8735,30 @@ ${getOptionalSteps()}`
     // Drag + resize support for GIF overlay
     (function(){
       const el=$('gifOverlay');
-      const img=$('gifImg');
       const handle=$('gifResize');
-      let dragging=false,resizing=false,startX=0,startY=0,origX=0,origY=0,origW=0;
+      let dragging=false,resizing=false,startX=0,startY=0,origX=0,origY=0,origScale=1;
 
       // ── Drag ──
       function dragStart(cx,cy){
-        const r=el.getBoundingClientRect();
-        dragging=true;startX=cx;startY=cy;origX=r.left;origY=r.top;
+        dragging=true;startX=cx;startY=cy;
+        origX=gifPrefs.x;origY=gifPrefs.y;
         el.classList.add('dragging');
       }
       function dragMove(cx,cy){
         if(!dragging)return;
         const dx=cx-startX,dy=cy-startY;
-        if(Math.abs(dx)>4||Math.abs(dy)>4)_gifUserMoved=true;
-        el.style.left=(origX+dx)+'px';
-        el.style.top=(origY+dy)+'px';
-        el.style.right='auto';
+        // Divide by current scale if we want pointer movement to match screen exactly, 
+        // but simple addition feels fine too.
+        gifPrefs.x = origX + dx;
+        gifPrefs.y = origY + dy;
+        applyGifPrefs();
       }
-      function dragEnd(){dragging=false;el.classList.remove('dragging')}
+      function dragEnd(){
+        if(dragging){
+          dragging=false;el.classList.remove('dragging');
+          saveGifPrefs();
+        }
+      }
 
       el.addEventListener('pointerdown',e=>{
         if(e.target.id==='gifClose'||e.target.id==='gifResize')return;
@@ -8649,57 +8772,58 @@ ${getOptionalSteps()}`
       el.addEventListener('pointercancel',()=>dragEnd());
 
       // ── Resize ──
-      function resizeStart(cx){
-        origW=img.getBoundingClientRect().width;
-        startX=cx;resizing=true;
+      function resizeStart(cx, cy){
+        startX=cx;startY=cy;
+        origScale=gifPrefs.scale;
+        resizing=true;
         el.classList.add('resizing');
       }
-      function resizeMove(cx){
+      function resizeMove(cx, cy){
         if(!resizing)return;
-        const limits=getGifSizeLimits();
-        const newW=Math.max(limits.min,Math.min(limits.max,origW+(cx-startX)));
-        img.style.width=newW+'px';img.style.height='auto';
-        _gifW=Math.round(newW/limits.scale);
+        const dx = cx - startX;
+        const newScale = Math.max(0.2, Math.min(5, origScale + (dx / 150)));
+        gifPrefs.scale = newScale;
+        applyGifPrefs();
       }
       function resizeEnd(){
-        resizing=false;el.classList.remove('resizing');
-        if(_gifW)localStorage.setItem('tc_gifW',String(Math.round(_gifW)));
+        if(resizing){
+          resizing=false;el.classList.remove('resizing');
+          saveGifPrefs();
+        }
       }
 
       handle.addEventListener('pointerdown',e=>{
         e.preventDefault();e.stopPropagation();
         handle.setPointerCapture(e.pointerId);
-        resizeStart(e.clientX);
+        resizeStart(e.clientX, e.clientY);
       });
-      handle.addEventListener('pointermove',e=>{if(resizing){e.preventDefault();resizeMove(e.clientX)}});
+      handle.addEventListener('pointermove',e=>{if(resizing){e.preventDefault();resizeMove(e.clientX, e.clientY)}});
       handle.addEventListener('pointerup',()=>resizeEnd());
       handle.addEventListener('pointercancel',()=>resizeEnd());
 
       // Pinch-to-resize (mobile)
-      let pinchDist=0,pinchW=0;
+      let pinchDist=0;
       el.addEventListener('touchstart',e=>{
         if(e.touches.length===2){
           e.preventDefault();
           pinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-          const limits=getGifSizeLimits();
-          pinchW=img.getBoundingClientRect().width||Math.round(_gifW*limits.scale);
+          origScale=gifPrefs.scale;
           el.classList.add('resizing');
         }
       },{passive:false});
       el.addEventListener('touchmove',e=>{
         if(e.touches.length===2&&pinchDist){
           e.preventDefault();
-          const limits=getGifSizeLimits();
           const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-          const newW=Math.max(limits.min,Math.min(limits.max,pinchW*(d/pinchDist)));
-          img.style.width=newW+'px';img.style.height='auto';
-          _gifW=Math.round(newW/limits.scale);
+          const newScale = Math.max(0.2, Math.min(5, origScale * (d/pinchDist)));
+          gifPrefs.scale = newScale;
+          applyGifPrefs();
         }
       },{passive:false});
       el.addEventListener('touchend',e=>{
         if(pinchDist&&e.touches.length<2){
           pinchDist=0;el.classList.remove('resizing');
-          if(_gifW)localStorage.setItem('tc_gifW',String(Math.round(_gifW)));
+          saveGifPrefs();
         }
       });
     })();
