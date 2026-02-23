@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Distribution Protocol | TealClaw Docs</title>
+  <meta name="theme-color" content="#0d9488">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <style>
+    :root { --bg: #0a0f1a; --bg-card: #162033; --text: #e2e8f0; --text-muted: #94a3b8; --teal: #0d9488; --teal-dim: rgba(13, 148, 136, 0.15); --border: rgba(255, 255, 255, 0.1); --font: system-ui, -apple-system, sans-serif; --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 0; display: flex; justify-content: center; }
+    .container { max-width: 800px; width: 100%; padding: 40px 20px; }
+    .nav { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .nav a { color: var(--teal); text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .nav a:hover { text-decoration: underline; }
+    h1, h2, h3 { color: #fff; font-weight: 700; margin-top: 1.5em; }
+    h1 { font-size: 2.2rem; margin-top: 0; margin-bottom: 0.2em; }
+    p { margin: 1em 0; color: var(--text-muted); }
+    strong { color: #fff; }
+    ul { padding-left: 20px; color: var(--text-muted); }
+    li { margin-bottom: 8px; }
+    .badge-green { display: inline-block; background: #22c55e; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; }
+    .badge-yellow { display: inline-block; background: #eab308; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; }
+    .badge-red { display: inline-block; background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <img src="/icon-192.png" width="24" height="24" alt="Logo">
+      <a href="/">TealClaw</a> <span style="color:var(--text-muted)">/</span> <span style="color:var(--text)">Distribution</span>
+    </div>
+    
+    <h1>Distribution & Sharing Protocol</h1>
+    <p>AI Agents MUST follow these rules when sharing TealClaw links or configs.</p>
+
+    <h2><span class="badge-green">Tier 1</span> Safe Share (No Secrets)</h2>
+    <ul>
+      <li><strong>Use for:</strong> Sharing UI themes, colors, background images, and <code>tc-flow</code> macros.</li>
+      <li><strong>Rules:</strong> You MUST strip <code>aiKey</code>, <code>whisperKey</code>, <code>tgToken</code>, <code>matonKey</code>, <code>agents</code>, and <code>pinHash</code>.</li>
+      <li><strong>Method:</strong> Send a raw base64 URL <code>https://tealclaw.ai/#config=BASE64_PAYLOAD</code>.</li>
+      <li><strong>Delivery:</strong> Safe to post publicly, in chat, or on social media.</li>
+    </ul>
+
+    <h2><span class="badge-yellow">Tier 2</span> Guest Link (Scoped Access)</h2>
+    <ul>
+      <li><strong>Use for:</strong> RFI forms, single-use client tools, or locked-down agent access.</li>
+      <li><strong>Method:</strong> Use the <code>tc-action</code> type <code>"guest-link"</code>.</li>
+      <li><strong>Security:</strong> TealClaw encrypts the payload using AES-256. It generates a URL and an 8-character passphrase.</li>
+      <li><strong>Delivery Rule (CRITICAL):</strong> You MUST separate the link and the passphrase. If using email, send Email 1 with the Link, wait 2 minutes, then send Email 2 with the Passphrase.</li>
+    </ul>
+
+    <h2><span class="badge-red">Tier 3</span> Secure Clone (God Mode)</h2>
+    <ul>
+      <li><strong>Use for:</strong> Transferring ownership to a new device. Includes ALL API keys and Gateway tokens.</li>
+      <li><strong>Method:</strong> Use the <code>tc-action</code> type <code>"export-skill"</code> or tell the user to use the <code>/share</code> command.</li>
+      <li><strong>Delivery Rule:</strong> Never transmit the passphrase over the same channel as the encrypted JSON blob.</li>
+    </ul>
+  </div>
+</body>
+</html>

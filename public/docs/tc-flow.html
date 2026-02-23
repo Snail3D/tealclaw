@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>tc-flow Engine | TealClaw Docs</title>
+  <meta name="theme-color" content="#0d9488">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <style>
+    :root { --bg: #0a0f1a; --bg-card: #162033; --text: #e2e8f0; --text-muted: #94a3b8; --teal: #0d9488; --teal-dim: rgba(13, 148, 136, 0.15); --border: rgba(255, 255, 255, 0.1); --font: system-ui, -apple-system, sans-serif; --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 0; display: flex; justify-content: center; }
+    .container { max-width: 800px; width: 100%; padding: 40px 20px; }
+    .nav { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .nav a { color: var(--teal); text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .nav a:hover { text-decoration: underline; }
+    h1, h2, h3 { color: #fff; font-weight: 700; margin-top: 1.5em; }
+    h1 { font-size: 2.2rem; margin-top: 0; margin-bottom: 0.2em; }
+    p { margin: 1em 0; color: var(--text-muted); }
+    strong { color: #fff; }
+    ul { padding-left: 20px; color: var(--text-muted); }
+    li { margin-bottom: 8px; }
+    pre { background: #020617; padding: 16px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; font-family: var(--mono); font-size: 13px; color: #a5b4fc; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+    code { font-family: var(--mono); background: var(--teal-dim); color: var(--teal); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre code { background: none; color: inherit; padding: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <img src="/icon-192.png" width="24" height="24" alt="Logo">
+      <a href="/">TealClaw</a> <span style="color:var(--text-muted)">/</span> <span style="color:var(--text)">tc-flow Engine</span>
+    </div>
+    
+    <h1>tc-flow Engine (Visual Macros)</h1>
+    <p>A <code>tc-flow</code> is a visual, drag-and-drop prompt chain that executes locally in the TealClaw browser.</p>
+
+    <h2>Architecture</h2>
+    <p>Return a fenced markdown block tagged with <code>```tc-flow</code> containing valid JSON.</p>
+
+    <h2>Nodes</h2>
+    <ul>
+      <li><strong>input:</strong> Prompts the user for a text string (e.g. "Client Name").</li>
+      <li><strong>sanitize:</strong> Automatically scrubs <code>[EMAIL]</code> and <code>[PHONE]</code> from the payload using client-side regex <em>before</em> it hits an LLM.</li>
+      <li><strong>llm:</strong> Sends the payload to the active AI provider (e.g., Groq). Uses the <code>system</code> field as the hidden prompt.</li>
+      <li><strong>action:</strong> Triggers a native <code>tc-action</code> (like <code>/save</code> to Obsidian) using <code>{payload}</code> or <code>{node_X_output}</code> variables.</li>
+      <li><strong>output:</strong> Drops the final payload directly into the chat timeline as a System Bubble.</li>
+    </ul>
+
+    <h2>Example Payload: Secure Data Scrubber</h2>
+    <pre><code>{
+  "name": "Secure Scrubber",
+  "nodes": [
+    { "id": "1", "type": "input", "label": "Paste Customer Data" },
+    { "id": "2", "type": "sanitize", "label": "Scrub PII" },
+    { "id": "3", "type": "output", "label": "Print Safe Data" }
+  ],
+  "edges": [
+    { "from": "1", "to": "2" },
+    { "from": "2", "to": "3" }
+  ]
+}</code></pre>
+  </div>
+</body>
+</html>

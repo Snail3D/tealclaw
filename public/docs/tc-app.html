@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>tc-app Engine | TealClaw Docs</title>
+  <meta name="theme-color" content="#0d9488">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <style>
+    :root { --bg: #0a0f1a; --bg-card: #162033; --text: #e2e8f0; --text-muted: #94a3b8; --teal: #0d9488; --teal-dim: rgba(13, 148, 136, 0.15); --border: rgba(255, 255, 255, 0.1); --font: system-ui, -apple-system, sans-serif; --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 0; display: flex; justify-content: center; }
+    .container { max-width: 800px; width: 100%; padding: 40px 20px; }
+    .nav { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .nav a { color: var(--teal); text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .nav a:hover { text-decoration: underline; }
+    h1, h2, h3 { color: #fff; font-weight: 700; margin-top: 1.5em; }
+    h1 { font-size: 2.2rem; margin-top: 0; margin-bottom: 0.2em; }
+    p { margin: 1em 0; color: var(--text-muted); }
+    strong { color: #fff; }
+    ul { padding-left: 20px; color: var(--text-muted); }
+    li { margin-bottom: 8px; }
+    pre { background: #020617; padding: 16px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; font-family: var(--mono); font-size: 13px; color: #a5b4fc; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
+    code { font-family: var(--mono); background: var(--teal-dim); color: var(--teal); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre code { background: none; color: inherit; padding: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <img src="/icon-192.png" width="24" height="24" alt="Logo">
+      <a href="/">TealClaw</a> <span style="color:var(--text-muted)">/</span> <span style="color:var(--text)">tc-app Engine</span>
+    </div>
+    
+    <h1>tc-app Engine (Sandboxed Mini-Apps)</h1>
+    <p>You can write fully interactive HTML/JS/CSS applications that render directly inside a TealClaw chat bubble.</p>
+
+    <h2>Architecture</h2>
+    <p>Return a fenced markdown block tagged with <code>```tc-app</code> containing standard HTML.</p>
+
+    <h2>Security & Mechanics</h2>
+    <ul>
+      <li>The code runs inside a sandboxed <code>&lt;iframe&gt;</code> with <code>allow-scripts</code>.</li>
+      <li>It cannot access TealClaw's parent DOM or API keys.</li>
+      <li>It automatically scales to fit the chat bubble (Flexbox/Grid recommended).</li>
+    </ul>
+
+    <h2>The postMessage Bridge (CRITICAL)</h2>
+    <p>To allow the app to talk back to you (the AI agent), the iframe can send a <code>postMessage</code> to the parent window.</p>
+
+    <p><strong>Javascript Example inside the tc-app:</strong></p>
+    <pre><code>function sendDataToAgent(result) {
+  window.parent.postMessage({ 
+    type: 'tc-app-send', 
+    text: `The user clicked the button. Result: ${result}` 
+  }, '*');
+}</code></pre>
+
+    <p>When this fires, TealClaw intercepts it and automatically sends the text to the AI over the WebSocket as if the user typed it.</p>
+    <p>Use this to build calculators, interactive forms, and mini-games that interact with the agent conversation.</p>
+  </div>
+</body>
+</html>
