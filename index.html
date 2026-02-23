@@ -714,6 +714,26 @@
     .chat-bubble.ai.typing-active{min-height:38px}
     .chat-bubble.ai.typing-active .md-content{min-height:1.6em}
 
+    /* Claude-style dynamic status words */
+    .status-word-wrap {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:10px 0;
+    }
+    .status-word {
+      font-size:11px;
+      font-style:italic;
+      color:var(--text-3);
+      animation:fade-word 3s infinite;
+    }
+    @keyframes fade-word {
+      0%,100%{opacity:0;transform:translateY(2px)}
+      15%,85%{opacity:1;transform:translateY(0)}
+    }
+
     /* ── Bubble Animations ──────────────────────────────── */
     @keyframes bubble-fade{from{opacity:0}to{opacity:1}}
     @keyframes bubble-slide-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -6071,8 +6091,18 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         if(m.role==='ai'){
           if(m.raw)content+=displayText;
           else if(displayText==='...'){
-            // Waiting-for-first-token indicator (bigger animated dots)
-            content+=`<div class="typing-dots" aria-label="Thinking"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
+            // Waiting-for-first-token indicator (bigger animated dots + dynamic words)
+            const tcWords = [
+              'Thinking', 'Analyzing', 'Compiling', 'Synthesizing', 'Reviewing', 
+              'Processing', 'Connecting', 'Decoding', 'Awesomifying', 'Magifying', 
+              'Running at Snail Speed', 'Consulting the Matrix', 'Hacking the mainframe',
+              'Aligning vectors', 'Untangling WebSockets', 'Parsing Context', 'Abstracting'
+            ];
+            const word = tcWords[Math.floor(Math.random()*tcWords.length)];
+            content+=`<div class="status-word-wrap" style="min-height:48px;">
+              <div class="status-word tc-dynamic-word" style="margin-bottom:8px;">${word}...</div>
+              <div class="typing-dots" aria-label="Thinking"><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span><span class="typing-dot" style="width:12px;height:12px;"></span></div>
+            </div>`;
           }
           else if(/^\[(?:TREY|AXEL|DEAN|HAVEN|VERA|DIANE)\]/m.test(displayText)){
             // Group chat: render each speaker segment with colored labels, alternating L/R
