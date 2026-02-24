@@ -6068,9 +6068,18 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // Hide tc-action protocol blocks from the visible chat transcript.
     // (Actions still execute; users typically only want the results/toasts.)
+    function stripStreamingArtifacts(text) {
+      if(!text)return '';
+      let clean = text.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '');
+      clean = clean.replace(/<t(?:h(?:i(?:n(?:k(?:>)?)?)?)?)?$/i, '');
+      clean = clean.replace(/```(?:tc-action|tc-ui|tc-app)[\s\S]*?(?:```|$)/gi, '');
+      clean = clean.replace(/\[gif:[^\]]*\]?$/i, '');
+      return clean.trim();
+    }
+
     function stripTcActionBlocksForDisplay(text){
       if(!text)return '';
-      let clean = text.replace(/```tc-action\s*[\s\S]*?```/g,'');
+      let clean = text.replace(/```(?:tc-action|tc-ui|tc-app)\s*[\s\S]*?```/g,'');
       clean = clean.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '');
       return clean.trim();
     }
@@ -12301,12 +12310,13 @@ Return ONLY valid JSON, no explanation.`;
         try{
           const aiResult=await callAgent(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
-            const strippedPartial=partial.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi,'').replace(/\[gif:[^\]]*\]?$/i,'').trim();
+            const strippedPartial=stripStreamingArtifacts(partial);
             const visiblePartial=stripExprTags(strippedPartial);
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
               last.classList.add('typing-active');
+              if(!visiblePartial) return; // leave the airport loading animation intact while thinking!
               const md=last.querySelector('.md-content');
               let rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
               const cursorW = pk.cursorWidth || '2px';
@@ -12375,12 +12385,13 @@ Return ONLY valid JSON, no explanation.`;
         try{
           const aiResult=await callAIStream(text,imageBase64,(partial)=>{
             chatHistory[streamIdx].text=partial;
-            const strippedPartial=partial.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi,'').replace(/\[gif:[^\]]*\]?$/i,'').trim();
+            const strippedPartial=stripStreamingArtifacts(partial);
             const visiblePartial=stripExprTags(strippedPartial);
             const bubbles=scroll.querySelectorAll('.chat-bubble.ai,.chat-bubble-wrap .chat-bubble.ai');
             const last=bubbles[bubbles.length-1];
             if(last){
               last.classList.add('typing-active');
+              if(!visiblePartial) return; // leave the airport loading animation intact while thinking!
               const md=last.querySelector('.md-content');
               let rendered=renderMd(visiblePartial);
               rendered=renderLatex(rendered);
