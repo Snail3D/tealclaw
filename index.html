@@ -1474,10 +1474,10 @@
       <div class="webhook-badge hidden" id="webhookBadge" title="Webhook active — messages are forwarded externally">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </div>
-      <div class="active-pills" id="activePills"></div>
       <div class="pill off" id="pill" role="status" aria-live="polite"><span class="pill-dot"></span><span id="pillLabel">Setup</span><span class="pill-caret"></span>
         <div class="channel-dropdown" id="channelDropdown"></div>
       </div>
+      <div class="active-pills" id="activePills"></div>
       <button class="icon-btn cron-quick-btn" id="cronAddBtn" title="Schedules & alarms" aria-label="Schedules and alarms">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="13" r="7"/>
@@ -6560,6 +6560,13 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     }
 
     function addBubble(role,text,extra={}){
+      // Never render EXIF/capture metadata blocks in user-visible chat bubbles
+      if(role==='user' && typeof text==='string'){
+        text=text
+          .replace(/\n\n\*\*EXIF Metadata \([\s\S]*?\):\*\*[\s\S]*$/i,'')
+          .replace(/\n\n\*\*Capture Metadata:\*\*[\s\S]*$/i,'')
+          .trim();
+      }
       const entry={role,text,time:fmtTime(),...extra};
       chatHistory.push(entry);
       setChat(chatHistory);
@@ -19054,10 +19061,6 @@ ${note}`:note;
         else if(idle>=300000&&pill){pill.classList.add('fading')}
       }
     },30000);
-
-    // Demo subagents for verification
-    registerSubagent('rapid-ridge','rapid-ridge','Monitoring system metrics and generating health reports for connected devices.');
-    registerSubagent('delta-breeze','delta-breeze','Scanning incoming webhooks and routing events to the appropriate handler channels.');
 
     // ── tc-app postMessage Listener ───────────────────
     window.addEventListener('message', e => {
