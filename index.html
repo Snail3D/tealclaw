@@ -2836,9 +2836,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     // Wire topbar events
-    $('convTitle').addEventListener('click',toggleConvDropdown);
-    $('newChatBtn').addEventListener('click',()=>newConversation());
-    $('convDropdownNew').addEventListener('click',()=>{closeConvDropdown();newConversation()});
+    $('convTitle')?.addEventListener('click',toggleConvDropdown);
+    $('newChatBtn')?.addEventListener('click',()=>newConversation());
+    $('convDropdownNew')?.addEventListener('click',()=>{closeConvDropdown();newConversation()});
     $('convDropdownExport')?.addEventListener('click',e=>{
       e.stopPropagation();
       closeConvDropdown();
@@ -2846,11 +2846,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     });
     // Conversation search
     let _convSearchTimer;
-    $('convSearchInput').addEventListener('input',e=>{
+    $('convSearchInput')?.addEventListener('input',e=>{
       clearTimeout(_convSearchTimer);
       _convSearchTimer=setTimeout(()=>renderConvDropdown(e.target.value),200);
     });
-    $('convSearchInput').addEventListener('click',e=>e.stopPropagation());
+    $('convSearchInput')?.addEventListener('click',e=>e.stopPropagation());
     // Close on outside click
     document.addEventListener('click',e=>{
       if(convDropdownOpen&&!e.target.closest('.conv-dropdown')&&!e.target.closest('.conv-title')&&!e.target.closest('.new-chat-btn')){
@@ -3623,7 +3623,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
     }
 
     // Pill click toggles channel dropdown
-    $('pill').addEventListener('click',e=>{
+    $('pill')?.addEventListener('click',e=>{
       e.stopPropagation();
       const k=getK();
       const hasAI=!!(k.aiKey||k.whisperKey||(k.mode==='agent'&&getAgents().some(a=>a.url))||hasTelegramConfig(k));
@@ -3711,15 +3711,15 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
     });
 
     // ── About Modal ──────────────────────────────────
-    $('aboutBtn').addEventListener('click',()=>{
+    $('aboutBtn')?.addEventListener('click',()=>{
       updateHeartbeatBpm();
       $('aboutOverlay').classList.remove('hidden');
     });
-    $('aboutClose').addEventListener('click',()=>$('aboutOverlay').classList.add('hidden'));
-    $('aboutOverlay').addEventListener('click',e=>{if(e.target===$('aboutOverlay'))$('aboutOverlay').classList.add('hidden')});
+    $('aboutClose')?.addEventListener('click',()=>$('aboutOverlay').classList.add('hidden'));
+    $('aboutOverlay')?.addEventListener('click',e=>{if(e.target===$('aboutOverlay'))$('aboutOverlay').classList.add('hidden')});
 
     // New Chat button in about modal
-    $('aboutNewChat').addEventListener('click',()=>{
+    $('aboutNewChat')?.addEventListener('click',()=>{
       $('aboutOverlay').classList.add('hidden');
       newConversation();
       haptic('medium');
@@ -3863,7 +3863,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         }
       });
     })();
-    $('sheetClose').addEventListener('click',closeSheet);
+    $('sheetClose')?.addEventListener('click',closeSheet);
     sheetBackdrop.addEventListener('click',closeSheet);
 
     // ── Motion & Alarms Modal ─────────────────────────
@@ -3945,8 +3945,8 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       }
       maLastFocusedEl=null;
     }
-    $('maModalClose').addEventListener('click',closeMAModal);
-    $('maModal').addEventListener('click',e=>{if(e.target===$('maModal'))closeMAModal()});
+    $('maModalClose')?.addEventListener('click',closeMAModal);
+    $('maModal')?.addEventListener('click',e=>{if(e.target===$('maModal'))closeMAModal()});
     function renderMAModal(){
       const k=getK();let html='';
       const gestureOn=k.gestureEnabled===true;
@@ -4044,7 +4044,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
     function loadMAWatchRefThumbs(){const grid=$('maModalBody')?.querySelector('#maWatchRefGrid');if(!grid)return;
       (async()=>{try{const refs=await getWatchRefs();grid.innerHTML='';refs.forEach(ref=>{const thumb=document.createElement('div');thumb.className='watch-ref-thumb';
         thumb.innerHTML=`<img src="${ref.data}"><button class="watch-ref-del" data-refid="${ref.id}">&times;</button>`;
-        thumb.querySelector('.watch-ref-del').addEventListener('click',async e=>{e.stopPropagation();await deleteWatchRef(ref.id);showToast('Reference removed','ok');loadMAWatchRefThumbs()});
+        thumb.querySelector('.watch-ref-del')?.addEventListener('click',async e=>{e.stopPropagation();await deleteWatchRef(ref.id);showToast('Reference removed','ok');loadMAWatchRefThumbs()});
         grid.appendChild(thumb)})}catch{}})()}
     function wireMAModalEvents(){const body=$('maModalBody');
       body.querySelectorAll('.ma-gesture-btn').forEach(b=>b.addEventListener('click',()=>{const enabled=b.dataset.gesture==='true';const k2=getK();k2.gestureEnabled=enabled;setK(k2);renderMAModal();
@@ -5265,17 +5265,17 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       `;
       modal.classList.remove('hidden');
 
-      $('gmCancelBtn').addEventListener('click',()=>closeGuestModal());
+      $('gmCancelBtn')?.addEventListener('click',()=>closeGuestModal());
       modal.addEventListener('click',e=>{if(e.target===modal)closeGuestModal()});
-      $('gmCreateBtn').addEventListener('click',()=>createGuestLink());
+      $('gmCreateBtn')?.addEventListener('click',()=>createGuestLink());
       // Command rows
-      $('gmAddCmd').addEventListener('click',()=>{
+      $('gmAddCmd')?.addEventListener('click',()=>{
         const row=document.createElement('div');
         row.className='gm-cmd-row';
         row.innerHTML='<input class="gm-input gm-cmd-label" placeholder="Button label" maxlength="40"><input class="gm-input gm-cmd-msg" placeholder="Message to send" maxlength="300"><button class="gm-cmd-del" type="button">\u00d7</button>';
         $('gmCmdList').appendChild(row);
       });
-      $('gmCmdList').addEventListener('click',e=>{
+      $('gmCmdList')?.addEventListener('click',e=>{
         if(e.target.classList.contains('gm-cmd-del'))e.target.parentElement.remove();
       });
       $('gmName').focus();
@@ -5400,7 +5400,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       `;
 
       // Copy link
-      $('gmCopyLink').addEventListener('click',()=>{
+      $('gmCopyLink')?.addEventListener('click',()=>{
         navigator.clipboard.writeText(url).then(()=>{
           $('gmCopyLink').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
           setTimeout(()=>{$('gmCopyLink').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copy Link'},2000);
@@ -5418,7 +5418,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
             <div class="gm-pass-timer" id="gmPassTimer">Hiding in 10s</div>
           </div>
         `;
-        $('gmCopyPass').addEventListener('click',()=>{
+        $('gmCopyPass')?.addEventListener('click',()=>{
           navigator.clipboard.writeText(passphrase).then(()=>showToast('Passphrase copied','ok')).catch(()=>showToast('Copy failed','err'));
         });
         let sec=10;
@@ -5435,18 +5435,18 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       function hidePass(){
         const area=$('gmPassArea');
         area.innerHTML='<button class="gm-reveal-btn" id="gmRevealAgain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Reveal Passphrase</button>';
-        $('gmRevealAgain').addEventListener('click',revealPass);
+        $('gmRevealAgain')?.addEventListener('click',revealPass);
       }
-      $('gmRevealBtn').addEventListener('click',revealPass);
+      $('gmRevealBtn')?.addEventListener('click',revealPass);
 
       // Supplement config copy
       if(supplementBlob){
-        $('gmSupCopy').addEventListener('click',()=>{
+        $('gmSupCopy')?.addEventListener('click',()=>{
           navigator.clipboard.writeText('TCCFG:'+supplementBlob).then(()=>showToast('Config copied','ok')).catch(()=>showToast('Copy failed','err'));
         });
       }
 
-      $('gmDoneBtn').addEventListener('click',()=>{
+      $('gmDoneBtn')?.addEventListener('click',()=>{
         closeGuestModal();
         renderSheetContent();
       });
@@ -5661,7 +5661,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       const inp=$('sheetBody').querySelector('#sheetKeyInput');
       inp.focus();inp.select();
 
-      $('sheetBody').querySelector('#sheetKeySave').addEventListener('click',()=>{
+      $('sheetBody').querySelector('#sheetKeySave')?.addEventListener('click',()=>{
         const val=inp.value.trim();
         if(!val){showToast('Enter a value','err');return}
         const k2=getK();k2[field]=val;
@@ -5686,7 +5686,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         }
         setK(k2);updateStatus();renderChannelDropdown();renderAgentSelector();renderSheetContent();showToast(info.label+' removed','ok');
       });
-      $('sheetBody').querySelector('#sheetKeyBack').addEventListener('click',renderSheetContent);
+      $('sheetBody').querySelector('#sheetKeyBack')?.addEventListener('click',renderSheetContent);
     }
 
     function openAgentEditor(editId){
@@ -5812,7 +5812,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         setAgents([]);openAgentEditor();renderAgentSelector();updateStatus();showToast('All agents cleared','ok');
       });
 
-      $('sheetBody').querySelector('#sheetAgentBack').addEventListener('click',renderSheetContent);
+      $('sheetBody').querySelector('#sheetAgentBack')?.addEventListener('click',renderSheetContent);
     }
 
     // ── Audio (Web Audio API for reliable mobile playback) ──
@@ -5937,7 +5937,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         $('voiceModeStatus').textContent='Tap and hold to speak';
       }
     }
-    $('ttsStop').addEventListener('click',stopTTSPlayback);
+    $('ttsStop')?.addEventListener('click',stopTTSPlayback);
 
     function enableAudio(){
       $('overlay').classList.add('hidden');
@@ -9351,7 +9351,7 @@ ${getOptionalSteps()}`
       },850);
     }
 
-    $('gifClose').addEventListener('click',e=>{e.stopPropagation();hideGifOverlay()});
+    $('gifClose')?.addEventListener('click',e=>{e.stopPropagation();hideGifOverlay()});
 
     // Drag + resize support for GIF overlay
     (function(){
@@ -10082,7 +10082,7 @@ Rules:
       html+=`<button class="sheet-btn sheet-btn-teal" id="macroRunBtn" style="margin-top:16px">Run</button>`;
       html+=`<button class="sheet-btn sheet-btn-danger" id="macroDelBtn" style="margin-top:8px" data-idx="${idx}">Delete Macro</button>`;
       body.innerHTML=html;
-      body.querySelector('#macroRunBtn').addEventListener('click', async ()=>{
+      body.querySelector('#macroRunBtn')?.addEventListener('click', async ()=>{
         closeMacroSheet();
         const inputs=Array.from(document.querySelectorAll('.macro-input-field'));
         let payload = inputs.length ? inputs[0].value : '';
@@ -10139,7 +10139,7 @@ Rules:
         }
         if(typeof showToast==='function') showToast('Macro complete','ok');
       });
-      body.querySelector('#macroDelBtn').addEventListener('click',(e)=>{
+      body.querySelector('#macroDelBtn')?.addEventListener('click',(e)=>{
         const arr=window.getFlowMacros();
         arr.splice(Number(e.target.dataset.idx),1);
         localStorage.setItem('tc-macros',JSON.stringify(arr));
@@ -10156,8 +10156,8 @@ Rules:
       if(sheet)sheet.classList.remove('open');
       if(bd)bd.classList.remove('open');
     }
-    if($('macroSheetClose')) $('macroSheetClose').addEventListener('click',closeMacroSheet);
-    if($('macroBackdrop')) $('macroBackdrop').addEventListener('click',closeMacroSheet);
+    if($('macroSheetClose')) $('macroSheetClose')?.addEventListener('click',closeMacroSheet);
+    if($('macroBackdrop')) $('macroBackdrop')?.addEventListener('click',closeMacroSheet);
 
     // ── Export Chat ──────────────────────────────────────
     // ── Template Gallery ───────────────────────────────
@@ -10292,7 +10292,7 @@ Rules:
         errEl.className = 'chat-bubble sys';
         errEl.innerHTML = `<p style="color:var(--err);margin-bottom:8px">Failed to load marketplace.</p>
                            <button class="tc-ui-btn secondary btn-retry-marketplace" style="font-size:12px;padding:4px 12px;width:auto">Retry</button>`;
-        errEl.querySelector('.btn-retry-marketplace').addEventListener('click', () => {
+        errEl.querySelector('.btn-retry-marketplace')?.addEventListener('click', () => {
           errEl.remove();
           showMarketplace();
         });
@@ -10453,18 +10453,18 @@ Rules:
       $('exportModal').classList.add('hidden');
     }
     // Wire export modal
-    $('exportIncludeConfig').addEventListener('change',e=>{
+    $('exportIncludeConfig')?.addEventListener('change',e=>{
       const keysCb=$('exportIncludeKeys');
       keysCb.disabled=!e.target.checked;
       keysCb.closest('label').classList.toggle('disabled',!e.target.checked);
       if(!e.target.checked)keysCb.checked=false;
     });
-    $('exportModalCancel').addEventListener('click',closeExportModal);
-    $('exportModalGo').addEventListener('click',()=>{
+    $('exportModalCancel')?.addEventListener('click',closeExportModal);
+    $('exportModalGo')?.addEventListener('click',()=>{
       closeExportModal();
       exportConvJSON($('exportIncludeConfig').checked,$('exportIncludeKeys').checked);
     });
-    $('exportModal').addEventListener('click',e=>{
+    $('exportModal')?.addEventListener('click',e=>{
       if(e.target===$('exportModal'))closeExportModal();
     });
 
@@ -10477,12 +10477,12 @@ Rules:
     function closeShareModal(){
       $('shareModal').classList.add('hidden');
     }
-    $('shareModalClose').addEventListener('click',closeShareModal);
-    $('shareModal').addEventListener('click',e=>{if(e.target===$('shareModal'))closeShareModal()});
-    $('smEncrypted').addEventListener('click',()=>{closeShareModal();generateEncryptedLink()});
-    $('smQR').addEventListener('click',()=>{closeShareModal();generateQR()});
-    $('smShareAgent').addEventListener('click',()=>{closeShareModal();shareConfigWithAgent()});
-    $('smExportJSON').addEventListener('click',()=>{closeShareModal();openExportModal()});
+    $('shareModalClose')?.addEventListener('click',closeShareModal);
+    $('shareModal')?.addEventListener('click',e=>{if(e.target===$('shareModal'))closeShareModal()});
+    $('smEncrypted')?.addEventListener('click',()=>{closeShareModal();generateEncryptedLink()});
+    $('smQR')?.addEventListener('click',()=>{closeShareModal();generateQR()});
+    $('smShareAgent')?.addEventListener('click',()=>{closeShareModal();shareConfigWithAgent()});
+    $('smExportJSON')?.addEventListener('click',()=>{closeShareModal();openExportModal()});
 
     async function importConvJSON(payload){
       try{
@@ -12119,7 +12119,7 @@ Rules:
 <div style="font-size:10px;color:var(--text-3);margin-bottom:16px">Source: ${alarm.source||'local'}</div>
 <button style="width:100%;padding:12px;font-size:14px;font-weight:600;font-family:var(--font);background:rgba(239,68,68,0.12);color:var(--err);border:1px solid rgba(239,68,68,0.25);border-radius:var(--r-md);cursor:pointer" id="maAlarmDismiss">Dismiss Alarm</button>
 </div>`;
-      body.querySelector('#maAlarmDismiss').addEventListener('click',()=>{removeAlarm(alarm.id);closeMAModal()});
+      body.querySelector('#maAlarmDismiss')?.addEventListener('click',()=>{removeAlarm(alarm.id);closeMAModal()});
       $('maModal').classList.add('open');
     }
     function toggleTimerDetail(timer,anchor){
@@ -12132,7 +12132,7 @@ Rules:
 <div style="font-size:10px;color:var(--text-3);margin-bottom:16px">Source: ${timer.source||'local'}</div>
 <button style="width:100%;padding:12px;font-size:14px;font-weight:600;font-family:var(--font);background:rgba(239,68,68,0.12);color:var(--err);border:1px solid rgba(239,68,68,0.25);border-radius:var(--r-md);cursor:pointer" id="maTimerStop">Stop Timer</button>
 </div>`;
-      body.querySelector('#maTimerStop').addEventListener('click',()=>{removeTimer(timer.id);closeMAModal()});
+      body.querySelector('#maTimerStop')?.addEventListener('click',()=>{removeTimer(timer.id);closeMAModal()});
       $('maModal').classList.add('open');
     }
 
@@ -13344,7 +13344,7 @@ Return ONLY valid JSON, no explanation.`;
       updateActionBtn();
       flushQueuedAutoSend();
     }
-    $('stopStreamBtn').addEventListener('click',()=>stopStreaming());
+    $('stopStreamBtn')?.addEventListener('click',()=>stopStreaming());
 
     // ── Send + Staged Queue ─────────────────────────────
     let _sending=false;
@@ -14341,14 +14341,14 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
     });
 
     // Send button — clean single click
-    $('sendBtn').addEventListener('click',()=>send());
-    $('textIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+    $('sendBtn')?.addEventListener('click',()=>send());
+    $('textIn')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
     // On mobile, tapping input should scroll chat to bottom so user sees latest messages
-    $('textIn').addEventListener('focus',()=>{
+    $('textIn')?.addEventListener('focus',()=>{
       if(!_userScrolledUp)return;
       setTimeout(()=>smoothScrollToBottom(_chatScroll,300),150);
     });
-    $('textIn').addEventListener('input',()=>{
+    $('textIn')?.addEventListener('input',()=>{
       const t=$('textIn');t.style.height='auto';t.style.height=Math.min(t.scrollHeight,140)+'px';
       updateActionBtn();
     });
@@ -14696,8 +14696,8 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
     }
 
     // ── File Attach ────────────────────────────────────
-    $('attachBtn').addEventListener('click',()=>$('fileIn').click());
-    $('fileIn').addEventListener('change',e=>{
+    $('attachBtn')?.addEventListener('click',()=>$('fileIn').click());
+    $('fileIn')?.addEventListener('change',e=>{
       if(e.target.files){for(const f of e.target.files)handleFile(f)}
       $('fileIn').value='';
     });
@@ -15226,9 +15226,9 @@ ${statusLine}
         const k2=getK();k2.gestureEnabled=true;setK(k2);
       }
     }
-    $('clawToggle').addEventListener('click',toggleClawMode);
-    $('clawGear').addEventListener('click',e=>{e.stopPropagation();openMAModal()});
-    $('gesturePipClose').addEventListener('click',()=>{
+    $('clawToggle')?.addEventListener('click',toggleClawMode);
+    $('clawGear')?.addEventListener('click',e=>{e.stopPropagation();openMAModal()});
+    $('gesturePipClose')?.addEventListener('click',()=>{
       stopGestureTracking();
       const k2=getK();k2.gestureEnabled=false;setK(k2);
       showToast('Claw mode off','ok');
@@ -16378,8 +16378,8 @@ ${note}`:note;
       }
     }
 
-    $('cameraBtn').addEventListener('click',openCamera);
-    $('voiceChatBtn').addEventListener('click',enterVoiceMode);
+    $('cameraBtn')?.addEventListener('click',openCamera);
+    $('voiceChatBtn')?.addEventListener('click',enterVoiceMode);
 
     async function startCameraStream(targetFacing,retryDelayMs=120){
       const constraints={video:{facingMode:targetFacing,width:{ideal:1920},height:{ideal:1080}},audio:false};
@@ -16434,7 +16434,7 @@ ${note}`:note;
       }
     }
 
-    $('camShutter').addEventListener('click',async()=>{
+    $('camShutter')?.addEventListener('click',async()=>{
       haptic('shutter');
       const req={...cameraCaptureRequest,facing:normalizeFacingMode(cameraCaptureRequest?.facing||facingMode)};
       const cap=await captureActiveCameraFrame({quality:0.85,allowAutoTorch:true});
@@ -16443,12 +16443,12 @@ ${note}`:note;
       await queueCapturedImage(cap.rawUrl,req,cap.meta);
     });
 
-    $('camFlip').addEventListener('click',async()=>{
+    $('camFlip')?.addEventListener('click',async()=>{
       const next=facingMode==='environment'?'user':'environment';
       await switchCameraFacing(next,{showErrors:true});
     });
 
-    $('camTorch').addEventListener('click',async()=>{
+    $('camTorch')?.addEventListener('click',async()=>{
       if(!camStream)return;
       const track=getVideoTrack(camStream);
       if(!track||!trackHasTorch(track)){
@@ -16466,7 +16466,7 @@ ${note}`:note;
       }
     });
 
-    $('camClose').addEventListener('click',closeCamera);
+    $('camClose')?.addEventListener('click',closeCamera);
 
     function closeCamera(){
       if(camStream){try{camStream.getTracks().forEach(t=>t.stop())}catch{};camStream=null}
@@ -17153,8 +17153,8 @@ ${note}`:note;
         input.value='';input.focus();
       }
     }
-    $('decryptBtn').addEventListener('click',attemptDecrypt);
-    $('decryptInput').addEventListener('keydown',e=>{if(e.key==='Enter')attemptDecrypt()});
+    $('decryptBtn')?.addEventListener('click',attemptDecrypt);
+    $('decryptInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')attemptDecrypt()});
 
     // ── Secure QR Onboarding ─────────────────────────
     let pendingQrBlob=null;
@@ -17216,8 +17216,8 @@ ${note}`:note;
         input.value='';input.focus();
       }
     }
-    $('qrUnlockBtn').addEventListener('click',attemptQrDecrypt);
-    $('qrPassInput').addEventListener('keydown',e=>{if(e.key==='Enter')attemptQrDecrypt()});
+    $('qrUnlockBtn')?.addEventListener('click',attemptQrDecrypt);
+    $('qrPassInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')attemptQrDecrypt()});
 
     async function tryDecodeQrFromImage(dataUrl){
       try{
@@ -17475,12 +17475,12 @@ ${note}`:note;
       }
 
       // Wire buttons
-      bar.querySelector('.tc-vid-mute').addEventListener('click',()=>{
+      bar.querySelector('.tc-vid-mute')?.addEventListener('click',()=>{
         video.muted=!video.muted;
         bar.querySelector('.tc-vid-mute').innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${video.muted?'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>':'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>'}</svg>`;
       });
-      bar.querySelector('.tc-vid-pip').addEventListener('click',()=>showPip(id));
-      bar.querySelector('.tc-vid-close').addEventListener('click',()=>removeVideo(id));
+      bar.querySelector('.tc-vid-pip')?.addEventListener('click',()=>showPip(id));
+      bar.querySelector('.tc-vid-close')?.addEventListener('click',()=>removeVideo(id));
 
       // IntersectionObserver for auto-PiP when scrolling away
       const observer=new IntersectionObserver(entries=>{
@@ -17571,16 +17571,16 @@ ${note}`:note;
     }
 
     // PiP controls
-    $('tcPipClose').addEventListener('click',()=>{
+    $('tcPipClose')?.addEventListener('click',()=>{
       if(pipSourceId)removeVideo(pipSourceId);else hidePip();
     });
-    $('tcPipBack').addEventListener('click',()=>{
+    $('tcPipBack')?.addEventListener('click',()=>{
       if(!pipSourceId)return;
       const entry=activeVideos.get(pipSourceId);
       if(entry)entry.wrap.scrollIntoView({behavior:'smooth',block:'center'});
       hidePip();
     });
-    $('tcPipMute').addEventListener('click',()=>{
+    $('tcPipMute')?.addEventListener('click',()=>{
       const v=$('tcPipVideo');v.muted=!v.muted;
       $('tcPipMute').innerHTML=`<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${v.muted?'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>':'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>'}</svg>`;
     });
@@ -18335,7 +18335,7 @@ ${note}`:note;
         refs.forEach(ref=>{
           const thumb=document.createElement('div');thumb.className='watch-ref-thumb';
           thumb.innerHTML=`<img src="${ref.data}"><button class="watch-ref-del" data-refid="${ref.id}">&times;</button>`;
-          thumb.querySelector('.watch-ref-del').addEventListener('click',async e=>{
+          thumb.querySelector('.watch-ref-del')?.addEventListener('click',async e=>{
             e.stopPropagation();
             await deleteWatchRef(ref.id);
             showToast('Reference removed','ok');
@@ -18586,16 +18586,16 @@ ${note}`:note;
       searchHits[searchIdx].scrollIntoView({behavior:'smooth',block:'center'});
       $('searchCount').textContent=`${searchIdx+1} / ${searchHits.length}`;
     }
-    $('searchBtn').addEventListener('click',()=>{
+    $('searchBtn')?.addEventListener('click',()=>{
       if($('searchBar').classList.contains('open'))closeSearch();else openSearch();
     });
-    $('searchClose').addEventListener('click',closeSearch);
-    $('searchInput').addEventListener('input',doSearch);
-    $('searchPrev').addEventListener('click',()=>searchNav(-1));
-    $('searchNext').addEventListener('click',()=>searchNav(1));
-    $('searchModeText').addEventListener('click',()=>setSearchMode('text'));
-    $('searchModeMedia').addEventListener('click',()=>setSearchMode('media'));
-    $('searchInput').addEventListener('keydown',e=>{
+    $('searchClose')?.addEventListener('click',closeSearch);
+    $('searchInput')?.addEventListener('input',doSearch);
+    $('searchPrev')?.addEventListener('click',()=>searchNav(-1));
+    $('searchNext')?.addEventListener('click',()=>searchNav(1));
+    $('searchModeText')?.addEventListener('click',()=>setSearchMode('text'));
+    $('searchModeMedia')?.addEventListener('click',()=>setSearchMode('media'));
+    $('searchInput')?.addEventListener('keydown',e=>{
       if(e.key==='Enter'){e.preventDefault();searchNav(e.shiftKey?-1:1)}
       if(e.key==='Escape')closeSearch();
     });
@@ -18636,7 +18636,7 @@ ${note}`:note;
     initBleGate();
     setInterval(checkIdle,60000);
     // Track activity on input focus
-    $('textIn').addEventListener('focus',touchActivity);
+    $('textIn')?.addEventListener('focus',touchActivity);
     // Session expiry check + badge
     checkSessionExpiry();
     updateSessionBadge();
@@ -18836,7 +18836,7 @@ ${note}`:note;
     }
 
     // Voice mode event wiring
-    $('voiceModeClose').addEventListener('click',exitVoiceMode);
+    $('voiceModeClose')?.addEventListener('click',exitVoiceMode);
     const pttBtn=$('voicePttBtn');
     pttBtn.addEventListener('mousedown',e=>{e.preventDefault();startVoiceModeRec()});
     pttBtn.addEventListener('mouseup',e=>{e.preventDefault();stopVoiceModeRec()});
@@ -19329,8 +19329,8 @@ ${note}`:note;
       sheet.classList.remove('open');
       bd.classList.remove('open');
     }
-    $('subagentSheetClose').addEventListener('click',_closeSubagentSheet);
-    $('subagentBackdrop').addEventListener('click',_closeSubagentSheet);
+    $('subagentSheetClose')?.addEventListener('click',_closeSubagentSheet);
+    $('subagentBackdrop')?.addEventListener('click',_closeSubagentSheet);
 
     // Inactivity sweep: fade after 5min idle, remove after 6min
     setInterval(()=>{
