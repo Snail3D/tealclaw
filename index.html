@@ -10204,9 +10204,24 @@ Rules:
     async function showMarketplace() {
       sysBubble('<p style="color:var(--text-3)">Fetching App Marketplace...</p>');
       try {
-        const res = await fetch('/marketplace.json');
+        let res = await fetch('/marketplace.json');
+        if(!res.ok) res = await fetch('/public/marketplace.json');
         if(!res.ok) throw new Error('Marketplace unavailable');
         const data = await res.json();
+        
+        await Promise.all((data.apps || []).map(async (app) => {
+          try {
+            let t = await fetch(app.url, {method: 'HEAD'});
+            if(!t.ok && app.url.startsWith('/apps/')) {
+              t = await fetch('/public' + app.url, {method: 'HEAD'});
+              if(t.ok) app._url = '/public' + app.url;
+            } else if(t.ok) {
+              app._url = app.url;
+            }
+            app._avail = !!app._url;
+          } catch(e) { app._avail = false; }
+        }));
+
         removeLast();
         
         let html = '<h3>App Marketplace</h3><p style="font-size:11px;color:var(--text-2);margin-bottom:12px">Install standalone widgets or share single-use links with clients.</p>';
@@ -10221,8 +10236,12 @@ Rules:
             <div class="tc-ui-card-desc">${esc(app.description)}</div>
             <div style="font-size:9px;color:var(--text-3);margin-bottom:8px">By ${esc(app.author)}</div>
             <div class="tc-ui-card-actions">
+              ${app._avail ? `
               <button class="tc-ui-btn btn-install" data-idx="${idx}">Install</button>
               <button class="tc-ui-btn secondary btn-share-app" data-idx="${idx}">Share Link</button>
+              ` : `
+              <button class="tc-ui-btn" disabled style="opacity:0.5;cursor:not-allowed;background:var(--bg-3);color:var(--text-3)">Coming soon</button>
+              `}
               ${app.buyUrl ? `<a href="${app.buyUrl}" target="_blank" class="tc-ui-btn secondary" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Support</a>` : ''}
             </div>
           </div>`;
@@ -10239,7 +10258,8 @@ Rules:
           const app = data.apps[+btn.dataset.idx];
           showToast(`Installing ${app.name}...`, 'ok');
           try {
-            const appRes = await fetch(app.url);
+            const appRes = await fetch(app._url || app.url);
+            if(!appRes.ok) throw new Error('Not found');
             const code = await appRes.text();
             const flow = {
               name: app.name,
@@ -10254,7 +10274,8 @@ Rules:
         el.querySelectorAll('.btn-share-app').forEach(btn => btn.addEventListener('click', async () => {
            const app = data.apps[+btn.dataset.idx];
            try {
-             const appRes = await fetch(app.url);
+             const appRes = await fetch(app._url || app.url);
+             if(!appRes.ok) throw new Error('Not found');
              const code = await appRes.text();
              const b64 = btoa(unescape(encodeURIComponent(code.trim())));
              const url = `${location.origin}/#app=${b64}`;
@@ -10266,7 +10287,16 @@ Rules:
         
       } catch(e) {
         removeLast();
-        sysBubble('<p style="color:var(--err)">Failed to load marketplace.</p>');
+        const errEl = document.createElement('div');
+        errEl.className = 'chat-bubble sys';
+        errEl.innerHTML = `<p style="color:var(--err);margin-bottom:8px">Failed to load marketplace.</p>
+                           <button class="tc-ui-btn secondary btn-retry-marketplace" style="font-size:12px;padding:4px 12px;width:auto">Retry</button>`;
+        errEl.querySelector('.btn-retry-marketplace').addEventListener('click', () => {
+          errEl.remove();
+          showMarketplace();
+        });
+        $('chatScroll').appendChild(errEl);
+        smoothScrollToBottom($('chatScroll'), 320);
       }
     }
 
