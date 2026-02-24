@@ -10762,7 +10762,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','matrix-rain','matrixRain','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -10924,6 +10924,49 @@ Rules:
       return div.innerHTML;
     }
 
+    let _matrixRainInterval=null;
+    function applyMatrixRainOverlay(action){
+      const existing=document.getElementById('tc-matrix-rain');
+      if(existing)existing.remove();
+      if(_matrixRainInterval){clearInterval(_matrixRainInterval);_matrixRainInterval=null;}
+      if(action.enabled===false)return;
+      const cvs=document.createElement('canvas');
+      cvs.id='tc-matrix-rain';
+      cvs.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9000;pointer-events:none;mix-blend-mode:screen;';
+      const op=typeof action.opacity==='number'?action.opacity:0.8;
+      cvs.style.opacity=op;
+      document.body.appendChild(cvs);
+      const ctx=cvs.getContext('2d');
+      let w=window.innerWidth,h=window.innerHeight;
+      cvs.width=w;cvs.height=h;
+      const ro=new ResizeObserver(()=>{w=window.innerWidth;h=window.innerHeight;cvs.width=w;cvs.height=h;});
+      ro.observe(document.body);
+      const chars='ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      const fz=14;
+      let cols=Math.floor(w/fz);
+      let drops=[];
+      for(let x=0;x<cols;x++)drops[x]=1;
+      const speed=typeof action.speed==='number'?action.speed:50;
+      const col=action.color||'#0F0';
+      const density=typeof action.density==='number'?action.density:0.95;
+      function draw(){
+        ctx.fillStyle='rgba(0,0,0,0.05)';
+        ctx.fillRect(0,0,w,h);
+        ctx.fillStyle=col;
+        ctx.font=fz+'px monospace';
+        if(drops.length<Math.floor(w/fz)){
+          let old=drops.length;cols=Math.floor(w/fz);
+          for(let x=old;x<cols;x++)drops[x]=1;
+        }
+        for(let i=0;i<drops.length;i++){
+          const text=chars[Math.floor(Math.random()*chars.length)];
+          ctx.fillText(text,i*fz,drops[i]*fz);
+          if(drops[i]*fz>h&&Math.random()>density)drops[i]=0;
+          drops[i]++;
+        }
+      }
+      _matrixRainInterval=setInterval(draw,speed);
+    }
     async function executeTcActions(actions){
       const results=[];
       for(const action of actions){
@@ -11047,6 +11090,11 @@ Rules:
               else if(action.target==='help'){$('helpBtn')?.click()}
               else if(action.target==='help-mode'){showToast('Help mode is disabled.','ok')}
               results.push({type:'navigate',ok:true});
+              break;
+            }
+            case 'matrix-rain':case 'matrixRain':{
+              applyMatrixRainOverlay(action);
+              results.push({type:'matrix-rain',ok:true});
               break;
             }
             case 'bubble':{

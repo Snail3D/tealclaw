@@ -285,6 +285,9 @@ Example first-time cfg:
                Opens settings sheet or creates new conversation.
     bubble   -- {"type":"bubble","text":"md here"} or {"html":"<h3>Hi</h3>"}
                Injects a system information bubble.
+    matrix-rain -- {"type":"matrix-rain","enabled":true,"speed":50,"density":0.95,"opacity":0.8,"color":"#0F0"}
+               Overlays a non-blocking Matrix digital rain canvas.
+               To remove: {"type":"matrix-rain","enabled":false}
     video    -- {"type":"video","url":"https://cam.example/feed.m3u8","title":"Office Cam","live":true,"muted":true}
                Embeds a video player in chat. Supports HLS (.m3u8), MP4, WebM.
                Auto-enters Picture-in-Picture when user scrolls away.
@@ -340,6 +343,12 @@ Example first-time cfg:
     ```
 
   Usr sees text + badge "3 actions executed". Cfg updates live, toast shows, note saves.
+
+  Example -- matrix rain overlay:
+    Initiating sequence...
+    ```tc-action
+    {"type":"matrix-rain","enabled":true,"color":"#00FF41","speed":40,"density":0.9}
+    ```
 
 - **EPHEMERAL SESSIONS** -- /session create 7d generates enc share link with expiry. Recipient enters passphrase, gets gateway access for specified duration (30m, 1h, 7d, 2w). On expiry, gwUrl+gwToken auto-wiped from LS. Topbar badge shows remaining time. /session info, /session end to check/revoke.
 
