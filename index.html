@@ -16183,6 +16183,32 @@ ${note}`:note;
     function importFromHash(){
       if(importGatewayFromHash())return true;
       const h=location.hash;
+      if(h.startsWith('#app=')){
+        try{
+          const b64=h.slice(5);
+          let raw=decodeURIComponent(escape(atob(b64)));
+          try{ const parsed = JSON.parse(raw); if(parsed.html) raw = parsed.html; else if(parsed.code) raw = parsed.code; }catch(e){} // fallback to JSON code block if wrapped
+          // Hide standard UI
+          document.querySelectorAll('body > :not(.toast):not(.tc-notify):not(script)').forEach(el=>{
+            if(el.style) el.style.display='none';
+          });
+          // Inject fullscreen iframe
+          const iframe=document.createElement('iframe');
+          iframe.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;margin:0;padding:0;z-index:999999;background:var(--bg-1);';
+          iframe.sandbox='allow-scripts allow-same-origin';
+          iframe.allow='camera *; microphone *; geolocation *; clipboard-read *; clipboard-write *';
+          iframe.srcdoc=raw;
+          document.body.appendChild(iframe);
+          // Clean URL
+          history.replaceState(null,'',location.pathname+location.search);
+          return true;
+        }catch(e){
+          console.error('App launch failed:',e);
+          showToast('Failed to launch standalone app','err');
+          history.replaceState(null,'',location.pathname+location.search);
+        }
+      }
+      
       if(!h.startsWith('#config='))return false;
       const payload=h.slice(8);
       // Defensive cap: avoid giant hash payloads that can freeze the UI.

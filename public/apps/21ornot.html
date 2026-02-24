@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>21orNot Scanner</title>
+  <style>
+    body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #000; color: #fff; overflow: hidden; transition: background 0.3s; }
+    #video-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    video { min-width: 100%; min-height: 100%; object-fit: cover; }
+    .overlay { position: absolute; inset: 0; pointer-events: none; border: 4px solid transparent; transition: border-color 0.3s; box-sizing: border-box; }
+    
+    .screen-green { border-color: #10b981; background: rgba(16, 185, 129, 0.2); }
+    .screen-yellow { border-color: #eab308; background: rgba(234, 179, 8, 0.2); }
+    .screen-red { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+    .screen-orange { border-color: #f97316; background: rgba(249, 115, 22, 0.2); }
+
+    .ui-layer { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 10; pointer-events: none; }
+    
+    .header { text-align: center; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 12px; backdrop-filter: blur(4px); margin-top: 20px; pointer-events: auto; }
+    .header h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+    
+    .guide-box { margin: auto; width: 80%; height: 30%; border: 2px dashed rgba(255,255,255,0.5); border-radius: 12px; }
+    
+    .controls { display: flex; justify-content: center; margin-bottom: 20px; pointer-events: auto; flex-direction: column; align-items: center; gap: 10px; }
+    
+    .btn-scan { 
+      background: #fff; color: #000; border: none; width: 72px; height: 72px; border-radius: 50%; font-weight: bold; font-size: 14px; 
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4); cursor: pointer; transition: transform 0.1s; text-transform: uppercase;
+    }
+    .btn-scan:active { transform: scale(0.95); }
+    .btn-scan:disabled { opacity: 0.5; pointer-events: none; }
+    
+    #result-panel { 
+      background: rgba(0,0,0,0.8); padding: 15px; border-radius: 12px; font-size: 14px; text-align: left; 
+      backdrop-filter: blur(8px); display: none; width: 100%; max-width: 320px;
+    }
+    #result-panel .age { font-size: 32px; font-weight: 800; margin-bottom: 5px; text-align: center; }
+    #result-panel .status { font-weight: bold; text-align: center; margin-bottom: 10px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+    #result-panel .details { font-family: monospace; font-size: 12px; color: #aaa; white-space: pre-wrap; }
+    
+    /* Settings */
+    #settings-panel {
+      position: absolute; inset: 0; background: #111; z-index: 50; padding: 20px; display: none; pointer-events: auto;
+      flex-direction: column; overflow-y: auto;
+    }
+    input[type="password"] { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #333; background: #222; color: #fff; box-sizing: border-box; }
+    .btn-save { background: #10b981; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+    
+    .setup-btn { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; color: #fff; border-radius: 50%; width: 32px; height: 32px; pointer-events: auto; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div id="video-container">
+    <video id="video" autoplay playsinline></video>
+  </div>
+  <div class="overlay" id="overlay"></div>
+  
+  <div class="ui-layer">
+    <div class="header">
+      <h1>21orNot</h1>
+    </div>
+    <button class="setup-btn" onclick="document.getElementById('settings-panel').style.display='flex'">⚙️</button>
+    
+    <div class="guide-box" id="guide"></div>
+    
+    <div class="controls">
+      <div id="result-panel">
+        <div class="age" id="res-age">--</div>
+        <div class="status" id="res-status"></div>
+        <div class="details" id="res-details"></div>
+      </div>
+      <button class="btn-scan" id="scanBtn" onclick="scan()">SCAN</button>
+    </div>
+  </div>
+
+  <div id="settings-panel">
+    <h2>Setup Groq API</h2>
+    <p style="font-size:13px;color:#888;">For AI fallback scanning when native barcode fails.</p>
+    <label>Groq API Key</label>
+    <input type="password" id="apiKey" placeholder="gsk_..." />
+    <button class="btn-save" onclick="saveSettings()">Save & Close</button>
+  </div>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('overlay');
+    const scanBtn = document.getElementById('scanBtn');
+    const resultPanel = document.getElementById('result-panel');
+    let stream = null;
+
+    // Load saved key
+    const savedKey = localStorage.getItem('tc-21ornot-key');
+    if(savedKey) document.getElementById('apiKey').value = savedKey;
+
+    function saveSettings() {
+      localStorage.setItem('tc-21ornot-key', document.getElementById('apiKey').value.trim());
+      document.getElementById('settings-panel').style.display = 'none';
+      if(!stream) initCamera();
+    }
+
+    async function initCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Camera access denied or unavailable.");
+      }
+    }
+
+    if(savedKey) initCamera();
+    else document.getElementById('settings-panel').style.display = 'flex';
+
+    function haptic(pattern) {
+      if(navigator.vibrate) navigator.vibrate(pattern);
+    }
+
+    function setUIState(type, age, details) {
+      overlay.className = 'overlay screen-' + type;
+      resultPanel.style.display = 'block';
+      document.getElementById('res-age').textContent = age ? `${age} YEARS OLD` : 'ERROR';
+      document.getElementById('res-details').textContent = details;
+      
+      const statusEl = document.getElementById('res-status');
+      
+      if(type === 'green') {
+        statusEl.textContent = 'VALID • OVER 21';
+        statusEl.style.color = '#10b981';
+        haptic([200, 80, 200]);
+      } else if(type === 'yellow') {
+        statusEl.textContent = 'WARNING • 18-20';
+        statusEl.style.color = '#eab308';
+        haptic([120, 60, 120, 60, 120]);
+      } else if(type === 'red') {
+        statusEl.textContent = 'STOP • MINOR (UNDER 18)';
+        statusEl.style.color = '#ef4444';
+        haptic([80, 40, 80, 40, 80, 40, 80]);
+      } else if(type === 'orange') {
+        statusEl.textContent = 'SUSPICIOUS • FAKE OR EXPIRED';
+        statusEl.style.color = '#f97316';
+        haptic([200, 100, 200, 100, 200, 100, 200]);
+      }
+    }
+
+    function calcAge(dobStr) {
+      // Assuming MMDDYYYY or YYYY-MM-DD
+      let d;
+      if(dobStr.length === 8 && !dobStr.includes('-')) {
+        // MMDDYYYY
+        d = new Date(`${dobStr.substring(4,8)}-${dobStr.substring(0,2)}-${dobStr.substring(2,4)}`);
+      } else {
+        d = new Date(dobStr);
+      }
+      
+      const today = new Date();
+      let age = today.getFullYear() - d.getFullYear();
+      const m = today.getMonth() - d.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+        age--;
+      }
+      return age;
+    }
+
+    function parseAAMVA(data) {
+      // Basic AAMVA parser (PDF417 barcode)
+      const dobMatch = data.match(/DBB(\d{8})/);
+      const expMatch = data.match(/DBA(\d{8})/);
+      const fNameMatch = data.match(/DAC([^\n\r]+)/);
+      const lNameMatch = data.match(/DCS([^\n\r]+)/);
+      
+      if(!dobMatch) return null;
+      
+      return {
+        dob: dobMatch[1],
+        exp: expMatch ? expMatch[1] : null,
+        first: fNameMatch ? fNameMatch[1].trim() : '',
+        last: lNameMatch ? lNameMatch[1].trim() : ''
+      };
+    }
+
+    async function scan() {
+      scanBtn.disabled = true;
+      scanBtn.textContent = '...';
+      overlay.className = 'overlay';
+      resultPanel.style.display = 'none';
+
+      // Capture frame
+      const maxDim = 1800;
+      let w = video.videoWidth;
+      let h = video.videoHeight;
+      if(w > maxDim || h > maxDim) {
+        const ratio = Math.min(maxDim/w, maxDim/h);
+        w *= ratio;
+        h *= ratio;
+      }
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(video, 0, 0, w, h);
+
+      try {
+        // 1. Try Native Barcode API (Zero Latency)
+        if ('BarcodeDetector' in window) {
+          const detector = new BarcodeDetector({ formats: ['pdf417'] });
+          const barcodes = await detector.detect(canvas);
+          if (barcodes.length > 0) {
+            const data = barcodes[0].rawValue;
+            const parsed = parseAAMVA(data);
+            if(parsed) {
+              const age = calcAge(parsed.dob);
+              let state = age >= 21 ? 'green' : (age >= 18 ? 'yellow' : 'red');
+              // Check expiration
+              if(parsed.exp) {
+                const isExp = calcAge(parsed.exp) >= 0 && new Date() > new Date(`${parsed.exp.substring(4,8)}-${parsed.exp.substring(0,2)}-${parsed.exp.substring(2,4)}`);
+                if(isExp) state = 'orange';
+              }
+              setUIState(state, age, `[BARCODE SCANNED]\nName: ${parsed.first} ${parsed.last}\nDOB: ${parsed.dob}\nEXP: ${parsed.exp || 'N/A'}`);
+              resetBtn();
+              return;
+            }
+          }
+        }
+        
+        // 2. Fallback to Groq Vision API
+        const key = localStorage.getItem('tc-21ornot-key');
+        if(!key) {
+          alert('No API key set. Open settings to configure Groq API.');
+          resetBtn();
+          return;
+        }
+
+        const b64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const prompt = `You are an ID scanner verification system. Analyze this ID card.
+Today's date is ${todayStr}.
+Extract the following fields strictly as a JSON object:
+{
+  "first_name": "...",
+  "last_name": "...",
+  "dob": "YYYY-MM-DD",
+  "is_expired": boolean,
+  "dob_mismatch": boolean, // TRUE if you see two different birth dates (hologram vs text)
+  "under_21_until": "YYYY-MM-DD" // if printed on card
+}
+If you cannot read the ID, return {"error": "unreadable"}`;
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'llama-3.2-90b-vision-preview',
+            response_format: { type: "json_object" },
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } }
+              ]
+            }]
+          })
+        });
+
+        const data = await res.json();
+        const jsonStr = data.choices[0].message.content;
+        const result = JSON.parse(jsonStr);
+
+        if(result.error) {
+          setUIState('orange', null, 'AI Error: Image unreadable or not an ID.');
+        } else {
+          const age = calcAge(result.dob);
+          let state = age >= 21 ? 'green' : (age >= 18 ? 'yellow' : 'red');
+          
+          if(result.is_expired || result.dob_mismatch) {
+            state = 'orange';
+          }
+
+          setUIState(state, age, `[AI VISION SCANNED]\nName: ${result.first_name} ${result.last_name}\nDOB: ${result.dob}\nExpired: ${result.is_expired}\nDOB Mismatch: ${result.dob_mismatch}`);
+        }
+      } catch (err) {
+        console.error(err);
+        setUIState('orange', null, 'Scan failed: ' + err.message);
+      }
+      resetBtn();
+    }
+
+    function resetBtn() {
+      scanBtn.disabled = false;
+      scanBtn.textContent = 'SCAN';
+    }
+  </script>
+</body>
+</html>
