@@ -7736,12 +7736,12 @@ RULES:
       const persona = getVoicePersona(k);
       
       const sysPrompts={
-        chat:`You are summarizing a long or highly technical response from an AI assistant so it can be spoken aloud to the user.
+        chat:`You are summarizing a technical or code-heavy response from an AI assistant so it can be spoken aloud.
 
 RULES:
-- Distill the core message into 1 to 3 natural, conversational sentences.
-- Speak in FIRST PERSON ("I have created the file", "Here is the summary").
-- Completely skip reading out code blocks, JSON, or raw logs. Just mention that you wrote or provided them.
+- Distill the core message into 2 to 5 natural, conversational sentences.
+- Speak in FIRST PERSON ("I have created...", "Here is what I found...").
+- Completely skip reading out code blocks, JSON, or raw logs. Just mention that you provided them.
 - NEVER add technical commentary or meta-narration about your own summarizing process.
 - Lead with the direct answer.
 - tone: ${persona.ttsNote}
@@ -8548,17 +8548,17 @@ CITATIONS & URLS & DATES (CRITICAL):
 FORMATTING:
 - Remove all markdown formatting (headers, bold, italic, links, code blocks, tables)
 - Remove file paths and code snippets entirely
-- If the text has long lists, code, tables, or detailed technical content: summarize the key points briefly and stop. Do NOT say "check your screen", "see the details on screen", or any variation — the user already knows the full text is on screen.
-- For research results: give a concise verbal summary (2-4 sentences max) of the key findings
-- Keep the conversational tone of the original
-- Maximum 3-4 sentences for long responses
-- Never say "here is" or "the following" — just speak naturally
+- If the text has long lists, code, tables, or detailed technical content: summarize the key points naturally. Do NOT say "check your screen", "see the details on screen", or any variation — the user already knows the full text is on screen.
+- For research results: give a concise verbal summary (3-5 sentences max) of the key findings.
+- Keep the conversational tone of the original.
+- Do NOT truncate or summarize regular conversation or short answers; read them out fully.
+- Maximum 5-6 sentences for long technical responses.
+- Never say "here is" or "the following" — just speak naturally.
 
 CRITICAL — CONDENSING RULES:
-- You are converting ONE response into ONE short spoken script. That's it.
-- Do NOT create dialogue, self-conversation, back-and-forth, or self-affirmation. No "and that's a great question" or "let me think about that" padding.
-- For self-referential or meta questions (about the AI itself): just state the answer directly in 1-2 sentences. Do not elaborate, philosophize, or riff on it.
-- Strip all filler. Get to the point. The spoken version should always be SHORTER than the written version, never longer.
+- You are converting ONE response into ONE spoken script. That's it.
+- Do NOT create dialogue, self-conversation, back-and-forth, or self-affirmation.
+- Strip all filler. Get to the point. The spoken version should be natural and engaging.
 ${userExpr?`- Start the script with [${userExpr}] for voice tone direction`:`- Start the script with a tone tag in brackets that matches the mood. Pick ONE from: [cheerful], [warm], [whisper], [dramatic], [sarcastic], [excited], [professional], [calm], [gentle], [playful], [confident], [empathetic]. Match the emotion of the content.`}
 ${(()=>{const p=VOICE_PERSONAS[cfg?.groqTtsVoice||'troy'];return p?`\nVOICE CHARACTER: You are writing a script for "${p.name}" (${p.tag}). ${p.ttsNote}`:''})()}
 
@@ -13613,7 +13613,9 @@ ${agentNote}`);
             removeTyping();
             if(d.error)throw new Error(d.error.message);
             const reply=d.choices?.[0]?.message?.content||'(No response)';
-            addBubble('ai',reply,{usage:d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:gModel}:null});
+            const bubble=addBubble('ai',reply,{usage:d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:gModel}:null});
+            const idx=chatHistory.indexOf(bubble);
+            if(idx!==-1)kickOffAutoTTS(reply,idx,gk);
           }).catch(e=>{removeTyping();sysBubble(`<p>Groq error: ${esc(e.message)}</p>`)});
           return;
         }
