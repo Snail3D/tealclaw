@@ -12784,7 +12784,7 @@ Leading commas add +1 second delay each.<br>
 <div style="margin-top:8px;background:var(--bg-hover);padding:8px;border-radius:8px;">
   <input type="text" id="${sid}" placeholder="e.g. /gita alexa ,,, play jazz" style="width:100%; margin-bottom:6px; font-size:12px; padding:6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; box-sizing:border-box;">
   <div style="display:flex; gap:6px;">
-    <button class="btn btn-teal btn-sm" onclick="const v=document.getElementById('${sid}').value.trim(); if(v){ $('chatInput').value=v; $('chatInput').focus(); }">Use</button>
+    <button class="btn btn-teal btn-sm" onclick="const v=document.getElementById('${sid}').value.trim(); if(v){ $('textIn').value=v; $('textIn').focus(); }">Use</button>
     <button class="btn btn-ghost btn-sm" onclick="const v=document.getElementById('${sid}').value.trim(); if(v){ const k=getK(); k.quickReplies=k.quickReplies||[]; if(!k.quickReplies.includes(v)){ k.quickReplies.push(v); setK(k); renderQuickReplies(); document.getElementById('quickReplies').style.display='flex'; showToast('Added to quick commands','ok'); }else{ showToast('Already in quick commands','warn'); } }else{ showToast('Enter a command first','err'); }">Set as Quick Command</button>
   </div>
 </div>
