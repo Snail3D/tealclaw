@@ -2005,20 +2005,29 @@
       let html=esc(text);
 
       // Mermaid diagrams — render as special container (before generic code blocks)
-      html=html.replace(/```mermaid\n([\s\S]*?)```/g,(m,code)=>
-        `<div class="mermaid-block" data-mermaid="${btoa(unescape(encodeURIComponent(code.trim())))}"><div class="mermaid-loading"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg> Rendering diagram...</div></div>`);
+      html=html.replace(/```mermaid\s*\n([\s\S]*?)```/gi,(m,code)=> {
+        try {
+          const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+          return `<div class="mermaid-block" data-mermaid="${btoa(unescape(encodeURIComponent(unescaped.trim())))}"><div class="mermaid-loading"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity="0.3"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg> Rendering diagram...</div></div>`;
+        } catch(e) { return `<pre><code>${code}</code></pre>`; }
+      });
 
       // tc-app Sandboxed Apps — render as iframe
-      html=html.replace(/```tc-app\n([\s\S]*?)```/g,(m,code)=> {
-        const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
-        const b64 = btoa(unescape(encodeURIComponent(unescaped.trim())));
-        return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;pointer-events:auto !important;position:relative;z-index:10;">
-          <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *" src="data:text/html;base64,${b64}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;pointer-events:auto !important;"></iframe>
-        </div>`;
+      html=html.replace(/```tc-app\s*\n([\s\S]*?)```/gi,(m,code)=> {
+        try {
+          const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+          const b64 = btoa(unescape(encodeURIComponent(unescaped.trim())));
+          return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;pointer-events:auto !important;position:relative;z-index:10;">
+            <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *" src="data:text/html;base64,${b64}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;pointer-events:auto !important;"></iframe>
+          </div>`;
+        } catch(e) {
+          console.error("tc-app render failed", e);
+          return `<pre><code>${code}</code></pre>`;
+        }
       });
 
       // tc-flow Engine Macros
-      html=html.replace(/```tc-flow\n([\s\S]*?)```/g,(m,code)=> {
+      html=html.replace(/```tc-flow\s*\n([\s\S]*?)```/gi,(m,code)=> {
         const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
         try {
           const flow = JSON.parse(unescaped.trim());
