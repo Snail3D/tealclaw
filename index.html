@@ -12346,11 +12346,8 @@ Return ONLY valid JSON, no explanation.`;
             const query=gifQuery||autoDetectGif(displayText);
             if(query)searchGif(query).then(r=>{if(r)showGifOverlay(r)}).catch(()=>{});
           }
-          // Groq narrator: digest only tool/code-heavy agent output
+          // Groq narrator is disabled for direct chat to prevent mangling agent instructions
           let rawText=null;
-          if(groqShouldDigest(displayText)){
-            try{rawText=displayText;displayText=await groqDigest(displayText,'chat')}catch{}
-          }
           // Agent responses stay as-is — don't rewrite into group personas
           chatHistory[streamIdx].text=displayText;
           if(rawText&&rawText!==displayText)chatHistory[streamIdx].rawText=rawText;
