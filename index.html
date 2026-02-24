@@ -300,7 +300,7 @@
     .vol-slider-fill{position:absolute;bottom:0;left:0;width:100%;background:var(--teal);border-radius:3px;transition:height 0.05s}
     .vol-slider-label{font-size:10px;font-weight:700;color:var(--text-2);margin-top:6px;line-height:1}
 
-    .scroll-anchor{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;width:40px;height:40px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+    .scroll-anchor{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:50;width:40px;height:40px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity 0.25s,transform 0.25s;box-shadow:0 2px 8px rgba(0,0,0,0.15);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .scroll-anchor.visible{opacity:1;pointer-events:auto}
     .scroll-anchor:hover{border-color:var(--teal);color:var(--teal);transform:translateX(-50%) scale(1.08)}
     .scroll-anchor:active{transform:translateX(-50%) scale(0.95)}
@@ -12766,68 +12766,183 @@ Return ONLY valid JSON, no explanation.`;
     }
 
     function handleGitaCommand(args) {
-      if (!args || args.toLowerCase() === 'help') {
-        const sid = 'gita_cmd_' + Date.now();
-        sysBubble(`<h3>GITA Integration</h3>
-<p>Trigger voice assistants remotely.</p>
-<p><strong>Commands:</strong></p>
-<ul>
-<li><code>/gita siri turn off the lights</code></li>
-<li><code>/gita alexa play jazz</code></li>
-<li><code>/gita google set the thermostat to 72</code></li>
-<li><code>/gita custom "hey computer" engage warp drive</code></li>
-</ul>
-<p><strong>Comma Delay Shorthand:</strong><br>
-Leading commas add +1 second delay each.<br>
-<code>/gita alexa ,,, play audio bible</code> (+3s delay)</p>
-<p><strong>Endpoint:</strong> <code>${esc(getK().gitaEndpoint||'http://localhost:3000')}</code></p>
-<div style="margin-top:8px;background:var(--bg-hover);padding:8px;border-radius:8px;">
-  <input type="text" id="${sid}" placeholder="e.g. /gita alexa ,,, play jazz" style="width:100%; margin-bottom:6px; font-size:12px; padding:6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; box-sizing:border-box;">
-  <div style="display:flex; gap:6px;">
-    <button class="btn btn-teal btn-sm" onclick="const v=document.getElementById('${sid}').value.trim(); if(v){ $('textIn').value=v; $('textIn').focus(); }">Use</button>
-    <button class="btn btn-ghost btn-sm" onclick="const v=document.getElementById('${sid}').value.trim(); if(v){ const k=getK(); k.quickReplies=k.quickReplies||[]; if(!k.quickReplies.includes(v)){ k.quickReplies.push(v); setK(k); renderQuickReplies(); document.getElementById('quickReplies').style.display='flex'; showToast('Added to quick commands','ok'); }else{ showToast('Already in quick commands','warn'); } }else{ showToast('Enter a command first','err'); }">Set as Quick Command</button>
+      let isQuickCmd = false;
+      let argAssistant = '';
+      let argCommand = '';
+      
+      if (args && args.toLowerCase() !== 'help') {
+        const parts = args.split(/\s+/);
+        const firstWord = parts[0].toLowerCase();
+        if (['siri','alexa','google','custom'].includes(firstWord) && parts.length > 1) {
+          isQuickCmd = true;
+          argAssistant = firstWord;
+          argCommand = parts.slice(1).join(' ');
+        }
+      }
+      
+      if (isQuickCmd) {
+        let wakePhrase = '';
+        if (argAssistant === 'custom') {
+          const customMatch = args.match(/^custom\s+"([^"]+)"\s+(.+)$/i) || args.match(/^custom\s+'([^']+)'\s+(.+)$/i);
+          if (customMatch) {
+            wakePhrase = customMatch[1];
+            argCommand = customMatch[2];
+          } else {
+            sysBubble(`<p>Usage for custom: <code>/gita custom "wake phrase" your command here</code></p>`);
+            return;
+          }
+        }
+        handleGitaAction({ assistant: argAssistant, wakePhrase, command: argCommand });
+        return;
+      }
+      
+      const sid = 'gita_cmd_' + Date.now();
+      let pIntent = args && args.toLowerCase() !== 'help' ? args.trim() : '';
+      let pAssistant = 'alexa';
+      let pWakePhrase = '';
+      let pCommand = pIntent;
+      let pDelay = 0;
+      
+      if (pIntent) {
+        let tempCmd = pIntent;
+        const commaMatch = tempCmd.match(/^([,]+)\s*(.*)$/);
+        if (commaMatch) {
+          pDelay = commaMatch[1].length * 1000;
+          tempCmd = commaMatch[2];
+        }
+        const lower = tempCmd.toLowerCase();
+        if (lower.includes('siri')) pAssistant = 'siri';
+        else if (lower.includes('alexa')) pAssistant = 'alexa';
+        else if (lower.includes('google')) pAssistant = 'google';
+        else if (lower.includes('custom') || lower.includes('computer')) {
+          pAssistant = 'custom';
+          pWakePhrase = 'hey computer';
+        }
+        tempCmd = tempCmd.replace(/\b(hey|ok|hi)?\s*(siri|alexa|google|computer)\b/gi, '').trim().replace(/\s{2,}/g, ' ');
+        pCommand = tempCmd;
+      }
+      
+      sysBubble(`<h3>GITA Smart Preset</h3>
+<p style="margin-bottom:8px;font-size:13px;line-height:1.4;">Trigger voice assistants remotely. Use leading commas for delay (e.g. <code>,,,</code> for +3s).</p>
+<div style="background:var(--bg-hover);padding:10px;border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:8px;">
+
+  <div style="display:flex;gap:6px;align-items:center;">
+    <input type="text" id="${sid}_intent" placeholder="e.g. hey alexa ,,, turn off the lights" value="${esc(pIntent)}" style="flex:1;padding:6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+    <button class="btn btn-ghost btn-sm" onclick="
+      const text = document.getElementById('${sid}_intent').value;
+      if (!text) return;
+      let asst = 'alexa'; let cmd = text; let wake = ''; let d = 0;
+      const commaMatch = cmd.match(/^([,]+)\\s*(.*)$/);
+      if (commaMatch) { d = commaMatch[1].length * 1000; cmd = commaMatch[2]; }
+      const lower = cmd.toLowerCase();
+      if (lower.includes('siri')) asst = 'siri';
+      else if (lower.includes('alexa')) asst = 'alexa';
+      else if (lower.includes('google')) asst = 'google';
+      else if (lower.includes('custom') || lower.includes('computer')) { asst = 'custom'; wake = 'hey computer'; }
+      cmd = cmd.replace(/\\b(hey|ok|hi)?\\s*(siri|alexa|google|computer)\\b/gi, '').trim().replace(/\\s{2,}/g, ' ');
+      
+      document.getElementById('${sid}_asst').value = asst;
+      document.getElementById('${sid}_wake_div').style.display = asst==='custom'?'block':'none';
+      if(asst==='custom') document.getElementById('${sid}_wake').value = wake;
+      document.getElementById('${sid}_cmd').value = cmd;
+      document.getElementById('${sid}_delay').value = d;
+      document.getElementById('${sid}_speed').value = 0.9;
+      document.getElementById('${sid}_wakedelay').value = 2500;
+      document.getElementById('${sid}_vol').value = '';
+      document.getElementById('${sid}_pause').value = '';
+      showToast('Smart preset applied', 'ok');
+    ">Apply Preset</button>
+  </div>
+
+  <hr style="border:0;border-top:1px solid var(--border);margin:4px 0;">
+
+  <div style="display:flex;gap:8px;">
+    <div style="flex:1;">
+      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Assistant</label>
+      <select id="${sid}_asst" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;" onchange="document.getElementById('${sid}_wake_div').style.display=this.value==='custom'?'block':'none'">
+        <option value="siri" ${pAssistant==='siri'?'selected':''}>Siri</option>
+        <option value="alexa" ${pAssistant==='alexa'?'selected':''}>Alexa</option>
+        <option value="google" ${pAssistant==='google'?'selected':''}>Google</option>
+        <option value="custom" ${pAssistant==='custom'?'selected':''}>Custom</option>
+      </select>
+    </div>
+    <div style="flex:1;">
+      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Delay (ms)</label>
+      <input type="number" id="${sid}_delay" value="${pDelay}" step="1000" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+    </div>
+  </div>
+
+  <div id="${sid}_wake_div" style="display:${pAssistant==='custom'?'block':'none'};">
+    <label style="display:block;margin-bottom:2px;color:var(--text-2);">Wake Phrase</label>
+    <input type="text" id="${sid}_wake" value="${esc(pWakePhrase)}" placeholder="hey computer" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+  </div>
+
+  <div>
+    <label style="display:block;margin-bottom:2px;color:var(--text-2);">Command to speak</label>
+    <input type="text" id="${sid}_cmd" value="${esc(pCommand)}" placeholder="turn off the lights" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+  </div>
+
+  <div style="display:flex;gap:8px;">
+    <div style="flex:1;">
+      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Speed (0.5-2.0)</label>
+      <input type="number" id="${sid}_speed" value="0.9" step="0.1" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+    </div>
+    <div style="flex:1;">
+      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Wake Delay (ms)</label>
+      <input type="number" id="${sid}_wakedelay" value="2500" step="500" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;">
+    <div style="flex:1;">
+      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Volume</label>
+      <input type="number" id="${sid}_vol" placeholder="Optional" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+    </div>
+    <div style="flex:1;">
+      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Pause</label>
+      <input type="number" id="${sid}_pause" placeholder="Optional" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:6px;margin-top:4px;">
+    <button class="btn btn-teal btn-sm" style="flex:1;" onclick="
+      const asst = document.getElementById('${sid}_asst').value;
+      const cmd = document.getElementById('${sid}_cmd').value.trim();
+      if(!cmd) return showToast('Enter a command', 'err');
+      const wake = document.getElementById('${sid}_wake').value.trim();
+      const del = parseInt(document.getElementById('${sid}_delay').value)||0;
+      const spd = parseFloat(document.getElementById('${sid}_speed').value)||0.9;
+      const wDel = parseInt(document.getElementById('${sid}_wakedelay').value)||2500;
+      const vol = document.getElementById('${sid}_vol').value ? parseInt(document.getElementById('${sid}_vol').value) : undefined;
+      const pau = document.getElementById('${sid}_pause').value ? parseInt(document.getElementById('${sid}_pause').value) : undefined;
+      
+      const payload = { assistant: asst, command: cmd };
+      if (asst==='custom') payload.wakePhrase = wake;
+      if (del) payload.delay = del;
+      if (spd !== 0.9) payload.speed = spd;
+      if (wDel !== 2500) payload.wakeDelay = wDel;
+      if (vol !== undefined) payload.volume = vol;
+      if (pau !== undefined) payload.pause = pau;
+      
+      handleGitaAction(payload);
+    ">Trigger</button>
+    <button class="btn btn-ghost btn-sm" onclick="
+      const asst = document.getElementById('${sid}_asst').value;
+      const cmd = document.getElementById('${sid}_cmd').value.trim();
+      if(!cmd) return showToast('Enter a command', 'err');
+      let text = '/gita ' + asst;
+      if(asst==='custom'){
+        const wake = document.getElementById('${sid}_wake').value.trim();
+        text += ' \\\"' + wake + '\\\"';
+      }
+      text += ' ' + cmd;
+      const k=getK(); k.quickReplies=k.quickReplies||[];
+      if(!k.quickReplies.includes(text)){ k.quickReplies.push(text); setK(k); renderQuickReplies(); document.getElementById('quickReplies').style.display='flex'; showToast('Added to quick commands','ok'); }else{ showToast('Already in quick commands','warn'); }
+    ">Quick Cmd</button>
   </div>
 </div>
-<p style="font-size:11px;color:var(--text-2);margin-top:8px;margin-bottom:0;">To change endpoint: paste <code>{"gitaEndpoint": "http://IP:3000"}</code> in chat.</p>`);
-        return;
-      }
-      
-      const parts = args.split(/\s+/);
-      const assistant = parts[0].toLowerCase();
-      let wakePhrase = '';
-      let command = '';
-      
-      if (!['siri','alexa','google','custom'].includes(assistant)) {
-        sysBubble(`<p>Invalid assistant: <code>${esc(assistant)}</code>. Must be siri, alexa, google, or custom.</p>`);
-        return;
-      }
-      
-      if (assistant === 'custom') {
-        const customMatch = args.match(/^custom\s+"([^"]+)"\s+(.+)$/i) || args.match(/^custom\s+'([^']+)'\s+(.+)$/i);
-        if (customMatch) {
-          wakePhrase = customMatch[1];
-          command = customMatch[2];
-        } else {
-          sysBubble(`<p>Usage for custom: <code>/gita custom "wake phrase" your command here</code></p>`);
-          return;
-        }
-      } else {
-        command = parts.slice(1).join(' ');
-      }
-      
-      if (!command) {
-        sysBubble(`<p>Missing command. Example: <code>/gita siri turn off the lights</code></p>`);
-        return;
-      }
-      
-      handleGitaAction({ assistant, wakePhrase, command });
+<p style="font-size:11px;color:var(--text-2);margin-top:8px;margin-bottom:0;">To change endpoint: paste <code>{"gitaEndpoint": "http://IP:3000"}</code></p>`);
     }
-    async function handleAlarmCommand(arg){
-      const k=getK();
-      const key=getGroqKey(k);
-      const now=new Date();
-      const timeCtx=`Current time: ${now.toLocaleTimeString('en-US',{hour12:true})} on ${now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
-      addTyping();
       try{
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
@@ -19057,11 +19172,16 @@ ${note}`:note;
       if(!isNearBottom(_chatScroll,150))_userScrolledUp=true;
     },{passive:true});
 
-    _scrollBtn.addEventListener('click',()=>{
+    const scrollToBottomNow=(ev)=>{
+      if(ev){ev.preventDefault();ev.stopPropagation();}
       smoothScrollToBottom(_chatScroll,400);
       _userScrolledUp=false;
       _scrollBtn.classList.remove('visible');
-    });
+    };
+    _scrollBtn.addEventListener('click',scrollToBottomNow);
+    _scrollBtn.addEventListener('touchend',scrollToBottomNow,{passive:false});
+    // iOS PWA can treat rapid taps as zoom gestures; suppress on this control
+    _scrollBtn.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();});
 
     // ── Keyboard-aware safe area (iOS standalone) ──────
     if(window.visualViewport){
