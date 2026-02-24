@@ -12738,6 +12738,15 @@ Return ONLY valid JSON, no explanation.`;
     async function handleGitaAction(payload) {
       const endpoint = getK().gitaEndpoint || 'http://localhost:3000';
       const url = `${endpoint.replace(/\/+$/, '')}/trigger`;
+      
+      if (typeof payload.command === 'string') {
+        const commaMatch = payload.command.match(/^([,]+)\s*(.*)$/);
+        if (commaMatch) {
+          payload.delay = (payload.delay || 0) + (commaMatch[1].length * 1000);
+          payload.command = commaMatch[2];
+        }
+      }
+      
       try {
         const res = await fetch(url, {
           method: 'POST',
@@ -12757,7 +12766,8 @@ Return ONLY valid JSON, no explanation.`;
     }
 
     function handleGitaCommand(args) {
-      if (!args) {
+      if (!args || args.toLowerCase() === 'help') {
+        const sid = 'gita_cmd_' + Date.now();
         sysBubble(`<h3>GITA Integration</h3>
 <p>Trigger voice assistants remotely.</p>
 <p><strong>Commands:</strong></p>
@@ -12767,8 +12777,18 @@ Return ONLY valid JSON, no explanation.`;
 <li><code>/gita google set the thermostat to 72</code></li>
 <li><code>/gita custom "hey computer" engage warp drive</code></li>
 </ul>
+<p><strong>Comma Delay Shorthand:</strong><br>
+Leading commas add +1 second delay each.<br>
+<code>/gita alexa ,,, play audio bible</code> (+3s delay)</p>
 <p><strong>Endpoint:</strong> <code>${esc(getK().gitaEndpoint||'http://localhost:3000')}</code></p>
-<p style="font-size:11px;color:var(--text-2)">To change endpoint: paste <code>{"gitaEndpoint": "http://IP:3000"}</code> in chat.</p>`);
+<div style="margin-top:8px;background:var(--bg-hover);padding:8px;border-radius:8px;">
+  <input type="text" id="${sid}" placeholder="e.g. /gita alexa ,,, play jazz" style="width:100%; margin-bottom:6px; font-size:12px; padding:6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; box-sizing:border-box;">
+  <div style="display:flex; gap:6px;">
+    <button class="btn btn-teal btn-sm" onclick="const v=document.getElementById('${sid}').value.trim(); if(v){ $('textIn').value=v; $('textIn').focus(); }">Use</button>
+    <button class="btn btn-ghost btn-sm" onclick="const v=document.getElementById('${sid}').value.trim(); if(v){ const k=getK(); k.quickReplies=k.quickReplies||[]; if(!k.quickReplies.includes(v)){ k.quickReplies.push(v); setK(k); renderQuickReplies(); document.getElementById('quickReplies').style.display='flex'; showToast('Added to quick commands','ok'); }else{ showToast('Already in quick commands','warn'); } }else{ showToast('Enter a command first','err'); }">Set as Quick Command</button>
+  </div>
+</div>
+<p style="font-size:11px;color:var(--text-2);margin-top:8px;margin-bottom:0;">To change endpoint: paste <code>{"gitaEndpoint": "http://IP:3000"}</code> in chat.</p>`);
         return;
       }
       
