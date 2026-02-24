@@ -32,6 +32,7 @@ If any field fails to persist (including sensitive keys on mobile), TealClaw sho
 | aiModel | string | Direct chat model ID. If unset, TealClaw uses provider defaults |
 | directFallbackToGroq | boolean | If true (default), non-Groq direct providers automatically fail over to Groq when recoverable errors occur and a Groq key is present |
 | gatewayHttpFallback | boolean | Allows agent HTTP fallback path when gateway WebSocket is unavailable (useful for local/self-hosted setups) |
+| gatewaySelfHealEnabled | boolean | Enables the `/control` self-heal loop (periodic URL/token validation, stale socket reconnects, gateway fallback probes/switches) |
 | whisperKey | string | Groq API key for Whisper voice transcription, Groq TTS, and `/research` |
 | ttsProvider | string | Explicit voice provider selector: `groq`, `elevenlabs`, or `off` |
 | ttsMode | string | Voice playback mode: `auto` (speak every reply), `on` (listen button), `off` (mute playback) |
@@ -66,6 +67,11 @@ When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
 - Proto-BOLO is intended for watchlist matching workflows (v3 target).
 - Always require user consent/authority before camera capture or monitoring.
 - `allowProactiveCameraCapture` (default true): show inline consent UI for `camera.capture` and `screen.capture` requests (Take photo / Take screenshot / Cancel). If false, keep strict confirm modal.
+
+Gateway self-heal targeting (when `gatewaySelfHealEnabled` is true):
+- Detects likely Tailscale endpoint failures and can suggest/auto-switch to `https://gw.tealclaw.ai`
+- Can also probe/suggest local `ws://127.0.0.1:18789` when running in a local context
+- Status and diagnostics are visible via `/control status`
 
 ## Telegram Integration
 
@@ -297,7 +303,7 @@ Example: `{"rateLimitPerMin": 10}` — allows 10 messages per minute, blocks add
 | Field | Type | Description |
 |-------|------|-------------|
 | customCSS | string | Inject arbitrary CSS. Ultimate escape hatch for styling |
-| agents | array | OpenClaw gateway agents. Array of {id, name, url, token, active} objects. Replaces entire list. URLs MUST be HTTPS (Cloudflare Tunnel). Device pairing required on first remote connection |
+| agents | array | OpenClaw gateway agents. Array of {id, name, url, token, active} objects. Replaces entire list. URLs should be HTTPS for remote gateways; local `ws://127.0.0.1:18789` is supported for local gateway transport. Device pairing required on first remote connection |
 
 ## Key Auto-Detection Prefixes
 
