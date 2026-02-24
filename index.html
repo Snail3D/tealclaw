@@ -12972,10 +12972,10 @@ ${agentNote}`);
 
       // Chat commands
       if(text.startsWith('/')){
-        const cmd=text.toLowerCase();
+        const cmd=text.toLowerCase().trim();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/cron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
+        const tcLocal=['/setup','/settings','/marketplace','/apps','/store','/shop','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/cron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -12984,6 +12984,12 @@ ${agentNote}`);
           if(docs.length>0)an.push(`${docs.length} doc${docs.length>1?'s':''}`);
           pipeline(text+(an.length?` [${an.join(' + ')} attached]`:''),firstImage);
           return;
+        }
+        if(cmd==='/settings'){
+          openSheet(); return;
+        }
+        if(cmd==='/marketplace'||cmd==='/store'||cmd==='/apps'||cmd==='/shop'){
+          showMarketplace(); return;
         }
         if(cmd==='/help'){
           const helpHtml=`<h3>TealClaw Commands</h3>
@@ -13228,9 +13234,6 @@ ${agentNote}`);
             addBubble('ai',reply,{usage:d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:gModel}:null});
           }).catch(e=>{removeTyping();sysBubble(`<p>Groq error: ${esc(e.message)}</p>`)});
           return;
-        }
-        if(cmd==='/settings'){
-          openSheet(); return;
         }
         if(cmd==='/setup'){
           sysBubble(`<h3>Setup Wizard</h3>
@@ -13602,9 +13605,6 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
         }
         if(cmd==='/template'||cmd==='/templates'){
           showTemplateGallery();return;
-        }
-        if(cmd==='/marketplace'||cmd==='/store'||cmd==='/apps'||cmd==='/shop'){
-          showMarketplace();return;
         }
       }
 
