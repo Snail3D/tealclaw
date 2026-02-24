@@ -327,14 +327,6 @@
     .chat-bubble .tts-play.replay:hover{background:var(--teal);color:#fff}
     .chat-bubble .tts-play.replay svg{width:12px;height:12px}
     .chat-typing{display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:12px;padding:8px 14px;max-width:220px;background:var(--bg-hover);border:none;border-radius:20px;border-bottom-left-radius:6px;margin-bottom:14px;animation:bubble-slide-up 0.25s ease-out}
-    .typing-dots{display:flex;gap:4px;align-items:center}
-    /* Thinking dots */
-    .typing-dot{width:9px;height:9px;border-radius:50%;background:var(--teal);opacity:0.35;animation:dot-bounce 1.1s ease-in-out infinite}
-    .typing-dot:nth-child(2){animation-delay:0.10s}
-    .typing-dot:nth-child(3){animation-delay:0.20s}
-    .typing-dot:nth-child(4){animation-delay:0.30s}
-    .typing-dot:nth-child(5){animation-delay:0.40s}
-    @keyframes dot-bounce{0%,70%,100%{transform:translateY(0) scale(0.85);opacity:0.35}35%{transform:translateY(-7px) scale(1.25);opacity:1}}
 
     /* Speaking dots (shown while TTS audio is playing) */
     .tts-stop-btn{gap:10px}
@@ -6126,8 +6118,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
             const word5 = tcWords[Math.floor(Math.random()*tcWords.length)];
             const word6 = tcWords[Math.floor(Math.random()*tcWords.length)];
             
-            content+=`<div class="status-word-wrap" style="min-height:54px;">
-              <div class="status-word-container" style="height: 24px; overflow: hidden; position: relative; width: 100%; perspective: 300px; margin-bottom: 8px;">
+            content+=`<div class="status-word-wrap" style="min-height:54px;display:flex;align-items:center;justify-content:center;">
+              <div class="status-word-container" style="height: 24px; overflow: hidden; position: relative; width: 100%; perspective: 300px;">
                 <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; font-size: 14px; animation: flapWord 18s linear infinite; animation-delay: 0s; opacity:0;">${word1}</div>
                 <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; font-size: 14px; animation: flapWord 18s linear infinite; animation-delay: 3s; opacity:0;">${word2}</div>
                 <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; font-size: 14px; animation: flapWord 18s linear infinite; animation-delay: 6s; opacity:0;">${word3}</div>
@@ -6185,10 +6177,12 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const deviceBadge=m.device?`<span style="font-size:8px;background:var(--bg-2);padding:1px 5px;border-radius:100px;color:var(--text-3);margin-left:4px">${esc(m.device)}</span>`:'';
         const digestBtn=(m.rawText&&m.rawText!==m.text)?` <button class="digest-toggle" onclick="toggleDigest(${i})">${m._showRaw?'View summary':'View original'}</button>`:'';
         const metaHtml=`<div class="chat-meta"><span>${m.time||''}</span>${providerBadge}${deviceBadge}${digestBtn}${fmtTokens(m.usage)}</div>`;
+        const userLabel=m.role==='user'&&ck.userName?`<div class="user-label" style="font-size:10px;font-weight:600;color:var(--text-3);margin-bottom:2px;text-align:right;padding-right:4px;">${esc(ck.userName)}</div>`:'';
+        
         if(avatarUrl){
-          return divider+`<div class="chat-bubble-wrap ${m.role}${isCompacted?' compacted':''}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble ${m.role}">${actionsHtml}${content}${metaHtml}</div></div>`;
+          return divider+`<div class="chat-bubble-wrap ${m.role}${isCompacted?' compacted':''}" data-msg-idx="${i}"><img class="chat-avatar" src="${esc(avatarUrl)}" alt=""><div class="chat-bubble-inner" style="flex:1;max-width:100%;">${userLabel}<div class="chat-bubble ${m.role}">${actionsHtml}${content}${metaHtml}</div></div></div>`;
         }
-        return divider+`<div class="chat-bubble ${m.role}${isCompacted?' compacted':''}" data-msg-idx="${i}">${actionsHtml}${content}${metaHtml}</div>`;
+        return divider+`<div class="chat-bubble-wrap ${m.role}${isCompacted?' compacted':''}" data-msg-idx="${i}" style="display:flex;flex-direction:column;align-items:${m.role==='user'?'flex-end':'flex-start'};">${userLabel}<div class="chat-bubble ${m.role}">${actionsHtml}${content}${metaHtml}</div></div>`;
       }).join('');
 
       // Wrap code blocks with copy button
@@ -6373,11 +6367,30 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     }
 
     function addTyping(){
-      const s=$('chatScroll');const k=getK();
-      const emoji=k.loadingEmoji?k.loadingEmoji+' ':'';
-      const txt=k.loadingText||'Thinking';
-      const el=document.createElement('div');el.className='chat-typing';el.id='typing';
-      el.innerHTML=`<div class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div><span>${emoji}${esc(txt)}</span>`;
+      const s=$('chatScroll');
+      
+      const tcWords = [
+        "🐌 Moving at Snail speed", "🐌 Extending eyestalks", "✨ Polishing the shell", "🐌 Leaving a slime trail", "🧪 Calculating slime ratio", "🐌 Retracting into shell", "🐌 Deploying decoy snail", "🚀 Turbo-charging the escargot", "🐌 Salt evasion maneuvers", "🐌 Hiding from the French", "🐌 Racing a turtle", "✨ Waxing the shell", "🧪 Checking the slime reserves", "🔧 Upgrading the shell", "🐌 Snailing it", "🐌 Slow and steady", "🐌 Bypassing salt traps", "🐌 Deploying the tactical shell", "🚀 Engaging Snail Drive", "🐌 Slithering into position",
+        "🍳 Making the sauce", "👨‍🍳 Sauce Boss is cooking", "🍲 Letting it simmer", "🔪 Chopping the data", "🔥 Firing up the grill", "🧂 Adding a pinch of salt", "🥞 Flipping the pancakes", "🍞 Baking the JSON", "🥄 Stirring the pot", "🍞 Waiting for dough to rise", "🧄 Adding too much garlic", "🔥 Preheating the GPU", "🧼 Washing the dishes", "🔥 Checking the oven", "🥡 Microwaving leftovers", "🍽️ Plating the response", "🍲 Tasting the broth", "🍳 Deglazing the pan", "🥣 Whisking the variables", "🍞 Measuring the flour", "🥡 Ordering takeout", "🍞 Burning the toast", "🧪 Adding the secret ingredient", "👨‍🍳 Asking the Chef", "🍞 Kneading the data", "🔪 Slicing the arrays", "🍞 Toasting the buns", "🧈 Melting the butter", "🧀 Sprinkling the cheese", "🍲 Tasting the sauce",
+        "💻 Rerouting the mainframe", "🕶️ Jacking into the Matrix", "🛡️ Bypassing the firewall", "🔌 Untangling WebSockets", "🧹 Scrubbing the PII", "👻 Booting the Ghost in the Machine", "🔓 Decrypting the payload", "📡 Pinging the dark web", "💉 Injecting the SQL", "⛏️ Mining the crypto", "🔍 Enhancing resolution", "🔍 Zooming and enhancing", "⏳ Hacking time itself", "⚡ Overclocking the CPU", "🖥️ Spinning up servers", "💥 DDoS'ing myself", "🔓 Bypassing security protocols", "🔓 Cracking the encryption", "💥 Running the cyber-nuke", "💾 Downloading the internet", "🛡️ Deploying the ICE", "🔌 Jacked in", "🔍 Tracing the IP", "📡 Scanning the grid", "🔌 Bypassing proxy servers", "💻 Initializing cyber-deck", "🧹 Wiping the logs", "🕶️ Going dark", "✨ Entering God Mode", "🚀 Unleashing the payload",
+        "✨ Awesomifying the input", "🎩 Magifying the context", "🧮 Doing the math (I think)", "📜 Finding the sticky notes", "👩‍👦 Asking my mom", "🎯 Throwing darts at a keyboard", "💾 Downloading more RAM", "⚡ Reversing the polarity", "🔌 Turning it off and on again", "☕ Spilling coffee on server", "👓 Looking for my glasses", "🛋️ Digging in couch cushions", "🧮 Counting to infinity", "👀 Blinking rapidly", "💼 Pretending to work", "💼 Looking busy", "😶 Staring at a blank wall", "🐹 Feeding the hamsters", "🐹 Waking up the hamsters", "🐹 Hamsters are on strike", "🚶 Pacing back and forth", "🤔 Rubbing chin thoughtfully", "🤝 Nodding in agreement", "🔍 Googling the answer", "📋 Copy-pasting from StackOverflow", "🔍 Asking Jeeves", "🪙 Flipping a coin", "🎲 Rolling the dice", "🃏 Drawing a card", "🤷 Guessing", "🤞 Hoping for the best", "🤞 Crossing my fingers", "🪵 Knocking on wood", "🍀 Finding a four-leaf clover", "🐈 Chasing a laser pointer", "🐕 Barking at the mailman", "🐈 Herding cats", "🐈 Catching the red dot",
+        "🚀 Warp drive active", "🚀 Engaging thrusters", "📡 Beaming down data", "🌌 Opening the wormhole", "⚡ Charging the laser", "👽 Scanning for lifeforms", "👽 Contacting aliens", "🐄 Abducting a cow", "⚔️ Building a lightsaber", "✨ Using the Force", "💎 Mining kyber crystals", "☄️ Dodging asteroids", "🧮 Calculating hyperspace jump", "🛰️ Adjusting satellite dish", "🔭 Scanning the perimeter", "🛸 Preparing for liftoff", "🌠 Chasing a shooting star",
+        "🍝 Compiling spaghetti code", "💾 Defragmenting hard drive", "🗑️ Emptying recycle bin", "🌬️ Blowing into cartridge", "💿 Wiping the CD", "🖱️ Untangling mouse cord", "⌨️ Finding the any key", "⌨️ Pressing the any key", "🔌 Restarting the router", "🔌 Unplugging it", "📼 Rewinding the VHS", "📼 Flipping the cassette", "📞 Dialing the modem", "⏳ Waiting for dial-up", "💾 Installing floppy disk 4 of 28", "🖱️ Cleaning the trackball", "📞 Untangling the phone cord", "🌬️ Blowing the dust out", "🖥️ Smacking the side of the monitor", "🔌 Jiggling the cable",
+        "🤖 Waking up Bob", "🤖 Asking Doris for help", "📡 Checking the gateway", "🧬 Spawning a subagent", "💰 Bribing the LLM", "🧮 Counting tokens", "📉 Running out of tokens", "🙏 Begging Groq for mercy", "🛑 Hitting the rate limit", "🏃 Dodging the rate limit", "📡 Pinging Snail3D", "🎼 Orchestrating the swarm", "🐔 Waking the Mother Hen", "💳 Checking the API balance", "💳 Swiping a credit card", "✅ Validating the schema", "📝 Writing the JSON", "📝 Parsing the markdown", "🖼️ Rendering the iframe", "🔓 Bypassing the sandbox",
+        "💼 Reviewing the $10M offer", "💰 Securing the bag", "🖨️ Printing the labels", "🖨️ Checking the Bambu printer", "🆔 Checking the 21orNot scanner", "🔎 Searching for clues", "🦾 Deploying exoskeleton", "🤯 Blowing the agent's mind", "🔗 Connecting the dots", "🏋️ Doing heavy lifting", "🏋️ Carrying the team", "🧯 Putting out fires", "🧹 Sweeping the floor", "🗑️ Taking out the trash", "🔒 Locking the doors", "💡 Turning out the lights", "❌ Closing the tab", "🆕 Opening a new tab", "💧 Drinking water", "🌱 Touching grass"
+      ];
+      const word1 = tcWords[Math.floor(Math.random()*tcWords.length)];
+      const word2 = tcWords[Math.floor(Math.random()*tcWords.length)];
+      const word3 = tcWords[Math.floor(Math.random()*tcWords.length)];
+      
+      const el=document.createElement('div');el.className='chat-bubble ai';el.id='typing';
+      el.innerHTML=`<div class="status-word-wrap" style="min-height:30px;display:flex;align-items:center;justify-content:center;padding:0;">
+        <div class="status-word-container" style="height: 16px; overflow: hidden; position: relative; width: 100%; perspective: 300px;">
+          <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; font-size: 14px; animation: flapWord 9s linear infinite; animation-delay: 0s; opacity:0;">${word1}</div>
+          <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; font-size: 14px; animation: flapWord 9s linear infinite; animation-delay: 3s; opacity:0;">${word2}</div>
+          <div class="status-word tc-css-word" style="position: absolute; width: 100%; text-align: center; font-size: 14px; animation: flapWord 9s linear infinite; animation-delay: 6s; opacity:0;">${word3}</div>
+        </div>
+      </div>`;
       s.appendChild(el);smoothScrollToBottom(s,280);
       playTypingSound();
     }
