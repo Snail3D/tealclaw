@@ -2018,7 +2018,7 @@
           const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
           const b64 = btoa(unescape(encodeURIComponent(unescaped.trim())));
           return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;pointer-events:auto !important;position:relative;z-index:10;">
-            <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *" src="data:text/html;base64,${b64}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;pointer-events:auto !important;"></iframe>
+            <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *" src="data:text/html;base64,${b64}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:#1e293b;overflow:hidden;pointer-events:auto !important;"></iframe>
           </div>`;
         } catch(e) {
           console.error("tc-app render failed", e);
@@ -7347,17 +7347,21 @@ RULES:
       if(!apiKey)return rawText;
       const ctxSummary=agentContext.recentEvents.slice(-10)
         .map(e=>`[${e.stream}] ${e.text}`).join('\n');
+      
+      const persona = getVoicePersona(k);
+      
       const sysPrompts={
-        chat:`You are summarizing a long or highly technical response from an AI assistant so it can be spoken aloud to the user cleanly and concisely.
+        chat:`You are summarizing a long or highly technical response from an AI assistant so it can be spoken aloud to the user.
 
 RULES:
 - Distill the core message into 1 to 3 natural, conversational sentences.
 - Speak in FIRST PERSON ("I have created the file", "Here is the summary").
 - Completely skip reading out code blocks, JSON, or raw logs. Just mention that you wrote or provided them.
-- Keep the tone neutral, professional, and directly helpful.
-- Do not use slang, catchphrases, or filler words.
-- Do not greet the user or say "Here is a summary". Just deliver the distilled message.
-- If the original message is already short, just return it as is.`,
+- NEVER add technical commentary or meta-narration about your own summarizing process.
+- Lead with the direct answer.
+- tone: ${persona.ttsNote}
+
+VOICE CHARACTER: You are speaking as "${persona.name}" (${persona.tag}).`,
         builder:`Summarize this builder run log in 1–2 sentences, in FIRST PERSON as the assistant.
 
 Rules:
