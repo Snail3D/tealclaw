@@ -275,6 +275,14 @@ void TcWebServer::_setupConfigRoutes() {
                     request->_tempObject = nullptr;
                 }
                 request->_tempObject = new String();
+                request->onDisconnect([request]() {
+                    uintptr_t marker = reinterpret_cast<uintptr_t>(request->_tempObject);
+                    if (marker == REQ_REJECTED_SENTINEL || marker == REQ_BLOCKED_SENTINEL || request->_tempObject == nullptr) {
+                        return;
+                    }
+                    delete static_cast<String*>(request->_tempObject);
+                    request->_tempObject = nullptr;
+                });
             }
 
             auto* configBody = static_cast<String*>(request->_tempObject);

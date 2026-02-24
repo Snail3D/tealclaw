@@ -1,168 +1,176 @@
-<div align="center">
-
 # TealClaw
 
 ![TealClaw](og-image.png)
 
-**Blow your agent's mind.**
+**Private AI chat with voice.** One file. No server. Your keys never leave your browser.
 
-[**Try it now**](https://tealclaw.ai) &nbsp;&middot;&nbsp; [Skill Guide](https://tealclaw.ai/llms.txt) &nbsp;&middot;&nbsp; [Security](SECURITY.md)
-
-</div>
+**[tealclaw.ai](https://tealclaw.ai)**
 
 ---
 
-TealClaw is a **bring-your-own-key** AI chat app that runs entirely in your browser. Plug in a free [Groq API key](https://console.groq.com/keys) and get voice chat, image generation, deep research, vision, and 110+ customizable settings — with zero data collection. The entire app is a single HTML file hosted as static assets on Cloudflare Pages. There is no backend, no database, and no telemetry. Your API keys never leave `localStorage`.
+## Get Started in 30 Seconds
 
-## What's New in V3
+1. Open **[tealclaw.ai](https://tealclaw.ai)**
+2. Grab a free key from [console.groq.com/keys](https://console.groq.com/keys)
+3. Paste it and start talking
 
-### ⚡ Native Local LLM Support
-Connect TealClaw directly to your local **Ollama** or **vLLM** instances. No backend or intermediary server required—run powerful models entirely locally while still using the TealClaw UI.
+That's it. One key gives you chat, voice, vision, image generation, and deep research.
 
-### 🤖 MATON API Integration
-Give your agents real superpowers. TealClaw now natively hooks into the MATON API, enabling seamless external tool execution and real-time environment interaction right from the chat window.
+---
 
-### 🧬 Active Swarm Dashboard
-Keep track of everything your agents are doing with the new **Active Swarm Dashboard** (Subagent Pills UI). Instantly view, monitor, and steer multiple background subagents working concurrently without cluttering your main chat view.
+## What You Get
 
-## Features
+**Voice Chat** — Hold to speak, get spoken replies. Six voice personas with distinct personalities: Trey (hype), Axel (hacker), Dean (professional), Haven (chill), Vera (nerd), Diane (executive). Powered by Groq Whisper + Orpheus TTS.
 
-| | |
-|---|---|
-| **Voice Chat** | Hold to speak, get spoken replies. Six Groq TTS personas. ElevenLabs support. |
-| **Multi-Provider** | Groq, OpenAI, Anthropic, Fireworks, OpenRouter, xAI, Mistral, Together, DeepSeek, Cerebras, Perplexity. Switch with `/provider`. |
-| **Local Models** | Native support for Ollama and vLLM without a backend. |
-| **Shareable Skills** | Package your entire app config + macros into a single JSON file and distribute it instantly. |
-| **tc-flow Macros** | Build and share visual, drag-and-drop prompt chains that execute locally. |
-| **tc-app Mini-Apps** | Agents can inject sandboxed HTML/React widgets directly into the chat bubble. |
-| **Deep Research** | `/research` for sourced reports. `/deepresearch` for multi-tool analysis. |
-| **Image Gen** | `/imagine` creates images via Google Gemini. Attach a photo for image-to-image editing. |
-| **The Claw** | Hand gesture control via camera. Show The Claw to start voice capture — lower your hand to send. |
-| **Vision** | Snap from camera, paste, or drag images in. Multi-image support. |
-| **GIF Reactions** | AI picks contextual GIFs that match the conversation. Draggable and resizable. |
-| **Guest Links** | Encrypted, scoped access with an AI security filter. No keys exposed. |
-| **Obsidian** | Save conversations and AI notes directly to your vault. |
-| **110+ Settings** | Colors, fonts, layout, voice, persona, scheduled messages, templates — everything. |
+**Direct Provider Routing** — Run direct chat/vision through Groq, Fireworks, OpenAI, Anthropic, OpenRouter, xAI, Mistral, Together, DeepSeek, Cerebras, or Perplexity. Provider can be switched in Settings or via `/provider <name>`, with optional Groq fallback for resiliency.
 
-## Get Started
+**Deep Research** — Type `/research` and get a full sourced report. `/deepresearch` goes deeper with multi-tool analysis.
 
-```
-1. Open tealclaw.ai
-2. Paste a free Groq API key
-3. Start talking
-```
+**Image Generation** — `/imagine` creates images via Google Gemini. Attach a photo and say "make this a watercolor" for image-to-image editing.
 
-One key gives you chat, voice, vision, image generation, and deep research.
+**The Claw** — Hand gesture control via your camera. Show The Claw to start voice capture. Lower your hand to send. Hands-free everything.
 
-## Custom Themes
+**Vision** — Snap from camera, paste, or drag files in. Multi-image support.
 
-Agents (or you) can restyle TealClaw on the fly using `tc-action` config blocks. Drop one into any chat message and it applies instantly — colors, fonts, backgrounds, bot name, everything.
+**GIF Reactions** — AI picks contextual GIFs that match your conversation. Draggable, resizable, and fun.
 
-### Format
+**110+ Settings** — Colors, fonts, layout, voice, persona, quick replies, scheduled messages, templates. Everything is customizable. AI agents can configure it all via JSON.
 
-````
-```tc-action
-{"type":"config","botName":"MyBot","accentColor":"#8b5cf6","bgColor":"#0a0a0a","themeMode":"dark"}
-```
-````
+**Guest Links** — Create encrypted, scoped access links for anyone. AI security filter screens every message before it reaches your agent. Attack detection, automatic session blocking, and silent owner alerts built in.
 
-### Example: TikiClaw
+**Obsidian Integration** — Save conversations and AI notes directly to your vault.
 
-A tropical dark theme with a beach background image:
+---
 
-````
-```tc-action
-{
-  "botName": "TikiClaw",
-  "accentColor": "#f59e0b",
-  "bgColor": "#022c22",
-  "chatUserColor": "#064e3b",
-  "chatAiColor": "#065f46",
-  "bgImage": "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1920&q=80",
-  "themeMode": "dark",
-  "fontFamily": "system-ui, sans-serif"
-}
-```
-````
+## Privacy First
 
-### Available Theme Properties
+TealClaw has **no backend**. The site is static files on Cloudflare Pages.
 
-| Property | Description |
-|---|---|
-| `botName` | Header name (replaces "TealClaw") |
-| `accentColor` | UI accent color (hex) |
-| `bgColor` | Background color |
-| `bgImage` | Fullscreen background image URL |
-| `chatUserColor` / `chatAiColor` | Bubble background colors |
-| `chatUserTextColor` / `chatAiTextColor` | Bubble text colors |
-| `themeMode` | `"dark"` or `"light"` |
-| `fontFamily` | Custom font stack |
-| `fontSize` | `"small"` / `"medium"` / `"large"` |
-| `borderRadius` | `"sharp"` / `"round"` or CSS value |
-| `botGreeting` | Welcome message (supports markdown) |
-| `botIcon` | Header icon URL |
+- Your browser talks directly to AI providers. No middleman. No proxy.
+- All keys stored in your browser's `localStorage`. We literally cannot see them.
+- No analytics, no cookies, no fingerprinting, no telemetry.
+- Encrypted sharing uses AES-256-GCM with a separate passphrase.
+- The entire app is one HTML file. View Source and read every line.
 
-Theme properties auto-apply without confirmation. See [SKILL.md](SKILL.md) for the full list of 110+ configurable fields.
+Full details: **[Security Philosophy](SECURITY.md)**
 
-## Agent Mode
+---
 
-Connect to an [OpenClaw](https://github.com/openclaw/openclaw) gateway for full agent mode — shared context across Telegram, Discord, Signal, and more.
+## Scoped Agent Access
 
-```
-Browser ←→ Cloudflare Tunnel ←→ OpenClaw Gateway ←→ AI Agent
-```
+TealClaw solves one of the hardest problems in AI: **letting other people use your agent without giving them the keys.**
 
-Paste a gateway URL + token, or let your agent generate a one-click connection link. TealClaw signs every connection with Ed25519 device authentication. Remote devices require one-time approval from the gateway operator.
+Guest links create encrypted, scoped access points with a multi-layer AI security filter between the guest and your agent. No API keys exposed. No prompt injection. No unauthorized access.
 
-Setup guide: [`docs/cloudflare-gateway.html`](docs/cloudflare-gateway.html)
+**How it works:**
 
-## Guest Link Security
+1. Owner creates a guest link with defined scope (allowed topics, presets, rate limits)
+2. Guest unlocks with a passphrase and sees only preset conversation starters
+3. Every message goes through a **Groq AI security filter** first — not to the agent
+4. The filter screens for prompt injection, social engineering, and out-of-scope requests
+5. When the request is ready, guest clicks **"Send to Bot"** — the filter summarizes the conversation and forwards a clean, scoped message to the agent inside a security envelope
+6. If an attack is detected: session terminated, 1-hour block, and your agent is **silently notified** with instructions to alert you immediately
 
-Guest links let others use your agent without exposing your keys. Every guest message passes through a Groq AI security filter before reaching the agent — screening for prompt injection, social engineering, and out-of-scope requests. Attacks trigger automatic session blocks and silent owner alerts. Full details in [SECURITY.md](SECURITY.md#guest-link-security-filter).
+**What makes this different:**
+
+- **Guests never talk to the agent directly** — every message is filtered and summarized first
+- **The agent never sees raw guest input** — only a distilled, security-screened request
+- **Attack detection is autonomous** — no owner intervention needed to block threats
+- **Silent escalation** — your agent alerts you via the best available channel without tipping off the attacker
+- **3-strike policy** — repeated out-of-scope attempts automatically trigger attack protocols
+- **Zero server** — all of this runs client-side with your own Groq key
+
+This is scoped agent access with defense in depth. Full technical details: **[Security Philosophy](SECURITY.md#guest-link-security-filter)**
+
+---
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `/research` | Sourced research report |
-| `/deepresearch` | Multi-tool deep analysis |
-| `/imagine` | Generate an image |
-| `/photo` | Camera capture + AI analysis |
-| `/screenshot` | Screen capture + AI analysis |
-| `/voice` | Voice settings and persona |
-| `/provider` | Switch AI provider |
+| Command | What It Does |
+|---------|-------------|
+| `/research query` | Sourced research report |
+| `/deepresearch query` | Multi-tool deep analysis |
+| `/imagine prompt` | Generate an image |
+| `/photo` / `/capture` / `/takephoto` | Open camera, capture, and send photo for AI analysis |
+| `/screenshot` / `/screen` / `/capture-screen` | Open screen picker, capture one frame, and send screenshot for AI analysis |
+| `/voice` | Voice settings and personas |
+| `/providers` / `/provider <name>` | List/switch direct AI provider quickly |
+| `/desktop on|off|status` | Desktop control foundation toggle + permission checklist (macOS scaffold) |
 | `/save` | Save to Obsidian |
 | `/template` | Browse style templates |
 | `/share` | Encrypted config link |
-| `/session create` | Guest access link |
-| `/profile save` | Save/load config profiles |
+| `/session create` | Time-limited guest access |
+| `/profile save name` | Save/load config profiles |
 | `/help` | All commands |
+| `/grok action` | Quick background automation actions (status, reconnect, relay/provider routing) |
 
-All commands also work by voice.
+Works by voice too — just say "research quantum physics" or "imagine a sunset over mars".
+
+### Agent Camera Routing (OpenClaw mode)
+- Use `/photo` (or `/capture` / `/takephoto`) for one-off camera snapshots, routed through `camera.capture`.
+- Use `/screenshot` (or `/screen` / `/capture-screen`) for display captures, routed through `screen.capture`. Prefer screenshot for UI/app/website debugging; prefer photo for real-world scenes.
+- Facing guidance: `environment` for rooms/objects/scenes, `user` for selfie/face checks.
+- Use Overwatch/watch flows for ongoing monitoring; use photo-log when the user wants archived reviewable captures.
+- Proto-BOLO is a watchlist-matching target workflow (v3), not general image Q&A.
+- Always confirm consent/authority before any camera capture or monitoring.
+- New setting (default ON): **Inline agent capture consent**. When an agent sends `camera.capture` or `screen.capture`, TealClaw shows lightweight prompts (photo: "Take photo / Cancel", screenshot: "Take screenshot / Cancel"). Screenshot capture stops screen-share tracks immediately after one frame.
+
+---
+
+## Connect Your Own Agent
+
+TealClaw connects to **[OpenClaw](https://github.com/openclaw/openclaw)** gateways via WebSocket for full agent mode — shared context across Telegram, Discord, Signal, and more.
+
+Setup recipe (tight, repeatable):
+- `docs/cloudflare-gateway.html`
+
+```
+Your Browser ←→ Cloudflare Tunnel ←→ OpenClaw Gateway ←→ Your AI Agent
+```
+
+Paste a gateway URL + token, or let your agent generate a one-click connection link.
+
+**Phone note:** TealClaw connects to OpenClaw via **WebSocket**. If you see pairing errors, approve the device on the gateway: `openclaw devices list` → `openclaw devices approve <requestId>`. For local/self-hosted gateways, optional HTTP fallback can be enabled in Settings > AI Configuration.
+
+**Device Pairing:** TealClaw uses Ed25519 device authentication on every connection. The first time you connect to a gateway through a Cloudflare Tunnel, the gateway operator must approve your device (one-time). Local connections auto-approve. See [llms.txt](https://tealclaw.ai/llms.txt) for details.
+
+---
 
 ## For AI Agents
 
-- **[tealclaw.ai/llms.txt](https://tealclaw.ai/llms.txt)** — Skill guide (raw text, agent-ready)
-- **[SKILL.md](SKILL.md)** — `tc-action` protocol reference
+Build tools that configure TealClaw automatically:
 
-Agents read the skill guide, emit `tc-action` JSON blocks, and TealClaw executes them — config changes, commands, navigation, and more.
+- **[tealclaw.ai/llms.txt](https://tealclaw.ai/llms.txt)** — Full skill guide (raw text, agent-ready)
+- **[tealclaw.ai/llms.html](https://tealclaw.ai/llms.html)** — Human-readable version
+- **[SKILL.md](SKILL.md)** — tc-action protocol reference
 
-## Development
+Agents read the skill guide, emit `tc-action` JSON blocks, and TealClaw executes them — config changes, commands, navigation, file generation, and more.
+
+---
+
+## Stack
 
 Single HTML file. No build step. No framework. No dependencies.
 
+- PWA with service worker for offline support
+- CSS custom properties for theming
+- Hosted on Cloudflare Pages
+
 ```bash
+# Run locally
 npx serve .
 ```
 
 ---
 
-<div align="center">
+## Support
 
-Made by **Snail** &nbsp;&middot;&nbsp; [YouTube](https://www.youtube.com/@RealSnail3D) &nbsp;&middot;&nbsp; [MakerWorld](https://makerworld.com/en/@Snail)
+Made by **Snail** — [YouTube](https://www.youtube.com/@RealSnail3D) / [MakerWorld](https://makerworld.com/en/@Snail)
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/snail3d)
 
-[tealclaw.ai](https://tealclaw.ai)
+---
 
-</div>
+<p align="center">
+  <a href="https://tealclaw.ai">tealclaw.ai</a>
+</p>

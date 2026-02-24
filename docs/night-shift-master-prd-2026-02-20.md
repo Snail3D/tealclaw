@@ -407,29 +407,28 @@ Night-shift harness:
 
 ## 15) Hourly Stack (Night Shift)
 
-### Hour 3 (05:00–06:00 MST) — Next actions
+### Hour 2 (04:00–05:00 MST) — Next actions
 
-#### A) Doris QA (must run in parallel, visible browser windows)
-- [ ] Keep **two visible windows** up:
+#### A) Doris QA (must run in parallel, visible browser)
+- [ ] Open **two visible windows**:
   - Window 1: `https://tealclaw.ai/` (prod)
-  - Window 2: local build (run `npm run dev -- --host`, then open the printed `http://127.0.0.1:<port>/`)
-- [ ] Smoke test (both windows):
-  1) `/providers`
-  2) `/provider perplexity` then send a tiny prompt
-  3) `/provider cerebras` then send a tiny prompt
-  4) `/control status` then `/control on` (verify CTL badge / diagnostics)
-  5) `/desktop status` then `/desktop on` (verify badge + permission checklist)
-- [ ] Log pass/fail notes into `docs/doris-parallel-qa-log-2026-02-20.md`
+  - Window 2: local/staging build (e.g. `http://127.0.0.1:<devPort>/`)
+- [ ] Run the **smoke set** against both:
+  1) `/providers` renders list + current marker
+  2) `/provider perplexity` switch + send a test prompt (expect explicit status)
+  3) `/provider cerebras` switch + send a test prompt
+  4) `/control status` (confirm self-heal state is surfaced)
+  5) `/desktop status` + `/desktop on` (confirm permission checklist + badge)
+- [ ] Log results into `docs/doris-parallel-qa-log-2026-02-20.md` (include pass/fail + notes)
 
 #### B) Bob implementation (next shippable slice)
-- [ ] Open PR(s) from:
-  - `fix/control-loop-selfheal`
-  - `feat/desktop-control-foundation`
-  (or prep clean merge commits) and ensure they’re aligned with `main`.
-- [ ] Desktop control polish:
-  - Add periodic permission re-check (e.g. every 60s)
-  - Make Screen Recording state explicitly “manual/unknown” with clear copy + steps
+- [ ] Convert “Desktop Control foundation” branch into a **PR** (or prep merge plan):
+  - ensure docs + commands updated
+  - confirm SW cache bump is correct and doesn’t regress
+- [ ] Wire **Screen Recording** status (even if “manual/unknown”) with clear copy + link to instructions
+- [ ] Add a minimal **permission re-check timer** (e.g. every 60s) for desktop badge accuracy
 
-#### C) Hygiene
-- [ ] Close non-essential tabs; leave only the two QA windows visible.
-- [ ] End-of-hour: send Snail a 3-line status (what shipped / what’s running / blockers).
+#### C) Night shift hygiene
+- [ ] Close stray/unneeded tabs; keep only QA windows visible.
+- [ ] Post a concise status note to Snail at end of hour with:
+  - what shipped, what’s pending, any blockers

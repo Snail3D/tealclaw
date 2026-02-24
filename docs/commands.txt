@@ -41,6 +41,7 @@
 | `/telegram off` | Disable Telegram message forwarding |
 | `/reconnect` | Reconnect the active gateway socket without reloading the page |
 | `/control on|off|status|heal` | Toggle/check gateway self-heal control loop and run manual health checks |
+| `/desktop on|off|status` | Toggle/check desktop control foundation mode and macOS permission checklist |
 | `/template` | Browse and apply pre-built style templates |
 | `/voice` | Show voice settings (provider, model, persona/voice ID) |
 | `/voice diag` | Show last TTS request diagnostics (provider, model, endpoint, error) |
@@ -154,6 +155,27 @@ Gateway self-heal loop controls:
 - `heal`: runs one immediate health pass
 
 When Tailscale targets fail, the loop can auto-suggest or auto-switch to `https://gw.tealclaw.ai` and local `ws://127.0.0.1:18789` when applicable.
+
+### /desktop on / off / status
+Desktop control foundation controls:
+- `on`: enables desktop control mode (foundation scaffolding)
+- `off`: disables desktop control mode
+- `status`: refreshes permission/capability checks and shows a checklist card
+
+Current implementation is macOS-first and checks:
+- Accessibility
+- Automation (System Events)
+- Screen Recording (currently manual/unknown in this slice)
+
+Security constraints:
+- No privilege escalation
+- No hidden control
+- No background unsafe automation
+
+Integration equivalents for tc-action:
+- `desktop.on`
+- `desktop.off`
+- `desktop.status`
 
 ### /voice
 Shows current voice service settings:

@@ -39,6 +39,9 @@ bool accumulateBody(AsyncWebServerRequest* request,
 
     String& accumulator = s_requestBodies[request];
     if (index == 0) {
+        request->onDisconnect([request]() {
+            s_requestBodies.erase(request);
+        });
         accumulator = "";
     }
 
