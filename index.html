@@ -6072,14 +6072,14 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       if(!text)return '';
       let clean = text.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '');
       clean = clean.replace(/<t(?:h(?:i(?:n(?:k(?:>)?)?)?)?)?$/i, '');
-      clean = clean.replace(/```(?:tc-action|tc-ui|tc-app)[\s\S]*?(?:```|$)/gi, '');
+      clean = clean.replace(/```(?:tc-action|tc-ui|tc-app|tc-flow)[\s\S]*?(?:```|$)/gi, '');
       clean = clean.replace(/\[gif:[^\]]*\]?$/i, '');
       return clean.trim();
     }
 
     function stripTcActionBlocksForDisplay(text){
       if(!text)return '';
-      let clean = text.replace(/```(?:tc-action|tc-ui|tc-app)\s*[\s\S]*?```/g,'');
+      let clean = text.replace(/```(?:tc-action|tc-ui)\s*[\s\S]*?```/g,'');
       clean = clean.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '');
       return clean.trim();
     }
