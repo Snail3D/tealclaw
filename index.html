@@ -7540,12 +7540,13 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return new Promise((resolve,reject)=>{
         let full='',runId=null,usage=null,settled=false,finished=false;
         _localAgentInflight++;
-        // Timeout guard: if the gateway stops responding, don't leave the UI stuck in "sending" state.
-        // Some gateways/models may not emit deltas quickly (they may only emit a final message).
-        // Keep this generous to avoid false "Gateway unresponsive" errors.
-        const FIRST_TOKEN_TIMEOUT_MS=60000;
-        const TOTAL_TIMEOUT_MS=600000; // Increased to 10 minutes to support long queue times
-        let firstTokTimer=setTimeout(()=>{
+        
+        // Remove aggressive FIRST_TOKEN_TIMEOUT. 
+        // Agents doing deep research or coding can take 3+ minutes to stream their first word.
+        // We rely entirely on the generous TOTAL_TIMEOUT_MS to prevent infinite hangs.
+        const TOTAL_TIMEOUT_MS=900000; // 15 minutes max
+        
+        let totalTimer=setTimeout(()=>{
           if(settled)return;
           settled=true;conn.off('chat',onChat);clearRun();
           // If we truly get stuck, auto-attempt a reconnect once to recover from dropped WS.
@@ -7558,14 +7559,10 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
               setTimeout(()=>updateStatus?.(),250);
             }
           }catch{}
-          reject(new Error('Gateway unresponsive (no response yet). I tried reconnecting. If it still hangs, try /reconnect (or refresh) and resend.'));
-        },FIRST_TOKEN_TIMEOUT_MS);
-        let totalTimer=setTimeout(()=>{
-          if(settled)return;
-          settled=true;conn.off('chat',onChat);clearRun();
-          reject(new Error('Gateway timeout. Try again or restart the gateway.'));
+          reject(new Error('Agent process took longer than 15 minutes. Connection timed out.'));
         },TOTAL_TIMEOUT_MS);
-        const clearTimers=()=>{try{clearTimeout(firstTokTimer)}catch{}try{clearTimeout(totalTimer)}catch{}};
+        
+        const clearTimers=()=>{try{clearTimeout(totalTimer)}catch{}};
         const clearRun=()=>{
           if(finished)return;
           finished=true;
@@ -7576,7 +7573,6 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
           if(!runId&&payload.runId){runId=payload.runId;_localAgentRunIds.add(runId)}
           
           if(payload.state==='queued') {
-             try{clearTimeout(firstTokTimer)}catch{}
              if(onToken)onToken(`*(Queued... position ${payload.position||'?'})*`);
              return;
           }
