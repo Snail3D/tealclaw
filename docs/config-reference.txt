@@ -56,6 +56,13 @@ If any field fails to persist (including sensitive keys on mobile), TealClaw sho
 | mode | "direct" / "agent" / "telegram-relay" | Direct = browser calls provider API. Agent = route through OpenClaw gateway. Telegram Relay = Telegram is primary chat transport, with inbound source gateway-native via OpenClaw events |
 | allowProactiveCameraCapture | boolean | Default: true. If true, incoming `tc-action` `camera.capture` and `screen.capture` use lightweight inline consent (Take photo / Take screenshot / Cancel). If false, uses full confirm modal flow. |
 
+
+## GITA Integration
+
+| Field | Type | Description |
+|-------|------|-------------|
+| gitaEndpoint | string | Endpoint for the GITA service (default: `http://localhost:3000`). Used by `/gita` command and cron actions. |
+
 ## Agent Camera Routing (Operational Guidance)
 
 When `mode` is `"agent"` and TealClaw is connected to OpenClaw:
