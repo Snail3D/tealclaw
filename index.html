@@ -12784,6 +12784,15 @@ Return ONLY valid JSON, no explanation.`;
     }
 
     // ── Pipeline ───────────────────────────────────────
+    function stripHiddenMetaForDisplay(text){
+      if(!text)return text;
+      // Keep metadata for model calls, but don't render EXIF/capture blocks in user-visible bubbles
+      return text
+        .replace(/\n\n\*\*EXIF Metadata \([\s\S]*?\):\*\*[\s\S]*$/i,'')
+        .replace(/\n\n\*\*Capture Metadata:\*\*[\s\S]*$/i,'')
+        .trim();
+    }
+
     async function pipeline(text,imageBase64){
       if(!text&&!imageBase64)return;
       if(!checkRateLimit())return;
@@ -12797,15 +12806,16 @@ Return ONLY valid JSON, no explanation.`;
         return;
       }
 
-      addBubble('user',text||'[Image]',imageBase64?{image:imageBase64}:{});
+      const visibleText=stripHiddenMetaForDisplay(text)||text;
+      addBubble('user',visibleText||'[Image]',imageBase64?{image:imageBase64}:{});
       // User sent a message — scroll to bottom unless user is actively touching
       if(!_userIsTouching){_userScrolledUp=false;_scrollBtn.classList.remove('visible')}
       smoothScrollToBottom($('chatScroll'),300);
       playSendSound();
-      fireWebhook('message.send',{text:text||'[Image]',hasImage:!!imageBase64});
+      fireWebhook('message.send',{text:visibleText||'[Image]',hasImage:!!imageBase64});
 
       // Forward user message to Telegram
-      sendTelegram(`You: ${text||'[Image]'}`);
+      sendTelegram(`You: ${visibleText||'[Image]'}`);
 
       // LaTeX: always load KaTeX
       if(!katexLoaded)loadKaTeX().catch(()=>{});
