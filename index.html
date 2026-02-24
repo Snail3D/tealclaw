@@ -1327,6 +1327,7 @@
           <option value="imagine">Imagine (image gen)</option>
           <option value="snap">Camera snapshot</option>
           <option value="notify">Local notification</option>
+          <option value="gita">GITA trigger</option>
         </select>
       </div>
       <div class="gm-field">
@@ -9007,7 +9008,7 @@ Advanced: sysPrompt, quickReplies(array), inputPrefix, translateTo
 
 STYLE TEMPLATES: Midnight Purple (#8b5cf6), Sunset Orange (#f97316), Ocean Blue (#3b82f6), Forest Green (#22c55e), Rose Pink (#ec4899), Golden Hour (#eab308), Arctic White (#0d9488)
 
-SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /providers, /provider <name>, /grok <action>, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
+SLASH COMMANDS: /clear, /restart, /new, /voice, /research, /deepresearch, /imagine, /photo, /capture, /takephoto, /screenshot, /screen, /capture-screen, /export, /template, /telegram, /telegram relay on|off|status, /keys, /providers, /provider <name>, /grok <action>, /gita <assistant> <command>, /save, /profile save|load|list|delete name, /share, /alarm, /timer, /chron, /pomodoro, /debate, /help
 
 RULES:
 - You CANNOT change: aiKey, whisperKey, gwToken, mode
@@ -11360,7 +11361,7 @@ Rules:
             }
             case 'cron':{
               const cTitle=action.title||'Agent Cron';
-              const cMsg=action.message||'';
+              const cMsg=action.message||(action.action==='gita'&&action.payload?`${action.payload.assistant} ${action.payload.wakePhrase?`\"${action.payload.wakePhrase}\" `:''}${action.payload.command}`:'');
               const cTimes=action.times||[];
               if(!cMsg||!cTimes.length){results.push({type:'cron',ok:false,error:'message and times required'});break}
               const cDesc=`"${cTitle}" at ${cTimes.join(', ')} — ${action.recurring?'recurring':'one-time'}`;
@@ -11368,7 +11369,7 @@ Rules:
               const cJob=addCronJob({
                 title:cTitle,message:cMsg,times:cTimes,
                 recurring:!!action.recurring,days:action.days||[],date:action.date||null,
-                action:action.action||'pipeline',source:'agent'
+                action:action.action||'pipeline',source:'agent',payload:action.payload||null
               });
               results.push({type:'cron',ok:true,id:cJob.id,title:cTitle});
               break;
@@ -12054,6 +12055,10 @@ Rules:
           playAlarmSound();haptic('success');
           sysBubble(`<div style="border-left:3px solid #818cf8;padding:6px 10px;font-size:12px"><strong style="color:#818cf8">[Cron: ${esc(label)}]</strong> ${esc(msg)}</div>`,{ephemeral:true});
           break;
+        case 'gita':
+          if(job.payload) handleGitaAction(job.payload);
+          else handleGitaCommand(msg); // fallback to text parsing if no payload
+          break;
       }
       // Notify agent if source is agent and gateway connected
       if(job.source==='agent'&&gwConnected&&action!=='pipeline'){
@@ -12730,6 +12735,73 @@ Examples:
 - "90 minutes laundry" → {"seconds":5400,"message":"Laundry"}
 Return ONLY valid JSON, no explanation.`;
 
+    async function handleGitaAction(payload) {
+      const endpoint = getK().gitaEndpoint || 'http://localhost:3000';
+      const url = `${endpoint.replace(/\/+$/, '')}/trigger`;
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const err = await res.text().catch(()=>'');
+          sysBubble(`<strong>[GITA]</strong> Failed to trigger: HTTP ${res.status} ${esc(err)}`);
+          showToast('GITA trigger failed', 'err');
+        } else {
+          sysBubble(`<strong>[GITA]</strong> Triggered ${esc(payload.assistant)}: <em>"${esc(payload.command)}"</em>`);
+        }
+      } catch(e) {
+        sysBubble(`<strong>[GITA]</strong> Error: ${esc(e.message)}<br><small>Ensure GITA is running at ${esc(endpoint)}.</small>`);
+      }
+    }
+
+    function handleGitaCommand(args) {
+      if (!args) {
+        sysBubble(`<h3>GITA Integration</h3>
+<p>Trigger voice assistants remotely.</p>
+<p><strong>Commands:</strong></p>
+<ul>
+<li><code>/gita siri turn off the lights</code></li>
+<li><code>/gita alexa play jazz</code></li>
+<li><code>/gita google set the thermostat to 72</code></li>
+<li><code>/gita custom "hey computer" engage warp drive</code></li>
+</ul>
+<p><strong>Endpoint:</strong> <code>${esc(getK().gitaEndpoint||'http://localhost:3000')}</code></p>
+<p style="font-size:11px;color:var(--text-2)">To change endpoint: paste <code>{"gitaEndpoint": "http://IP:3000"}</code> in chat.</p>`);
+        return;
+      }
+      
+      const parts = args.split(/\s+/);
+      const assistant = parts[0].toLowerCase();
+      let wakePhrase = '';
+      let command = '';
+      
+      if (!['siri','alexa','google','custom'].includes(assistant)) {
+        sysBubble(`<p>Invalid assistant: <code>${esc(assistant)}</code>. Must be siri, alexa, google, or custom.</p>`);
+        return;
+      }
+      
+      if (assistant === 'custom') {
+        const customMatch = args.match(/^custom\s+"([^"]+)"\s+(.+)$/i) || args.match(/^custom\s+'([^']+)'\s+(.+)$/i);
+        if (customMatch) {
+          wakePhrase = customMatch[1];
+          command = customMatch[2];
+        } else {
+          sysBubble(`<p>Usage for custom: <code>/gita custom "wake phrase" your command here</code></p>`);
+          return;
+        }
+      } else {
+        command = parts.slice(1).join(' ');
+      }
+      
+      if (!command) {
+        sysBubble(`<p>Missing command. Example: <code>/gita siri turn off the lights</code></p>`);
+        return;
+      }
+      
+      handleGitaAction({ assistant, wakePhrase, command });
+    }
     async function handleAlarmCommand(arg){
       const k=getK();
       const key=getGroqKey(k);
@@ -13452,7 +13524,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase().trim();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/settings','/marketplace','/apps','/store','/shop','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/providers','/provider','/chron','/cron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
+        const tcLocal=['/setup','/settings','/marketplace','/apps','/store','/shop','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/gita','/providers','/provider','/chron','/cron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -13493,6 +13565,7 @@ ${agentNote}`);
 <li><code>/telegram relay on</code> / <code>/telegram relay off</code> / <code>/telegram relay status</code> -- run Telegram as primary chat transport</li>
 <li><code>/groq [message]</code> -- send directly to Groq (bypasses agent)</li>
 <li><code>/grok [action]</code> -- run quick background automation actions (status, reconnect gateway, relay on/off, provider switch)</li>
+<li><code>/gita [assistant] [command]</code> -- trigger voice assistants (siri, alexa, google, custom) remotely</li>
 <li><code>/keys</code> -- show what's configured</li>
 <li><code>/clear</code> -- clear context window and start fresh</li>
 <li><code>/restart</code> -- same as /clear</li>
@@ -13562,6 +13635,7 @@ ${agentNote}`);
           }).catch(e=>sysBubble(`<p>${esc(e.message||'Reconnect failed')}</p>`));
           return;
         }
+        if(cmd==='/gita'||cmd.startsWith('/gita ')){ handleGitaCommand(text.slice(6).trim()); return; }
         if(cmd==='/grok'||cmd.startsWith('/grok ')||cmd.startsWith('/grok\n')){
           const grokAction=text.slice(5).trim();
           if(!grokAction){

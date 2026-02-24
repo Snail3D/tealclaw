@@ -34,6 +34,7 @@
 | `/deepresearch query` | Extended deep research report (GROQ-powered, uses groq/compound) |
 | `/groq [message]` | Send directly to Groq, bypassing agent |
 | `/voice-chat` | Push-to-talk voice-only mode (alias: `/vc`) |
+| `/gita [assistant] [command]` | Trigger voice assistants remotely via GITA service |
 | `/new` | Start new conversation |
 | `/export json` | Export as portable JSON |
 | `/telegram` | Show Telegram setup instructions (Settings quick wizard + BotFather/Chat ID fallback) |
@@ -132,6 +133,18 @@ Shows setup guidance and points users to the in-app wizard:
 Also explains both modes:
 - One-way forwarding (`/telegram on|off`)
 - Two-way Telegram Relay transport (`/telegram relay on|off|status`)
+
+
+### /gita [assistant] [command]
+Triggers a voice assistant remotely (siri, alexa, google, custom) using the GITA service running on your local network.
+
+**Usage:**
+- `/gita siri turn off the lights`
+- `/gita alexa play jazz`
+- `/gita google set the thermostat to 72`
+- `/gita custom "hey computer" engage warp drive`
+
+By default, TealClaw points to `http://localhost:3000`. You can change this by pasting `{"gitaEndpoint": "http://YOUR-IP:3000"}` in chat.
 
 ### /telegram on / /telegram off
 Toggle one-way Telegram message forwarding without changing token/chat ID.
