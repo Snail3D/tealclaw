@@ -12946,6 +12946,17 @@ Return ONLY valid JSON, no explanation.`;
 </div>
 <p style="font-size:11px;color:var(--text-2);margin-top:8px;margin-bottom:0;">To change endpoint: paste <code>{"gitaEndpoint": "http://IP:3000"}</code></p>`);
     }
+
+    async function handleAlarmCommand(arg){
+      const k=getK();
+      const key=getGroqKey(k);
+      if(!key){
+        sysBubble('<p>Add a Groq key in <code>/setup</code> to parse natural-language alarms.</p>');
+        return;
+      }
+      const now=new Date();
+      const timeCtx=`Current local date/time: ${now.toString()}`;
+      addTyping();
       try{
         const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
@@ -12970,7 +12981,7 @@ Return ONLY valid JSON, no explanation.`;
         const today=now.toISOString().slice(0,10);
         const tomorrow=new Date(now.getTime()+86400000).toISOString().slice(0,10);
         const aDate=alarmMins>todayMins?today:tomorrow;
-        const alarm=addAlarm({time:parsed.time,date:aDate,message:parsed.message||arg,source:'local'});
+        addAlarm({time:parsed.time,date:aDate,message:parsed.message||arg,source:'local'});
         const dayLabel=aDate===today?'today':'tomorrow';
         sysBubble(`<div style="border-left:3px solid #f59e0b;padding:6px 10px;font-size:12px"><strong style="color:#f59e0b">Alarm set</strong> ${esc(parsed.time)} ${dayLabel} — ${esc(parsed.message||arg)}</div>`);
         showToast(`Alarm: ${parsed.time} ${dayLabel}`,'ok');
