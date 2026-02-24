@@ -1771,6 +1771,9 @@
 
   <script>
     const $=id=>document.getElementById(id), toast=$('toast'), audio=$('audio');
+    // Safe listener helpers: prevent startup-bricking null-reference errors when UI nodes are absent.
+    const on=(el,event,handler,options)=>{ if(!el) return false; el.addEventListener(event,handler,options); return true; };
+    const onId=(id,event,handler,options)=>on($(id),event,handler,options);
     let ttsMode='off', chatHistory=[], stream=null, recorder=null, chunks=[], recording=false;
     let _ttsDiag={
       at:0,
@@ -1822,9 +1825,9 @@
       if(!sticky&&dur>0){showNoticeModal._t=setTimeout(hideNoticeModal,dur)}
       return true;
     }
-    $('tcNoticeClose')?.addEventListener('click',hideNoticeModal);
-    $('tcNoticeBtn')?.addEventListener('click',hideNoticeModal);
-    $('tcNoticeModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)hideNoticeModal()});
+    onId('tcNoticeClose','click',hideNoticeModal);
+    onId('tcNoticeBtn','click',hideNoticeModal);
+    onId('tcNoticeModal','click',e=>{if(e.target===e.currentTarget)hideNoticeModal()});
     document.addEventListener('keydown',e=>{
       const modal=$('tcNoticeModal');
       if(e.key==='Escape'&&modal&&!modal.classList.contains('hidden'))hideNoticeModal();
