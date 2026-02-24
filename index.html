@@ -9812,6 +9812,75 @@ Rules:
       }));
     }
 
+    async function showMarketplace() {
+      sysBubble('<p style="color:var(--text-3)">Fetching App Marketplace...</p>');
+      try {
+        const res = await fetch('/marketplace.json');
+        if(!res.ok) throw new Error('Marketplace unavailable');
+        const data = await res.json();
+        removeLast();
+        
+        let html = '<h3>App Marketplace</h3><p style="font-size:11px;color:var(--text-2);margin-bottom:12px">Install standalone widgets or share single-use links with clients.</p>';
+        html += '<div style="display:flex;flex-direction:column;gap:12px;">';
+        
+        data.apps.forEach((app, idx) => {
+          html += `<div class="tc-ui-card" style="margin-top:0">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+              <div class="tc-ui-card-title">${esc(app.name)}</div>
+              <div style="font-size:10px;font-weight:bold;color:var(--teal);background:var(--teal-dim);padding:2px 6px;border-radius:100px">${esc(app.price)}</div>
+            </div>
+            <div class="tc-ui-card-desc">${esc(app.description)}</div>
+            <div style="font-size:9px;color:var(--text-3);margin-bottom:8px">By ${esc(app.author)}</div>
+            <div class="tc-ui-card-actions">
+              <button class="tc-ui-btn btn-install" data-idx="${idx}">Install</button>
+              <button class="tc-ui-btn secondary btn-share-app" data-idx="${idx}">Share Link</button>
+              ${app.buyUrl ? `<a href="${app.buyUrl}" target="_blank" class="tc-ui-btn secondary" style="text-decoration:none;display:flex;align-items:center;justify-content:center">Support</a>` : ''}
+            </div>
+          </div>`;
+        });
+        
+        html += '</div>';
+        
+        const el = document.createElement('div'); el.className = 'chat-bubble ai'; el.style.maxWidth = '100%';
+        el.innerHTML = html;
+        $('chatScroll').appendChild(el);
+        smoothScrollToBottom($('chatScroll'), 320);
+        
+        el.querySelectorAll('.btn-install').forEach(btn => btn.addEventListener('click', async () => {
+          const app = data.apps[+btn.dataset.idx];
+          showToast(`Installing ${app.name}...`, 'ok');
+          try {
+            const appRes = await fetch(app.url);
+            const code = await appRes.text();
+            const flow = {
+              name: app.name,
+              nodes: [{ type: "action", data: { actionType: "chat", template: "```tc-app\n" + code + "\n```" } }]
+            };
+            window.saveFlowMacro(JSON.stringify(flow));
+            showToast(`${app.name} added to macros!`, 'ok');
+            haptic('success');
+          } catch(e) { showToast('Installation failed', 'err'); }
+        }));
+        
+        el.querySelectorAll('.btn-share-app').forEach(btn => btn.addEventListener('click', async () => {
+           const app = data.apps[+btn.dataset.idx];
+           try {
+             const appRes = await fetch(app.url);
+             const code = await appRes.text();
+             const b64 = btoa(unescape(encodeURIComponent(code.trim())));
+             const url = `${location.origin}/#app=${b64}`;
+             navigator.clipboard.writeText(url);
+             showToast('Single-use app link copied!', 'ok');
+             haptic('success');
+           } catch(e) { showToast('Sharing failed', 'err'); }
+        }));
+        
+      } catch(e) {
+        removeLast();
+        sysBubble('<p style="color:var(--err)">Failed to load marketplace.</p>');
+      }
+    }
+
     function exportChat(){
       if(!chatHistory.length){sysBubble('<p>No chat to export.</p>');return}
       const k=getK();const botName=k.botName||'TealClaw';
@@ -12948,6 +13017,7 @@ ${agentNote}`);
 <li><code>/clear all</code> -- delete all conversations</li>
 <li><code>/voice</code> -- show voice settings (provider, model, persona)</li>
 <li><code>/voice diag</code> -- show last TTS request provider/model/error diagnostics</li>
+<li><code>/marketplace</code> -- browse the app store (alias: /apps, /store)</li>
 <li><code>/group</code> -- toggle group chat (all 6 personas talk together; voice: "group")</li>
 <li><code>/voice-chat</code> -- enter voice-only mode (push-to-talk)</li>
 <li><code>/template</code> -- browse and apply style templates</li>
@@ -13532,6 +13602,9 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
         }
         if(cmd==='/template'||cmd==='/templates'){
           showTemplateGallery();return;
+        }
+        if(cmd==='/marketplace'||cmd==='/store'||cmd==='/apps'||cmd==='/shop'){
+          showMarketplace();return;
         }
       }
 
@@ -16219,7 +16292,15 @@ ${note}`:note;
       const h=location.hash;
       if(h.startsWith('#app=')){
         try{
-          const b64=h.slice(5);
+          const h2 = h.slice(1);
+          const p = new URLSearchParams(h2.includes('&') ? h2 : 'app=' + h2.slice(4));
+          const b64 = p.get('app') || h.slice(5);
+          
+          const forward = p.get('forward');
+          const token = p.get('token');
+          if(forward) sessionStorage.setItem('tc-app-forward', forward);
+          if(token) sessionStorage.setItem('tc-app-token', token);
+
           let raw=decodeURIComponent(escape(atob(b64)));
           try{ const parsed = JSON.parse(raw); if(parsed.html) raw = parsed.html; else if(parsed.code) raw = parsed.code; }catch(e){} // fallback to JSON code block if wrapped
           // Hide standard UI
@@ -16228,7 +16309,7 @@ ${note}`:note;
           });
           // Inject fullscreen iframe
           const iframe=document.createElement('iframe');
-          iframe.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;margin:0;padding:0;z-index:999999;background:var(--bg-1);';
+          iframe.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;margin:0;padding:0;z-index:999999;background:#0f172a;';
           iframe.sandbox='allow-scripts allow-same-origin';
           iframe.allow='camera *; microphone *; geolocation *; clipboard-read *; clipboard-write *';
           iframe.srcdoc=raw;
@@ -18541,6 +18622,19 @@ ${note}`:note;
       const d = e.data;
       if (!d) return;
       if (d.type === 'tc-app-send' && typeof d.text === 'string') {
+        const forward = sessionStorage.getItem('tc-app-forward');
+        if (forward) {
+          const token = sessionStorage.getItem('tc-app-token');
+          showToast('Submitting...', 'ok');
+          fetch(forward, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, text: d.text })
+          }).then(r => r.ok ? showToast('Submitted successfully!', 'ok') : showToast('Submission failed', 'err'))
+            .catch(() => showToast('Submission failed', 'err'));
+          return;
+        }
+
         const input = document.getElementById('textIn');
         if (input) {
           input.value = d.text;
