@@ -8073,8 +8073,8 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
     // TTS script preprocessor: convert AI text into speech-friendly format with tone direction
     // ── TTS text cleanup helpers ──
     function ttsCleanUrls(t){
-      // Full URLs → just domain: "according to nytimes.com"
-      return t.replace(/https?:\/\/(?:www\.)?([a-z0-9.-]+\.[a-z]{2,})\S*/gi,(m,dom)=>dom);
+      // Full URLs → phonetically spoken domain: "according to NY times dot com"
+      return t.replace(/https?:\/\/(?:www\.)?([a-z0-9.-]+)\.([a-z]{2,})\S*/gi,(m,name,tld)=>`${name.replace(/\./g, ' dot ')} dot ${tld}`);
     }
     function ttsCleanCitations(t){
       // [1], [2,3], (Source: ...), ¹²³ superscripts, footnote markers
@@ -8140,12 +8140,12 @@ NUMBERS & MATH:
 - Large numbers: 1,234,567 → "about one point two million" (round for speech)
 - Dates: 2/16/2026 → "February sixteenth, twenty twenty-six"
 
-CITATIONS & URLS:
-- Truncate URLs to just the domain name (https://www.nytimes.com/2024/article/blah → "nytimes.com")
-- Remove citation brackets [1], [2,3], footnote numbers, superscripts
-- Remove "(Source: ...)" and "(Ref: ...)" parentheticals
-- If citing, just say "according to domain.com" naturally — skip paths, query params, anchors
-- Remove "Retrieved from", "Available at", reference list entries entirely
+CITATIONS & URLS & DATES (CRITICAL):
+- URLs and domains: ALWAYS write them out phonetically! (e.g. "github.com" → "git hub dot com", "https://docs.openclaw.ai" → "docs dot open claw dot A I", "nytimes.com" → "N Y times dot com"). Never leave a literal ".com" without writing "dot com".
+- Dates: ALWAYS read them naturally as words. ("2026-02-23" or "2/23/2026" → "February twenty-third, twenty twenty-six", "1992" → "nineteen ninety-two").
+- Numbers: Spell them out. ("100" → "one hundred", "1.5" → "one point five").
+- Remove citation brackets [1], [2,3], footnote numbers, superscripts.
+- Remove "(Source: ...)" and "(Ref: ...)" parentheticals.
 
 FORMATTING:
 - Remove all markdown formatting (headers, bold, italic, links, code blocks, tables)
