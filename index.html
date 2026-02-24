@@ -2010,18 +2010,18 @@
 
       // tc-app Sandboxed Apps — render as iframe
       html=html.replace(/```tc-app\n([\s\S]*?)```/g,(m,code)=> {
-        const doc = code.trim().replace(/"/g,'&quot;');
-        // Wrap the iframe in a responsive container to allow it to fit naturally without breaking bubble width
+        const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+        const b64 = btoa(unescape(encodeURIComponent(unescaped.trim())));
         return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;pointer-events:auto !important;position:relative;z-index:10;">
-          <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *" srcdoc="${doc}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;pointer-events:auto !important;"></iframe>
+          <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *" src="data:text/html;base64,${b64}" style="width:100%;height:450px;border:none;border-radius:var(--r-md);background:transparent;overflow:hidden;pointer-events:auto !important;"></iframe>
         </div>`;
       });
 
       // tc-flow Engine Macros
       html=html.replace(/```tc-flow\n([\s\S]*?)```/g,(m,code)=> {
-        const div=document.createElement('div');div.innerHTML=code;
+        const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
         try {
-          const flow = JSON.parse(div.textContent.trim());
+          const flow = JSON.parse(unescaped.trim());
           const name = flow.name || 'Macro';
           let ui = '<div class="tc-flow-preview" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin:8px 0;">';
           ui += '<div style="font-weight:600;margin-bottom:8px;font-size:14px;">⚡ ' + esc(name) + '</div>';
@@ -9756,18 +9756,21 @@ Rules:
     // ── Export Chat ──────────────────────────────────────
     // ── Template Gallery ───────────────────────────────
     const TEMPLATES=[
-      {name:'Midnight Purple',desc:'Deep purple vibes, dreamy and calm',accent:'#8b5cf6',bg:'#0a0520',user:'#1a1040',ai:'#0f0a2a',theme:'dark'},
-      {name:'Sunset Orange',desc:'Warm sunset tones, energetic',accent:'#f97316',bg:'#1a0f05',user:'#2a1a0a',ai:'#1a1205',theme:'dark'},
-      {name:'Ocean Blue',desc:'Cool ocean depths, professional',accent:'#3b82f6',bg:'#0a1628',user:'#0f1e3a',ai:'#0a1a30',theme:'dark'},
-      {name:'Forest Green',desc:'Natural and grounding',accent:'#22c55e',bg:'#051a0a',user:'#0a2a14',ai:'#05200a',theme:'dark'},
-      {name:'Rose Pink',desc:'Soft and elegant',accent:'#ec4899',bg:'#1a0a14',user:'#2a1020',ai:'#1a0a16',theme:'dark'},
-      {name:'Golden Hour',desc:'Warm gold tones, luxurious',accent:'#eab308',bg:'#1a1505',user:'#2a2410',ai:'#1a1a05',theme:'dark'},
-      {name:'Arctic White',desc:'Clean, minimal, and bright',accent:'#0d9488',bg:'#f8fafc',user:'#e2e8f0',ai:'#f0fdfa',theme:'light'},
-      {name:'Cotton Candy',desc:'Playful pastels',accent:'#ec4899',bg:'#fdf2f8',user:'#fce7f3',ai:'#faf5ff',theme:'light'},
-      {name:'Neon Cyber',desc:'High-energy cyberpunk',accent:'#22d3ee',bg:'#020617',user:'#0a1628',ai:'#051525',theme:'dark',extra:{borderColor:'rgba(34,211,238,0.15)'}},
-      {name:'Minimal Zen',desc:'Stripped down, pure focus',accent:'#6b7280',bg:'#f9fafb',user:'#f3f4f6',ai:'#ffffff',theme:'light',extra:{hideTopbar:true,borderRadius:'sharp',bubbleAnimation:'fade'}},
-      {name:'Retro Terminal',desc:'Green-on-black hacker style',accent:'#22c55e',bg:'#0a0a0a',user:'#111111',ai:'#0d0d0d',theme:'dark',extra:{fontFamily:'Menlo, monospace',borderRadius:'sharp'}},
-      {name:'Cozy Warm',desc:'Warm and inviting for long chats',accent:'#f59e0b',bg:'#1c1410',user:'#2a1f16',ai:'#1a1510',theme:'dark',extra:{fontSize:'large',bubbleAnimation:'bounce'}}
+      {name:'Matrix Simulation',desc:'Digital rain falling',accent:'#22c55e',bg:'#000',user:'rgba(0,0,0,0.85)',ai:'rgba(5,20,5,0.85)',theme:'dark',extra:{bgImage:'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1920',fontFamily:'Menlo, monospace',chatBubbleRadius:'4px',borderColor:'rgba(34,197,94,0.3)'}},
+      {name:'80s Synthwave',desc:'Neon grid horizon',accent:'#ec4899',bg:'#1a0b2e',user:'rgba(26,11,46,0.85)',ai:'rgba(45,15,60,0.85)',theme:'dark',extra:{bgImage:'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=1920',borderColor:'rgba(236,72,153,0.3)'}},
+      {name:'Ocean Beach',desc:'Calm waves crashing',accent:'#0ea5e9',bg:'#0f172a',user:'rgba(15,23,42,0.85)',ai:'rgba(30,41,59,0.85)',theme:'dark',extra:{bgImage:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1920',borderColor:'rgba(14,165,233,0.3)'}},
+      {name:'Midnight Purple',desc:'Deep purple vibes, dreamy and calm',accent:'#8b5cf6',bg:'#0a0520',user:'#1a1040',ai:'#0f0a2a',theme:'dark',extra:{bgImage:''}},
+      {name:'Sunset Orange',desc:'Warm sunset tones, energetic',accent:'#f97316',bg:'#1a0f05',user:'#2a1a0a',ai:'#1a1205',theme:'dark',extra:{bgImage:''}},
+      {name:'Ocean Blue',desc:'Cool ocean depths, professional',accent:'#3b82f6',bg:'#0a1628',user:'#0f1e3a',ai:'#0a1a30',theme:'dark',extra:{bgImage:''}},
+      {name:'Forest Green',desc:'Natural and grounding',accent:'#22c55e',bg:'#051a0a',user:'#0a2a14',ai:'#05200a',theme:'dark',extra:{bgImage:''}},
+      {name:'Rose Pink',desc:'Soft and elegant',accent:'#ec4899',bg:'#1a0a14',user:'#2a1020',ai:'#1a0a16',theme:'dark',extra:{bgImage:''}},
+      {name:'Golden Hour',desc:'Warm gold tones, luxurious',accent:'#eab308',bg:'#1a1505',user:'#2a2410',ai:'#1a1a05',theme:'dark',extra:{bgImage:''}},
+      {name:'Arctic White',desc:'Clean, minimal, and bright',accent:'#0d9488',bg:'#f8fafc',user:'#e2e8f0',ai:'#f0fdfa',theme:'light',extra:{bgImage:''}},
+      {name:'Cotton Candy',desc:'Playful pastels',accent:'#ec4899',bg:'#fdf2f8',user:'#fce7f3',ai:'#faf5ff',theme:'light',extra:{bgImage:''}},
+      {name:'Neon Cyber',desc:'High-energy cyberpunk',accent:'#22d3ee',bg:'#020617',user:'#0a1628',ai:'#051525',theme:'dark',extra:{borderColor:'rgba(34,211,238,0.15)',bgImage:''}},
+      {name:'Minimal Zen',desc:'Stripped down, pure focus',accent:'#6b7280',bg:'#f9fafb',user:'#f3f4f6',ai:'#ffffff',theme:'light',extra:{hideTopbar:true,borderRadius:'sharp',bubbleAnimation:'fade',bgImage:''}},
+      {name:'Retro Terminal',desc:'Green-on-black hacker style',accent:'#22c55e',bg:'#0a0a0a',user:'#111111',ai:'#0d0d0d',theme:'dark',extra:{fontFamily:'Menlo, monospace',borderRadius:'sharp',bgImage:''}},
+      {name:'Cozy Warm',desc:'Warm and inviting for long chats',accent:'#f59e0b',bg:'#1c1410',user:'#2a1f16',ai:'#1a1510',theme:'dark',extra:{fontSize:'large',bubbleAnimation:'bounce',bgImage:''}}
     ];
 
     function showTemplateGallery(){
