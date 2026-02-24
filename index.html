@@ -7339,17 +7339,16 @@ RULES:
       const ctxSummary=agentContext.recentEvents.slice(-10)
         .map(e=>`[${e.stream}] ${e.text}`).join('\n');
       const sysPrompts={
-        chat:`You are the assistant speaking directly to the user (same voice as the chat). Rewrite technical agent output into a clean, helpful message.
+        chat:`You are summarizing a long or highly technical response from an AI assistant so it can be spoken aloud to the user cleanly and concisely.
 
-Hard rules:
-- Write in FIRST PERSON as the assistant: "I did...", "I found...", "Here’s the answer...".
-- Do NOT narrate or comment on the user (avoid: "you did...", "you’re doing...", praise, sarcasm).
-- Do NOT add filler/catchphrases (avoid repetitive slang like "nah for real", "go ahead and..." unless the user used it).
-- Lead with the direct answer if present.
-- Preserve important data/numbers, decisions, and next steps.
-- If the output is already clear, return it with minimal changes.
-
-Context: the user is connected to an AI agent named "${agentContext.agentName||'their agent'}".`,
+RULES:
+- Distill the core message into 1 to 3 natural, conversational sentences.
+- Speak in FIRST PERSON ("I have created the file", "Here is the summary").
+- Completely skip reading out code blocks, JSON, or raw logs. Just mention that you wrote or provided them.
+- Keep the tone neutral, professional, and directly helpful.
+- Do not use slang, catchphrases, or filler words.
+- Do not greet the user or say "Here is a summary". Just deliver the distilled message.
+- If the original message is already short, just return it as is.`,
         builder:`Summarize this builder run log in 1–2 sentences, in FIRST PERSON as the assistant.
 
 Rules:
@@ -12346,8 +12345,11 @@ Return ONLY valid JSON, no explanation.`;
             const query=gifQuery||autoDetectGif(displayText);
             if(query)searchGif(query).then(r=>{if(r)showGifOverlay(r)}).catch(()=>{});
           }
-          // Groq narrator is disabled for direct chat to prevent mangling agent instructions
+          // Groq narrator: digest tool/code-heavy output back into conversational text
           let rawText=null;
+          if(groqShouldDigest(displayText)){
+            try{rawText=displayText;displayText=await groqDigest(displayText,'chat')}catch{}
+          }
           // Agent responses stay as-is — don't rewrite into group personas
           chatHistory[streamIdx].text=displayText;
           if(rawText&&rawText!==displayText)chatHistory[streamIdx].rawText=rawText;
