@@ -6070,7 +6070,9 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
     // (Actions still execute; users typically only want the results/toasts.)
     function stripTcActionBlocksForDisplay(text){
       if(!text)return '';
-      return text.replace(/```tc-action\s*[\s\S]*?```/g,'').trim();
+      let clean = text.replace(/```tc-action\s*[\s\S]*?```/g,'');
+      clean = clean.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, '');
+      return clean.trim();
     }
 
     // ── Chat Rendering ─────────────────────────────────
