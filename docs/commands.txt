@@ -144,6 +144,15 @@ Triggers a voice assistant remotely (siri, alexa, google, custom) using the GITA
 - `/gita google set the thermostat to 72`
 - `/gita custom "hey computer" engage warp drive`
 
+**Comma Delay Shorthand:**
+Add commas before the command to delay execution by 1 second per comma.
+- `/gita alexa ,,, play audio bible` => Wait 3 seconds, then trigger.
+Explicit delay settings are preserved, and comma delays are added on top.
+
+**Quick Commands / Helper UI:**
+Type `/gita` (with no arguments) or `/gita help` to open the interactive helper sheet.
+From there, you can type your command and click **Set as Quick Command** to save it to your quick-replies bar (above the chat input) for fast, 1-tap firing later.
+
 By default, TealClaw points to `http://localhost:3000`. You can change this by pasting `{"gitaEndpoint": "http://YOUR-IP:3000"}` in chat.
 
 ### /telegram on / /telegram off
