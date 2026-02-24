@@ -13156,6 +13156,9 @@ ${agentNote}`);
           }).catch(e=>{removeTyping();sysBubble(`<p>Groq error: ${esc(e.message)}</p>`)});
           return;
         }
+        if(cmd==='/settings'){
+          openSheet(); return;
+        }
         if(cmd==='/setup'){
           sysBubble(`<h3>Setup Wizard</h3>
 <p>Paste any of these keys in the chat to configure:</p>
