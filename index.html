@@ -2013,7 +2013,7 @@
       });
 
       // tc-app Sandboxed Apps — render as iframe
-      html=html.replace(/```tc-app\s*\n([\s\S]*?)```/gi,(m,code)=> {
+      html=html.replace(/(`{3,})tc-app\s*\n([\s\S]*?)\n\1/gi,(m,fence,code)=> {
         try {
           // Decode HTML entities (esc() above converted < to &lt;, etc)
           const div = document.createElement('div');
@@ -2030,9 +2030,11 @@
       });
 
       // tc-flow Engine Macros
-      html=html.replace(/```tc-flow\s*\n([\s\S]*?)```/gi,(m,code)=> {
-        const unescaped = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+      html=html.replace(/(`{3,})tc-flow\s*\n([\s\S]*?)\n\1/gi,(m,fence,code)=> {
         try {
+          const div = document.createElement('div');
+          div.innerHTML = code;
+          const unescaped = div.textContent;
           const flow = JSON.parse(unescaped.trim());
           const name = flow.name || 'Macro';
           let ui = '<div class="tc-flow-preview" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;margin:8px 0;">';
@@ -2052,12 +2054,12 @@
           ui += '</div>';
           return ui;
         } catch(e) {
-          return '<pre data-lang="tc-flow"><code>' + code.trim() + '</code></pre>';
+          return `<pre data-lang="tc-flow"><code>${code}</code></pre>`;
         }
       });
 
       // Code blocks (``` ... ```) - must be first
-      html=html.replace(/```(\w*)\n([\s\S]*?)```/g,(m,lang,code)=>
+      html=html.replace(/(`{3,})(\w*)\n([\s\S]*?)\n\1/g,(m,fence,lang,code)=>
         `<pre data-lang="${lang}"><code>${code.trim()}</code></pre>`);
 
       // Inline code
