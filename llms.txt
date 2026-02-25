@@ -1170,6 +1170,7 @@ Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/sp
 | /session end | End session, wipe gw creds |
 | /groq [message] | Send directly to Groq, bypass agent |
 | /voice-chat (alias /vc) | Push-to-talk voice-only mode |
+| /duplex on\|off\|<seconds> | Hands-free duplex loop (auto listen → respond → listen again) |
 | /new | Start new conversation |
 | /restart | Alias for /clear |
 | /export json | Export as portable JSON (drag-droppable) |

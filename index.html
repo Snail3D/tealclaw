@@ -13668,7 +13668,7 @@ ${agentNote}`);
         const cmd=text.toLowerCase().trim();
         const isAgentMode=getK().mode==='agent'&&getActiveAgent();
         // TealClaw-only commands (always handle locally)
-        const tcLocal=['/setup','/settings','/marketplace','/apps','/store','/shop','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/gita','/providers','/provider','/chron','/cron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
+        const tcLocal=['/setup','/settings','/marketplace','/apps','/store','/shop','/keys','/clear','/voice','/group','/export','/profile','/qr','/share','/template','/templates','/research','/search','/deepresearch','/deepsearch','/imagine','/photo','/capture','/takephoto','/screenshot','/screen','/capture-screen','/telegram','/help','/save','/session','/groq','/grok','/gita','/duplex','/providers','/provider','/chron','/cron','/alarm','/timer','/pomodoro','/debate','/reconnect'];
         const isTcCommand=tcLocal.some(c=>cmd===c||cmd===c+'s'||cmd.startsWith(c+' '));
         // In agent mode, pass unrecognized commands straight to the gateway
         if(isAgentMode&&!isTcCommand){
@@ -13720,6 +13720,7 @@ ${agentNote}`);
 <li><code>/marketplace</code> -- browse the app store (alias: /apps, /store)</li>
 <li><code>/group</code> -- toggle group chat (all 6 personas talk together; voice: "group")</li>
 <li><code>/voice-chat</code> -- enter voice-only mode (push-to-talk)</li>
+<li><code>/duplex on|off|&lt;seconds&gt;</code> -- hands-free turn-taking voice loop</li>
 <li><code>/template</code> -- browse and apply style templates</li>
 <li><code>/save</code> -- save current chat to Obsidian</li>
 <li><code>/save idea [your thought]</code> -- quick capture idea to Obsidian</li>
@@ -14079,6 +14080,37 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
         }
         if(cmd==='/voice-chat'||cmd==='/vc'){
           enterVoiceMode();
+          return;
+        }
+        if(cmd==='/duplex'||cmd.startsWith('/duplex ')){
+          const arg=(text.slice(7).trim()||'').toLowerCase();
+          if(arg==='off'||arg==='stop'||arg==='0'||arg==='false'){
+            voiceDuplexMode=false;
+            if(voiceModeRecording)stopVoiceModeRec();
+            $('voiceModeStatus').textContent=voiceModeIdleText();
+            sysBubble('<p>Duplex voice mode is <strong>off</strong>. Use <code>/duplex on</code> to enable hands-free turns.</p>');
+            showToast('Duplex off','ok');
+            return;
+          }
+          if(arg==='on'||arg==='start'||arg==='1'||arg==='true'||arg===''){
+            voiceDuplexMode=true;
+            if(!voiceModeActive)enterVoiceMode();
+            else {
+              $('voiceModeStatus').textContent=voiceModeIdleText();
+              if(!voiceModeRecording)queueNextDuplexTurn();
+            }
+            sysBubble('<p>Duplex voice mode is <strong>on</strong>. I will auto-listen each turn, think, speak, and listen again.</p><p style="font-size:11px;color:var(--text-2)">Turn it off anytime with <code>/duplex off</code>.</p>');
+            showToast('Duplex on','ok');
+            return;
+          }
+          const sec=Math.max(2,Math.min(20,parseInt(arg,10)||0));
+          if(sec){
+            voiceDuplexListenMs=sec*1000;
+            if(voiceDuplexMode) $('voiceModeStatus').textContent=voiceModeIdleText();
+            sysBubble(`<p>Duplex listen window set to <strong>${sec}s</strong> per turn.</p><p style="font-size:11px;color:var(--text-2)">Use <code>/duplex on</code> to run hands-free or <code>/duplex off</code> to stop.</p>`);
+            return;
+          }
+          sysBubble('<p>Usage: <code>/duplex on</code>, <code>/duplex off</code>, or <code>/duplex 6</code> (seconds per listen turn).</p>');
           return;
         }
         if(cmd==='/voice diag'||cmd==='/voicediag'){
@@ -18727,17 +18759,31 @@ ${note}`:note;
 
     // ── Voice-Only Chat Mode ─────────────────────────
     let voiceModeActive=false,voiceModeRecording=false,voiceModeStream=null,voiceModeRecorder=null,voiceModeChunks=[];
+    let voiceDuplexMode=false;
+    let voiceDuplexListenMs=5200;
+    let voiceDuplexTurnGapMs=700;
+    let voiceModeAutoStopTimer=null;
+
+    function voiceModeIdleText(){
+      return voiceDuplexMode
+        ?`Duplex on — listening ${Math.round(voiceDuplexListenMs/1000)}s each turn`
+        :'Tap and hold to speak';
+    }
 
     function enterVoiceMode(){
       voiceModeActive=true;
       $('voiceMode').classList.remove('hidden');
-      $('voiceModeStatus').textContent='Tap and hold to speak';
+      $('voiceModeStatus').textContent=voiceModeIdleText();
       $('voiceModeSubtitle').innerHTML='';
+      if(voiceDuplexMode){
+        setTimeout(()=>{ if(voiceModeActive&&!voiceModeRecording)startVoiceModeRec(); },350);
+      }
     }
 
     function exitVoiceMode(){
       voiceModeActive=false;
       $('voiceMode').classList.add('hidden');
+      if(voiceModeAutoStopTimer){clearTimeout(voiceModeAutoStopTimer);voiceModeAutoStopTimer=null}
       if(voiceModeRecording)stopVoiceModeRec();
     }
 
@@ -18747,6 +18793,13 @@ ${note}`:note;
         voiceModeStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
         return true;
       }catch{return false}
+    }
+
+    function queueNextDuplexTurn(){
+      if(!voiceDuplexMode||!voiceModeActive)return;
+      setTimeout(()=>{
+        if(voiceModeActive&&!voiceModeRecording)startVoiceModeRec();
+      },voiceDuplexTurnGapMs);
     }
 
     async function startVoiceModeRec(){
@@ -18759,7 +18812,7 @@ ${note}`:note;
         const blob=new Blob(voiceModeChunks,{type:voiceModeRecorder?.mimeType||'audio/webm'});
         try{
           const text=await transcribe(blob);
-          if(!text){$('voiceModeStatus').textContent='No speech detected';return}
+          if(!text){$('voiceModeStatus').textContent='No speech detected';queueNextDuplexTurn();return}
           $('voiceModeStatus').textContent='Thinking...';
           $('voiceModeSubtitle').innerHTML='';
           // Auto-detect /command prefixes from speech
@@ -18779,7 +18832,7 @@ ${note}`:note;
           try{
             const aiResult=await callAI(finalText,imageBase64);
             const aiText=typeof aiResult==='string'?aiResult:aiResult?.text;
-            if(!aiText||aiText==='__NO_KEY__'){$('voiceModeStatus').textContent='No response';return}
+            if(!aiText||aiText==='__NO_KEY__'){$('voiceModeStatus').textContent='No response';queueNextDuplexTurn();return}
             // Parse agent actions
             let displayText=aiText;
             const{cleanText:ac,actions:tca}=parseTcActions(displayText);
@@ -18822,22 +18875,31 @@ ${note}`:note;
               if(isGC)showGroupSubtitle(displayText);
               else $('voiceModeSubtitle').textContent=displayText;
             }
-            $('voiceModeStatus').textContent='Tap and hold to speak';
+            $('voiceModeStatus').textContent=voiceModeIdleText();
+            queueNextDuplexTurn();
           }catch(e){
             $('voiceModeStatus').textContent='Error: '+e.message;
             $('voiceModeSubtitle').textContent='';
+            queueNextDuplexTurn();
           }
-        }catch{$('voiceModeStatus').textContent='Transcription failed'}
+        }catch{$('voiceModeStatus').textContent='Transcription failed';queueNextDuplexTurn()}
       });
       voiceModeRecorder.start();
       voiceModeRecording=true;
       $('voicePttBtn').classList.add('recording');
       $('voiceModeStatus').textContent='Listening...';
+      if(voiceDuplexMode){
+        if(voiceModeAutoStopTimer){clearTimeout(voiceModeAutoStopTimer);voiceModeAutoStopTimer=null}
+        voiceModeAutoStopTimer=setTimeout(()=>{
+          if(voiceModeRecording)stopVoiceModeRec();
+        },voiceDuplexListenMs);
+      }
       haptic('medium');
     }
 
     function stopVoiceModeRec(){
       if(!voiceModeRecording||!voiceModeRecorder)return;
+      if(voiceModeAutoStopTimer){clearTimeout(voiceModeAutoStopTimer);voiceModeAutoStopTimer=null}
       voiceModeRecorder.stop();
       voiceModeRecording=false;
       $('voicePttBtn').classList.remove('recording');

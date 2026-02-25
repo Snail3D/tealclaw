@@ -34,6 +34,7 @@
 | `/deepresearch query` | Extended deep research report (GROQ-powered, uses groq/compound) |
 | `/groq [message]` | Send directly to Groq, bypassing agent |
 | `/voice-chat` | Push-to-talk voice-only mode (alias: `/vc`) |
+| `/duplex on|off|<seconds>` | Hands-free duplex loop (auto listen → respond → listen again) |
 | `/gita [assistant] [command]` | Trigger voice assistants remotely via GITA service |
 | `/new` | Start new conversation |
 | `/export json` | Export as portable JSON |
