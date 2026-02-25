@@ -3008,11 +3008,20 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       return customUrl?{...base,baseUrl:customUrl}:base;
     }
 
+    function sanitizeApiKey(raw){
+      return String(raw||'')
+        .replace(/[\u200B-\u200D\uFEFF]/g,'') // zero-width chars
+        .replace(/[“”]/g,'"')
+        .replace(/[‘’]/g,"'")
+        .trim()
+        .replace(/^['"]+|['"]+$/g,'');
+    }
+
     function getDirectApiKey(provider,k){
       const cfg=k||getK();
       const id=normalizeAiProvider(provider||resolveAiProvider(cfg));
-      if(id==='groq')return cfg.whisperKey||(resolveAiProvider(cfg)==='groq'?(cfg.aiKey||''):'');
-      return cfg.aiKey||'';
+      if(id==='groq')return sanitizeApiKey(cfg.whisperKey||(resolveAiProvider(cfg)==='groq'?(cfg.aiKey||''):''));
+      return sanitizeApiKey(cfg.aiKey||'');
     }
 
     function hasDirectProvider(provider,k){
@@ -3022,8 +3031,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
     function getGroqKey(k){
       const cfg=k||getK();
-      if(cfg.whisperKey)return cfg.whisperKey;
-      if(resolveAiProvider(cfg)==='groq')return cfg.aiKey||'';
+      if(cfg.whisperKey)return sanitizeApiKey(cfg.whisperKey);
+      if(resolveAiProvider(cfg)==='groq')return sanitizeApiKey(cfg.aiKey||'');
       return '';
     }
 
@@ -7048,7 +7057,8 @@ RULES:
       const detail=payload?.error?.message||payload?.message||payload?.error||'';
       const code=payload?.error?.code||payload?.code||'';
       if(status===401||status===403){
-        return providerError(provider,`${preset.label} auth failed (${status}). Check API key and provider selection. ${detail}`.trim(),{status,recoverable:false,code:'auth'});
+        const hint=(provider!=='groq')?' If this is a Groq key, run /provider groq and try again.':'';
+        return providerError(provider,`${preset.label} auth failed (${status}). Check API key and provider selection.${hint} ${detail}`.trim(),{status,recoverable:false,code:'auth'});
       }
       if(status===429){
         return providerError(provider,`${preset.label} rate limit hit (429). Retry in a moment or use fallback provider.`,{status,recoverable:true,code:'rate_limit'});
@@ -10208,16 +10218,40 @@ Rules:
     async function showMarketplace() {
       sysBubble('<p style="color:var(--text-3)">Fetching App Marketplace...</p>');
       try {
-        let res = await fetch('/marketplace.json');
-        if(!res.ok) res = await fetch('/public/marketplace.json');
-        if(!res.ok) throw new Error('Marketplace unavailable');
-        const data = await res.json();
-        
+        const paths = [
+          '/marketplace.json',
+          './marketplace.json',
+          '/public/marketplace.json',
+          './public/marketplace.json'
+        ];
+        let data = null;
+        let lastErr = null;
+
+        for (const p of paths) {
+          try {
+            const res = await fetch(p, { cache: 'no-store' });
+            if (!res.ok) {
+              lastErr = new Error(`${p} -> HTTP ${res.status}`);
+              continue;
+            }
+            const body = await res.json();
+            if (body && Array.isArray(body.apps)) {
+              data = body;
+              break;
+            }
+            lastErr = new Error(`${p} -> invalid marketplace format`);
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+
+        if (!data) throw (lastErr || new Error('Marketplace unavailable'));
+
         await Promise.all((data.apps || []).map(async (app) => {
           try {
-            let t = await fetch(app.url, {method: 'HEAD'});
+            let t = await fetch(app.url, { method: 'HEAD', cache: 'no-store' });
             if(!t.ok && app.url.startsWith('/apps/')) {
-              t = await fetch('/public' + app.url, {method: 'HEAD'});
+              t = await fetch('/public' + app.url, { method: 'HEAD', cache: 'no-store' });
               if(t.ok) app._url = '/public' + app.url;
             } else if(t.ok) {
               app._url = app.url;
@@ -12829,36 +12863,6 @@ Return ONLY valid JSON, no explanation.`;
 <p style="margin-bottom:8px;font-size:13px;line-height:1.4;">Trigger voice assistants remotely. Use leading commas for delay (e.g. <code>,,,</code> for +3s).</p>
 <div style="background:var(--bg-hover);padding:10px;border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:8px;">
 
-  <div style="display:flex;gap:6px;align-items:center;">
-    <input type="text" id="${sid}_intent" placeholder="e.g. hey alexa ,,, turn off the lights" value="${esc(pIntent)}" style="flex:1;padding:6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
-    <button class="btn btn-ghost btn-sm" onclick="
-      const text = document.getElementById('${sid}_intent').value;
-      if (!text) return;
-      let asst = 'alexa'; let cmd = text; let wake = ''; let d = 0;
-      const commaMatch = cmd.match(/^([,]+)\\s*(.*)$/);
-      if (commaMatch) { d = commaMatch[1].length * 1000; cmd = commaMatch[2]; }
-      const lower = cmd.toLowerCase();
-      if (lower.includes('siri')) asst = 'siri';
-      else if (lower.includes('alexa')) asst = 'alexa';
-      else if (lower.includes('google')) asst = 'google';
-      else if (lower.includes('custom') || lower.includes('computer')) { asst = 'custom'; wake = 'hey computer'; }
-      cmd = cmd.replace(/\\b(hey|ok|hi)?\\s*(siri|alexa|google|computer)\\b/gi, '').trim().replace(/\\s{2,}/g, ' ');
-      
-      document.getElementById('${sid}_asst').value = asst;
-      document.getElementById('${sid}_wake_div').style.display = asst==='custom'?'block':'none';
-      if(asst==='custom') document.getElementById('${sid}_wake').value = wake;
-      document.getElementById('${sid}_cmd').value = cmd;
-      document.getElementById('${sid}_delay').value = d;
-      document.getElementById('${sid}_speed').value = 0.9;
-      document.getElementById('${sid}_wakedelay').value = 2500;
-      document.getElementById('${sid}_vol').value = '';
-      document.getElementById('${sid}_pause').value = '';
-      showToast('Smart preset applied', 'ok');
-    ">Apply Preset</button>
-  </div>
-
-  <hr style="border:0;border-top:1px solid var(--border);margin:4px 0;">
-
   <div style="display:flex;gap:8px;">
     <div style="flex:1;">
       <label style="display:block;margin-bottom:2px;color:var(--text-2);">Assistant</label>
@@ -12870,7 +12874,7 @@ Return ONLY valid JSON, no explanation.`;
       </select>
     </div>
     <div style="flex:1;">
-      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Delay (ms)</label>
+      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Pre-Pause (ms)</label>
       <input type="number" id="${sid}_delay" value="${pDelay}" step="1000" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
     </div>
   </div>
@@ -12896,15 +12900,9 @@ Return ONLY valid JSON, no explanation.`;
     </div>
   </div>
 
-  <div style="display:flex;gap:8px;">
-    <div style="flex:1;">
-      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Volume</label>
-      <input type="number" id="${sid}_vol" placeholder="Optional" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
-    </div>
-    <div style="flex:1;">
-      <label style="display:block;margin-bottom:2px;color:var(--text-2);">Pause</label>
-      <input type="number" id="${sid}_pause" placeholder="Optional" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
-    </div>
+  <div>
+    <label style="display:block;margin-bottom:2px;color:var(--text-2);">Pre-Volume</label>
+    <input type="number" id="${sid}_vol" placeholder="Optional" style="width:100%;padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;box-sizing:border-box;">
   </div>
 
   <div style="display:flex;gap:6px;margin-top:4px;">
@@ -12917,16 +12915,13 @@ Return ONLY valid JSON, no explanation.`;
       const spd = parseFloat(document.getElementById('${sid}_speed').value)||0.9;
       const wDel = parseInt(document.getElementById('${sid}_wakedelay').value)||2500;
       const vol = document.getElementById('${sid}_vol').value ? parseInt(document.getElementById('${sid}_vol').value) : undefined;
-      const pau = document.getElementById('${sid}_pause').value ? parseInt(document.getElementById('${sid}_pause').value) : undefined;
-      
-      const payload = { assistant: asst, command: cmd };
+            const payload = { assistant: asst, command: cmd };
       if (asst==='custom') payload.wakePhrase = wake;
-      if (del) payload.delay = del;
+      if (del) payload.prePauseMs = del;
       if (spd !== 0.9) payload.speed = spd;
-      if (wDel !== 2500) payload.wakeDelay = wDel;
-      if (vol !== undefined) payload.volume = vol;
-      if (pau !== undefined) payload.pause = pau;
-      
+      if (wDel !== 2500) payload.wakeDelayMs = wDel;
+      if (vol !== undefined) payload.preVolume = vol;
+            
       handleGitaAction(payload);
     ">Trigger</button>
     <button class="btn btn-ghost btn-sm" onclick="

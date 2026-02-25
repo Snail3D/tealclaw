@@ -219,6 +219,12 @@ Example first-time cfg:
 
 - **TG BRIDGE** -- Forward msgs to a TG bot/group for remote monitoring/response.
 
+- **GITA (Ghost In The Assistant)** -- Trigger voice assistants (Siri, Alexa, Google, Custom) remotely on the user's local network. Listed as a first-class capability.
+  Use `/gita [assistant] [command]` (e.g., `/gita alexa play jazz`, `/gita siri turn off the lights`).
+  **Comma Shorthand:** Use leading commas for delay (+1s per comma). Example: `/gita alexa ,,, play audio bible` triggers Alexa after 3 seconds.
+  To execute, output a `command` action with the /gita string.
+
+
 - **IMAGE GEN** -- /imagine command powered by Google Gemini (Nano Banana). Supports text-to-image and image-to-image (attach a reference photo). Generated images are sent to connected agents with metadata. Groq Maverick provides visual commentary when no agent is connected. Keys: Google AI (AIza...) or OpenRouter (sk-or-v1-...). Voice-friendly: "imagine a sunset" works without the /.
 
 - **CAPTURE ROUTING (AGENT MODE)** -- Use `/photo` (or `/capture` / `/takephoto`) for one-off camera snapshots via `camera.capture`. Use `/screenshot` (or `/screen` / `/capture-screen`) for one-off display captures via `screen.capture`. Choose screenshot for app/site/UI debugging and photo for physical-world scenes. For persistent monitoring/alerts, use Overwatch/watch flows. Route retained stills to photo-log when usr asks to archive/review evidence (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general image Q&A.
@@ -1136,6 +1142,7 @@ Model: canopylabs/orpheus-v1-english. Format: WAV. Endpoint: /openai/v1/audio/sp
 | /photo [optional question] | One-off snapshot flow (camera.capture). Use facing based on task. |
 | /capture [optional question] | Alias for /photo |
 | /takephoto [optional question] | Alias for /photo |
+| /gita [assistant] [command] | Trigger voice assistants remotely (siri, alexa, google, custom). Commas = delay (,,, = +3s) |
 | /screenshot [optional question] | One-off display capture flow (screen.capture). Best for UI/app/website debugging. |
 | /screen [optional question] | Alias for /screenshot |
 | /capture-screen [optional question] | Alias for /screenshot |

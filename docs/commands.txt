@@ -150,8 +150,7 @@ Add commas before the command to delay execution by 1 second per comma.
 Explicit delay settings are preserved, and comma delays are added on top.
 
 **Quick Commands / Helper UI:**
-Type `/gita` (with no arguments) or `/gita help` to open the interactive helper sheet.
-From there, you can type your command and click **Set as Quick Command** to save it to your quick-replies bar (above the chat input) for fast, 1-tap firing later.
+Type `/gita` with optional natural text (e.g. `/gita hey alexa turn off the lights`) to open the **Smart Preset Helper**. It automatically infers the assistant, delay (commas), and command. You can edit sensible defaults (speed 0.9, wake delay 2.5s) and click **Apply Preset** or save it as a **Quick Cmd** for fast 1-tap firing.
 
 By default, TealClaw points to `http://localhost:3000`. You can change this by pasting `{"gitaEndpoint": "http://YOUR-IP:3000"}` in chat.
 
