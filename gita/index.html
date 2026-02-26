@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TealClaw • GITA Deck</title>
+  <style>
+    :root{--bg:#05060b;--panel:rgba(15,17,26,.86);--border:rgba(126,136,186,.28);--text:#e8ecff;--muted:#99a6d4;--a:#8d79ff;--b:#4ee2ff}
+    *{box-sizing:border-box} body{margin:0;color:var(--text);font-family:Inter,system-ui;background:radial-gradient(circle at 20% 10%,#1a1133 0,#0a0d17 35%,#05060b 100%)}
+    .smoke,.smoke:before,.smoke:after{content:"";position:fixed;inset:-25%;pointer-events:none;z-index:0;filter:blur(36px);opacity:.45;background:radial-gradient(closest-side,rgba(141,121,255,.25),rgba(141,121,255,0) 70%) 15% 20%/34vmax 34vmax,radial-gradient(closest-side,rgba(78,226,255,.18),rgba(78,226,255,0) 70%) 80% 20%/28vmax 28vmax;animation:drift 30s linear infinite}
+    .smoke:before{animation-duration:42s;opacity:.36}.smoke:after{animation-duration:54s;animation-direction:reverse;opacity:.3}
+    @keyframes drift{from{transform:translate3d(-3%,0,0)}to{transform:translate3d(3%,0,0)}}
+    .wrap{position:relative;z-index:1;max-width:1080px;margin:24px auto;padding:0 16px;display:grid;gap:14px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;backdrop-filter:blur(9px)}
+    .top{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}.viz{height:130px;border:1px solid rgba(141,121,255,.35);border-radius:10px;overflow:hidden}
+    #viz{width:100%;height:100%;display:block;background:linear-gradient(180deg,rgba(141,121,255,.14),rgba(78,226,255,.07))}
+    h1{margin:0;letter-spacing:.14em;text-transform:uppercase}.muted{color:var(--muted)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.f{display:grid;gap:6px;margin-top:10px}
+    label{font-size:.84rem;color:var(--muted)} input,select{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(170,185,255,.25);background:rgba(7,8,13,.8);color:#fff}
+    button{padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(141,121,255,.3),rgba(141,121,255,.14));color:#fff;font-weight:600;cursor:pointer}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .log{font-family:ui-monospace,Menlo,monospace;font-size:.83rem;max-height:260px;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px;background:rgba(0,0,0,.24)}
+    @media (max-width:940px){.top,.grid,.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="smoke"></div>
+<main class="wrap">
+  <section class="top">
+    <div class="card">
+      <h1>GITA Deck</h1>
+      <div class="muted">Ghost In The Assistant • tealclaw.ai/gita</div>
+      <div class="row">
+        <div class="f"><label>GITA API Base</label><input id="api" placeholder="https://tealclaw.ai/gita-api" /></div>
+        <div class="f"><label>Groq Key (local only)</label><input id="groq" type="password" placeholder="gsk_..." /></div>
+      </div>
+      <div class="btns">
+        <button onclick="saveCfg()">Activate</button>
+        <button onclick="health()">Health</button>
+        <span id="status" class="muted"></span>
+      </div>
+    </div>
+    <div class="card viz"><canvas id="viz"></canvas></div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h3>Quick Trigger</h3>
+      <div class="f"><label>Assistant</label><select id="assistant"><option value="alexa">Alexa</option><option value="google">Google</option><option value="siri">Siri</option><option value="custom">Custom</option></select></div>
+      <div class="f"><label>Wake Phrase</label><input id="wake" placeholder="Computer" /></div>
+      <div class="f"><label>Command</label><input id="command" placeholder="play Night Owl by Galimatias" /></div>
+      <div class="row">
+        <div class="f"><label>Voice</label><input id="voice" placeholder="hannah / troy" /></div>
+        <div class="f"><label>Model</label><input id="model" placeholder="canopylabs/orpheus-v1-english" /></div>
+      </div>
+      <div class="btns"><button onclick="trigger()">Send</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Response / Logs</h3>
+      <div id="log" class="log"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const cfg={get api(){return localStorage.getItem('tc.gita.api')||''},set api(v){localStorage.setItem('tc.gita.api',v||'')},get groq(){return localStorage.getItem('tc.gita.groq')||''},set groq(v){if(v)localStorage.setItem('tc.gita.groq',v);else localStorage.removeItem('tc.gita.groq')}};
+function b(path){const x=($('api').value||cfg.api||'').replace(/\/$/,'');return x?x+path:path}
+function log(msg){$('log').innerHTML=`<div>${new Date().toLocaleTimeString()} ${msg}</div>`+$('log').innerHTML}
+function status(s,bad){$('status').textContent=s;$('status').style.color=bad?'#ff9ab0':'#9be8d9'}
+async function req(path,method='GET',body){const r=await fetch(b(path),{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});const t=await r.text();if(!r.ok)throw new Error(t||r.status);try{return JSON.parse(t)}catch{return t}}
+function saveCfg(){cfg.api=$('api').value.trim();cfg.groq=$('groq').value.trim();status('Activated')} 
+async function health(){try{const j=await req('/health');status(`ok ${Math.round(j.uptime||0)}s`);log('health ok')}catch(e){status('health failed',true);log('health failed '+e.message)}}
+async function trigger(){
+  const payload={assistant:$('assistant').value,wakePhrase:$('wake').value,command:$('command').value,voice:$('voice').value,model:$('model').value,groqKey:$('groq').value.trim()||cfg.groq||undefined};
+  if(!payload.command)return alert('Command required');
+  try{const j=await req('/trigger','POST',payload);log('sent '+j.phrase);status('trigger sent')}catch(e){log('error '+e.message);status('trigger error',true)}
+}
+(function init(){ $('api').value=cfg.api; $('groq').value=cfg.groq; visualizer(); })();
+function visualizer(){const c=$('viz'),x=c.getContext('2d');const rs=()=>{c.width=c.clientWidth*devicePixelRatio;c.height=c.clientHeight*devicePixelRatio;x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)};rs();addEventListener('resize',rs);const bars=new Array(52).fill(0).map(()=>Math.random()*.7+.2);(function tick(t){const w=c.clientWidth,h=c.clientHeight;x.clearRect(0,0,w,h);const g=x.createLinearGradient(0,h,0,0);g.addColorStop(0,'rgba(78,226,255,.22)');g.addColorStop(1,'rgba(141,121,255,.86)');x.fillStyle=g;const bw=w/bars.length;for(let i=0;i<bars.length;i++){bars[i]+= (Math.random()-.5)*.12;bars[i]=Math.max(.06,Math.min(1,bars[i]));const p=.42+.46*Math.sin(t/680+i*.25);const bh=(bars[i]*p)*h*.95;x.fillRect(i*bw+1,h-bh,Math.max(2,bw-2),bh);}requestAnimationFrame(tick)})(0)}
+</script>
+</body>
+</html>
