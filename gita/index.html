@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GITA — Ghost In The Assistant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&family=Syncopate:wght@400;600&display=swap');
+
+    :root {
+      --bg: #030408;
+      --panel-bg: rgba(12, 14, 22, 0.6);
+      --panel-border: rgba(141, 121, 255, 0.15);
+      --panel-glow: rgba(141, 121, 255, 0.05);
+      --text-main: #f0f2ff;
+      --text-muted: #8b95c2;
+      --accent-primary: #8d79ff;
+      --accent-secondary: #4ee2ff;
+      --accent-danger: #ff4e78;
+      --font-sans: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+      --font-display: 'Syncopate', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Cinematic layered smoke */
+    .smoke-container {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 0%, rgba(20, 15, 40, 0.8) 0%, var(--bg) 60%);
+    }
+
+    .smoke {
+      position: absolute;
+      width: 200vw;
+      height: 200vh;
+      top: -50vh;
+      left: -50vw;
+      background: 
+        radial-gradient(ellipse at center, rgba(141, 121, 255, 0.15) 0%, transparent 60%),
+        radial-gradient(ellipse at bottom right, rgba(78, 226, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at top left, rgba(141, 121, 255, 0.1) 0%, transparent 50%);
+      filter: blur(60px);
+      animation: smokeDrift 40s infinite alternate cubic-bezier(0.4, 0, 0.6, 1);
+      mix-blend-mode: screen;
+    }
+
+    .smoke:nth-child(2) {
+      background: 
+        radial-gradient(ellipse at bottom left, rgba(78, 226, 255, 0.15) 0%, transparent 60%),
+        radial-gradient(ellipse at top right, rgba(141, 121, 255, 0.1) 0%, transparent 50%);
+      animation: smokeDrift2 55s infinite alternate-reverse cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    @keyframes smokeDrift {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+      100% { transform: translate(-5%, 5%) scale(1.1) rotate(2deg); }
+    }
+    @keyframes smokeDrift2 {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+      100% { transform: translate(5%, -5%) scale(1.15) rotate(-2deg); }
+    }
+
+    /* Grid lines overlay */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
+    }
+
+    /* Main Layout */
+    .shell {
+      position: relative;
+      z-index: 10;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Premium Glassmorphic Cards */
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 40px var(--panel-glow);
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+      border-color: rgba(141, 121, 255, 0.3);
+      box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 60px rgba(141, 121, 255, 0.1);
+    }
+
+    /* Typography */
+    .header-section {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: linear-gradient(to right, #fff, #aeb9ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(141, 121, 255, 0.4);
+    }
+
+    .subtitle {
+      font-family: var(--font-mono);
+      color: var(--accent-secondary);
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+      margin: 0 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .panel-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--panel-border), transparent);
+    }
+
+    /* Inputs and Controls */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      background: rgba(141, 121, 255, 0.05);
+      box-shadow: 0 0 0 3px rgba(141, 121, 255, 0.15);
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .btn-group.small {
+      margin-top: 0;
+      gap: 8px;
+    }
+
+    button {
+      position: relative;
+      background: transparent;
+      border: 1px solid var(--accent-primary);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-family: var(--font-sans);
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+
+    button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(141, 121, 255, 0.4), rgba(78, 226, 255, 0.2));
+      z-index: -1;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(141, 121, 255, 0.3);
+      border-color: var(--accent-secondary);
+    }
+    button:hover::before { opacity: 0.8; }
+    button:active { transform: translateY(0); }
+
+    button.secondary {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    button.secondary::before {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    button.secondary:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 5px 20px rgba(255, 255, 255, 0.1);
+    }
+
+    button.danger {
+      border-color: rgba(255, 78, 120, 0.5);
+      color: #ffb3c6;
+    }
+    button.danger::before {
+      background: rgba(255, 78, 120, 0.1);
+    }
+    button.danger:hover {
+      border-color: var(--accent-danger);
+      color: #fff;
+      box-shadow: 0 5px 20px rgba(255, 78, 120, 0.3);
+    }
+
+    /* Visualizer */
+    .viz-container {
+      height: 100%;
+      min-height: 200px;
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(78, 226, 255, 0.2);
+      box-shadow: inset 0 0 30px rgba(141, 121, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas#viz {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Lists and Logs */
+    .list-container {
+      max-height: 320px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 8px;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .list-item:hover {
+      background: rgba(141, 121, 255, 0.08);
+      border-color: rgba(141, 121, 255, 0.2);
+    }
+
+    .item-content { display: flex; flex-direction: column; gap: 4px; }
+    .item-title { font-weight: 500; color: #fff; font-size: 0.95rem; }
+    .item-subtitle { font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono); }
+    .item-status { font-weight: 600; font-size: 0.8rem; }
+    .status-on { color: #4effb0; }
+    .status-off { color: #ff4e78; }
+
+    .log-container {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .log-entry {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      display: flex;
+      gap: 12px;
+    }
+    .log-time { color: var(--accent-secondary); opacity: 0.8; white-space: nowrap; }
+    .log-msg { color: var(--text-main); }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      box-shadow: 0 0 10px currentColor;
+    }
+    .status-badge.ok .status-dot { background: #4effb0; color: #4effb0; }
+    .status-badge.error .status-dot { background: #ff4e78; color: #ff4e78; }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .header-section, .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .card { padding: 20px; }
+      h1 { font-size: 28px; }
+      .viz-container { min-height: 150px; }
+    }
+    @media (max-width: 600px) {
+      .field-row { grid-template-columns: 1fr; }
+      .list-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .btn-group { width: 100%; }
+      .btn-group button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="smoke-container">
+    <div class="smoke"></div>
+    <div class="smoke"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <main class="shell">
+    <section class="header-section">
+      <div class="card">
+        <div class="title-group">
+          <h1>GITA</h1>
+          <div class="subtitle">Ghost In The Assistant • Control Deck</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>API Base</label>
+            <input id="api-base" placeholder="https://tealclaw.ai/gita-api" />
+          </div>
+          <div class="field-group">
+            <label>Groq API Key (activate)</label>
+            <input id="groq-key" type="password" placeholder="gsk_..." />
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button onclick="saveActivation()">Activate</button>
+          <button class="secondary" onclick="clearActivation()">Clear Key</button>
+          <button class="secondary" onclick="pingHealth()">Ping Health</button>
+          <div id="status-badge" class="status-badge"><div class="status-dot"></div><span id="status">Standby</span></div>
+        </div>
+      </div>
+
+      <div class="card viz-container">
+        <canvas id="viz"></canvas>
+      </div>
+    </section>
+
+    <section class="grid-3">
+      <div class="card">
+        <h3 class="panel-title">Trigger Console</h3>
+        <div class="field-group">
+          <label>Assistant</label>
+          <select id="t-assistant">
+            <option value="alexa">Alexa</option>
+            <option value="google">Google</option>
+            <option value="siri">Siri</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Wake Phrase (custom only)</label>
+          <input id="t-wake" placeholder="Computer" />
+        </div>
+        <div class="field-group">
+          <label>Command</label>
+          <input id="t-command" placeholder="play Night Owl by Galimatias" />
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label>Voice</label>
+            <input id="t-voice" placeholder="hannah / troy / daniel" />
+          </div>
+          <div class="field-group">
+            <label>Model</label>
+            <input id="t-model" placeholder="canopylabs/orpheus-v1-english" />
+          </div>
+        </div>
+        <div class="btn-group">
+          <button onclick="runTrigger()">Send Trigger</button>
+          <button class="secondary" onclick="savePreset()">Save Preset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="panel-title">Scheduler</h3>
+        <div class="field-group">
+          <label>Time (24h)</label>
+          <input id="s-time" type="time" />
+        </div>
+        <div class="field-group">
+          <label>Preset</label>
+          <select id="s-preset"></select>
+        </div>
+        <div class="btn-group" style="margin-bottom: 24px;">
+          <button onclick="addSchedule()">Add Job</button>
+        </div>
+        <label style="margin-bottom: 8px; display: block;">Active Jobs</label>
+        <div class="list-container" id="job-list"></div>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="card">
+        <h3 class="panel-title">Presets</h3>
+        <div class="list-container" id="preset-list"></div>
+      </div>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 class="panel-title" style="margin: 0; border: none;">Logs</h3>
+          <button class="secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="refreshLogs()">Refresh</button>
+        </div>
+        <div class="list-container log-container" id="log-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let presets = [];
+    let jobs = [];
+
+    const $ = (id) => document.getElementById(id);
+
+    const store = {
+      get apiBase() { return localStorage.getItem('gita.apiBase') || ''; },
+      set apiBase(v) { localStorage.setItem('gita.apiBase', v || ''); },
+      get groqKey() { return localStorage.getItem('gita.groqKey') || ''; },
+      set groqKey(v) { if (v) localStorage.setItem('gita.groqKey', v); else localStorage.removeItem('gita.groqKey'); }
+    };
+
+    function baseUrl(path) {
+      const b = ($('api-base').value || '').trim() || store.apiBase || '';
+      if (!b) return path;
+      return `${b.replace(/\/$/, '')}${path}`;
+    }
+
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: {} };
+      if (body) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(baseUrl(path), opts);
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `HTTP ${res.status}`);
+      }
+      return res.json();
+    }
+
+    function setStatus(msg, bad = false) {
+      const el = $('status');
+      const badge = $('status-badge');
+      el.textContent = msg;
+      if (bad) {
+        badge.classList.add('error');
+        badge.classList.remove('ok');
+      } else {
+        badge.classList.add('ok');
+        badge.classList.remove('error');
+      }
+    }
+
+    function saveActivation() {
+      store.apiBase = $('api-base').value.trim();
+      store.groqKey = $('groq-key').value.trim();
+      setStatus(store.groqKey ? 'Activated (Key local)' : 'Activated (No key)');
+    }
+
+    function clearActivation() {
+      $('groq-key').value = '';
+      store.groqKey = '';
+      setStatus('Groq key cleared');
+      $('status-badge').className = 'status-badge';
+    }
+
+    async function pingHealth() {
+      try {
+        const j = await api('/health');
+        setStatus(`Health ok • ${Math.round(j.uptime || 0)}s`);
+      } catch (e) {
+        setStatus(`Health failed: ${e.message}`, true);
+      }
+    }
+
+    async function loadData() {
+      const data = await api('/api/data');
+      presets = data.presets || [];
+      jobs = data.jobs || [];
+      renderPresets();
+      renderJobs();
+      updatePresetDropdown();
+      refreshLogs();
+    }
+
+    function triggerPayloadFromUI() {
+      return {
+        assistant: $('t-assistant').value,
+        wakePhrase: $('t-wake').value,
+        command: $('t-command').value,
+        voice: $('t-voice').value,
+        model: $('t-model').value,
+        groqKey: $('groq-key').value.trim() || store.groqKey || undefined
+      };
+    }
+
+    async function runTrigger(presetOverride = null) {
+      const payload = presetOverride || triggerPayloadFromUI();
+      if (!payload.command) return alert('Command required');
+      try {
+        await api('/trigger', 'POST', payload);
+        setStatus(`Sent: ${payload.command}`);
+        setTimeout(refreshLogs, 800);
+      } catch (e) {
+        setStatus(`Trigger error: ${e.message}`, true);
+      }
+    }
+
+    async function savePreset() {
+      const name = prompt('Preset name:');
+      if (!name) return;
+      const p = triggerPayloadFromUI();
+      await api('/api/presets', 'POST', { id: `p_${Date.now()}`, name, ...p });
+      loadData();
+    }
+
+    async function deletePreset(id) { await api(`/api/presets/${id}`, 'DELETE'); loadData(); }
+
+    async function addSchedule() {
+      const time = $('s-time').value;
+      const presetId = $('s-preset').value;
+      if (!time || !presetId) return alert('Time and preset required');
+      await api('/api/jobs', 'POST', { id: `j_${Date.now()}`, time, presetId, active: true });
+      loadData();
+    }
+
+    async function deleteJob(id) { await api(`/api/jobs/${id}`, 'DELETE'); loadData(); }
+
+    async function toggleJob(id) {
+      const job = jobs.find(j => j.id === id);
+      if (!job) return;
+      await api(`/api/jobs/${id}`, 'PUT', { ...job, active: !job.active });
+      loadData();
+    }
+
+    async function runJobNow(presetId) {
+      const p = presets.find(x => x.id === presetId);
+      if (p) runTrigger(p);
+    }
+
+    async function refreshLogs() {
+      const res = await api('/api/logs');
+      $('log-list').innerHTML = (res.logs || []).slice().reverse().map(l =>
+        `<div class="log-entry"><div class="log-time">${new Date(l.time).toLocaleTimeString()}</div><div class="log-msg">${l.msg}</div></div>`
+      ).join('');
+    }
+
+    function renderPresets() {
+      $('preset-list').innerHTML = presets.map(p => `
+        <div class="list-item">
+          <div class="item-content">
+            <span class="item-title">${p.name}</span>
+            <span class="item-subtitle">${p.assistant}: ${p.command}</span>
+          </div>
+          <div class="btn-group small">
+            <button class="secondary" onclick="runPreset('${p.id}')">Run</button>
+            <button class="danger" onclick="deletePreset('${p.id}')">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function runPreset(id){ const p = presets.find(x => x.id === id); if (p) runTrigger(p); }
+
+    function updatePresetDropdown() {
+      $('s-preset').innerHTML = presets.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+
+    function renderJobs() {
+      $('job-list').innerHTML = jobs.map(j => {
+        const p = presets.find(x => x.id === j.presetId);
+        const n = p ? p.name : 'Unknown';
+        const statClass = j.active ? 'status-on' : 'status-off';
+        const statText = j.active ? 'ON' : 'OFF';
+        return `
+          <div class="list-item">
+            <div class="item-content">
+              <span class="item-title">${j.time} • ${n}</span>
+              <span class="item-subtitle item-status ${statClass}">${statText}</span>
+            </div>
+            <div class="btn-group small">
+              <button class="secondary" onclick="toggleJob('${j.id}')">Toggle</button>
+              <button class="secondary" onclick="runJobNow('${j.presetId}')">Run</button>
+              <button class="danger" onclick="deleteJob('${j.id}')">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function initVisualizer() {
+      const c = $('viz');
+      const ctx = c.getContext('2d');
+      let animationFrameId;
+
+      const resize = () => {
+        c.width = c.clientWidth * devicePixelRatio;
+        c.height = c.clientHeight * devicePixelRatio;
+        ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      };
+      resize();
+      window.addEventListener('resize', resize);
+
+      const numBars = 48;
+      const bars = Array.from({length: numBars}, () => 0);
+      const targets = Array.from({length: numBars}, () => 0);
+
+      function tick(t) {
+        const w = c.clientWidth, h = c.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+
+        if (Math.random() < 0.15) {
+          const idx = Math.floor(Math.random() * numBars);
+          targets[idx] = Math.random() * 0.8 + 0.2;
+          for(let i=1; i<5; i++) {
+            if(idx-i >= 0) targets[idx-i] += targets[idx] * (0.8/i);
+            if(idx+i < numBars) targets[idx+i] += targets[idx] * (0.8/i);
+          }
+        }
+
+        const bw = w / numBars;
+        
+        for (let i = 0; i < numBars; i++) {
+          targets[i] *= 0.92;
+          bars[i] += (targets[i] - bars[i]) * 0.15;
+          
+          const breath = (Math.sin(t / 800 + i * 0.15) * 0.5 + 0.5) * 0.15;
+          const val = Math.max(0.05, Math.min(1, bars[i] + breath));
+          
+          const bh = val * h * 0.7;
+          const x = i * bw;
+          const y = h / 2 - bh / 2; 
+          
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = \`rgba(141, 121, 255, \${val * 0.6})\`;
+          
+          const gradient = ctx.createLinearGradient(0, y, 0, y + bh);
+          gradient.addColorStop(0, 'rgba(78, 226, 255, 0.4)');
+          gradient.addColorStop(0.5, 'rgba(141, 121, 255, 1)');
+          gradient.addColorStop(1, 'rgba(78, 226, 255, 0.4)');
+          
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.roundRect(x + 1, y, Math.max(1, bw - 2), bh, 4);
+          ctx.fill();
+        }
+        
+        ctx.shadowBlur = 0;
+        animationFrameId = requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    (function init() {
+      $('api-base').value = store.apiBase;
+      $('groq-key').value = store.groqKey;
+      initVisualizer();
+      loadData().catch(e => setStatus(\`Load error: \${e.message}\`, true));
+      setInterval(refreshLogs, 5000);
+    })();
+  </script>
+</body>
+</html>
