@@ -2919,7 +2919,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     const DIRECT_PROVIDER_PRESETS={
-      local:{label:'Local',apiType:'openai',baseUrl:'http://localhost:11434/v1',chatModel:'qwen3.5',visionModel:'qwen3.5',maxTokens:4096}
+      local:{label:'Local',apiType:'openai',baseUrl:'http://localhost:8080/v1',chatModel:'qwen3.5',visionModel:'qwen3.5',maxTokens:4096}
     };
     const DIRECT_PROVIDER_ORDER=['local'];
 
@@ -8905,7 +8905,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
           const setupDiv=document.getElementById('obLocalSetup');
           let found=false;
           // Probe Ollama
-          const ports=[11434,8080,1234,11435];
+          const ports=[8080,11434,1234,11435];
           for(const port of ports){
             try{
               const r=await fetch('http://localhost:'+port+'/api/tags',{signal:AbortSignal.timeout(2000)});
