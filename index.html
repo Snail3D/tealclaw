@@ -12712,21 +12712,18 @@ CRITICAL: Use ONLY these exact uppercase tags: [TREY] [AXEL] [DEAN] [HAVEN] [VER
       _debateSkipRequested=false;
       setDebateSkipUI(true,false);
       const k=getK();
-      const key=getGroqKey(k);
-      if(!key){
-        sysBubble('<p>No Groq key set. Paste a <code>gsk_...</code> key first.</p>');
-        resetDebateState();
-        return;
-      }
       addBubble('user','/debate '+topic);
       if(!_userIsTouching)_userScrolledUp=false;smoothScrollToBottom($('chatScroll'),300);
       addTyping();
       try{
         _debateAbortCtrl=new AbortController();
-        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        const preset=getProviderPreset('local',k);
+        const base=normalizeProviderBaseUrl(k.aiLocalUrl||'')||preset.baseUrl;
+        const model=k.aiModel||preset.chatModel;
+        const res=await fetch(`${base}/chat/completions`,{
           method:'POST',
-          headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},
-          body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({model,messages:[
             {role:'system',content:DEBATE_PROMPT},
             {role:'user',content:`Topic: ${topic}`}
           ],temperature:0.7,max_tokens:1200}),
