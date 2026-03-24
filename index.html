@@ -3009,10 +3009,13 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     function getGroqKey(k){
-      const cfg=k||getK();
-      if(cfg.whisperKey)return sanitizeApiKey(cfg.whisperKey);
-      if(resolveAiProvider(cfg)==='groq')return sanitizeApiKey(cfg.aiKey||'');
+      // Local-only: no Groq key needed. Return empty to skip cloud-dependent features.
       return '';
+    }
+    function getLocalEndpoint(k){
+      const cfg=k||getK();
+      const preset=getProviderPreset('local',cfg);
+      return normalizeProviderBaseUrl(cfg.aiLocalUrl||'')||preset.baseUrl;
     }
 
     const TTS_PROVIDER_LABELS={groq:'Groq Orpheus',elevenlabs:'ElevenLabs',off:'Off'};
@@ -9955,11 +9958,6 @@ Rules:
 
     async function researchPipeline(query,imageBase64,deep=false){
       const k=getK();
-      const groqKey=getGroqKey(k);
-      if(!groqKey){
-        sysBubble(`<p>Research requires a <strong>Groq API key</strong>. Get one free at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com</a> and paste the <code>gsk_</code> key in the chat.</p>`);
-        return;
-      }
 
       // Show user message
       const cmdLabel=deep?'/deepresearch':'/research';
@@ -9968,9 +9966,7 @@ Rules:
 
       // Show processing steps
       const procId='research-'+Date.now();
-      const steps=deep
-        ?['Analyzing query','Running multi-tool search','Executing code analysis','Querying Wolfram Alpha','Cross-referencing sources','Compiling deep report','Generating insights']
-        :['Analyzing query','Searching knowledge base','Cross-referencing sources','Compiling report','Generating insights'];
+      const steps=['Analyzing query','Searching knowledge base','Cross-referencing sources','Compiling report','Generating insights'];
       let procHtml='<div class="research-processing" id="'+procId+'">';
       steps.forEach((s,i)=>procHtml+=`<div class="research-step" data-idx="${i}"><span class="spinner step-icon"></span><span>${s}...</span></div>`);
       procHtml+='</div>';
@@ -10001,11 +9997,15 @@ Rules:
           userContent=`Research the following topic thoroughly: ${query}`;
         }
 
-        const defaultSearch=deep?'groq/compound':(k.searchModel||'groq/compound-mini');
-        const model=imageBase64?(k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct'):defaultSearch;
-        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        // Route through local provider
+        const preset=getProviderPreset('local',k);
+        const base=normalizeProviderBaseUrl(k.aiLocalUrl||'')||preset.baseUrl;
+        const model=k.aiModel||preset.chatModel;
+        const url=`${base}/chat/completions`;
+        const headers={'Content-Type':'application/json'};
+        const res=await fetch(url,{
           method:'POST',
-          headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+          headers,
           body:JSON.stringify({
             model,
             messages:[
