@@ -10917,6 +10917,7 @@ Rules:
     function parseTcActions(text){
       const actions=[];
       const stripBlocks=[];
+      // Standard fenced code block format: ```tc-action {...} ```
       const re=/```tc-action\s*([\s\S]*?)```/g;
       let m;
       while((m=re.exec(text))!==null){
@@ -10935,6 +10936,30 @@ Rules:
             }
           }
         }catch(e){console.warn('tc-action parse failed:',e.message,m[1].trim().slice(0,200))}
+      }
+      // Small model fallback: parse [tc-action {...}] inline format
+      const inlineRe=/\[tc-action\s+(\{[^]*?\})\s*\]/g;
+      while((m=inlineRe.exec(text))!==null){
+        try{
+          const obj=JSON.parse(m[1].trim());
+          if(obj&&typeof obj==='object'&&typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
+            actions.push(obj);
+            stripBlocks.push(m[0]);
+          }
+        }catch(e){}
+      }
+      // Also try bare JSON objects with "type" field (models sometimes skip fences entirely)
+      if(!actions.length){
+        const bareRe=/\{\s*"type"\s*:\s*"(config|toast|navigate|command|prompt|research|deepresearch|debate|alarm|timer|cron|pomodoro|speak|clipboard|memory|canvas|workflow|compute|vault|bluetooth|serial|location|bubble|style|file|request-config|guest-link|imagine|camera-capture|screen-capture|surveillance|video|video-grid|gallery|matrix-rain)"[^}]*\}/g;
+        while((m=bareRe.exec(text))!==null){
+          try{
+            const obj=JSON.parse(m[0]);
+            if(obj&&TC_ACTION_TYPES.has(obj.type)){
+              actions.push(obj);
+              stripBlocks.push(m[0]);
+            }
+          }catch(e){}
+        }
       }
       // Help mode fallback: some models ignore the tc-action fence and emit plain JSON.
       if(_helpMode&&!actions.length){
