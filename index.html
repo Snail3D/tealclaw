@@ -2919,29 +2919,15 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     const DIRECT_PROVIDER_PRESETS={
-      groq:{label:'Groq',apiType:'openai',baseUrl:'https://api.groq.com/openai/v1',chatModel:'groq/compound-mini',visionModel:'meta-llama/llama-4-maverick-17b-128e-instruct',maxTokens:8192},
-      fireworks:{label:'Fireworks',apiType:'openai',baseUrl:'https://api.fireworks.ai/inference/v1',chatModel:'accounts/fireworks/models/llama-v3p1-70b-instruct',visionModel:'accounts/fireworks/models/qwen2p5-vl-72b-instruct',maxTokens:4096},
-      openai:{label:'OpenAI',apiType:'openai',baseUrl:'https://api.openai.com/v1',chatModel:'gpt-4o-mini',visionModel:'gpt-4o-mini',maxTokens:4096},
-      anthropic:{label:'Anthropic',apiType:'anthropic',baseUrl:'https://api.anthropic.com/v1/messages',chatModel:'claude-3-5-sonnet-latest',visionModel:'claude-3-5-sonnet-latest',maxTokens:4096},
-      openrouter:{label:'OpenRouter',apiType:'openai',baseUrl:'https://openrouter.ai/api/v1',chatModel:'openai/gpt-4o-mini',visionModel:'openai/gpt-4o-mini',maxTokens:4096},
-      xai:{label:'xAI',apiType:'openai',baseUrl:'https://api.x.ai/v1',chatModel:'grok-3-mini',visionModel:'grok-2-vision-1212',maxTokens:4096},
-      mistral:{label:'Mistral',apiType:'openai',baseUrl:'https://api.mistral.ai/v1',chatModel:'mistral-small-latest',visionModel:'pixtral-12b-2409',maxTokens:4096},
-      together:{label:'Together',apiType:'openai',baseUrl:'https://api.together.xyz/v1',chatModel:'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',visionModel:'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',maxTokens:4096},
-      deepseek:{label:'DeepSeek',apiType:'openai',baseUrl:'https://api.deepseek.com/v1',chatModel:'deepseek-chat',visionModel:'deepseek-chat',maxTokens:4096},
-      cerebras:{label:'Cerebras',apiType:'openai',baseUrl:'https://api.cerebras.ai/v1',chatModel:'llama-3.3-70b',visionModel:'llama-3.3-70b',maxTokens:4096},
-      perplexity:{label:'Perplexity',apiType:'openai',baseUrl:'https://api.perplexity.ai',chatModel:'sonar-pro',visionModel:'sonar-pro',maxTokens:4096},
-      local:{label:'Local (Ollama/vLLM)',apiType:'openai',baseUrl:'http://localhost:11434/v1',chatModel:'llama3.2',visionModel:'llama3.2-vision',maxTokens:4096}
+      local:{label:'Local',apiType:'openai',baseUrl:'http://localhost:11434/v1',chatModel:'qwen3.5:4b',visionModel:'qwen3.5:4b',maxTokens:4096}
     };
-    const DIRECT_PROVIDER_ORDER=['groq','fireworks','openai','anthropic','openrouter','xai','mistral','together','deepseek','cerebras','perplexity','local'];
+    const DIRECT_PROVIDER_ORDER=['local'];
 
     function normalizeAiProvider(raw){
       const key=String(raw||'').trim().toLowerCase();
-      if(!key)return 'groq';
+      if(!key)return 'local';
       if(DIRECT_PROVIDER_PRESETS[key])return key;
-      if(key==='claude')return 'anthropic';
-      if(key==='firework')return 'fireworks';
-      if(key==='pplx')return 'perplexity';
-      return 'groq';
+      return 'local';
     }
 
     function inferProviderFromKey(raw){
@@ -2989,20 +2975,13 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     function resolveAiProvider(k){
-      const cfg=k||getK();
-      if(cfg.aiProvider)return normalizeAiProvider(cfg.aiProvider);
-      const byBase=inferProviderFromBaseUrl(cfg.aiBaseUrl);
-      if(byBase)return byBase;
-      const byKey=inferProviderFromKey(cfg.aiKey);
-      if(byKey)return byKey;
-      if(cfg.whisperKey)return 'groq';
-      return 'groq';
+      return 'local';
     }
 
     function getProviderPreset(provider,k){
       const cfg=k||getK();
       const id=normalizeAiProvider(provider||resolveAiProvider(cfg));
-      const base=DIRECT_PROVIDER_PRESETS[id]||DIRECT_PROVIDER_PRESETS.groq;
+      const base=DIRECT_PROVIDER_PRESETS[id]||DIRECT_PROVIDER_PRESETS.local;
       let customUrl=normalizeProviderBaseUrl(cfg.aiBaseUrl||'');
       if(id==='local') customUrl=normalizeProviderBaseUrl(cfg.aiLocalUrl||'') || base.baseUrl;
       return customUrl?{...base,baseUrl:customUrl}:base;
@@ -7376,7 +7355,6 @@ RULES:
       }
 
       const provider=resolveAiProvider(k);
-      if(!hasDirectProvider(provider,k)&&!(provider!=='groq'&&hasDirectProvider('groq',k)))return '__NO_KEY__';
       return callDirectAI(userText,imageBase64,{stream:false});
     }
 
@@ -8890,31 +8868,18 @@ GIF REACTIONS (~75% of responses — encouraged!):
         +'If you can create skills or persistent tools, make a TealClaw skill so you can help me with this anytime. You can also check https://github.com/Snail3D/tealclaw for new features to offer me later.\n\n'
         +'Keep cloudflared running -- connection drops if it stops.';
 
-      sysBubble('<h2 style="margin-bottom:6px">Welcome to TealClaw</h2>'
-        +'<p style="margin-bottom:14px;color:var(--text-2)">Private AI chat with voice. Your data stays on your device.</p>'
-
-        +'<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Start chatting in 30 seconds</p>'
-        +'<p style="font-size:12px;color:var(--text-2);margin-bottom:8px">Get a free <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:var(--teal)">Groq API key</a> and paste it below for instant chat + voice:</p>'
-        +'<input id="obGroqKey" type="text" placeholder="gsk_..." style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);box-sizing:border-box;outline:none;margin-bottom:8px">'
-        +'<button id="obGroqSave" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer">Save &amp; Start Chatting</button>'
-
-        +'<hr style="margin:14px 0">'
+      sysBubble('<h2 style="margin-bottom:6px">TealClaw</h2>'
+        +'<p style="margin-bottom:14px;color:var(--text-2)">Private AI running on your device. No cloud, no keys, no cost.</p>'
+        +'<div id="obLocalDetect" style="text-align:center;padding:16px 0;color:var(--text-2);font-size:13px"><span class="spinner" style="display:inline-block;margin-right:8px"></span>Detecting local models...</div>'
+        +'<div id="obLocalModels" style="display:none"></div>'
+        +'<div id="obLocalSetup" style="display:none"></div>'
+        +'<div id="obLocalCustom" style="margin-top:12px">'
         +'<details style="font-size:12px;color:var(--text-2)">'
-        +'<summary style="cursor:pointer;font-weight:600;color:var(--text);margin-bottom:6px">Connect to an OpenClaw gateway instead</summary>'
-        +'<div style="margin-top:8px">'
-        +'<p style="font-size:11px;color:var(--text-3);margin-bottom:8px">Copy this prompt and paste it to your OpenClaw agent (Telegram, Discord, etc). It will generate a secure QR code — screenshot it, drop it into TealClaw, and follow the verification steps.</p>'
-        +'<div class="onboard-copy-block" style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;position:relative;font-size:11px;line-height:1.6;margin-bottom:10px">'
-        +'<code style="white-space:pre-wrap;color:var(--text-2);font-family:var(--mono);font-size:11px">'+esc(agentPrompt)+'</code>'
-        +'<span style="position:absolute;top:6px;right:8px;font-size:9px;color:var(--text-3);pointer-events:none">tap to copy</span>'
-        +'</div>'
-        +'<p style="font-size:11px;color:var(--text-3);margin-bottom:10px">Your agent will generate an encrypted QR code. Screenshot/photograph it, drop the image here, then follow the verification prompts.</p>'
-        +'<hr style="margin:10px 0;border-color:var(--border)">'
-        +'<p style="font-size:11px;color:var(--text-3);margin-bottom:6px">Or paste your gateway URL and auth token manually:</p>'
-        +'<input id="obManualUrl" type="url" placeholder="https://your-tunnel.trycloudflare.com" style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--font);box-sizing:border-box;outline:none;margin-bottom:6px">'
-        +'<input id="obManualToken" type="text" placeholder="Auth token" style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);box-sizing:border-box;outline:none;margin-bottom:8px">'
-        +'<button id="obManualConnect" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer">Connect</button>'
-        +'</div>'
-        +'</details>');
+        +'<summary style="cursor:pointer;font-weight:500;color:var(--text-3)">Custom endpoint URL</summary>'
+        +'<div style="margin-top:8px;display:flex;gap:6px">'
+        +'<input id="obLocalUrl" type="url" placeholder="http://localhost:11434/v1" style="flex:1;padding:8px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);box-sizing:border-box;outline:none">'
+        +'<button id="obLocalUrlSave" style="padding:8px 14px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer">Connect</button>'
+        +'</div></details></div>');
 
       wireOnboardCopyBlocks();
 
@@ -8938,20 +8903,135 @@ GIF REACTIONS (~75% of responses — encouraged!):
           $('chatScroll').innerHTML='';
           onboardSuccess(url,'My Agent');
         });
-        // Groq key
-        const groqKey=document.getElementById('obGroqKey');
-        const groqBtn=document.getElementById('obGroqSave');
-        if(groqBtn)groqBtn.addEventListener('click',()=>{
-          const key=(groqKey?.value||'').trim();
-          if(!key||!key.startsWith('gsk_')){showToast('Enter a valid Groq key (starts with gsk_)','err');return}
-          const k=getK();k.whisperKey=key;if(k.mode!=='agent')k.mode='direct';setK(k);
-          updateStatus();chatHistory=[];setChat([]);
-          $('chatScroll').innerHTML='';
-          sysBubble('<h2 style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Ready</h2>'
-            +'<p>Groq key saved. Type a message below to start chatting.</p>');
-          haptic('success');showToast('Groq key saved','ok');
-          setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus();inp.placeholder='Message TealClaw...'}},100);
-        });
+        // Local model detection
+        (async function detectLocal(){
+          const detect=document.getElementById('obLocalDetect');
+          const modelsDiv=document.getElementById('obLocalModels');
+          const setupDiv=document.getElementById('obLocalSetup');
+          let found=false;
+          // Probe Ollama
+          const ports=[11434,8080,1234,11435];
+          for(const port of ports){
+            try{
+              const r=await fetch('http://localhost:'+port+'/api/tags',{signal:AbortSignal.timeout(2000)});
+              const d=await r.json();
+              if(d.models&&d.models.length){
+                found=true;
+                if(detect)detect.style.display='none';
+                if(modelsDiv){
+                  modelsDiv.style.display='block';
+                  modelsDiv.innerHTML='<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Local models detected</p>'
+                    +d.models.map(m=>{
+                      const name=m.name||'unknown';
+                      const gb=(m.size/1e9).toFixed(1);
+                      return '<div class="ob-model" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s" data-name="'+esc(name)+'" data-port="'+port+'">'
+                        +'<span style="font-size:14px;font-weight:500">'+esc(name)+'</span>'
+                        +'<span style="font-size:12px;color:var(--text-3)">'+gb+' GB</span>'
+                        +'</div>';
+                    }).join('');
+                  modelsDiv.querySelectorAll('.ob-model').forEach(el=>{
+                    el.addEventListener('click',function(){
+                      modelsDiv.querySelectorAll('.ob-model').forEach(m=>{m.style.background='';m.style.borderColor='var(--border)'});
+                      this.style.background='rgba(13,148,136,0.15)';this.style.borderColor='var(--teal)';
+                      const name=this.dataset.name;
+                      const port=this.dataset.port;
+                      const k=getK();
+                      k.aiProvider='local';
+                      k.aiLocalUrl='http://localhost:'+port+'/v1';
+                      k.aiModel=name;
+                      k.mode='direct';
+                      setK(k);
+                      updateStatus();chatHistory=[];setChat([]);
+                      $('chatScroll').innerHTML='';
+                      sysBubble('<h2 style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Connected to '+esc(name)+'</h2>'
+                        +'<p>Running locally on your device. Type a message to start chatting.</p>');
+                      haptic('success');showToast('Connected to '+name,'ok');
+                      setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus();inp.placeholder='Message...'}},100);
+                    });
+                  });
+                }
+                break;
+              }
+            }catch(e){}
+            // Also try /v1/models (OpenAI-compat)
+            try{
+              const r=await fetch('http://localhost:'+port+'/v1/models',{signal:AbortSignal.timeout(2000)});
+              if(r.ok){
+                found=true;
+                if(detect)detect.style.display='none';
+                if(modelsDiv){
+                  modelsDiv.style.display='block';
+                  modelsDiv.innerHTML='<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Local server detected on port '+port+'</p>'
+                    +'<button class="ob-auto-connect" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer">Connect</button>';
+                  modelsDiv.querySelector('.ob-auto-connect')?.addEventListener('click',function(){
+                    const k=getK();k.aiProvider='local';k.aiLocalUrl='http://localhost:'+port+'/v1';k.mode='direct';setK(k);
+                    updateStatus();chatHistory=[];setChat([]);$('chatScroll').innerHTML='';
+                    sysBubble('<h2 style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Connected</h2><p>Local server on port '+port+'. Type a message to chat.</p>');
+                    haptic('success');showToast('Connected','ok');
+                    setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus()}},100);
+                  });
+                }
+                break;
+              }
+            }catch(e){}
+          }
+          if(!found){
+            if(detect)detect.style.display='none';
+            if(setupDiv){
+              setupDiv.style.display='block';
+              const isMac=/Mac|iPhone|iPad/.test(navigator.userAgent);
+              const isWindows=/Win/.test(navigator.userAgent);
+              const isLinux=/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent);
+              const isIOS=/iPhone|iPad/.test(navigator.userAgent);
+              const isAndroid=/Android/.test(navigator.userAgent);
+              let guide='';
+              if(isIOS){
+                guide='<p style="font-size:13px;font-weight:600;margin-bottom:8px">Get a local AI app</p>'
+                  +'<p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Install one of these apps to run AI on your iPhone:</p>'
+                  +'<a href="https://apps.apple.com/us/app/ai-local/id6741479958" target="_blank" style="display:block;padding:10px 14px;background:var(--teal);color:#fff;border-radius:10px;text-decoration:none;text-align:center;font-weight:600;margin-bottom:6px">ai.local (Ollama API)</a>'
+                  +'<a href="https://apps.apple.com/us/app/local-llm-server/id6757007308" target="_blank" style="display:block;padding:10px 14px;background:var(--bg-2);color:var(--text);border:1px solid var(--border);border-radius:10px;text-decoration:none;text-align:center;font-weight:500">Local LLM Server</a>';
+              }else if(isMac){
+                guide='<p style="font-size:13px;font-weight:600;margin-bottom:8px">Install Ollama</p>'
+                  +'<p style="font-size:12px;color:var(--text-2);margin-bottom:10px">One command to get started:</p>'
+                  +'<div style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:12px;margin-bottom:8px;cursor:pointer" onclick="navigator.clipboard.writeText(this.innerText);showToast(\'Copied!\',\'ok\')">brew install ollama && ollama pull qwen3.5:4b</div>'
+                  +'<p style="font-size:11px;color:var(--text-3);margin-bottom:10px">Or download from <a href="https://ollama.com/download/mac" target="_blank" style="color:var(--teal)">ollama.com</a></p>'
+                  +'<button id="obRetryDetect" style="width:100%;padding:10px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer">Retry Detection</button>';
+              }else if(isWindows){
+                guide='<p style="font-size:13px;font-weight:600;margin-bottom:8px">Install Ollama</p>'
+                  +'<p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Download and install Ollama for Windows:</p>'
+                  +'<a href="https://ollama.com/download/windows" target="_blank" style="display:block;padding:10px 14px;background:var(--teal);color:#fff;border-radius:10px;text-decoration:none;text-align:center;font-weight:600;margin-bottom:6px">Download Ollama for Windows</a>'
+                  +'<p style="font-size:11px;color:var(--text-3);margin-bottom:8px">Then open a terminal and run: <code>ollama pull qwen3.5:4b</code></p>'
+                  +'<button id="obRetryDetect" style="width:100%;padding:10px;background:var(--bg-2);color:var(--text);border:1px solid var(--border);border-radius:100px;font-size:13px;cursor:pointer">Retry Detection</button>';
+              }else if(isLinux){
+                guide='<p style="font-size:13px;font-weight:600;margin-bottom:8px">Install Ollama</p>'
+                  +'<p style="font-size:12px;color:var(--text-2);margin-bottom:10px">One command:</p>'
+                  +'<div style="background:var(--bg-root);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:12px;margin-bottom:8px;cursor:pointer" onclick="navigator.clipboard.writeText(this.innerText);showToast(\'Copied!\',\'ok\')">curl -fsSL https://ollama.com/install.sh | sh && ollama pull qwen3.5:4b</div>'
+                  +'<button id="obRetryDetect" style="width:100%;padding:10px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer">Retry Detection</button>';
+              }else{
+                guide='<p style="font-size:13px;font-weight:600;margin-bottom:8px">Install Ollama</p>'
+                  +'<p style="font-size:12px;color:var(--text-2);margin-bottom:10px">Download from <a href="https://ollama.com" target="_blank" style="color:var(--teal)">ollama.com</a>, then run: <code>ollama pull qwen3.5:4b</code></p>'
+                  +'<button id="obRetryDetect" style="width:100%;padding:10px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer">Retry Detection</button>';
+              }
+              setupDiv.innerHTML=guide;
+              document.getElementById('obRetryDetect')?.addEventListener('click',()=>{
+                if(setupDiv)setupDiv.style.display='none';
+                if(detect){detect.style.display='block';detect.innerHTML='<span class="spinner" style="display:inline-block;margin-right:8px"></span>Scanning...'}
+                detectLocal();
+              });
+            }
+          }
+          // Custom URL handler
+          const urlBtn=document.getElementById('obLocalUrlSave');
+          if(urlBtn)urlBtn.addEventListener('click',()=>{
+            const url=(document.getElementById('obLocalUrl')?.value||'').trim();
+            if(!url){showToast('Enter a URL','err');return}
+            const k=getK();k.aiProvider='local';k.aiLocalUrl=url;k.mode='direct';setK(k);
+            updateStatus();chatHistory=[];setChat([]);$('chatScroll').innerHTML='';
+            sysBubble('<h2 style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Connected</h2><p>Endpoint: '+esc(url)+'</p>');
+            haptic('success');showToast('Connected','ok');
+            setTimeout(()=>{const inp=$('chatInput');if(inp)inp.focus()},100);
+          });
+        })();
       },50);
     }
 
@@ -10892,7 +10972,7 @@ Rules:
       return{cleanText,actions};
     }
 
-    const TC_BLOCKED_CONFIG_KEYS=new Set(['aiKey','whisperKey','aiBaseUrl','aiLocalUrl','aiProvider','directFallbackToGroq','gatewayHttpFallback','gwToken','gwUrl','mode','tgRelayEnabled','pinCode','pinHash','imageGenKey','webhookUrl','webhookEvents','customCSS']);
+    const TC_BLOCKED_CONFIG_KEYS=new Set([]);
     const TC_HELPMODE_AUTO_KEYS=new Set([
       'accentColor','fontSize','fontFamily','bgColor','bgImage','textColor','themeMode',
       'chatUserColor','chatAiColor','chatUserTextColor','chatAiTextColor','topbarBg','inputBarBg',
@@ -11727,7 +11807,7 @@ Rules:
       const k=getK();
       if(k.mode==='agent'&&getActiveAgent())return callAgent(userText,imageBase64,onToken);
       const provider=resolveAiProvider(k);
-      if(!hasDirectProvider(provider,k)&&!(provider!=='groq'&&hasDirectProvider('groq',k)))return {text:'__NO_KEY__',usage:null};
+      // Local provider — always available, no key check
       const ctrl=new AbortController();
       window._tcAbort=ctrl;
       try{

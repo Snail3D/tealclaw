@@ -1,0 +1,241 @@
+{
+  "pn": "TealClaw Local-Only Pivot",
+  "pd": "Strip all cloud providers from TealClaw. Replace with local-first model discovery (Ollama/MLX). Auto-detect local models, cross-platform setup guides, 4B model target. Deploy to tealclaw.ai as THE local AI interface.",
+  "sp": "Make tealclaw.ai a local-only AI chat app. No API keys, no cloud. Auto-detect Ollama/MLX on localhost, show model picker, cross-platform instructions if nothing found.",
+  "gh": true,
+  "ts": {
+    "frontend": "Vanilla JS (single-file PWA)",
+    "backend": "FastAPI + MLX (gateway)",
+    "models": "Ollama (cross-platform) + MLX (Mac)",
+    "db": "SQLite FTS5 (knowledge base)",
+    "target_models": "Qwen3.5-4B, Gemma3-4B, Llama3.2-3B"
+  },
+  "fs": [
+    "index.html (17K+ lines, main app)",
+    "tealclaw-local/gateway.py (local gateway)",
+    "tealclaw-local/knowledge.py (RAG)",
+    "sw.js (service worker)",
+    "manifest.json (PWA)",
+    "docs/ (knowledge base source)"
+  ],
+  "p": {
+    "00_security": {
+      "n": "Security & Backup",
+      "t": [
+        {
+          "id": "SEC-001",
+          "ti": "Backup full cloud version",
+          "d": "V cloud-full-backup branch exists. Push to remote as safety net.",
+          "f": "terminal",
+          "pr": "critical",
+          "ac": "cloud-full-backup branch pushed to origin"
+        },
+        {
+          "id": "SEC-002",
+          "ti": "C local-only branch",
+          "d": "C new branch 'local-only' from main for all pivot work",
+          "f": "terminal",
+          "pr": "critical",
+          "ac": "local-only branch created and checked out"
+        }
+      ]
+    },
+    "01_setup": {
+      "n": "Setup & Strip",
+      "t": [
+        {
+          "id": "STRIP-001",
+          "ti": "Remove DIRECT_PROVIDER_PRESETS cloud entries",
+          "d": "Keep only 'local' provider in DIRECT_PROVIDER_PRESETS. Remove groq, fireworks, openai, anthropic, openrouter, xai, mistral, together, deepseek, cerebras, perplexity. Update DIRECT_PROVIDER_ORDER.",
+          "f": "index.html",
+          "pr": "critical",
+          "ac": "Only 'local' remains in provider presets. No references to cloud base URLs."
+        },
+        {
+          "id": "STRIP-002",
+          "ti": "Remove API key auto-detection",
+          "d": "Remove inferProviderFromKey fn and all gsk_*, sk-or-v1-*, sk-ant-*, xai-*, csk-*, pplx-* detection. Remove smart key paste logic.",
+          "f": "index.html",
+          "pr": "critical",
+          "ac": "No API key pattern matching code remains."
+        },
+        {
+          "id": "STRIP-003",
+          "ti": "Remove Groq-specific endpoints",
+          "d": "Remove all hardcoded https://api.groq.com URLs. Remove groqDigest, groq compound model references, GROQ_TTS_ENDPOINT, GROQ_TTS_DEFAULT_MODEL, Groq Orpheus TTS code, Groq Whisper transcription code.",
+          "f": "index.html",
+          "pr": "critical",
+          "ac": "Zero references to api.groq.com in codebase. grep returns 0 matches."
+        },
+        {
+          "id": "STRIP-004",
+          "ti": "Remove cloud API key Settings UI",
+          "d": "Remove 'Groq Key', 'Direct AI Key', 'ElevenLabs Key', 'Image Gen Key' sections from Settings. Remove provider dropdown (replaced in CORE tasks). Remove TC_BLOCKED_CONFIG_KEYS (already emptied).",
+          "f": "index.html",
+          "pr": "high",
+          "ac": "Settings no longer shows API key entry fields for cloud providers."
+        },
+        {
+          "id": "STRIP-005",
+          "ti": "Remove cloud fallback logic",
+          "d": "Remove directFallbackToGroq, gatewayHttpFallback, provider chain fallback in callDirectAI. Simplify to single local provider path.",
+          "f": "index.html",
+          "pr": "high",
+          "ac": "callDirectAI calls local provider directly, no fallback chain."
+        }
+      ]
+    },
+    "02_core": {
+      "n": "Core — Local Model Discovery & Onboarding",
+      "t": [
+        {
+          "id": "CORE-001",
+          "ti": "Replace onboarding wizard with local discovery",
+          "d": "Replace 'Welcome to TealClaw / paste Groq key' with local model detection. On first load: probe localhost:11434 (Ollama) and localhost:8080 (MLX gateway). Show detected models or setup instructions. Works from HTTPS (browsers allow localhost).",
+          "f": "index.html",
+          "pr": "critical",
+          "ac": "First visit shows 'Detecting local models...' then either model list or setup guide. No Groq key input anywhere."
+        },
+        {
+          "id": "CORE-002",
+          "ti": "Build Ollama model picker UI",
+          "d": "C model picker component in TealClaw UI. Query Ollama /api/tags for installed models. Show name, size, quantization. User taps to select. Selected model saved to config. Recommend 4B models prominently.",
+          "f": "index.html",
+          "pr": "critical",
+          "ac": "User can see and select from installed Ollama models within TealClaw UI."
+        },
+        {
+          "id": "CORE-003",
+          "ti": "Build cross-platform setup instructions",
+          "d": "When no local model detected, show platform-specific setup guide: Mac (brew install ollama OR MLX), Windows (ollama.com download), Linux (curl install), iOS (ai.local or Local LLM Server app). Detect platform via navigator.userAgent. Include direct download links.",
+          "f": "index.html",
+          "pr": "critical",
+          "ac": "Mac user sees Mac instructions, Windows user sees Windows instructions, iOS user sees app store links. Each has one-click install path."
+        },
+        {
+          "id": "CORE-004",
+          "ti": "Build Ollama model search & pull",
+          "d": "Add 'Search Models' tab to model picker. Query Ollama library API for available models. Show pull button. Proxy pull through gateway (or direct if Ollama CORS allows). Show download progress.",
+          "f": "index.html",
+          "pr": "high",
+          "ac": "User can search for models, see results, pull new models from within TealClaw."
+        },
+        {
+          "id": "CORE-005",
+          "ti": "Update callAI/callAIStream for local-only",
+          "d": "Simplify callAI and callAIStream to only call local provider. Remove __NO_KEY__ check (local doesn't need keys). Remove mode checks for agent/telegram-relay. Direct path: user message → local endpoint → response.",
+          "f": "index.html",
+          "pr": "critical",
+          "ac": "Sending a message always goes to local provider. No __NO_KEY__ error possible."
+        },
+        {
+          "id": "CORE-006",
+          "ti": "Local TTS integration",
+          "d": "Replace Groq Orpheus TTS with local options: macOS say (via gateway /v1/audio/speech), Web Speech API (browser-native, cross-platform), or off. Settings shows local TTS options only.",
+          "f": "index.html",
+          "pr": "medium",
+          "ac": "TTS works without any cloud API. Voice output via browser or gateway."
+        },
+        {
+          "id": "CORE-007",
+          "ti": "Local STT integration",
+          "d": "Replace Groq Whisper with local options: gateway whisper endpoint (/v1/audio/transcriptions), Web Speech API (browser-native), or off. Voice input works without cloud.",
+          "f": "index.html",
+          "pr": "medium",
+          "ac": "Voice input works without any cloud API."
+        },
+        {
+          "id": "CORE-008",
+          "ti": "Update Settings UI for local-only",
+          "d": "Replace provider dropdown + API keys with: Local Model section (current model, endpoint URL, change model button → opens picker), Local Voice section (TTS provider: browser/gateway/off, STT: browser/gateway/off). Keep all visual/theme/accessibility settings unchanged.",
+          "f": "index.html",
+          "pr": "high",
+          "ac": "Settings shows local model config, no cloud provider options."
+        },
+        {
+          "id": "CORE-009",
+          "ti": "Update system prompt for local context",
+          "d": "Update TC_SKILL_CTX and buildSysPrompt to reference local models instead of Groq. Remove Groq model names, voice persona references tied to Groq. Add context about running locally.",
+          "f": "index.html",
+          "pr": "medium",
+          "ac": "System prompt references local model, no Groq-specific instructions."
+        }
+      ]
+    },
+    "03_api": {
+      "n": "Gateway API",
+      "t": [
+        {
+          "id": "API-001",
+          "ti": "Ollama proxy endpoints on gateway",
+          "d": "Gateway proxies Ollama API: /api/ollama/models (list), /api/ollama/search (library search), /api/ollama/pull (download model). Already impl in gateway.py, V working.",
+          "f": "tealclaw-local/gateway.py",
+          "pr": "high",
+          "ac": "All three Ollama proxy endpoints return valid data."
+        },
+        {
+          "id": "API-002",
+          "ti": "Gateway model switching",
+          "d": "Add POST /v1/model/switch endpoint. Accepts model name, unloads current MLX model, loads new one. For Ollama models, updates the proxy target.",
+          "f": "tealclaw-local/gateway.py",
+          "pr": "medium",
+          "ac": "Can switch models at runtime without restarting gateway."
+        },
+        {
+          "id": "API-003",
+          "ti": "Platform detection endpoint",
+          "d": "Add GET /api/platform that returns detected OS, available backends (ollama, mlx), recommended models for the hardware.",
+          "f": "tealclaw-local/gateway.py",
+          "pr": "low",
+          "ac": "Returns platform info and model recommendations."
+        }
+      ]
+    },
+    "04_test": {
+      "n": "Testing & Deploy",
+      "t": [
+        {
+          "id": "TEST-001",
+          "ti": "T onboarding flow end-to-end",
+          "d": "T: fresh visit → detects Ollama → shows models → select model → send message → get response. T: no Ollama → shows setup instructions for correct platform.",
+          "f": "browser",
+          "pr": "critical",
+          "ac": "Both paths work without errors."
+        },
+        {
+          "id": "TEST-002",
+          "ti": "T all chat paths",
+          "d": "T text chat, vision (photo), streaming, non-streaming, long responses (timeout handling). All through local provider only.",
+          "f": "browser",
+          "pr": "critical",
+          "ac": "All chat modes work with local models."
+        },
+        {
+          "id": "TEST-003",
+          "ti": "T cross-platform instructions",
+          "d": "V setup instructions render correctly for Mac, Windows, Linux, iOS by spoofing user agent.",
+          "f": "browser",
+          "pr": "high",
+          "ac": "Each platform shows correct download links and commands."
+        },
+        {
+          "id": "TEST-004",
+          "ti": "Deploy to tealclaw.ai",
+          "d": "Merge local-only branch to main. Push to origin. V Cloudflare Pages deploys. T live site works.",
+          "f": "terminal + browser",
+          "pr": "high",
+          "ac": "tealclaw.ai serves local-only version. Old cloud version on cloud-full-backup branch."
+        }
+      ]
+    }
+  },
+  "cmd": {
+    "test": "open index.html in browser, check console for errors, test chat flow",
+    "deploy": "git push origin main (Cloudflare Pages auto-deploys)",
+    "gateway": "cd tealclaw-local && ./start.sh",
+    "backup": "git checkout cloud-full-backup to access full cloud version"
+  },
+  "ccs": {
+    "ifc": "Work through tasks in order: 00_security → 01_setup (STRIP) → 02_core → 03_api → 04_test. Read existing code before modifying. Commit after each task. The index.html is a 17K+ line single-file app — make surgical changes, not rewrites. Keep all non-cloud features intact: tc-action protocol, themes, gestures, PWA, accessibility, etc."
+  }
+}
