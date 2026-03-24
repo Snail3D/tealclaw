@@ -6873,8 +6873,9 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings). config/command/style/camera-capture/screen-capture require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings), app(create/run/search/list mini apps). config/command/style/camera-capture/screen-capture require user approval.
 IMPORTANT: You can use tc-action blocks at any time. There is no special “help mode” — just apply the needed tc-action directly when the user asks for changes.
+MINI APPS: You can create interactive HTML apps that run INLINE in the chat! Use \`\`\`tc-action\n{“type”:”app”,”action”:”create”,”name”:”Calculator”,”description”:”Simple calculator”,”html”:”<!DOCTYPE html><html>...</html>”,”tags”:[“tool”,”math”]}\n\`\`\` The app is saved to a local database and rendered in an iframe in the chat. To run a saved app: {“type”:”app”,”action”:”run”,”name”:”Calculator”}. To list all apps: {“type”:”app”,”action”:”list”}. To search: {“type”:”app”,”action”:”search”,”query”:”game”}. ALWAYS use app action to create interactive tools instead of just showing code. The user wants to USE it, not read code.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
 Privacy/consent: confirm requester authority/consent before camera/screen capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
@@ -10936,7 +10937,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','matrix-rain','matrixRain','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','matrix-rain','matrixRain','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture','app']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -11556,6 +11557,64 @@ Rules:
               if(!dTopic){results.push({type:'debate',ok:false,error:'topic required'});break}
               handleDebateCommand(dTopic,'agent');
               results.push({type:'debate',ok:true,topic:dTopic});
+              break;
+            }
+            case 'app':{
+              const appAction=action.action||'run';
+              const k=getK();
+              const base=normalizeProviderBaseUrl(k.aiLocalUrl||'')||getProviderPreset('local',k).baseUrl;
+              const gwBase=base.replace(/\/v1$/,'');
+              if(appAction==='create'){
+                // Save app to marketplace
+                const appName=action.name||'Untitled App';
+                const appHtml=action.html||action.content||'';
+                if(!appHtml){results.push({type:'app',ok:false,error:'html content required'});break}
+                try{
+                  const r=await fetch(gwBase+'/v1/apps/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:appName,html:appHtml,description:action.description||'',tags:action.tags||[]})});
+                  const d=await r.json();
+                  // Render it inline immediately
+                  const appId=d.id;
+                  sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(appName)}</div><iframe src="${gwBase}/v1/apps/run/${appId}" style="width:100%;height:${action.height||'400px'};border:1px solid var(--border);border-radius:8px;background:#fff" sandbox="allow-scripts allow-forms"></iframe>`);
+                  showToast('App saved: '+appName,'ok');
+                  results.push({type:'app',ok:true,action:'create',id:appId,name:appName});
+                }catch(e){results.push({type:'app',ok:false,error:e.message})}
+              } else if(appAction==='search'){
+                const q=action.query||action.name||'';
+                try{
+                  const r=await fetch(gwBase+'/v1/apps/search?q='+encodeURIComponent(q));
+                  const d=await r.json();
+                  const appList=(d.apps||[]).map(a=>`• ${a.name} (used ${a.runs||0}x)`).join('\n');
+                  sysBubble(`<div class="md-content"><strong>Apps found:</strong>\n${appList||'No apps yet.'}</div>`);
+                  results.push({type:'app',ok:true,action:'search',count:(d.apps||[]).length});
+                }catch(e){results.push({type:'app',ok:false,error:e.message})}
+              } else if(appAction==='run'){
+                const appId=action.id;
+                const appName=action.name||'';
+                let runUrl='';
+                if(appId){
+                  runUrl=gwBase+'/v1/apps/run/'+appId;
+                } else if(appName){
+                  try{
+                    const r=await fetch(gwBase+'/v1/apps/search?q='+encodeURIComponent(appName));
+                    const d=await r.json();
+                    if(d.apps&&d.apps.length)runUrl=gwBase+'/v1/apps/run/'+d.apps[0].id;
+                  }catch(e){}
+                }
+                if(runUrl){
+                  sysBubble(`<iframe src="${runUrl}" style="width:100%;height:${action.height||'400px'};border:1px solid var(--border);border-radius:8px;background:#fff" sandbox="allow-scripts allow-forms"></iframe>`);
+                  results.push({type:'app',ok:true,action:'run'});
+                } else {
+                  results.push({type:'app',ok:false,error:'App not found'});
+                }
+              } else if(appAction==='list'){
+                try{
+                  const r=await fetch(gwBase+'/v1/apps/search?q=');
+                  const d=await r.json();
+                  const appList=(d.apps||[]).map(a=>`• **${a.name}** — ${a.description||'No description'} (${a.runs||0} runs)`).join('\n');
+                  sysBubble(`<div class="md-content"><h3>App Library</h3>\n${renderMd(appList||'No apps yet. Ask me to make one!')}</div>`);
+                  results.push({type:'app',ok:true,action:'list',count:(d.apps||[]).length});
+                }catch(e){results.push({type:'app',ok:false,error:e.message})}
+              }
               break;
             }
           }
