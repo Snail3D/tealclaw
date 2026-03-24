@@ -18213,19 +18213,19 @@ ${note}`:note;
         prompt+=` Previous summary: "${prevNarrative}" — note any changes.`;
       }
 
-      // Always use direct Groq vision API — agents can't process images
+      // Use local provider for vision
       try{
         const k=getK();
-        const groqKey=getGroqKey(k);
         let responseText='';
-
-        if(groqKey){
-          const visionModel=k.visionModel||'meta-llama/llama-4-maverick-17b-128e-instruct';
-          const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        const preset=getProviderPreset('local',k);
+        const base=normalizeProviderBaseUrl(k.aiLocalUrl||'')||preset.baseUrl;
+        const model=k.aiModel||preset.chatModel;
+        {
+          const res=await fetch(`${base}/chat/completions`,{
             method:'POST',
-            headers:{'Authorization':`Bearer ${groqKey}`,'Content-Type':'application/json'},
+            headers:{'Content-Type':'application/json'},
             body:JSON.stringify({
-              model:visionModel,
+              model,
               messages:[
                 {role:'system',content:'You are a concise visual observer for a photo log. Describe what you see factually.'+TC_CORE_POLICY},
                 {role:'user',content:[
@@ -18239,8 +18239,6 @@ ${note}`:note;
           const d=await res.json();
           if(d.error)throw new Error(d.error.message||'Vision API error');
           responseText=d.choices?.[0]?.message?.content||'';
-        } else {
-          responseText='(No API key configured for vision)';
         }
 
         if(_plState)_plState.narrative=responseText;
