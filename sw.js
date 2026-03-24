@@ -1,4 +1,4 @@
-const CACHE='tealclaw-v292';
+const CACHE='tealclaw-v300';
 // IMPORTANT: Do NOT pre-cache navigation HTML (/, /index.html). If a bad build ever ships,
 // caching can “brick” the app for users until they manually clear site data.
 const ASSETS = ['/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png'];
@@ -33,18 +33,12 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Don't cache API calls
+  // Don't cache API calls (local model endpoints + any external)
   if (
     e.request.url.includes('/api/') ||
-    e.request.url.includes('groq.com') ||
-    e.request.url.includes('api.telegram.org') ||
-    e.request.url.includes('anthropic.com') ||
-    e.request.url.includes('together.xyz') ||
-    e.request.url.includes('fal.run') ||
-    e.request.url.includes('fireworks.ai') ||
-    e.request.url.includes('api.klipy.com') ||
-    e.request.url.includes('generativelanguage.googleapis.com') ||
-    e.request.url.includes('openrouter.ai')
+    e.request.url.includes('/v1/') ||
+    e.request.url.includes('localhost:') ||
+    e.request.url.includes('127.0.0.1')
   ) {
     return;
   }

@@ -1,7 +1,7 @@
 {
   "name": "TealClaw",
   "short_name": "TealClaw",
-  "description": "BYOK voice AI dashboard - bring your own keys, total privacy",
+  "description": "Local AI chat — runs on your device, no cloud, no keys",
   "start_url": "/",
   "id": "/",
   "scope": "/",
