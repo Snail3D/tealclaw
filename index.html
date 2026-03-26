@@ -7049,7 +7049,7 @@ RULES:
 
     function getDirectMaxTokens(k,provider){
       const preset=getProviderPreset(provider,k);
-      let maxTok=k.maxTokens||(k.skillContext===false?400:1024);
+      let maxTok=k.maxTokens||preset.maxTokens||(k.skillContext===false?400:1024);
       if(maxTok>preset.maxTokens)maxTok=preset.maxTokens;
       return maxTok;
     }
