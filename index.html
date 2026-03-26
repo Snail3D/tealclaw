@@ -2943,9 +2943,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
     const DIRECT_PROVIDER_PRESETS={
       local:{label:'Local',apiType:'openai',baseUrl:'http://localhost:8080/v1',chatModel:'qwen3.5',visionModel:'qwen3.5',maxTokens:8192,contextWindow:8000,supportsVision:true},
-      fireworks:{label:'Fireworks (Kimi K2.5)',apiType:'openai',baseUrl:'https://api.fireworks.ai/inference/v1',chatModel:'accounts/fireworks/models/kimi-k2p5',visionModel:'accounts/fireworks/models/kimi-k2p5',maxTokens:16384,contextWindow:262144,supportsVision:true,supportsTools:true,forceStream:true}
+      fireworks:{label:'Fireworks (Kimi K2.5)',apiType:'openai',baseUrl:'https://api.fireworks.ai/inference/v1',chatModel:'accounts/fireworks/models/kimi-k2p5',visionModel:'accounts/fireworks/models/kimi-k2p5',maxTokens:16384,contextWindow:262144,supportsVision:true,supportsTools:true,forceStream:true},
+      groq:{label:'Groq',apiType:'openai',baseUrl:'https://api.groq.com/openai/v1',chatModel:'llama-3.3-70b-versatile',visionModel:'llama-3.3-70b-versatile',maxTokens:4096,contextWindow:128000,supportsVision:true}
     };
-    const DIRECT_PROVIDER_ORDER=['local','fireworks'];
+    const DIRECT_PROVIDER_ORDER=['local','fireworks','groq'];
 
     function normalizeAiProvider(raw){
       const key=String(raw||'').trim().toLowerCase();
@@ -3004,6 +3005,11 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(cfg.aiProvider&&DIRECT_PROVIDER_PRESETS[cfg.aiProvider])return cfg.aiProvider;
       const key=cfg.aiKey||'';
       if(key.startsWith('fw_'))return 'fireworks';
+      if(key.startsWith('gsk_'))return 'groq';
+      // If we have a cloud key but no local gateway, don't return local
+      const whisperKey=cfg.whisperKey||'';
+      if(!key&&whisperKey.startsWith('gsk_'))return 'groq';
+      if(key)return inferProviderFromKey(key)||'local';
       return 'local';
     }
 
@@ -8193,12 +8199,13 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
           if(res.ok){const d=await res.json();if(d.text)return d.text}
         }catch(e){console.log('[transcribe] Local whisper failed:',e.message)}
       }
-      // Try Groq Whisper
-      if(k.whisperKey){
+      // Try Groq Whisper (via whisperKey OR aiKey if Groq provider)
+      const groqKey=k.whisperKey||(provider==='groq'?k.aiKey:'');
+      if(groqKey){
         try{
           const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-large-v3-turbo');fd.append('response_format','json');
           const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
-            method:'POST',headers:{'Authorization':'Bearer '+k.whisperKey},body:fd,signal:AbortSignal.timeout(15000)
+            method:'POST',headers:{'Authorization':'Bearer '+groqKey},body:fd,signal:AbortSignal.timeout(15000)
           });
           if(res.ok){const d=await res.json();if(d.text)return d.text}
         }catch(e){console.log('[transcribe] Groq whisper failed:',e.message)}
