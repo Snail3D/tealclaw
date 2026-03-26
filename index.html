@@ -12510,7 +12510,8 @@ Rules:
       sysBubble(`<div style="border-left:3px solid #f59e0b;padding:6px 10px;font-size:12px"><strong style="color:#f59e0b">[Alarm]</strong> ${esc(alarm.message||'Alarm')}</div>`,{ephemeral:true});
       if(alarm.source==='agent'){
         const k=getK();const ag=getActiveAgent();const conn=ag?agentConnections.get(ag.id):null;
-        if(k.mode==='agent'&&conn&&conn.connected)pipeline(`[Alarm fired] ${alarm.message||'Alarm'}`);
+        const isLocal=k.mode==='local'||(k.aiLocalUrl&&k.aiLocalUrl.includes('localhost'));
+        if(isLocal||k.aiKey||(k.mode==='agent'&&conn&&conn.connected))pipeline(`[Alarm fired] ${alarm.message||'Alarm'}`);
       }
       removeAlarm(alarm.id);
     }
@@ -12548,13 +12549,15 @@ Rules:
       const ag=getActiveAgent();
       const conn=ag?agentConnections.get(ag.id):null;
       const gwConnected=k.mode==='agent'&&conn&&conn.connected;
+      const isLocal=k.mode==='local'||(k.aiLocalUrl&&k.aiLocalUrl.includes('localhost'));
+      const canPipeline=gwConnected||isLocal||k.aiKey;
       const action=job.action||'pipeline';
       const msg=job.message||'';
       const label=job.title||'Untitled';
 
       switch(action){
         case 'pipeline':
-          if(!gwConnected){sysBubble(`<strong>[Cron: ${esc(label)}]</strong> Skipped — no gateway connected.`);return}
+          if(!canPipeline){sysBubble(`<strong>[Cron: ${esc(label)}]</strong> Skipped — no AI connected.`);return}
           pipeline(`[Cron: ${label}] ${msg}`);
           break;
         case 'research':
@@ -12568,7 +12571,7 @@ Rules:
           break;
         case 'snap':
           survSnap().then(snap=>{
-            if(gwConnected&&snap)pipeline(`[Cron: ${label}] Camera snapshot taken`);
+            if(canPipeline&&snap)pipeline(`[Cron: ${label}] Camera snapshot taken`);
             else if(!snap)sysBubble(`<strong>[Cron: ${esc(label)}]</strong> Snapshot failed.`);
           }).catch(()=>{});
           break;
@@ -12582,7 +12585,7 @@ Rules:
           break;
       }
       // Notify agent if source is agent and gateway connected
-      if(job.source==='agent'&&gwConnected&&action!=='pipeline'){
+      if(job.source==='agent'&&canPipeline&&action!=='pipeline'){
         pipeline(`[Cron fired: ${label}] action=${action} — ${msg}`);
       }
       sysBubble(`<div style="font-size:10px;color:var(--text-3)">Cron fired: <strong>${esc(label)}</strong> (${action})</div>`,{ephemeral:true});
