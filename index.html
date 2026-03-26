@@ -7209,6 +7209,18 @@ RULES:
           }
         }
       }
+      // Flush remaining buffer
+      if(buffer.trim()){
+        const line=buffer.trim();
+        if(line.startsWith('data: ')){
+          const raw=line.slice(6).trim();
+          if(raw&&raw!=='[DONE]'){
+            try{const j=JSON.parse(raw);const d=j?.choices?.[0]?.delta?.content;if(d){full+=d;if(onToken)onToken(full)}}catch{}
+          }
+        }
+      }
+      // Final onToken to ensure UI updates
+      if(full&&onToken)onToken(full);
       return{text:full,usage};
     }
 
