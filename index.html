@@ -8167,13 +8167,36 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
     // ── Transcribe ─────────────────────────────────────
     async function transcribe(blob){
       const k=getK();
+      const provider=resolveAiProvider(k);
       // Try local gateway whisper first
-      const base=normalizeProviderBaseUrl(k.aiLocalUrl||'')||getProviderPreset('local',k).baseUrl;
-      try{
-        const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-small');fd.append('response_format','json');
-        const res=await fetch(base+'/audio/transcriptions',{method:'POST',body:fd,signal:AbortSignal.timeout(15000)});
-        if(res.ok){const d=await res.json();if(d.text)return d.text}
-      }catch(e){console.log('[transcribe] Gateway whisper failed, trying Web Speech API:',e.message)}
+      if(provider==='local'||(k.aiLocalUrl&&k.aiLocalUrl.includes('localhost'))){
+        const base=normalizeProviderBaseUrl(k.aiLocalUrl||'')||getProviderPreset('local',k).baseUrl;
+        try{
+          const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-small');fd.append('response_format','json');
+          const res=await fetch(base+'/audio/transcriptions',{method:'POST',body:fd,signal:AbortSignal.timeout(15000)});
+          if(res.ok){const d=await res.json();if(d.text)return d.text}
+        }catch(e){console.log('[transcribe] Local whisper failed:',e.message)}
+      }
+      // Try Fireworks Whisper
+      if(provider==='fireworks'&&k.aiKey){
+        try{
+          const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-v3-turbo');fd.append('response_format','json');
+          const res=await fetch('https://api.fireworks.ai/inference/v1/audio/transcriptions',{
+            method:'POST',headers:{'Authorization':'Bearer '+k.aiKey},body:fd,signal:AbortSignal.timeout(15000)
+          });
+          if(res.ok){const d=await res.json();if(d.text)return d.text}
+        }catch(e){console.log('[transcribe] Fireworks whisper failed:',e.message)}
+      }
+      // Try Groq Whisper
+      if(k.whisperKey){
+        try{
+          const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-large-v3-turbo');fd.append('response_format','json');
+          const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
+            method:'POST',headers:{'Authorization':'Bearer '+k.whisperKey},body:fd,signal:AbortSignal.timeout(15000)
+          });
+          if(res.ok){const d=await res.json();if(d.text)return d.text}
+        }catch(e){console.log('[transcribe] Groq whisper failed:',e.message)}
+      }
       // Fallback: browser-native speech recognition (Apple on-device on Safari)
       return new Promise((resolve)=>{
         const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
