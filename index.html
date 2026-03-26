@@ -2331,7 +2331,8 @@
       const comp=getCompaction();
       const start=comp?.compactedUpTo||0;
       const recent=chatHistory.slice(start).filter(m=>m.role==='user'||m.role==='ai');
-      if(recent.length<25)return false; // not enough messages to bother
+      const minMsgs=provider==='fireworks'?100:25;
+      if(recent.length<minMsgs)return false; // not enough messages to bother
       let tokens=estimateTokens(comp?.summary||'')+estimateTokens(buildSysPrompt(k));
       for(const m of recent)tokens+=estimateTokens(m.text);
       return tokens>threshold;
@@ -2472,7 +2473,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
 
     function compactHistory() {
       const k = getK();
-      const maxMsgs = k.contextMessages || 30;
+      const provider=resolveAiProvider(k);
+      const defaultMsgs=provider==='fireworks'?200:provider==='local'?20:30;
+      const maxMsgs = k.contextMessages || defaultMsgs;
       if (chatHistory.length > maxMsgs) {
         const keep = Math.floor(maxMsgs / 2);
         const removeCount = chatHistory.length - keep;
