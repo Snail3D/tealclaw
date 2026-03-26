@@ -11581,7 +11581,7 @@ Rules:
             case 'imagine':{
               const prompt=action.prompt||action.query||action.text||'';
               if(prompt){
-                setTimeout(()=>pipeline('/imagine '+prompt,null),300);
+                setTimeout(()=>imagePipeline(prompt),300);
                 results.push({type:'imagine',ok:true,prompt});
               }
               break;
