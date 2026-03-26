@@ -2016,19 +2016,15 @@
         } catch(e) { return `<pre><code>${code}</code></pre>`; }
       });
 
-      // tc-app Sandboxed Apps — render as iframe (auto-resizing)
+      // tc-app Sandboxed Apps — render as iframe
       html=html.replace(/(`{3,})tc-app\s*\n([\s\S]*?)\n\1/gi,(m,fence,code)=> {
         try {
           const div = document.createElement('div');
           div.innerHTML = code;
           const unescaped = div.textContent;
-          // Inject auto-resize script into the app HTML
-          const resizeScript = '<script>function _tcResize(){window.parent.postMessage({tcResize:true,h:Math.max(document.body.scrollHeight,document.documentElement.scrollHeight)},"*")}_tcResize();new ResizeObserver(_tcResize).observe(document.body);window.addEventListener("load",_tcResize)<\/script>';
-          const injected = unescaped.trim().replace(/<\/body>/i, resizeScript + '</body>');
-          const b64 = btoa(unescape(encodeURIComponent(injected)));
-          const uid = 'tcapp'+Math.random().toString(36).slice(2,8);
+          const b64 = btoa(unescape(encodeURIComponent(unescaped.trim())));
           return `<div class="tc-app-container" style="margin:10px 0;width:100%;display:flex;justify-content:center;pointer-events:auto !important;position:relative;z-index:10;">
-            <iframe id="${uid}" class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *; geolocation *; clipboard-read *; clipboard-write *" src="data:text/html;base64,${b64}" style="width:100%;min-height:200px;max-height:80vh;border:none;border-radius:var(--r-md);background:#1e293b;overflow:hidden;pointer-events:auto !important;transition:height 0.2s ease;"></iframe>
+            <iframe class="tc-app-frame" sandbox="allow-scripts allow-same-origin" allow="camera *; microphone *; geolocation *; clipboard-read *; clipboard-write *" src="data:text/html;base64,${b64}" style="width:100%;height:500px;border:none;border-radius:var(--r-md);background:#1e293b;pointer-events:auto !important;"></iframe>
           </div>`;
         } catch(e) {
           console.error("tc-app render failed", e);
@@ -11583,7 +11579,7 @@ Rules:
                   // Render it inline immediately
                   const appId=d.id;
                   const auid='tcapp'+Math.random().toString(36).slice(2,8);
-                  sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(appName)}</div><iframe id="${auid}" src="${gwBase}/v1/apps/run/${appId}" style="width:100%;min-height:200px;max-height:80vh;border:1px solid var(--border);border-radius:8px;background:#fff;transition:height 0.2s ease;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
+                  sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(appName)}</div><iframe id="${auid}" src="${gwBase}/v1/apps/run/${appId}" style="width:100%;height:500px;border:1px solid var(--border);border-radius:8px;background:#fff;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
                   window._tcLastAppId=appId;
                   showToast('App saved: '+appName,'ok');
                   results.push({type:'app',ok:true,action:'create',id:appId,name:appName});
@@ -11611,7 +11607,7 @@ Rules:
                   }catch(e){}
                 }
                 if(runUrl){
-                  sysBubble(`<iframe class="tc-app-frame" src="${runUrl}" style="width:100%;min-height:200px;max-height:80vh;border:1px solid var(--border);border-radius:8px;background:#fff;transition:height 0.2s ease;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
+                  sysBubble(`<iframe class="tc-app-frame" src="${runUrl}" style="width:100%;height:500px;border:1px solid var(--border);border-radius:8px;background:#fff;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
                   results.push({type:'app',ok:true,action:'run'});
                 } else {
                   results.push({type:'app',ok:false,error:'App not found'});
@@ -11628,7 +11624,7 @@ Rules:
                   if(d.ok){
                     // Re-render the iframe with updated content
                     const auid='tcapp'+Math.random().toString(36).slice(2,8);
-                    sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(action.name||d.name||'App')} (updated)</div><iframe id="${auid}" class="tc-app-frame" src="${gwBase}/v1/apps/run/${appId}" style="width:100%;min-height:200px;max-height:80vh;border:1px solid var(--border);border-radius:8px;background:#fff;transition:height 0.2s ease;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
+                    sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(action.name||d.name||'App')} (updated)</div><iframe id="${auid}" class="tc-app-frame" src="${gwBase}/v1/apps/run/${appId}" style="width:100%;height:500px;border:1px solid var(--border);border-radius:8px;background:#fff;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
                     showToast('App updated: '+(action.name||d.name),'ok');
                     results.push({type:'app',ok:true,action:'update',id:appId});
                   } else {
@@ -19648,14 +19644,6 @@ ${note}`:note;
     window.addEventListener('message', e => {
       const d = e.data;
       if (!d) return;
-      // Auto-resize tc-app iframes
-      if (d.tcResize && typeof d.h === 'number' && e.source) {
-        const frames = document.querySelectorAll('.tc-app-frame');
-        for (const f of frames) {
-          if (f.contentWindow === e.source) { f.style.height = Math.min(d.h + 2, window.innerHeight * 0.8) + 'px'; break; }
-        }
-        return;
-      }
       if (d.type === 'tc-app-send' && typeof d.text === 'string') {
         const forward = sessionStorage.getItem('tc-app-forward');
         if (forward) {
