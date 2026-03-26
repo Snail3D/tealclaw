@@ -6910,7 +6910,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings), app(create/run/search/list/update/exec/read mini apps). config/command/style/camera-capture/screen-capture require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings), app(create/run/search/list/update/exec/read mini apps), open-url(open a URL in a new browser tab: {"type":"open-url","url":"https://example.com"}). config/command/style/camera-capture/screen-capture require user approval.
 IMPORTANT: You can use tc-action blocks at any time. There is no special “help mode” — just apply the needed tc-action directly when the user asks for changes.
 MINI APPS: You can create interactive HTML apps that run INLINE in the chat! Use \`\`\`tc-action\n{“type”:”app”,”action”:”create”,”name”:”Calculator”,”description”:”Simple calculator”,”html”:”<!DOCTYPE html><html>...</html>”,”tags”:[“tool”,”math”]}\n\`\`\` The app is saved to a local database and rendered in an iframe in the chat. To run a saved app: {“type”:”app”,”action”:”run”,”name”:”Calculator”}. To list all apps: {“type”:”app”,”action”:”list”}. To search: {“type”:”app”,”action”:”search”,”query”:”game”}.
 APP RULES — FOLLOW EXACTLY:
@@ -11043,7 +11043,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','matrix-rain','matrixRain','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture','app']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','matrix-rain','matrixRain','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture','app','open-url','browse']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -11242,6 +11242,8 @@ Rules:
       if(obj.type==='game')obj.type='app';
       if(obj.type==='tool')obj.type='app';
       if(obj.type==='widget')obj.type='app';
+      if(obj.type==='open-tab'||obj.type==='openTab'||obj.type==='openUrl'||obj.type==='open_url'||obj.type==='link')obj.type='open-url';
+      if(obj.type==='browse')obj.type='open-url';
       // Fix app action typos
       if(obj.type==='app'){
         if(!obj.action)obj.action='create';
@@ -11323,7 +11325,7 @@ Rules:
       }
       // Error boundary — wrap app JS in try/catch display
       if(!html.includes('onerror')){
-        const errHandler='<scr'+'ipt>window.onerror=function(m,s,l){document.body.innerHTML+="<pre style=\'color:#ff6b6b;background:#1a1a2e;padding:12px;border-radius:8px;margin:8px;font-size:12px\'>Error: "+m+"<br>Line: "+l+"</pre>"}<\/scr'+'ipt>';
+        const errHandler='<scr'+'ipt>window.onerror=function(m,s,l){document.body.innerHTML+="<pre style=\'color:#ff6b6b;background:#1a1a2e;padding:12px;border-radius:8px;margin:8px;font-size:12px\'>Error: "+m+"<br>Line: "+l+"</pre>";window.parent.postMessage({tcAppError:true,error:m,line:l},"*")}<\/scr'+'ipt>';
         html=html.replace('</head>',errHandler+'\n</head>');
       }
       return html;
@@ -11906,6 +11908,19 @@ Rules:
               if(!dTopic){results.push({type:'debate',ok:false,error:'topic required'});break}
               handleDebateCommand(dTopic,'agent');
               results.push({type:'debate',ok:true,topic:dTopic});
+              break;
+            }
+            case 'open-url':{
+              const url=action.url||action.href||action.link||action.target||'';
+              if(!url){results.push({type:'open-url',ok:false,error:'url required'});break}
+              // Security: only allow http/https URLs
+              if(/^https?:\/\//i.test(url)){
+                window.open(url,'_blank','noopener,noreferrer');
+                showToast('Opened in new tab','ok');
+                results.push({type:'open-url',ok:true,url});
+              } else {
+                results.push({type:'open-url',ok:false,error:'Only http/https URLs allowed'});
+              }
               break;
             }
             case 'app':{
