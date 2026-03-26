@@ -8174,12 +8174,15 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       // Try Fireworks Whisper first if that's the active provider
       if(provider==='fireworks'&&k.aiKey){
         try{
+          console.log('[transcribe] Trying Fireworks Whisper...');
           const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-v3-turbo');fd.append('response_format','json');
           const res=await fetch('https://api.fireworks.ai/inference/v1/audio/transcriptions',{
             method:'POST',headers:{'Authorization':'Bearer '+k.aiKey},body:fd,signal:AbortSignal.timeout(15000)
           });
-          if(res.ok){const d=await res.json();if(d.text)return d.text}
-        }catch(e){console.log('[transcribe] Fireworks whisper failed:',e.message)}
+          console.log('[transcribe] Fireworks response:', res.status);
+          if(res.ok){const d=await res.json();console.log('[transcribe] Got text:', d.text?.slice(0,50));if(d.text)return d.text}
+          else{const err=await res.text();console.log('[transcribe] Fireworks error:', err.slice(0,200))}
+        }catch(e){console.log('[transcribe] Fireworks whisper failed:',e.message);showToast('Voice error: '+e.message,'err')}
       }
       // Try local gateway whisper
       if(provider==='local'){
@@ -15809,6 +15812,7 @@ ${statusLine}
             const blob=new Blob(chunks,{type:recorder?.mimeType||'audio/webm'});
             try{
               const text=await transcribe(blob);
+              if(!text)showToast('No speech detected — try holding longer','err');
               if(text){
                 // If user didn't actually speak, do NOT auto-send junk.
                 if(!isMeaningfulTranscript(text,dur)){
