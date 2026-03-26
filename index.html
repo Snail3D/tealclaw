@@ -16553,6 +16553,23 @@ ${statusLine}
         return null;
       }
 
+      // Fireworks — SDXL image generation
+      if(apiKey&&apiKey.startsWith('fw_')){
+        const fwModel=k.imageGenModel||'accounts/fireworks/models/stable-diffusion-xl-1024-v1-0';
+        const fwUrl='https://api.fireworks.ai/inference/v1/image_generation/'+fwModel;
+        const fwBody={prompt:prompt||'Generate a creative image',cfg_scale:7,height:1024,width:1024,samples:1,steps:30};
+        const res=await fetch(fwUrl,{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json','Accept':'application/json'},
+          body:JSON.stringify(fwBody)
+        });
+        if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||'Fireworks image gen: '+res.status)}
+        const d=await res.json();
+        const img=Array.isArray(d)?d[0]:d.artifacts?.[0]||d.data?.[0];
+        if(img&&img.base64)return{url:'data:image/png;base64,'+img.base64,text:null};
+        return null;
+      }
+
       // OpenRouter — OpenAI-compatible image API
       if(apiKey&&apiKey.startsWith('sk-or-v1-')){
         const genUrl=k.imageGenUrl||'https://openrouter.ai/api/v1/images/generations';
