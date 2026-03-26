@@ -7143,7 +7143,7 @@ RULES:
         if(stream)body.stream=true;
       }
 
-      const timeoutMs=Math.max(5000,Number(k.requestTimeoutMs)||45000);
+      const timeoutMs=Math.max(5000,Number(k.requestTimeoutMs)||(provider==='local'||(base&&base.includes('localhost'))?180000:45000));
       const reqCtrl=new AbortController();
       const timer=setTimeout(()=>reqCtrl.abort(),timeoutMs);
       const forwardAbort=()=>reqCtrl.abort();
@@ -7257,7 +7257,7 @@ RULES:
       if(k.temperature!==undefined)body.temperature=Number(k.temperature);
       if(stream)body.stream=true;
 
-      const timeoutMs=Math.max(5000,Number(k.requestTimeoutMs)||45000);
+      const timeoutMs=Math.max(5000,Number(k.requestTimeoutMs)||(provider==='local'||(base&&base.includes('localhost'))?180000:45000));
       const reqCtrl=new AbortController();
       const timer=setTimeout(()=>reqCtrl.abort(),timeoutMs);
       const forwardAbort=()=>reqCtrl.abort();
