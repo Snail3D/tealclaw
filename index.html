@@ -8180,8 +8180,27 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       // Try Fireworks Whisper first if that's the active provider
       if(provider==='fireworks'&&k.aiKey){
         try{
-          console.log('[transcribe] Trying Fireworks Whisper...');
-          const fd=new FormData();fd.append('file',blob,'voice.webm');fd.append('model','whisper-v3-turbo');fd.append('response_format','json');
+          console.log('[transcribe] Trying Fireworks Whisper, blob type:', blob.type, 'size:', blob.size);
+          // Convert to WAV for maximum compatibility with Fireworks Whisper
+          let audioBlob=blob;
+          let fname='voice.webm';
+          try{
+            const audioCtx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+            const buf=await audioCtx.decodeAudioData(await blob.arrayBuffer());
+            const ch=buf.getChannelData(0);
+            const wavBuf=new ArrayBuffer(44+ch.length*2);
+            const view=new DataView(wavBuf);
+            const writeStr=(o,s)=>{for(let i=0;i<s.length;i++)view.setUint8(o+i,s.charCodeAt(i))};
+            writeStr(0,'RIFF');view.setUint32(4,36+ch.length*2,true);writeStr(8,'WAVE');
+            writeStr(12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);
+            view.setUint32(24,16000,true);view.setUint32(28,32000,true);view.setUint16(32,2,true);view.setUint16(34,16,true);
+            writeStr(36,'data');view.setUint32(40,ch.length*2,true);
+            for(let i=0;i<ch.length;i++){const s=Math.max(-1,Math.min(1,ch[i]));view.setInt16(44+i*2,s<0?s*0x8000:s*0x7FFF,true)}
+            audioBlob=new Blob([wavBuf],{type:'audio/wav'});
+            fname='voice.wav';
+            console.log('[transcribe] Converted to WAV, size:', audioBlob.size);
+          }catch(e){console.log('[transcribe] WAV conversion failed, using raw:', e.message)}
+          const fd=new FormData();fd.append('file',audioBlob,fname);fd.append('model','whisper-v3-turbo');fd.append('response_format','json');fd.append('language','en');
           const res=await fetch('https://api.fireworks.ai/inference/v1/audio/transcriptions',{
             method:'POST',headers:{'Authorization':'Bearer '+k.aiKey},body:fd,signal:AbortSignal.timeout(15000)
           });
