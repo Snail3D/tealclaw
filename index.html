@@ -2324,7 +2324,8 @@
 
     function shouldCompact(){
       const k=getK();
-      const modelLimit=128000;
+      const provider=resolveAiProvider(k);
+      const modelLimit=provider==='fireworks'?262000:provider==='local'?8000:128000;
       const threshold=Math.floor(modelLimit*0.8);
       const comp=getCompaction();
       const start=comp?.compactedUpTo||0;
@@ -2339,8 +2340,9 @@
       if(_compacting)return;
       const k=getK();
       const isLocal=k.mode==='local'||(k.aiLocalUrl&&k.aiLocalUrl.includes('localhost'));
+      const isFireworks=resolveAiProvider(k)==='fireworks';
       const apiKey=getGroqKey(k);
-      if(!apiKey&&!isLocal)return;
+      if(!apiKey&&!isLocal&&!isFireworks)return;
       _compacting=true;
       document.documentElement.classList.add('heartbeat-compacting');
       try{
@@ -2354,14 +2356,23 @@
         const prevSummary=comp?.summary?`PREVIOUS SUMMARY:\n${comp.summary}\n\n`:'';
         const transcript=toCompact.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.text}`).join('\n\n');
         const input=prevSummary+transcript;
-        // Route to local gateway or Groq
-        const compactUrl=isLocal
-          ?(normalizeProviderBaseUrl(k.aiLocalUrl)||getProviderPreset('local',k).baseUrl)+'/chat/completions'
-          :'https://api.groq.com/openai/v1/chat/completions';
-        const compactHeaders=isLocal
-          ?{'Content-Type':'application/json'}
-          :{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'};
-        const compactModel=isLocal?(k.aiModel||'qwen3.5'):'llama-3.3-70b-versatile';
+        // Route compaction through active provider
+        const provider=resolveAiProvider(k);
+        const preset=getProviderPreset(provider,k);
+        let compactUrl, compactHeaders, compactModel;
+        if(provider==='fireworks'){
+          compactUrl=preset.baseUrl+'/chat/completions';
+          compactHeaders={'Authorization':'Bearer '+k.aiKey,'Content-Type':'application/json'};
+          compactModel=preset.chatModel;
+        } else if(isLocal){
+          compactUrl=(normalizeProviderBaseUrl(k.aiLocalUrl)||preset.baseUrl)+'/chat/completions';
+          compactHeaders={'Content-Type':'application/json'};
+          compactModel=k.aiModel||'qwen3.5';
+        } else {
+          compactUrl='https://api.groq.com/openai/v1/chat/completions';
+          compactHeaders={'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'};
+          compactModel='llama-3.3-70b-versatile';
+        }
         const res=await fetch(compactUrl,{
           method:'POST',
           headers:compactHeaders,
@@ -11023,13 +11034,24 @@ Rules:
       const re=/```tc-action\s*([\s\S]*?)```/g;
       let m;
       while((m=re.exec(text))!==null){
+        let raw=m[1].trim();
+        // Fix multiline JSON: collapse literal newlines inside string values
+        // Kimi K2.5 outputs pretty-printed HTML inside JSON strings
+        try{JSON.parse(raw)}catch(e){
+          if(raw.includes('"html"')&&raw.includes('\n')){
+            // Replace literal newlines inside JSON string values with \\n
+            raw=raw.replace(/("html"\s*:\s*")([\s\S]*?)("[\s\S]*$)/,(match,pre,html,post)=>{
+              return pre+html.replace(/\n/g,'\\n').replace(/\r/g,'')+post;
+            });
+          }
+        }
         try{
-          let obj=JSON.parse(m[1].trim());
+          let obj=JSON.parse(raw);
           obj=_tcNormalizeAction(obj);
           if(obj){actions.push(obj);stripBlocks.push(m[0])}
         }catch(e){
           // JSON parse failed — try repair
-          const fixed=_tcFixJson(m[1].trim());
+          const fixed=_tcFixJson(raw);
           if(fixed){
             const obj=_tcNormalizeAction(fixed);
             if(obj){actions.push(obj);stripBlocks.push(m[0])}
