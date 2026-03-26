@@ -13535,6 +13535,22 @@ Return ONLY valid JSON, no explanation.`;
       if(!checkRateLimit())return;
       const pk=getK();
 
+      // ── App iteration helper: auto-inject last app context when user asks for fixes ──
+      if(text&&window._tcLastAppId&&!text.includes('[CONTEXT:')&&/\b(fix|broke|broken|didn.t work|not work|doesn.t work|update|change|modify|tweak|adjust|wrong|bug|issue|error|try again|redo)\b/i.test(text)){
+        try{
+          const isLocal=pk.mode==='local'||(pk.aiLocalUrl&&pk.aiLocalUrl.includes('localhost'));
+          if(isLocal){
+            const base=(normalizeProviderBaseUrl(pk.aiLocalUrl)||getProviderPreset('local',pk).baseUrl).replace(/\/v1$/,'');
+            const r=await fetch(base+'/v1/apps/read/'+window._tcLastAppId);
+            if(r.ok){
+              const d=await r.json();
+              // Keep it lean — just tell the model the app ID and action format
+              text=`[CONTEXT: Last app "${d.name}" id:${d.id}. To fix it, output \`\`\`tc-action {"type":"app","action":"update","id":${d.id},"html":"...fixed HTML..."}\`\`\`]\n${text}`;
+            }
+          }
+        }catch(e){}
+      }
+
       // Input prefix
       if(pk.inputPrefix&&text&&!text.startsWith('/'))text=pk.inputPrefix+' '+text;
 
@@ -13621,6 +13637,12 @@ Return ONLY valid JSON, no explanation.`;
           const executed=tcResults.filter(r=>r&&r.ok).length;
           if(executed)chatHistory[streamIdx].actionsRun=executed;
           if(aiUsage)chatHistory[streamIdx].usage=aiUsage;
+          // ── Bumper: model talked about fixing but didn't produce actions (once per turn) ──
+          if(!executed&&!window._tcNudged&&window._tcLastAppId&&/\b(fix|update|patch|inject|here.s the|let me|I.ll)\b/i.test(displayText)&&/\b(app|game|code|html|script|calculator|flipper|snake|coin)\b/i.test(displayText)){
+            window._tcNudged=true;
+            showToast('Nudging model to output code...','ok');
+            setTimeout(()=>{pipeline('Output the actual \`\`\`tc-action block now. Do NOT describe what you will do — just output the code.');window._tcNudged=false},800);
+          }
           setChat(chatHistory);renderChat();
           detectAndApplyConfig(displayText);
           sendTelegram(`AI: ${displayText}`);
