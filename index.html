@@ -15385,31 +15385,23 @@ ${_tgRelayBridge.lastError?`<li>Last warning: <strong>${esc(_tgRelayBridge.lastE
       dragCounter=0;
       dragOverlay.classList.remove('visible');
 
-      // Folder drop handling: add path references to input instead of trying to upload folders
-      const items=[...(e.dataTransfer?.items||[])];
-      const folderRefs=[];
-      for(const item of items){
-        try{
-          const entry=item.webkitGetAsEntry?.();
-          if(entry?.isDirectory){
-            folderRefs.push(entry.fullPath||entry.name||'dropped-folder');
-            continue;
-          }
-          if(typeof item.getAsFileSystemHandle==='function'){
-            const handle=await item.getAsFileSystemHandle();
-            if(handle?.kind==='directory'){
-              folderRefs.push(handle.name||'dropped-folder');
-            }
-          }
-        }catch{}
-      }
-      if(folderRefs.length){
-        insertFolderRefsIntoInput(folderRefs);
-        return;
-      }
-
       const files=e.dataTransfer?.files;
-      if(files&&files.length){for(const f of files)handleFile(f)}
+      if(files&&files.length){
+        // Check for folders first
+        const items=[...(e.dataTransfer?.items||[])];
+        const folderRefs=[];
+        let hasFiles=false;
+        for(const item of items){
+          try{
+            const entry=item.webkitGetAsEntry?.();
+            if(entry?.isDirectory){folderRefs.push(entry.fullPath||entry.name||'dropped-folder')}
+            else hasFiles=true;
+          }catch{hasFiles=true}
+        }
+        if(folderRefs.length&&!hasFiles){insertFolderRefsIntoInput(folderRefs);return}
+        // Process files (images, docs, etc)
+        for(const f of files)handleFile(f);
+      }
     });
 
     // ── Conversation Import (encrypted) ────────────────
