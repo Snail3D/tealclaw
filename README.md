@@ -34,6 +34,10 @@ That's it. One key gives you chat, voice, vision, image generation, and deep res
 
 **GIF Reactions** — AI picks contextual GIFs that match your conversation. Draggable, resizable, and fun.
 
+**Inline Apps** — AI builds interactive apps right in the chat. Games, calculators, timers, drawing tools — running in sandboxed iframes. The AI can create, update, and patch apps on the fly. Share any app via compressed URL (`tealclaw.ai/#appz=...`) or QR code. Drag `.html` files into the chat to load saved apps.
+
+**App Marketplace** — Apps are saved locally and searchable. Create, run, update, exec (inject JS patches), and read app source. The model iterates on apps without rewriting them from scratch.
+
 **110+ Settings** — Colors, fonts, layout, voice, persona, quick replies, scheduled messages, templates. Everything is customizable. AI agents can configure it all via JSON.
 
 **Guest Links** — Create encrypted, scoped access links for anyone. AI security filter screens every message before it reaches your agent. Attack detection, automatic session blocking, and silent owner alerts built in.
