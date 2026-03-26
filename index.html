@@ -2338,8 +2338,9 @@
     async function compactConversation(){
       if(_compacting)return;
       const k=getK();
+      const isLocal=k.mode==='local'||(k.aiLocalUrl&&k.aiLocalUrl.includes('localhost'));
       const apiKey=getGroqKey(k);
-      if(!apiKey)return;
+      if(!apiKey&&!isLocal)return;
       _compacting=true;
       document.documentElement.classList.add('heartbeat-compacting');
       try{
@@ -2353,11 +2354,19 @@
         const prevSummary=comp?.summary?`PREVIOUS SUMMARY:\n${comp.summary}\n\n`:'';
         const transcript=toCompact.map(m=>`${m.role==='user'?'User':'Assistant'}: ${m.text}`).join('\n\n');
         const input=prevSummary+transcript;
-        const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        // Route to local gateway or Groq
+        const compactUrl=isLocal
+          ?(normalizeProviderBaseUrl(k.aiLocalUrl)||getProviderPreset('local',k).baseUrl)+'/chat/completions'
+          :'https://api.groq.com/openai/v1/chat/completions';
+        const compactHeaders=isLocal
+          ?{'Content-Type':'application/json'}
+          :{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'};
+        const compactModel=isLocal?(k.aiModel||'qwen3.5'):'llama-3.3-70b-versatile';
+        const res=await fetch(compactUrl,{
           method:'POST',
-          headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+          headers:compactHeaders,
           body:JSON.stringify({
-            model:'llama-3.3-70b-versatile',
+            model:compactModel,
             messages:[
               {role:'system',content:`You are compacting a conversation for context continuity.
 
@@ -3495,6 +3504,8 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         $('pillLabel').innerHTML=`${esc(shortLabel)} <span class="pill-transport">${badge}</span>`;
       } else if(k.aiKey||k.whisperKey){
         pill.className='pill ok';$('pillLabel').textContent=getProviderLabel(k);
+      } else if(k.mode==='local'||(k.aiLocalUrl&&k.aiLocalUrl.includes('localhost'))){
+        pill.className='pill ok';$('pillLabel').textContent='Local';
       } else {
         pill.className='pill off';$('pillLabel').textContent='Setup';
       }
