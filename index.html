@@ -13589,11 +13589,24 @@ Return ONLY valid JSON, no explanation.`;
             const last=bubbles[bubbles.length-1];
             if(last){
               last.classList.add('typing-active');
-              if(!visiblePartial) return; // leave the airport loading animation intact while thinking!
+              // Detect hidden generation (tc-action block being built)
+              const isHiddenGen=partial.length>50&&(!visiblePartial||visiblePartial.length<partial.length*0.3);
+              if(!visiblePartial&&!isHiddenGen) return; // leave loading animation for thinking
               const md=last.querySelector('.md-content');
-              let rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
               const cursorW = pk.cursorWidth || '2px';
               const cursorStyle = pk.cursorStyle || 'solid';
+              let rendered;
+              if(isHiddenGen&&visiblePartial){
+                // Show visible text + building indicator
+                rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
+                const dots='.'.repeat((Math.floor(Date.now()/500)%3)+1);
+                rendered+=`<div style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 10px;background:rgba(13,148,136,0.1);border-radius:6px;font-size:11px;color:var(--teal)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);animation:cursor-blink 0.7s step-end infinite"></span>Building app${dots}</div>`;
+              } else if(isHiddenGen){
+                const dots='.'.repeat((Math.floor(Date.now()/500)%3)+1);
+                rendered=`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(13,148,136,0.1);border-radius:8px;font-size:12px;color:var(--teal)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);animation:cursor-blink 0.7s step-end infinite"></span>Building app${dots} (${partial.length} chars)</div>`;
+              } else {
+                rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
+              }
               const withCursor=rendered+`<span class="typing-cursor" style="width:${cursorW}; border-right:${cursorW} ${cursorStyle} var(--teal); background:transparent;"></span>`;
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
@@ -13670,12 +13683,22 @@ Return ONLY valid JSON, no explanation.`;
             const last=bubbles[bubbles.length-1];
             if(last){
               last.classList.add('typing-active');
-              if(!visiblePartial) return; // leave the airport loading animation intact while thinking!
+              const isHiddenGen=partial.length>50&&(!visiblePartial||visiblePartial.length<partial.length*0.3);
+              if(!visiblePartial&&!isHiddenGen) return;
               const md=last.querySelector('.md-content');
-              let rendered=renderMd(visiblePartial);
-              rendered=renderLatex(rendered);
               const cursorW = pk.cursorWidth || '2px';
               const cursorStyle = pk.cursorStyle || 'solid';
+              let rendered;
+              if(isHiddenGen&&visiblePartial){
+                rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
+                const dots='.'.repeat((Math.floor(Date.now()/500)%3)+1);
+                rendered+=`<div style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 10px;background:rgba(13,148,136,0.1);border-radius:6px;font-size:11px;color:var(--teal)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);animation:cursor-blink 0.7s step-end infinite"></span>Building app${dots}</div>`;
+              } else if(isHiddenGen){
+                const dots='.'.repeat((Math.floor(Date.now()/500)%3)+1);
+                rendered=`<div style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(13,148,136,0.1);border-radius:8px;font-size:12px;color:var(--teal)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);animation:cursor-blink 0.7s step-end infinite"></span>Building app${dots} (${partial.length} chars)</div>`;
+              } else {
+                rendered=renderMd(visiblePartial);rendered=renderLatex(rendered);
+              }
               const withCursor=rendered+`<span class="typing-cursor" style="width:${cursorW}; border-right:${cursorW} ${cursorStyle} var(--teal); background:transparent;"></span>`;
               if(md)md.innerHTML=withCursor;
               else last.innerHTML=`<div class="md-content">${withCursor}</div><div class="chat-meta">${chatHistory[streamIdx].time||''}</div>`;
