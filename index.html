@@ -2927,14 +2927,16 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     const DIRECT_PROVIDER_PRESETS={
-      local:{label:'Local',apiType:'openai',baseUrl:'http://localhost:8080/v1',chatModel:'qwen3.5',visionModel:'qwen3.5',maxTokens:8192}
+      local:{label:'Local',apiType:'openai',baseUrl:'http://localhost:8080/v1',chatModel:'qwen3.5',visionModel:'qwen3.5',maxTokens:8192},
+      fireworks:{label:'Fireworks',apiType:'openai',baseUrl:'https://api.fireworks.ai/inference/v1',chatModel:'accounts/fireworks/models/kimi-k2p5',visionModel:'accounts/fireworks/models/kimi-k2p5',maxTokens:16384}
     };
-    const DIRECT_PROVIDER_ORDER=['local'];
+    const DIRECT_PROVIDER_ORDER=['local','fireworks'];
 
     function normalizeAiProvider(raw){
       const key=String(raw||'').trim().toLowerCase();
       if(!key)return 'local';
       if(DIRECT_PROVIDER_PRESETS[key])return key;
+      if(key==='fireworks'||key==='firework')return 'fireworks';
       return 'local';
     }
 
@@ -2983,6 +2985,10 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     function resolveAiProvider(k){
+      const cfg=k||getK();
+      if(cfg.aiProvider&&DIRECT_PROVIDER_PRESETS[cfg.aiProvider])return cfg.aiProvider;
+      const key=cfg.aiKey||'';
+      if(key.startsWith('fw_'))return 'fireworks';
       return 'local';
     }
 
