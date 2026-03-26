@@ -10959,138 +10959,269 @@ Rules:
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
     // Parsed, executed, and stripped before display.
+    // Includes extensive "bowling bumpers" for small/local models.
+
+    // ── Pre-processor: normalize model output before parsing ──
+    function _tcPreprocess(text){
+      // Fix smart/curly quotes → straight quotes
+      text=text.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g,'"').replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g,"'");
+      // Fix common typos in tc-action fence
+      text=text.replace(/```tc[-_ ]?actions?\s/gi,'```tc-action\n');
+      text=text.replace(/```tcaction\s/gi,'```tc-action\n');
+      // Fix model wrapping tc-action in markdown bold/italic
+      text=text.replace(/\*{1,2}```tc-action/g,'```tc-action');
+      text=text.replace(/```\*{1,2}/g,'```');
+      // Decode HTML entities that snuck into JSON (double-escaped)
+      text=text.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+      return text;
+    }
+
+    // ── JSON repair: fix common LLM JSON mistakes ──
+    function _tcFixJson(raw){
+      let s=raw.trim();
+      // Remove trailing commas before } or ]
+      s=s.replace(/,\s*([}\]])/g,'$1');
+      // Fix single-quoted strings → double-quoted
+      if(!s.includes('"')&&s.includes("'")){
+        s=s.replace(/'/g,'"');
+      }
+      // Fix unquoted keys: {type: → {"type":
+      s=s.replace(/\{\s*(\w+)\s*:/g,'{"$1":').replace(/,\s*(\w+)\s*:/g,',"$1":');
+      // Fix Python True/False/None
+      s=s.replace(/:\s*True\b/g,':true').replace(/:\s*False\b/g,':false').replace(/:\s*None\b/g,':null');
+      try{return JSON.parse(s)}catch(e){return null}
+    }
+
     function parseTcActions(text){
+      text=_tcPreprocess(text);
       const actions=[];
       const stripBlocks=[];
-      // Standard fenced code block format: ```tc-action {...} ```
+
+      // ── LAYER 1: Standard fenced ```tc-action {...} ``` ──
       const re=/```tc-action\s*([\s\S]*?)```/g;
       let m;
       while((m=re.exec(text))!==null){
         try{
-          const obj=JSON.parse(m[1].trim());
-          if(obj&&typeof obj==='object'){
-            const t=(typeof obj.type==='string'&&obj.type)||'';
-            const k=(typeof obj.kind==='string'&&obj.kind)||'';
-            if(k==='camera.capture'&&!t)obj.type='camera-capture';
-            if(k==='screen.capture'&&!t)obj.type='screen-capture';
-            if(obj.type==='camera.capture')obj.type='camera-capture';
-            if(obj.type==='screen.capture')obj.type='screen-capture';
-            if(typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
-              actions.push(obj);
-              stripBlocks.push(m[0]);
-            }
+          let obj=JSON.parse(m[1].trim());
+          obj=_tcNormalizeAction(obj);
+          if(obj){actions.push(obj);stripBlocks.push(m[0])}
+        }catch(e){
+          // JSON parse failed — try repair
+          const fixed=_tcFixJson(m[1].trim());
+          if(fixed){
+            const obj=_tcNormalizeAction(fixed);
+            if(obj){actions.push(obj);stripBlocks.push(m[0])}
+          } else {
+            // Might be a truncated app — try HTML extraction
+            const repaired=_tcRepairAppJson(m[1].trim());
+            if(repaired){actions.push(repaired);stripBlocks.push(m[0])}
+            else console.warn('tc-action parse failed:',e.message,m[1].trim().slice(0,200));
           }
-        }catch(e){console.warn('tc-action parse failed:',e.message,m[1].trim().slice(0,200))}
-      }
-      // Small model fallback: parse [tc-action {...}] inline format
-      const inlineRe=/\[tc-action\s+(\{[^]*?\})\s*\]/g;
-      while((m=inlineRe.exec(text))!==null){
-        try{
-          const obj=JSON.parse(m[1].trim());
-          if(obj&&typeof obj==='object'&&typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
-            actions.push(obj);
-            stripBlocks.push(m[0]);
-          }
-        }catch(e){}
-      }
-      // Also try bare JSON objects with "type" field (models sometimes skip fences entirely)
-      if(!actions.length){
-        const bareRe=/\{\s*"type"\s*:\s*"(config|toast|navigate|command|prompt|research|deepresearch|debate|alarm|timer|cron|pomodoro|speak|clipboard|memory|canvas|workflow|compute|vault|bluetooth|serial|location|bubble|style|file|request-config|guest-link|imagine|camera-capture|screen-capture|surveillance|video|video-grid|gallery|matrix-rain|app)"[^}]*\}/g;
-        while((m=bareRe.exec(text))!==null){
-          try{
-            const obj=JSON.parse(m[0]);
-            if(obj&&TC_ACTION_TYPES.has(obj.type)){
-              actions.push(obj);
-              stripBlocks.push(m[0]);
-            }
-          }catch(e){}
         }
       }
-      // Help mode fallback: some models ignore the tc-action fence and emit plain JSON.
-      if(_helpMode&&!actions.length){
-        const altRe=/```(?:json|js|javascript)\s*([\s\S]*?)```/gi;
+
+      // ── LAYER 2: [tc-action {...}] inline format ──
+      if(!actions.length){
+        const inlineRe=/\[tc-action\s+(\{[^]*?\})\s*\]/g;
+        while((m=inlineRe.exec(text))!==null){
+          const obj=_tcFixJson(m[1].trim());
+          if(obj&&_tcNormalizeAction(obj)){actions.push(_tcNormalizeAction(obj));stripBlocks.push(m[0])}
+        }
+      }
+
+      // ── LAYER 3: Bare JSON with "type" field ──
+      if(!actions.length){
+        const bareRe=/\{\s*"type"\s*:\s*"[a-z][\w-]*"[\s\S]*?\}/g;
+        while((m=bareRe.exec(text))!==null){
+          const obj=_tcFixJson(m[0]);
+          if(obj&&TC_ACTION_TYPES.has(obj.type)){actions.push(obj);stripBlocks.push(m[0])}
+        }
+      }
+
+      // ── LAYER 4: JSON inside any code block (```json, ```js, etc) ──
+      if(!actions.length){
+        const altRe=/```(?:json|js|javascript|code)?\s*\n?([\s\S]*?)```/gi;
         let a;
         while((a=altRe.exec(text))!==null){
-          try{
-            const obj=JSON.parse(a[1].trim());
-            if(obj&&typeof obj==='object'){
-              const t=(typeof obj.type==='string'&&obj.type)||'';
-              const k=(typeof obj.kind==='string'&&obj.kind)||'';
-              if(k==='camera.capture'&&!t)obj.type='camera-capture';
-              if(k==='screen.capture'&&!t)obj.type='screen-capture';
-              if(obj.type==='camera.capture')obj.type='camera-capture';
-              if(obj.type==='screen.capture')obj.type='screen-capture';
-              if(typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type)){
-                actions.push(obj);
-                stripBlocks.push(a[0]);
-              }
-            }
-          }catch{}
+          const obj=_tcFixJson(a[1].trim());
+          if(obj&&typeof obj==='object'&&typeof obj.type==='string'){
+            const norm=_tcNormalizeAction(obj);
+            if(norm){actions.push(norm);stripBlocks.push(a[0])}
+          }
         }
       }
-      // ── BUMPERS: catch dumb model mistakes ──
-      // 1. Auto-detect ```html code blocks with full HTML docs and convert to app create
-      if(!actions.length||!actions.some(a=>a.type==='app')){
-        const htmlBlockRe=/```html\s*\n([\s\S]*?)```/gi;
+
+      // ── LAYER 5: Truncated tc-action (model ran out of tokens, no closing ```) ──
+      if(!actions.length){
+        const truncRe=/```tc-action\s*([\s\S]+?)$/g;
+        while((m=truncRe.exec(text))!==null){
+          const raw=m[1].trim();
+          // Try JSON repair first
+          const fixed=_tcFixJson(raw.replace(/[^}]*$/,'}')); // force-close JSON
+          if(fixed&&_tcNormalizeAction(fixed)){actions.push(_tcNormalizeAction(fixed));stripBlocks.push(m[0])}
+          else if(raw.includes('"html"')||raw.includes('"app"')){
+            const repaired=_tcRepairAppJson(raw);
+            if(repaired){actions.push(repaired);stripBlocks.push(m[0])}
+          }
+        }
+      }
+
+      // ── BUMPER 1: ```html code blocks → auto-convert to app ──
+      if(!actions.some(a=>a.type==='app')){
+        const htmlBlockRe=/```html\s*\n?([\s\S]*?)```/gi;
         let hm;
         while((hm=htmlBlockRe.exec(text))!==null){
-          const htmlContent=hm[1].trim();
-          if(htmlContent.length>200&&(htmlContent.includes('<!DOCTYPE')||htmlContent.includes('<html')||htmlContent.includes('<body'))){
-            actions.push({type:'app',action:'create',name:'Generated App',description:'Auto-detected from HTML block',html:_tcFixHtml(htmlContent)});
+          const c=hm[1].trim();
+          if(c.length>100&&(c.includes('<!DOCTYPE')||c.includes('<html')||c.includes('<head')||c.includes('<body')||(c.includes('<div')&&c.includes('<script')))){
+            actions.push({type:'app',action:'create',name:_tcGuessAppName(text),description:'Auto-detected from HTML block',html:_tcFixHtml(c)});
             stripBlocks.push(hm[0]);
           }
         }
       }
-      // 2. Auto-detect loose HTML that looks like an app (model forgot code fences entirely)
-      if(!actions.length){
-        const looseHtmlRe=/<!DOCTYPE html>[\s\S]{200,}/i;
-        const lm=text.match(looseHtmlRe);
-        if(lm){
-          actions.push({type:'app',action:'create',name:'Generated App',description:'Auto-detected from inline HTML',html:_tcFixHtml(lm[0])});
-          stripBlocks.push(lm[0]);
-        }
-      }
-      // 3. JSON repair for truncated tc-action blocks (model ran out of tokens)
-      if(!actions.length){
-        const truncRe=/```tc-action\s*([\s\S]*?)$/g;
-        let tm;
-        while((tm=truncRe.exec(text))!==null){
-          let raw=tm[1].trim();
-          if(raw.includes('"html"')&&raw.includes('"app"')){
-            // Try to repair truncated app JSON
-            const repaired=_tcRepairAppJson(raw);
-            if(repaired){
-              actions.push(repaired);
-              stripBlocks.push(tm[0]);
-            }
+
+      // ── BUMPER 2: Any code block with substantial HTML ──
+      if(!actions.some(a=>a.type==='app')){
+        const anyBlockRe=/```\w*\s*\n?([\s\S]*?)```/gi;
+        let ab;
+        while((ab=anyBlockRe.exec(text))!==null){
+          const c=ab[1].trim();
+          if(c.length>200&&c.includes('<')&&c.includes('</') &&(c.includes('<script')||c.includes('onclick')||c.includes('<canvas')||c.includes('<style'))
+            &&(c.includes('<html')||c.includes('<body')||c.includes('<head')||c.includes('<!DOCTYPE'))){
+            actions.push({type:'app',action:'create',name:_tcGuessAppName(text),description:'Auto-detected from code block',html:_tcFixHtml(c)});
+            stripBlocks.push(ab[0]);
           }
         }
       }
+
+      // ── BUMPER 3: Loose HTML (no code fences at all) ──
+      if(!actions.some(a=>a.type==='app')){
+        const looseRe=/(?:<!DOCTYPE html>|<html[\s>])[\s\S]{200,}/i;
+        const lm=text.match(looseRe);
+        if(lm){
+          actions.push({type:'app',action:'create',name:_tcGuessAppName(text),description:'Auto-detected from inline HTML',html:_tcFixHtml(lm[0])});
+          stripBlocks.push(lm[0]);
+        }
+      }
+
+      // ── BUMPER 4: Standalone <script> with game/app logic (model forgot HTML wrapper) ──
+      if(!actions.some(a=>a.type==='app')){
+        const scriptRe=/```(?:javascript|js)?\s*\n([\s\S]*?)```/gi;
+        let sm;
+        while((sm=scriptRe.exec(text))!==null){
+          const code=sm[1].trim();
+          if(code.length>200&&(code.includes('canvas')||code.includes('getElementById')||code.includes('querySelector')||code.includes('addEventListener'))
+            &&(code.includes('function ')||code.includes('=>'))){
+            // Wrap standalone JS in an HTML scaffold
+            const wrapped=`<!DOCTYPE html><html><head><style>body{margin:0;background:#111;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;flex-direction:column}</style></head><body tabindex="0"><canvas id="c" width="400" height="400" tabindex="0"></canvas><script>${code}<\/script></body></html>`;
+            actions.push({type:'app',action:'create',name:_tcGuessAppName(text),description:'Auto-wrapped JS in HTML scaffold',html:_tcFixHtml(wrapped)});
+            stripBlocks.push(sm[0]);
+          }
+        }
+      }
+
       let cleanText=text;
       stripBlocks.forEach(block=>{cleanText=cleanText.replace(block,'')});
       cleanText=cleanText.trim();
       return{cleanText,actions};
     }
 
-    // Fix incomplete HTML — add missing closing tags, doctype, keyboard focus for canvas
+    // Normalize action type aliases and fix common mistakes
+    function _tcNormalizeAction(obj){
+      if(!obj||typeof obj!=='object')return null;
+      const t=(typeof obj.type==='string'&&obj.type)||'';
+      const k=(typeof obj.kind==='string'&&obj.kind)||'';
+      if(k==='camera.capture'&&!t)obj.type='camera-capture';
+      if(k==='screen.capture'&&!t)obj.type='screen-capture';
+      if(obj.type==='camera.capture')obj.type='camera-capture';
+      if(obj.type==='screen.capture')obj.type='screen-capture';
+      // Fix common type typos
+      if(obj.type==='application')obj.type='app';
+      if(obj.type==='apps')obj.type='app';
+      if(obj.type==='mini-app')obj.type='app';
+      if(obj.type==='miniapp')obj.type='app';
+      if(obj.type==='game')obj.type='app';
+      if(obj.type==='tool')obj.type='app';
+      if(obj.type==='widget')obj.type='app';
+      // Fix app action typos
+      if(obj.type==='app'){
+        if(!obj.action)obj.action='create';
+        if(obj.action==='make'||obj.action==='build'||obj.action==='new')obj.action='create';
+        if(obj.action==='patch'||obj.action==='fix'||obj.action==='inject')obj.action='exec';
+        if(obj.action==='edit'||obj.action==='modify'||obj.action==='replace')obj.action='update';
+        if(obj.action==='get'||obj.action==='view'||obj.action==='source'||obj.action==='show')obj.action='read';
+        if(obj.action==='find'||obj.action==='lookup')obj.action='search';
+        if(obj.action==='open'||obj.action==='launch'||obj.action==='start'||obj.action==='play')obj.action='run';
+        // content → html alias
+        if(obj.content&&!obj.html)obj.html=obj.content;
+        // Fix HTML if present
+        if(obj.html&&typeof obj.html==='string')obj.html=_tcFixHtml(obj.html);
+      }
+      if(typeof obj.type==='string'&&TC_ACTION_TYPES.has(obj.type))return obj;
+      return null;
+    }
+
+    // Guess app name from surrounding text
+    function _tcGuessAppName(text){
+      const patterns=[
+        /(?:make|create|build|generate|here'?s?\s+(?:a|the|my))\s+([\w\s]{2,30}?)(?:\s+app|\s+game|\s+tool|\s+calculator|\s+widget|[.!,]|$)/i,
+        /(?:called|named|titled)\s+"?([^".\n]{2,30})"?/i,
+        /<title>(.*?)<\/title>/i,
+        /<h[12][^>]*>(.*?)<\/h[12]>/i,
+      ];
+      for(const p of patterns){
+        const m=text.match(p);
+        if(m&&m[1]&&m[1].trim().length>1)return m[1].trim().slice(0,40);
+      }
+      return 'Generated App';
+    }
+
+    // Fix incomplete HTML — close tags, add doctype, inject keyboard focus, dark theme
     function _tcFixHtml(html){
+      if(!html||typeof html!=='string')return '<!DOCTYPE html><html><body><p>Empty app</p></body></html>';
+      // Strip any remaining JSON wrapper artifacts
+      html=html.replace(/^["']\s*/,'').replace(/\s*["']$/,'');
+      // Add doctype if missing
       if(!html.includes('<!DOCTYPE')&&!html.includes('<!doctype'))html='<!DOCTYPE html>\n'+html;
-      if(!html.includes('<html'))html=html.replace('<!DOCTYPE html>','<!DOCTYPE html>\n<html>');
-      // Auto-close truncated HTML
-      const openTags=['</html>','</body>','</head>','</script>','</style>'];
-      for(const tag of openTags){
-        const openTag=tag.replace('/','');
-        const openCount=(html.match(new RegExp(openTag.replace('<','<'),'gi'))||[]).length;
-        const closeCount=(html.match(new RegExp(tag.replace('<','<').replace('/','\\/'),'gi'))||[]).length;
-        if(openCount>closeCount)html+='\n'+tag;
+      if(!html.includes('<html'))html=html.replace(/<!DOCTYPE html>/i,'<!DOCTYPE html>\n<html>');
+      if(!html.includes('<body'))html=html.replace(/<html[^>]*>/i,'$&\n<body>');
+      // Auto-close truncated HTML tags
+      const tagPairs=[['<html','</html>'],['<body','</body>'],['<head','</head>'],['<script','</script>'],['<style','</style>'],['<div','</div>']];
+      for(const[open,close] of tagPairs){
+        const openCount=(html.match(new RegExp(open.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'))||[]).length;
+        const closeCount=(html.match(new RegExp(close.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'))||[]).length;
+        for(let i=0;i<openCount-closeCount;i++)html+='\n'+close;
+      }
+      // Auto-inject dark theme if no background set
+      if(!html.includes('background')&&!html.includes('bg-')){
+        const darkCss='<style>body{background:#111;color:#e4e4e7;font-family:-apple-system,system-ui,sans-serif}</style>';
+        if(html.includes('<head'))html=html.replace(/<head[^>]*>/i,'$&\n'+darkCss);
+        else html=html.replace(/<html[^>]*>/i,'$&\n<head>'+darkCss+'</head>');
       }
       // Auto-inject keyboard focus for canvas/game apps
       if(html.includes('<canvas')&&!html.includes('tabindex')){
-        html=html.replace(/<canvas/,'<canvas tabindex="0" onclick="this.focus()" autofocus');
+        html=html.replace(/<canvas/g,'<canvas tabindex="0"');
       }
-      // Auto-inject keyboard focus for the body if it has keydown listeners
+      // Auto-focus canvas on load
+      if(html.includes('<canvas')&&!html.includes('.focus()')){
+        html=html.replace(/<\/script>/,'document.querySelector("canvas")?.focus();\n</script>');
+      }
+      // Auto-inject keyboard focus for body if it has keydown listeners
       if(html.includes('keydown')&&!html.includes('tabindex')){
-        html=html.replace(/<body/,'<body tabindex="0" onclick="this.focus()"');
+        html=html.replace(/<body/,'<body tabindex="0"');
+      }
+      // Fix onclick handlers that reference undefined functions — add empty stubs
+      const onclickFns=(html.match(/onclick="(\w+)\(/g)||[]).map(m=>m.match(/onclick="(\w+)/)[1]);
+      const definedFns=(html.match(/function\s+(\w+)/g)||[]).map(m=>m.match(/function\s+(\w+)/)[1]);
+      const missingFns=[...new Set(onclickFns)].filter(f=>!definedFns.includes(f));
+      if(missingFns.length>0){
+        const stubs=missingFns.map(f=>`function ${f}(){console.warn('${f} not yet implemented')}`).join(';');
+        if(html.includes('</script>'))html=html.replace('</script>',stubs+'\n</script>');
+        else html=html.replace('</body>','<script>'+stubs+'</script>\n</body>');
+      }
+      // Error boundary — wrap app JS in try/catch display
+      if(!html.includes('onerror')){
+        const errHandler='<script>window.onerror=function(m,s,l){document.body.innerHTML+="<pre style=\\"color:#ff6b6b;background:#1a1a2e;padding:12px;border-radius:8px;margin:8px;font-size:12px\\">Error: "+m+"\\nLine: "+l+"</pre>"}</script>';
+        html=html.replace('</head>',errHandler+'\n</head>');
       }
       return html;
     }
@@ -11098,22 +11229,35 @@ Rules:
     // Repair truncated tc-action JSON for app create/update
     function _tcRepairAppJson(raw){
       try{return JSON.parse(raw)}catch(e){}
-      // Extract what we can
+      // Try force-closing the JSON at various points
+      const closers=['"}','"}}}','"}]}'];
+      for(const c of closers){try{const obj=JSON.parse(raw+c);if(obj&&obj.type)return _tcNormalizeAction(obj)}catch(e){}}
+      // Extract fields manually
       const nameMatch=raw.match(/"name"\s*:\s*"([^"]*?)"/);
       const descMatch=raw.match(/"description"\s*:\s*"([^"]*?)"/);
       const actionMatch=raw.match(/"action"\s*:\s*"([^"]*?)"/);
       const htmlMatch=raw.match(/"html"\s*:\s*"([\s\S]*)$/);
-      if(!htmlMatch)return null;
-      let htmlContent=htmlMatch[1];
-      // Unescape JSON string
-      try{htmlContent=JSON.parse('"'+htmlContent.replace(/\\?$/,'')+'"')}catch(e){
-        htmlContent=htmlContent.replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+      const contentMatch=raw.match(/"content"\s*:\s*"([\s\S]*)$/);
+      const src=htmlMatch||contentMatch;
+      if(!src)return null;
+      let htmlContent=src[1];
+      // Unescape JSON string encoding
+      try{
+        // Try to find a valid JSON string end
+        let end=htmlContent.length;
+        for(let i=htmlContent.length-1;i>=0;i--){
+          if(htmlContent[i]==='"'&&(i===0||htmlContent[i-1]!=='\\')){end=i;break}
+        }
+        htmlContent=JSON.parse('"'+htmlContent.slice(0,end)+'"');
+      }catch(e){
+        htmlContent=htmlContent.replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\"/g,'"').replace(/\\\\/g,'\\').replace(/\\'/g,"'");
       }
       htmlContent=_tcFixHtml(htmlContent);
+      if(htmlContent.length<50)return null; // too small to be useful
       return{
         type:'app',
         action:actionMatch?actionMatch[1]:'create',
-        name:nameMatch?nameMatch[1]:'Generated App',
+        name:nameMatch?nameMatch[1]:_tcGuessAppName(htmlContent),
         description:descMatch?descMatch[1]:'Auto-repaired from truncated output',
         html:htmlContent
       };
