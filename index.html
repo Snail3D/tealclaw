@@ -6875,11 +6875,24 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings), app(create/run/search/list/update/exec/read mini apps). config/command/style/camera-capture/screen-capture require user approval.
 IMPORTANT: You can use tc-action blocks at any time. There is no special “help mode” — just apply the needed tc-action directly when the user asks for changes.
 MINI APPS: You can create interactive HTML apps that run INLINE in the chat! Use \`\`\`tc-action\n{“type”:”app”,”action”:”create”,”name”:”Calculator”,”description”:”Simple calculator”,”html”:”<!DOCTYPE html><html>...</html>”,”tags”:[“tool”,”math”]}\n\`\`\` The app is saved to a local database and rendered in an iframe in the chat. To run a saved app: {“type”:”app”,”action”:”run”,”name”:”Calculator”}. To list all apps: {“type”:”app”,”action”:”list”}. To search: {“type”:”app”,”action”:”search”,”query”:”game”}.
-APP ITERATION: You can update and patch running apps without rewriting everything!
-- UPDATE full HTML: {“type”:”app”,”action”:”update”,”id”:123,”html”:”<!DOCTYPE html>...updated...”} — replaces the app's stored HTML and re-renders it. Omit id to update the last created app.
-- EXEC quick JS patch: {“type”:”app”,”action”:”exec”,”code”:”document.addEventListener('keydown',e=>{...})”} — injects JavaScript into the most recent running app iframe. Use this for quick fixes (add event listeners, fix bugs, change styles) without regenerating the full app. Much faster and cheaper than rewriting.
-- READ source: {“type”:”app”,”action”:”read”,”id”:123} — retrieves the app's current HTML so you can see what needs fixing before patching.
-ITERATION WORKFLOW: When the user says “fix it” or “make it work”, prefer exec patches over full rewrites. Use read to see current code, exec to patch small issues, update only when major changes are needed. ALWAYS use app action to create interactive tools instead of just showing code. The user wants to USE it, not read code.
+APP RULES — FOLLOW EXACTLY:
+1. NEVER just show code. ALWAYS wrap HTML in a tc-action app block so it renders inline.
+2. If you write HTML, it MUST be inside \`\`\`tc-action with {“type”:”app”,”action”:”create”,...}
+3. For games/canvas: ALWAYS add tabindex=”0” to canvas and body, add document.addEventListener(“keydown”,...) for keyboard controls, call canvas.focus() on load.
+4. Include ALL JavaScript inline. Do NOT use external scripts or CDNs.
+5. Test your logic mentally before outputting — make sure event handlers are connected, variables are defined, and the app is complete.
+APP ITERATION — patch without rewriting:
+- EXEC (preferred for fixes): \`\`\`tc-action\n{“type”:”app”,”action”:”exec”,”code”:”document.addEventListener('keydown',e=>{if(e.key==='ArrowUp')dy=-1})”}\n\`\`\` — injects JS into the running app. Use for quick fixes.
+- UPDATE: \`\`\`tc-action\n{“type”:”app”,”action”:”update”,”html”:”<!DOCTYPE html>...”}\n\`\`\` — replaces app HTML. Use for major rewrites.
+- READ: \`\`\`tc-action\n{“type”:”app”,”action”:”read”,”id”:3}\n\`\`\` — see current app source before patching.
+SNAKE GAME TEMPLATE (copy and adapt for any canvas game):
+\`\`\`tc-action
+{“type”:”app”,”action”:”create”,”name”:”Snake”,”description”:”Snake game”,”html”:”<!DOCTYPE html><html><head><style>body{margin:0;background:#111;display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column}canvas{border:2px solid #0d9488;background:#000}h2{color:#fff;font-family:sans-serif}</style></head><body tabindex=\\”0\\”><h2>Snake</h2><canvas id=\\”c\\” width=\\”400\\” height=\\”400\\” tabindex=\\”0\\”></canvas><script>const c=document.getElementById('c'),x=c.getContext('2d');let s=[{x:200,y:200}],d={x:20,y:0},f={x:0,y:0},sc=0,g;function nf(){f={x:Math.floor(Math.random()*20)*20,y:Math.floor(Math.random()*20)*20}}function draw(){x.fillStyle='#000';x.fillRect(0,0,400,400);x.fillStyle='#0f0';s.forEach(p=>x.fillRect(p.x,p.y,18,18));x.fillStyle='red';x.beginPath();x.arc(f.x+10,f.y+10,9,0,Math.PI*2);x.fill();x.fillStyle='#fff';x.font='16px sans-serif';x.fillText('Score: '+sc,10,20)}function step(){const h={x:s[0].x+d.x,y:s[0].y+d.y};if(h.x<0||h.x>=400||h.y<0||h.y>=400||s.some(p=>p.x===h.x&&p.y===h.y)){clearInterval(g);x.fillStyle='#fff';x.font='30px sans-serif';x.fillText('Game Over!',120,200);return}s.unshift(h);if(h.x===f.x&&h.y===f.y){sc++;nf()}else s.pop();draw()}document.addEventListener('keydown',e=>{if(e.key==='ArrowUp'&&d.y===0)d={x:0,y:-20};if(e.key==='ArrowDown'&&d.y===0)d={x:0,y:20};if(e.key==='ArrowLeft'&&d.x===0)d={x:-20,y:0};if(e.key==='ArrowRight'&&d.x===0)d={x:20,y:0};e.preventDefault()});nf();draw();c.focus();g=setInterval(step,120)</script></body></html>”}
+\`\`\`
+CALCULATOR TEMPLATE:
+\`\`\`tc-action
+{“type”:”app”,”action”:”create”,”name”:”Calculator”,”description”:”Calculator”,”html”:”<!DOCTYPE html><html><head><style>body{margin:0;background:#1e1e1e;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif}.calc{width:280px;background:#222;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.5)}.display{background:#000;color:#fff;font-size:2em;text-align:right;padding:16px;border-radius:8px;min-height:50px;word-break:break-all;margin-bottom:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}button{padding:14px;font-size:1.2em;border:none;border-radius:8px;cursor:pointer;font-weight:600}.num{background:#333;color:#fff}.op{background:#333;color:#ff9500}.eq{background:#0d9488;color:#fff;grid-column:span 2}.cl{background:#ff3b30;color:#fff}.zero{grid-column:span 2}</style></head><body><div class=\\”calc\\”><div class=\\”display\\” id=\\”d\\”>0</div><div class=\\”grid\\”><button class=\\”cl\\” onclick=\\”C()\\”>C</button><button class=\\”op\\” onclick=\\”O('/')\\”>÷</button><button class=\\”op\\” onclick=\\”O('*')\\”>×</button><button class=\\”op\\” onclick=\\”O('-')\\”>−</button><button class=\\”num\\” onclick=\\”N(7)\\”>7</button><button class=\\”num\\” onclick=\\”N(8)\\”>8</button><button class=\\”num\\” onclick=\\”N(9)\\”>9</button><button class=\\”op\\” onclick=\\”O('+')\\”>+</button><button class=\\”num\\” onclick=\\”N(4)\\”>4</button><button class=\\”num\\” onclick=\\”N(5)\\”>5</button><button class=\\”num\\” onclick=\\”N(6)\\”>6</button><button class=\\”num\\” onclick=\\”N('.')\\”>.</button><button class=\\”num\\” onclick=\\”N(1)\\”>1</button><button class=\\”num\\” onclick=\\”N(2)\\”>2</button><button class=\\”num\\” onclick=\\”N(3)\\”>3</button><button class=\\”eq\\” onclick=\\”E()\\”>=</button><button class=\\”num zero\\” onclick=\\”N(0)\\”>0</button></div></div><script>let cur='0',prev='',op='';const d=document.getElementById('d');function N(v){cur=cur==='0'?String(v):cur+v;d.textContent=cur}function O(o){prev=cur;cur='0';op=o}function E(){if(!op||!prev)return;let r=eval(prev+op+cur);d.textContent=r;cur=String(r);op='';prev=''}function C(){cur='0';prev='';op='';d.textContent='0'}</script></body></html>”}
+\`\`\`
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
 Privacy/consent: confirm requester authority/consent before camera/screen capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
@@ -10982,7 +10995,7 @@ Rules:
       }
       // Also try bare JSON objects with "type" field (models sometimes skip fences entirely)
       if(!actions.length){
-        const bareRe=/\{\s*"type"\s*:\s*"(config|toast|navigate|command|prompt|research|deepresearch|debate|alarm|timer|cron|pomodoro|speak|clipboard|memory|canvas|workflow|compute|vault|bluetooth|serial|location|bubble|style|file|request-config|guest-link|imagine|camera-capture|screen-capture|surveillance|video|video-grid|gallery|matrix-rain)"[^}]*\}/g;
+        const bareRe=/\{\s*"type"\s*:\s*"(config|toast|navigate|command|prompt|research|deepresearch|debate|alarm|timer|cron|pomodoro|speak|clipboard|memory|canvas|workflow|compute|vault|bluetooth|serial|location|bubble|style|file|request-config|guest-link|imagine|camera-capture|screen-capture|surveillance|video|video-grid|gallery|matrix-rain|app)"[^}]*\}/g;
         while((m=bareRe.exec(text))!==null){
           try{
             const obj=JSON.parse(m[0]);
@@ -11015,10 +11028,95 @@ Rules:
           }catch{}
         }
       }
+      // ── BUMPERS: catch dumb model mistakes ──
+      // 1. Auto-detect ```html code blocks with full HTML docs and convert to app create
+      if(!actions.length||!actions.some(a=>a.type==='app')){
+        const htmlBlockRe=/```html\s*\n([\s\S]*?)```/gi;
+        let hm;
+        while((hm=htmlBlockRe.exec(text))!==null){
+          const htmlContent=hm[1].trim();
+          if(htmlContent.length>200&&(htmlContent.includes('<!DOCTYPE')||htmlContent.includes('<html')||htmlContent.includes('<body'))){
+            actions.push({type:'app',action:'create',name:'Generated App',description:'Auto-detected from HTML block',html:_tcFixHtml(htmlContent)});
+            stripBlocks.push(hm[0]);
+          }
+        }
+      }
+      // 2. Auto-detect loose HTML that looks like an app (model forgot code fences entirely)
+      if(!actions.length){
+        const looseHtmlRe=/<!DOCTYPE html>[\s\S]{200,}/i;
+        const lm=text.match(looseHtmlRe);
+        if(lm){
+          actions.push({type:'app',action:'create',name:'Generated App',description:'Auto-detected from inline HTML',html:_tcFixHtml(lm[0])});
+          stripBlocks.push(lm[0]);
+        }
+      }
+      // 3. JSON repair for truncated tc-action blocks (model ran out of tokens)
+      if(!actions.length){
+        const truncRe=/```tc-action\s*([\s\S]*?)$/g;
+        let tm;
+        while((tm=truncRe.exec(text))!==null){
+          let raw=tm[1].trim();
+          if(raw.includes('"html"')&&raw.includes('"app"')){
+            // Try to repair truncated app JSON
+            const repaired=_tcRepairAppJson(raw);
+            if(repaired){
+              actions.push(repaired);
+              stripBlocks.push(tm[0]);
+            }
+          }
+        }
+      }
       let cleanText=text;
       stripBlocks.forEach(block=>{cleanText=cleanText.replace(block,'')});
       cleanText=cleanText.trim();
       return{cleanText,actions};
+    }
+
+    // Fix incomplete HTML — add missing closing tags, doctype, keyboard focus for canvas
+    function _tcFixHtml(html){
+      if(!html.includes('<!DOCTYPE')&&!html.includes('<!doctype'))html='<!DOCTYPE html>\n'+html;
+      if(!html.includes('<html'))html=html.replace('<!DOCTYPE html>','<!DOCTYPE html>\n<html>');
+      // Auto-close truncated HTML
+      const openTags=['</html>','</body>','</head>','</script>','</style>'];
+      for(const tag of openTags){
+        const openTag=tag.replace('/','');
+        const openCount=(html.match(new RegExp(openTag.replace('<','<'),'gi'))||[]).length;
+        const closeCount=(html.match(new RegExp(tag.replace('<','<').replace('/','\\/'),'gi'))||[]).length;
+        if(openCount>closeCount)html+='\n'+tag;
+      }
+      // Auto-inject keyboard focus for canvas/game apps
+      if(html.includes('<canvas')&&!html.includes('tabindex')){
+        html=html.replace(/<canvas/,'<canvas tabindex="0" onclick="this.focus()" autofocus');
+      }
+      // Auto-inject keyboard focus for the body if it has keydown listeners
+      if(html.includes('keydown')&&!html.includes('tabindex')){
+        html=html.replace(/<body/,'<body tabindex="0" onclick="this.focus()"');
+      }
+      return html;
+    }
+
+    // Repair truncated tc-action JSON for app create/update
+    function _tcRepairAppJson(raw){
+      try{return JSON.parse(raw)}catch(e){}
+      // Extract what we can
+      const nameMatch=raw.match(/"name"\s*:\s*"([^"]*?)"/);
+      const descMatch=raw.match(/"description"\s*:\s*"([^"]*?)"/);
+      const actionMatch=raw.match(/"action"\s*:\s*"([^"]*?)"/);
+      const htmlMatch=raw.match(/"html"\s*:\s*"([\s\S]*)$/);
+      if(!htmlMatch)return null;
+      let htmlContent=htmlMatch[1];
+      // Unescape JSON string
+      try{htmlContent=JSON.parse('"'+htmlContent.replace(/\\?$/,'')+'"')}catch(e){
+        htmlContent=htmlContent.replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+      }
+      htmlContent=_tcFixHtml(htmlContent);
+      return{
+        type:'app',
+        action:actionMatch?actionMatch[1]:'create',
+        name:nameMatch?nameMatch[1]:'Generated App',
+        description:descMatch?descMatch[1]:'Auto-repaired from truncated output',
+        html:htmlContent
+      };
     }
 
     const TC_BLOCKED_CONFIG_KEYS=new Set([]);
