@@ -6896,14 +6896,7 @@ APP ITERATION — patch without rewriting:
 - EXEC (preferred for fixes): \`\`\`tc-action\n{“type”:”app”,”action”:”exec”,”code”:”document.addEventListener('keydown',e=>{if(e.key==='ArrowUp')dy=-1})”}\n\`\`\` — injects JS into the running app. Use for quick fixes.
 - UPDATE: \`\`\`tc-action\n{“type”:”app”,”action”:”update”,”html”:”<!DOCTYPE html>...”}\n\`\`\` — replaces app HTML. Use for major rewrites.
 - READ: \`\`\`tc-action\n{“type”:”app”,”action”:”read”,”id”:3}\n\`\`\` — see current app source before patching.
-SNAKE GAME TEMPLATE (copy and adapt for any canvas game):
-\`\`\`tc-action
-{“type”:”app”,”action”:”create”,”name”:”Snake”,”description”:”Snake game”,”html”:”<!DOCTYPE html><html><head><style>body{margin:0;background:#111;display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column}canvas{border:2px solid #0d9488;background:#000}h2{color:#fff;font-family:sans-serif}</style></head><body tabindex=\\”0\\”><h2>Snake</h2><canvas id=\\”c\\” width=\\”400\\” height=\\”400\\” tabindex=\\”0\\”></canvas><script>const c=document.getElementById('c'),x=c.getContext('2d');let s=[{x:200,y:200}],d={x:20,y:0},f={x:0,y:0},sc=0,g;function nf(){f={x:Math.floor(Math.random()*20)*20,y:Math.floor(Math.random()*20)*20}}function draw(){x.fillStyle='#000';x.fillRect(0,0,400,400);x.fillStyle='#0f0';s.forEach(p=>x.fillRect(p.x,p.y,18,18));x.fillStyle='red';x.beginPath();x.arc(f.x+10,f.y+10,9,0,Math.PI*2);x.fill();x.fillStyle='#fff';x.font='16px sans-serif';x.fillText('Score: '+sc,10,20)}function step(){const h={x:s[0].x+d.x,y:s[0].y+d.y};if(h.x<0||h.x>=400||h.y<0||h.y>=400||s.some(p=>p.x===h.x&&p.y===h.y)){clearInterval(g);x.fillStyle='#fff';x.font='30px sans-serif';x.fillText('Game Over!',120,200);return}s.unshift(h);if(h.x===f.x&&h.y===f.y){sc++;nf()}else s.pop();draw()}document.addEventListener('keydown',e=>{if(e.key==='ArrowUp'&&d.y===0)d={x:0,y:-20};if(e.key==='ArrowDown'&&d.y===0)d={x:0,y:20};if(e.key==='ArrowLeft'&&d.x===0)d={x:-20,y:0};if(e.key==='ArrowRight'&&d.x===0)d={x:20,y:0};e.preventDefault()});nf();draw();c.focus();g=setInterval(step,120)</script></body></html>”}
-\`\`\`
-CALCULATOR TEMPLATE:
-\`\`\`tc-action
-{“type”:”app”,”action”:”create”,”name”:”Calculator”,”description”:”Calculator”,”html”:”<!DOCTYPE html><html><head><style>body{margin:0;background:#1e1e1e;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif}.calc{width:280px;background:#222;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.5)}.display{background:#000;color:#fff;font-size:2em;text-align:right;padding:16px;border-radius:8px;min-height:50px;word-break:break-all;margin-bottom:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}button{padding:14px;font-size:1.2em;border:none;border-radius:8px;cursor:pointer;font-weight:600}.num{background:#333;color:#fff}.op{background:#333;color:#ff9500}.eq{background:#0d9488;color:#fff;grid-column:span 2}.cl{background:#ff3b30;color:#fff}.zero{grid-column:span 2}</style></head><body><div class=\\”calc\\”><div class=\\”display\\” id=\\”d\\”>0</div><div class=\\”grid\\”><button class=\\”cl\\” onclick=\\”C()\\”>C</button><button class=\\”op\\” onclick=\\”O('/')\\”>÷</button><button class=\\”op\\” onclick=\\”O('*')\\”>×</button><button class=\\”op\\” onclick=\\”O('-')\\”>−</button><button class=\\”num\\” onclick=\\”N(7)\\”>7</button><button class=\\”num\\” onclick=\\”N(8)\\”>8</button><button class=\\”num\\” onclick=\\”N(9)\\”>9</button><button class=\\”op\\” onclick=\\”O('+')\\”>+</button><button class=\\”num\\” onclick=\\”N(4)\\”>4</button><button class=\\”num\\” onclick=\\”N(5)\\”>5</button><button class=\\”num\\” onclick=\\”N(6)\\”>6</button><button class=\\”num\\” onclick=\\”N('.')\\”>.</button><button class=\\”num\\” onclick=\\”N(1)\\”>1</button><button class=\\”num\\” onclick=\\”N(2)\\”>2</button><button class=\\”num\\” onclick=\\”N(3)\\”>3</button><button class=\\”eq\\” onclick=\\”E()\\”>=</button><button class=\\”num zero\\” onclick=\\”N(0)\\”>0</button></div></div><script>let cur='0',prev='',op='';const d=document.getElementById('d');function N(v){cur=cur==='0'?String(v):cur+v;d.textContent=cur}function O(o){prev=cur;cur='0';op=o}function E(){if(!op||!prev)return;let r=eval(prev+op+cur);d.textContent=r;cur=String(r);op='';prev=''}function C(){cur='0';prev='';op='';d.textContent='0'}</script></body></html>”}
-\`\`\`
+APP STRUCTURE RULES for games: Use canvas with tabindex=”0”, add document.addEventListener(“keydown”,...) for controls, call canvas.focus() on load. Dark background (#111). All JS inline. For calculators: use CSS grid 4-column layout, dark theme, all onclick handlers inline with JS functions defined in a script tag.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
 Privacy/consent: confirm requester authority/consent before camera/screen capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
@@ -11196,7 +11189,7 @@ Rules:
       if(!html.includes('<html'))html=html.replace(/<!DOCTYPE html>/i,'<!DOCTYPE html>\n<html>');
       if(!html.includes('<body'))html=html.replace(/<html[^>]*>/i,'$&\n<body>');
       // Auto-close truncated HTML tags
-      const tagPairs=[['<html','</html>'],['<body','</body>'],['<head','</head>'],['<script','</script>'],['<style','</style>'],['<div','</div>']];
+      const tagPairs=[['<html','</html>'],['<body','</body>'],['<head','</head>'],['<scr'+'ipt','</scr'+'ipt>'],['<style','</style>'],['<div','</div>']];
       for(const[open,close] of tagPairs){
         const openCount=(html.match(new RegExp(open.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'))||[]).length;
         const closeCount=(html.match(new RegExp(close.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'))||[]).length;
@@ -11214,7 +11207,7 @@ Rules:
       }
       // Auto-focus canvas on load
       if(html.includes('<canvas')&&!html.includes('.focus()')){
-        html=html.replace(/<\/script>/,'document.querySelector("canvas")?.focus();\n</script>');
+        html=html.replace(new RegExp('<\\/scr'+'ipt>'),('document.querySelector("canvas")?.focus();\n<\\/scr'+'ipt>'));
       }
       // Auto-inject keyboard focus for body if it has keydown listeners
       if(html.includes('keydown')&&!html.includes('tabindex')){
@@ -11226,12 +11219,12 @@ Rules:
       const missingFns=[...new Set(onclickFns)].filter(f=>!definedFns.includes(f));
       if(missingFns.length>0){
         const stubs=missingFns.map(f=>`function ${f}(){console.warn('${f} not yet implemented')}`).join(';');
-        if(html.includes('</script>'))html=html.replace('</script>',stubs+'\n</script>');
-        else html=html.replace('</body>','<script>'+stubs+'</script>\n</body>');
+        if(html.includes('<\/scr'+'ipt>'))html=html.replace('<\/scr'+'ipt>',stubs+'\n<\/scr'+'ipt>');
+        else html=html.replace('</body>','<scr'+'ipt>'+stubs+'<\/scr'+'ipt>\n</body>');
       }
       // Error boundary — wrap app JS in try/catch display
       if(!html.includes('onerror')){
-        const errHandler='<script>window.onerror=function(m,s,l){document.body.innerHTML+="<pre style=\\"color:#ff6b6b;background:#1a1a2e;padding:12px;border-radius:8px;margin:8px;font-size:12px\\">Error: "+m+"\\nLine: "+l+"</pre>"}</script>';
+        const errHandler='<scr'+'ipt>window.onerror=function(m,s,l){document.body.innerHTML+="<pre style=\'color:#ff6b6b;background:#1a1a2e;padding:12px;border-radius:8px;margin:8px;font-size:12px\'>Error: "+m+"<br>Line: "+l+"</pre>"}<\/scr'+'ipt>';
         html=html.replace('</head>',errHandler+'\n</head>');
       }
       return html;
@@ -13545,7 +13538,7 @@ Return ONLY valid JSON, no explanation.`;
             if(r.ok){
               const d=await r.json();
               // Keep it lean — just tell the model the app ID and action format
-              text=`[CONTEXT: Last app "${d.name}" id:${d.id}. To fix it, output \`\`\`tc-action {"type":"app","action":"update","id":${d.id},"html":"...fixed HTML..."}\`\`\`]\n${text}`;
+              text='[CONTEXT: Last app "'+d.name+'" id:'+d.id+'. To fix it, output a tc-action block with {"type":"app","action":"update","id":'+d.id+',"html":"...fixed HTML..."}]\n'+text;
             }
           }
         }catch(e){}
@@ -13641,7 +13634,7 @@ Return ONLY valid JSON, no explanation.`;
           if(!executed&&!window._tcNudged&&window._tcLastAppId&&/\b(fix|update|patch|inject|here.s the|let me|I.ll)\b/i.test(displayText)&&/\b(app|game|code|html|script|calculator|flipper|snake|coin)\b/i.test(displayText)){
             window._tcNudged=true;
             showToast('Nudging model to output code...','ok');
-            setTimeout(()=>{pipeline('Output the actual \`\`\`tc-action block now. Do NOT describe what you will do — just output the code.');window._tcNudged=false},800);
+            setTimeout(()=>{pipeline('Output the actual tc-action block now. Do NOT describe what you will do — just output the code.');window._tcNudged=false},800);
           }
           setChat(chatHistory);renderChat();
           detectAndApplyConfig(displayText);
