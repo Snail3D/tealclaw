@@ -6876,9 +6876,14 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
 
     // ── Skill Context (compact AI env awareness) ───────
     const TC_SKILL_CTX=`\n[TealClaw env] You are inside TealClaw, a voice+chat PWA. You can control the app via \`\`\`tc-action JSON blocks in your responses.
-Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings), app(create/run/search/list mini apps). config/command/style/camera-capture/screen-capture require user approval.
+Action types: config(update settings), command(run /slash cmd), save(Obsidian note), research(web search), deepresearch(deep multi-tool search), imagine(generate image), camera-capture(open camera modal + capture still), screen-capture(capture one screenshot via screen-share picker), toast(show notification), style(CSS vars), navigate(settings|new-chat|help), bubble(show rich HTML), video(stream feed), video-grid(camera grid), gallery(photo collage), guest-link(create/list/revoke limited-access links), prompt(interactive buttons in chat), request-config(get current settings), app(create/run/search/list/update/exec/read mini apps). config/command/style/camera-capture/screen-capture require user approval.
 IMPORTANT: You can use tc-action blocks at any time. There is no special “help mode” — just apply the needed tc-action directly when the user asks for changes.
-MINI APPS: You can create interactive HTML apps that run INLINE in the chat! Use \`\`\`tc-action\n{“type”:”app”,”action”:”create”,”name”:”Calculator”,”description”:”Simple calculator”,”html”:”<!DOCTYPE html><html>...</html>”,”tags”:[“tool”,”math”]}\n\`\`\` The app is saved to a local database and rendered in an iframe in the chat. To run a saved app: {“type”:”app”,”action”:”run”,”name”:”Calculator”}. To list all apps: {“type”:”app”,”action”:”list”}. To search: {“type”:”app”,”action”:”search”,”query”:”game”}. ALWAYS use app action to create interactive tools instead of just showing code. The user wants to USE it, not read code.
+MINI APPS: You can create interactive HTML apps that run INLINE in the chat! Use \`\`\`tc-action\n{“type”:”app”,”action”:”create”,”name”:”Calculator”,”description”:”Simple calculator”,”html”:”<!DOCTYPE html><html>...</html>”,”tags”:[“tool”,”math”]}\n\`\`\` The app is saved to a local database and rendered in an iframe in the chat. To run a saved app: {“type”:”app”,”action”:”run”,”name”:”Calculator”}. To list all apps: {“type”:”app”,”action”:”list”}. To search: {“type”:”app”,”action”:”search”,”query”:”game”}.
+APP ITERATION: You can update and patch running apps without rewriting everything!
+- UPDATE full HTML: {“type”:”app”,”action”:”update”,”id”:123,”html”:”<!DOCTYPE html>...updated...”} — replaces the app's stored HTML and re-renders it. Omit id to update the last created app.
+- EXEC quick JS patch: {“type”:”app”,”action”:”exec”,”code”:”document.addEventListener('keydown',e=>{...})”} — injects JavaScript into the most recent running app iframe. Use this for quick fixes (add event listeners, fix bugs, change styles) without regenerating the full app. Much faster and cheaper than rewriting.
+- READ source: {“type”:”app”,”action”:”read”,”id”:123} — retrieves the app's current HTML so you can see what needs fixing before patching.
+ITERATION WORKFLOW: When the user says “fix it” or “make it work”, prefer exec patches over full rewrites. Use read to see current code, exec to patch small issues, update only when major changes are needed. ALWAYS use app action to create interactive tools instead of just showing code. The user wants to USE it, not read code.
 When the user asks to generate/create/draw/make a picture/image/photo, use \`\`\`tc-action\n{"type":"imagine","prompt":"descriptive prompt"}\n\`\`\` instead of describing it. When they ask for research, use {"type":"research","query":"..."} or {"type":"deepresearch","query":"..."} for deep research.
 Capture routing (agent mode): use /photo (or /capture /takephoto) for camera snapshots via camera.capture. Use /screenshot (or /screen /capture-screen) for display captures via screen.capture. Choose screenshot for UI/app/website issues and camera for physical world scenes. For ongoing monitoring/alerts use Overwatch/watch flows; route retained stills to photo-log when user asks to archive/review captures (v2 target). Proto-BOLO is watchlist matching workflow (v3 target), not general recognition.
 Privacy/consent: confirm requester authority/consent before camera/screen capture or monitoring. Refuse covert/non-consensual requests and minimize unnecessary identifying detail.
@@ -11579,6 +11584,7 @@ Rules:
                   const appId=d.id;
                   const auid='tcapp'+Math.random().toString(36).slice(2,8);
                   sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(appName)}</div><iframe id="${auid}" src="${gwBase}/v1/apps/run/${appId}" style="width:100%;min-height:200px;max-height:80vh;border:1px solid var(--border);border-radius:8px;background:#fff;transition:height 0.2s ease;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
+                  window._tcLastAppId=appId;
                   showToast('App saved: '+appName,'ok');
                   results.push({type:'app',ok:true,action:'create',id:appId,name:appName});
                 }catch(e){results.push({type:'app',ok:false,error:e.message})}
@@ -11605,11 +11611,53 @@ Rules:
                   }catch(e){}
                 }
                 if(runUrl){
-                  sysBubble(`<iframe src="${runUrl}" style="width:100%;height:${action.height||'400px'};border:1px solid var(--border);border-radius:8px;background:#fff" sandbox="allow-scripts allow-forms"></iframe>`);
+                  sysBubble(`<iframe class="tc-app-frame" src="${runUrl}" style="width:100%;min-height:200px;max-height:80vh;border:1px solid var(--border);border-radius:8px;background:#fff;transition:height 0.2s ease;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
                   results.push({type:'app',ok:true,action:'run'});
                 } else {
                   results.push({type:'app',ok:false,error:'App not found'});
                 }
+              } else if(appAction==='update'){
+                // Update existing app HTML
+                const appId=action.id||window._tcLastAppId;
+                const appHtml=action.html||action.content||'';
+                if(!appId){results.push({type:'app',ok:false,error:'id required (or create an app first)'});break}
+                if(!appHtml){results.push({type:'app',ok:false,error:'html content required'});break}
+                try{
+                  const r=await fetch(gwBase+'/v1/apps/update/'+appId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({html:appHtml,name:action.name,description:action.description})});
+                  const d=await r.json();
+                  if(d.ok){
+                    // Re-render the iframe with updated content
+                    const auid='tcapp'+Math.random().toString(36).slice(2,8);
+                    sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(action.name||d.name||'App')} (updated)</div><iframe id="${auid}" class="tc-app-frame" src="${gwBase}/v1/apps/run/${appId}" style="width:100%;min-height:200px;max-height:80vh;border:1px solid var(--border);border-radius:8px;background:#fff;transition:height 0.2s ease;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
+                    showToast('App updated: '+(action.name||d.name),'ok');
+                    results.push({type:'app',ok:true,action:'update',id:appId});
+                  } else {
+                    results.push({type:'app',ok:false,error:d.error||'update failed'});
+                  }
+                }catch(e){results.push({type:'app',ok:false,error:e.message})}
+              } else if(appAction==='exec'){
+                // Inject JS into the most recent app iframe
+                const code=action.code||'';
+                if(!code){results.push({type:'app',ok:false,error:'code required'});break}
+                const frames=document.querySelectorAll('.tc-app-frame');
+                const target=frames.length?frames[frames.length-1]:null;
+                if(target&&target.contentWindow){
+                  target.contentWindow.postMessage({tcExec:true,code},'*');
+                  showToast('Patch applied','ok');
+                  results.push({type:'app',ok:true,action:'exec'});
+                } else {
+                  results.push({type:'app',ok:false,error:'No app iframe found to patch'});
+                }
+              } else if(appAction==='read'){
+                // Read app source and inject into conversation context
+                const appId=action.id||window._tcLastAppId;
+                if(!appId){results.push({type:'app',ok:false,error:'id required'});break}
+                try{
+                  const r=await fetch(gwBase+'/v1/apps/read/'+appId);
+                  const d=await r.json();
+                  sysBubble(`<div class="md-content"><strong>${esc(d.name)} source (${d.html.length} chars):</strong><pre><code class="language-html">${esc(d.html.slice(0,3000))}${d.html.length>3000?'\n...truncated...':''}</code></pre></div>`);
+                  results.push({type:'app',ok:true,action:'read',id:appId,name:d.name,html:d.html});
+                }catch(e){results.push({type:'app',ok:false,error:e.message})}
               } else if(appAction==='list'){
                 try{
                   const r=await fetch(gwBase+'/v1/apps/search?q=');
