@@ -11219,8 +11219,11 @@ Rules:
         if(obj.action==='get'||obj.action==='view'||obj.action==='source'||obj.action==='show')obj.action='read';
         if(obj.action==='find'||obj.action==='lookup')obj.action='search';
         if(obj.action==='open'||obj.action==='launch'||obj.action==='start'||obj.action==='play')obj.action='run';
-        // content → html alias
+        // Field aliases for different models
         if(obj.content&&!obj.html)obj.html=obj.content;
+        if(obj.title&&!obj.name)obj.name=obj.title;
+        if(obj.displayName&&!obj.name)obj.name=obj.displayName;
+        if(obj.code&&!obj.html&&obj.action!=='exec')obj.html=obj.code;
         // Fix HTML if present
         if(obj.html&&typeof obj.html==='string')obj.html=_tcFixHtml(obj.html);
       }
@@ -11880,8 +11883,8 @@ Rules:
               const gwBase=base.replace(/\/v1$/,'');
               if(appAction==='create'){
                 // Save app to marketplace
-                const appName=action.name||'Untitled App';
-                const appHtml=action.html||action.content||'';
+                const appName=action.name||action.title||action.displayName||'Untitled App';
+                const appHtml=action.html||action.content||action.code||'';
                 if(!appHtml){results.push({type:'app',ok:false,error:'html content required'});break}
                 try{
                   const r=await fetch(gwBase+'/v1/apps/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:appName,html:appHtml,description:action.description||'',tags:action.tags||[]})});
