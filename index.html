@@ -1245,6 +1245,7 @@
     .model-picker-loading{padding:12px;text-align:center;font-size:10px;color:var(--text-3)}
     .model-picker-empty{padding:12px;text-align:center;font-size:11px;color:var(--text-3)}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js" defer></script>
 </head>
 <body>
   <a href="#textIn" class="skip-link" id="skipToInput">Skip to chat input</a>
@@ -11043,7 +11044,7 @@ Rules:
     }
 
     // ── Auto-Config Detection (in AI responses) ───────
-    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','matrix-rain','matrixRain','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture','app','open-url','browse']);
+    const TC_ACTION_TYPES=new Set(['config','command','save','research','deepresearch','imagine','toast','style','navigate','bubble','matrix-rain','matrixRain','video','video-grid','gallery','surveillance','guest-link','prompt','request-config','export-skill','file','alarm','timer','cron','pomodoro','debate','camera-capture','camera.capture','screen-capture','screen.capture','app','open-url','browse','share-app']);
 
     // ── Agent Action Protocol (tc-action) ──────────────
     // Agents embed ```tc-action blocks in responses to control TealClaw.
@@ -11923,6 +11924,22 @@ Rules:
               }
               break;
             }
+            case 'share-app':{
+              const appId=action.id||action.app_id||window._tcLastAppId;
+              if(!appId){results.push({type:'share-app',ok:false,error:'app id required'});break}
+              const k2=getK();
+              const base2=normalizeProviderBaseUrl(k2.aiLocalUrl||'')||getProviderPreset('local',k2).baseUrl;
+              const gwBase2=base2.replace(/\/v1$/,'');
+              try{
+                const r=await fetch(gwBase2+'/v1/apps/share/'+appId);
+                const d=await r.json();
+                if(d.error){results.push({type:'share-app',ok:false,error:d.error});break}
+                const qrHtml=d.qr_feasible?'<div style="margin-top:8px;text-align:center"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(d.url)+'" alt="QR code" style="border-radius:8px;max-width:200px"></div>':'<div style="margin-top:4px;font-size:10px;color:var(--text-3)">URL too long for QR code ('+d.length+' chars)</div>';
+                sysBubble('<div style="text-align:center"><strong>Share Link for '+esc(d.name)+'</strong><div style="margin-top:6px"><input type="text" value="'+esc(d.url)+'" readonly style="width:100%;padding:6px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg-input);color:var(--text);font-family:var(--mono)" onclick="this.select();navigator.clipboard.writeText(this.value);showToast(\'Copied!\',\'ok\')"></div><div style="margin-top:4px;font-size:10px;color:var(--text-3)">'+d.raw_size+' bytes raw, '+d.compressed_size+' bytes compressed</div>'+qrHtml+'</div>');
+                results.push({type:'share-app',ok:true,url:d.url,name:d.name});
+              }catch(e){results.push({type:'share-app',ok:false,error:e.message})}
+              break;
+            }
             case 'app':{
               const appAction=action.action||'run';
               const k=getK();
@@ -11942,6 +11959,25 @@ Rules:
                   sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(appName)}</div><iframe id="${auid}" src="${gwBase}/v1/apps/run/${appId}" style="width:100%;height:500px;border:1px solid var(--border);border-radius:8px;background:#fff;" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>`);
                   window._tcLastAppId=appId;
                   showToast('App saved: '+appName,'ok');
+                  // Share button
+                  try{
+                    const shareBtn=document.createElement('button');
+                    shareBtn.textContent='Share App Link';
+                    shareBtn.className='tc-ui-btn secondary';
+                    shareBtn.style.cssText='margin-top:8px;font-size:11px;padding:4px 12px;cursor:pointer';
+                    shareBtn.onclick=async()=>{
+                      try{
+                        const sr=await fetch(gwBase+'/v1/apps/share/'+appId);
+                        const sd=await sr.json();
+                        if(sd.error){showToast(sd.error,'err');return}
+                        navigator.clipboard.writeText(sd.url);
+                        showToast('Share link copied! ('+sd.compressed_size+'B compressed)','ok');
+                        haptic('success');
+                      }catch(e){showToast('Share failed: '+e.message,'err')}
+                    };
+                    const lastBubble=document.querySelector('#chatBox .msg-row:last-child .bubble');
+                    if(lastBubble)lastBubble.appendChild(shareBtn);
+                  }catch(e){}
                   results.push({type:'app',ok:true,action:'create',id:appId,name:appName});
                 }catch(e){results.push({type:'app',ok:false,error:e.message})}
               } else if(appAction==='search'){
@@ -15552,6 +15588,20 @@ ${statusLine}
         return;
       }
 
+      // HTML app import — render inline
+      if(ext==='html'||ext==='htm'||file.type==='text/html'){
+        const reader=new FileReader();
+        reader.onload=e=>{
+          const html=e.target.result;
+          const b64=btoa(unescape(encodeURIComponent(html)));
+          const auid='tcapp'+Math.random().toString(36).slice(2,8);
+          sysBubble('<div style="margin-bottom:8px;font-weight:600">'+esc(name)+'</div><iframe id="'+auid+'" class="tc-app-frame" sandbox="allow-scripts allow-forms allow-same-origin" srcdoc="'+esc(html)+'" style="width:100%;height:500px;border:1px solid var(--border);border-radius:8px;background:#fff;"></iframe>');
+          showToast('App loaded: '+name,'ok');
+        };
+        reader.readAsText(file);
+        return;
+      }
+
       // Images — auto-convert and optimize on import
       if(file.type?.startsWith('image/')){
         // Check for TC QR code before normal image processing
@@ -17704,12 +17754,50 @@ ${note}`:note;
     function importFromHash(){
       if(importGatewayFromHash())return true;
       const h=location.hash;
+      // #appz=GZIP_BASE64 — compressed app sharing
+      if(h.startsWith('#appz=')){
+        try{
+          const b64=h.slice(6);
+          // Restore URL-safe base64 padding
+          const padded=b64.replace(/-/g,'+').replace(/_/g,'/')+'=='.slice(0,(4-b64.length%4)%4);
+          const bin=atob(padded);
+          const bytes=new Uint8Array(bin.length);
+          for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+          const raw=pako.inflate(bytes,{to:'string'});
+          // Hide standard UI
+          document.querySelectorAll('body > :not(.toast):not(.tc-notify):not(script)').forEach(el=>{
+            if(el.style) el.style.display='none';
+          });
+          // Inject fullscreen iframe
+          const iframe=document.createElement('iframe');
+          iframe.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;margin:0;padding:0;z-index:999999;background:#0f172a;';
+          iframe.sandbox='allow-scripts allow-forms allow-same-origin';
+          iframe.allow='camera *; microphone *; geolocation *; clipboard-read *; clipboard-write *';
+          iframe.srcdoc=raw;
+          document.body.appendChild(iframe);
+          // Back button
+          const backBtn=document.createElement('button');
+          backBtn.textContent='Back to TealClaw';
+          backBtn.style.cssText='position:fixed;top:12px;right:12px;z-index:1000000;padding:6px 14px;font-size:12px;font-weight:600;border:none;border-radius:8px;background:rgba(13,148,136,0.85);color:#fff;cursor:pointer;backdrop-filter:blur(8px);opacity:0.7;transition:opacity 0.2s';
+          backBtn.onmouseenter=()=>backBtn.style.opacity='1';
+          backBtn.onmouseleave=()=>backBtn.style.opacity='0.7';
+          backBtn.onclick=()=>location.href=location.origin;
+          document.body.appendChild(backBtn);
+          // Clean URL
+          history.replaceState(null,'',location.pathname+location.search);
+          return true;
+        }catch(e){
+          console.error('Compressed app launch failed:',e);
+          showToast('Failed to launch compressed app','err');
+          history.replaceState(null,'',location.pathname+location.search);
+        }
+      }
       if(h.startsWith('#app=')){
         try{
           const h2 = h.slice(1);
           const p = new URLSearchParams(h2.includes('&') ? h2 : 'app=' + h2.slice(4));
           const b64 = p.get('app') || h.slice(5);
-          
+
           const forward = p.get('forward');
           const token = p.get('token');
           if(forward) sessionStorage.setItem('tc-app-forward', forward);
@@ -17724,10 +17812,18 @@ ${note}`:note;
           // Inject fullscreen iframe
           const iframe=document.createElement('iframe');
           iframe.style.cssText='position:fixed;top:0;left:0;width:100vw;height:100vh;border:none;margin:0;padding:0;z-index:999999;background:#0f172a;';
-          iframe.sandbox='allow-scripts allow-same-origin';
+          iframe.sandbox='allow-scripts allow-forms allow-same-origin';
           iframe.allow='camera *; microphone *; geolocation *; clipboard-read *; clipboard-write *';
           iframe.srcdoc=raw;
           document.body.appendChild(iframe);
+          // Back button
+          const backBtn=document.createElement('button');
+          backBtn.textContent='Back to TealClaw';
+          backBtn.style.cssText='position:fixed;top:12px;right:12px;z-index:1000000;padding:6px 14px;font-size:12px;font-weight:600;border:none;border-radius:8px;background:rgba(13,148,136,0.85);color:#fff;cursor:pointer;backdrop-filter:blur(8px);opacity:0.7;transition:opacity 0.2s';
+          backBtn.onmouseenter=()=>backBtn.style.opacity='1';
+          backBtn.onmouseleave=()=>backBtn.style.opacity='0.7';
+          backBtn.onclick=()=>location.href=location.origin;
+          document.body.appendChild(backBtn);
           // Clean URL
           history.replaceState(null,'',location.pathname+location.search);
           return true;
