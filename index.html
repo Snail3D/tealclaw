@@ -8225,7 +8225,7 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
             method:'POST',
             headers:{'Authorization':'Bearer '+k.aiKey,'Content-Type':'application/json'},
             body:JSON.stringify({
-              model:'google/gemini-2.0-flash-001',
+              model:'google/gemini-2.5-flash-lite-preview-09-2025',
               messages:[{role:'user',content:[
                 {type:'text',text:'Transcribe this audio exactly. Output ONLY the spoken words, nothing else. No quotes, no labels, no explanation.'},
                 {type:'input_audio',input_audio:{data:b64,format:mimeType.includes('wav')?'wav':'mp3'}}
