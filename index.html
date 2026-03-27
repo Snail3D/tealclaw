@@ -16666,20 +16666,38 @@ ${statusLine}
         return null;
       }
 
-      // OpenRouter — OpenAI-compatible image API
+      // OpenRouter — Gemini 2.5 Flash Image via chat completions
       if(apiKey&&apiKey.startsWith('sk-or-v1-')){
-        const genUrl=k.imageGenUrl||'https://openrouter.ai/api/v1/images/generations';
-        const body={prompt:prompt||'Generate a creative image',n:1,size:k.imageGenSize||'1024x1024'};
-        if(k.imageGenModel)body.model=k.imageGenModel;
-        const res=await fetch(genUrl,{
+        const orModel=k.imageGenModel||'google/gemini-2.5-flash-image';
+        const msgs=[];
+        const contentParts=[{type:'text',text:prompt||'Generate a creative image'}];
+        if(refImage){contentParts.push({type:'image_url',image_url:{url:refImage}})}
+        msgs.push({role:'user',content:contentParts});
+        const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
           method:'POST',
-          headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
-          body:JSON.stringify(body)
+          headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'},
+          body:JSON.stringify({model:orModel,messages:msgs,max_tokens:4096})
         });
         if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||`OpenRouter: ${res.status}`)}
         const d=await res.json();
+        // Gemini returns images as inline_data in content parts, or as markdown, or as b64
+        const content=d.choices?.[0]?.message?.content||'';
+        // Check for base64 image in content parts
+        if(d.choices?.[0]?.message?.content_parts){
+          const imgPart=d.choices[0].message.content_parts.find(p=>p.inline_data);
+          if(imgPart)return{url:'data:'+imgPart.inline_data.mime_type+';base64,'+imgPart.inline_data.data,text:null};
+        }
+        // Check for markdown image
+        const mdImg=content.match(/!\[.*?\]\((data:image\/[^)]+)\)/);
+        if(mdImg)return{url:mdImg[1],text:null};
+        // Check for base64 in raw content
+        const b64Match=content.match(/data:image\/[a-z]+;base64,[A-Za-z0-9+/=]+/);
+        if(b64Match)return{url:b64Match[0],text:null};
+        // Old format fallback
         const u=d.data?.[0]?.url||(d.data?.[0]?.b64_json?'data:image/png;base64,'+d.data[0].b64_json:null);
-        return u?{url:u,text:null}:null;
+        if(u)return{url:u,text:null};
+        // Return text if no image found (model might describe instead)
+        return content?{url:null,text:content}:null;
       }
 
       // Custom endpoint (OpenAI-compatible fallback)
