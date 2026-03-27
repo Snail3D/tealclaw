@@ -3048,8 +3048,8 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     }
 
     function getGroqKey(k){
-      // Local-only: no Groq key needed. Return empty to skip cloud-dependent features.
-      return '';
+      const cfg=k||getK();
+      return sanitizeApiKey(cfg.whisperKey||(resolveAiProvider(cfg)==='groq'?(cfg.aiKey||''):''));
     }
     function getLocalEndpoint(k){
       const cfg=k||getK();
