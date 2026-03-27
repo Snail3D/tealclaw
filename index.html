@@ -3010,9 +3010,9 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       if(key.startsWith('fw_'))return 'fireworks';
       if(key.startsWith('gsk_'))return 'groq';
       if(key.startsWith('sk-or-'))return 'openrouter';
-      // If we have a cloud key but no local gateway, don't return local
+      // Groq keys are stored in whisperKey field
       const whisperKey=cfg.whisperKey||'';
-      if(!key&&whisperKey.startsWith('gsk_'))return 'groq';
+      if(whisperKey.startsWith('gsk_'))return 'groq';
       if(key)return inferProviderFromKey(key)||'local';
       return 'local';
     }
@@ -3534,7 +3534,9 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
         const badge=transport==='ws'?'WS':'HTTP';
         $('pillLabel').innerHTML=`${esc(shortLabel)} <span class="pill-transport">${badge}</span>`;
       } else if(k.aiKey||k.whisperKey){
-        pill.className='pill ok';$('pillLabel').textContent=getProviderLabel(k);
+        const prov=resolveAiProvider(k);
+        const preset=getProviderPreset(prov,k);
+        pill.className='pill ok';$('pillLabel').textContent=preset.label||getProviderLabel(k);
       } else if(k.mode==='local'||(k.aiLocalUrl&&k.aiLocalUrl.includes('localhost'))){
         pill.className='pill ok';$('pillLabel').textContent='Local';
       } else {
