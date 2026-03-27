@@ -2945,15 +2945,17 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     const DIRECT_PROVIDER_PRESETS={
       local:{label:'Local',apiType:'openai',baseUrl:'http://localhost:8080/v1',chatModel:'qwen3.5',visionModel:'qwen3.5',maxTokens:8192,contextWindow:8000,supportsVision:true},
       fireworks:{label:'Fireworks (Kimi K2.5)',apiType:'openai',baseUrl:'https://api.fireworks.ai/inference/v1',chatModel:'accounts/fireworks/models/kimi-k2p5',visionModel:'accounts/fireworks/models/kimi-k2p5',maxTokens:16384,contextWindow:262144,supportsVision:true,supportsTools:true,forceStream:true},
-      groq:{label:'Groq',apiType:'openai',baseUrl:'https://api.groq.com/openai/v1',chatModel:'llama-3.3-70b-versatile',visionModel:'llama-3.3-70b-versatile',maxTokens:4096,contextWindow:128000,supportsVision:true}
+      groq:{label:'Groq',apiType:'openai',baseUrl:'https://api.groq.com/openai/v1',chatModel:'llama-3.3-70b-versatile',visionModel:'llama-3.3-70b-versatile',maxTokens:4096,contextWindow:128000,supportsVision:true},
+      openrouter:{label:'OpenRouter (MiniMax M2.7)',apiType:'openai',baseUrl:'https://openrouter.ai/api/v1',chatModel:'minimax/minimax-m2.7',visionModel:'minimax/minimax-m2.7',maxTokens:8192,contextWindow:128000,supportsVision:true,supportsTools:true}
     };
-    const DIRECT_PROVIDER_ORDER=['local','fireworks','groq'];
+    const DIRECT_PROVIDER_ORDER=['local','fireworks','groq','openrouter'];
 
     function normalizeAiProvider(raw){
       const key=String(raw||'').trim().toLowerCase();
       if(!key)return 'local';
       if(DIRECT_PROVIDER_PRESETS[key])return key;
       if(key==='fireworks'||key==='firework')return 'fireworks';
+      if(key==='openrouter'||key==='open-router')return 'openrouter';
       return 'local';
     }
 
@@ -3007,6 +3009,7 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
       const key=cfg.aiKey||'';
       if(key.startsWith('fw_'))return 'fireworks';
       if(key.startsWith('gsk_'))return 'groq';
+      if(key.startsWith('sk-or-'))return 'openrouter';
       // If we have a cloud key but no local gateway, don't return local
       const whisperKey=cfg.whisperKey||'';
       if(!key&&whisperKey.startsWith('gsk_'))return 'groq';
