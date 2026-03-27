@@ -8213,6 +8213,35 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
           else{const err=await res.text();console.log('[transcribe] Fireworks error:', err.slice(0,200))}
         }catch(e){console.log('[transcribe] Fireworks whisper failed:',e.message);showToast('Voice error: '+e.message,'err')}
       }
+      // Try OpenRouter Gemini 2.0 Flash for audio transcription
+      if(provider==='openrouter'&&k.aiKey){
+        try{
+          console.log('[transcribe] Trying OpenRouter Gemini 2.0 Flash audio...');
+          // Convert blob to base64
+          const arrBuf=await blob.arrayBuffer();
+          const b64=btoa(String.fromCharCode(...new Uint8Array(arrBuf)));
+          const mimeType=blob.type||'audio/webm';
+          const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+            method:'POST',
+            headers:{'Authorization':'Bearer '+k.aiKey,'Content-Type':'application/json'},
+            body:JSON.stringify({
+              model:'google/gemini-2.0-flash-001',
+              messages:[{role:'user',content:[
+                {type:'text',text:'Transcribe this audio exactly. Output ONLY the spoken words, nothing else. No quotes, no labels, no explanation.'},
+                {type:'input_audio',input_audio:{data:b64,format:mimeType.includes('wav')?'wav':'mp3'}}
+              ]}],
+              max_tokens:500
+            }),
+            signal:AbortSignal.timeout(15000)
+          });
+          if(res.ok){
+            const d=await res.json();
+            const text=d.choices?.[0]?.message?.content?.trim();
+            console.log('[transcribe] OpenRouter Gemini got:', text?.slice(0,50));
+            if(text&&text.length>1)return text;
+          }
+        }catch(e){console.log('[transcribe] OpenRouter audio failed:',e.message)}
+      }
       // Try local gateway whisper
       if(provider==='local'){
         const base=normalizeProviderBaseUrl(k.aiLocalUrl||'')||getProviderPreset('local',k).baseUrl;
