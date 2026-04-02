@@ -7239,7 +7239,9 @@ RULES:
             try{
               const j=JSON.parse(raw);
               const delta=j?.choices?.[0]?.delta?.content;
+              const reasoning=j?.choices?.[0]?.delta?.reasoning;
               if(delta){full+=delta;if(onToken)onToken(full)}
+              else if(reasoning&&!full&&onToken){onToken('...')} // thinking indicator for reasoning models
               if(j?.usage)usage={prompt:j.usage.prompt_tokens,completion:j.usage.completion_tokens,total:j.usage.total_tokens,model:j.model||model};
             }catch{}
           }
