@@ -7119,7 +7119,7 @@ RULES:
       const preset=getProviderPreset(provider,k);
       const base=normalizeProviderBaseUrl(preset.baseUrl||'');
       // Auto-detect model from local server if not set
-      if(provider==='local'&&!model&&base){try{const mr=await fetch(base+'/models',{signal:AbortSignal.timeout(3000)});if(mr.ok){const md=await mr.json();if(md.data&&md.data.length)model=md.data[md.data.length-1].id;}}catch(e){}}
+      if(provider==='local'&&!model&&base){try{const mr=await fetch(base+'/models',{signal:AbortSignal.timeout(3000)});if(mr.ok){const md=await mr.json();if(md.data&&md.data.length)model=md.data[0].id;}}catch(e){}}
       if(provider==='local'&&!model)model='default';
       if(!base)throw providerError(provider,`${preset.label} base URL is invalid. Use HTTPS (HTTP only for localhost).`,{recoverable:false,code:'bad_base_url'});
       
@@ -9127,15 +9127,37 @@ GIF REACTIONS (~75% of responses — encouraged!):
               const r=await fetch('http://localhost:'+port+'/v1/models',{signal:AbortSignal.timeout(2000)});
               if(r.ok){
                 const modelsData=await r.json();
-                const detectedModelId=(modelsData.data&&modelsData.data.length&&modelsData.data[modelsData.data.length-1].id)||'';
+                const allModels=(modelsData.data||[]).map(m=>m.id).filter(Boolean);
+                const detectedModelId=allModels[0]||'';
                 found=true;
                 if(detect)detect.style.display='none';
                 if(modelsDiv){
                   modelsDiv.style.display='block';
-                  modelsDiv.innerHTML='<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Local server detected on port '+port+(detectedModelId?' — '+esc(detectedModelId):'')+'</p>'
-                    +'<button class="ob-auto-connect" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer">Connect</button>';
+                  // Build model picker - all values are from local server response, escaped with esc()
+                  let pickerHtml='<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Local server on port '+port+'</p>';
+                  if(allModels.length>1){
+                    pickerHtml+='<p style="font-size:11px;color:var(--text-2);margin-bottom:8px">Select a model:</p>';
+                    allModels.forEach((mid,i)=>{
+                      const shortName=mid.split('/').pop();
+                      pickerHtml+='<div class="ob-model-pick" data-model="'+esc(mid)+'" style="display:flex;align-items:center;padding:10px 12px;border:1px solid '+(i===0?'var(--teal)':'var(--border)')+';border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s;background:'+(i===0?'rgba(13,148,136,0.15)':'transparent')+'">'
+                        +'<span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(shortName)+'</span>'
+                        +'</div>';
+                    });
+                  } else {
+                    pickerHtml+='<p style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+esc(detectedModelId)+'</p>';
+                  }
+                  pickerHtml+='<button class="ob-auto-connect" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">Connect</button>';
+                  modelsDiv.innerHTML=pickerHtml;
+                  let selectedModel=detectedModelId;
+                  modelsDiv.querySelectorAll('.ob-model-pick').forEach(el=>{
+                    el.addEventListener('click',function(){
+                      modelsDiv.querySelectorAll('.ob-model-pick').forEach(m=>{m.style.background='';m.style.borderColor='var(--border)'});
+                      this.style.background='rgba(13,148,136,0.15)';this.style.borderColor='var(--teal)';
+                      selectedModel=this.dataset.model;
+                    });
+                  });
                   modelsDiv.querySelector('.ob-auto-connect')?.addEventListener('click',function(){
-                    const k=getK();k.aiProvider='local';k.aiLocalUrl='http://localhost:'+port+'/v1';if(detectedModelId)k.aiModel=detectedModelId;k.mode='direct';setK(k);
+                    const k=getK();k.aiProvider='local';k.aiLocalUrl='http://localhost:'+port+'/v1';if(selectedModel)k.aiModel=selectedModel;k.mode='direct';setK(k);
                     updateStatus();chatHistory=[];setChat([]);$('chatScroll').innerHTML='';
                     sysBubble('<h2 style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Connected</h2><p>Local server on port '+port+'. Type a message to chat.</p>');
                     haptic('success');showToast('Connected','ok');
