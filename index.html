@@ -11989,6 +11989,18 @@ Rules:
                 const appName=action.name||action.title||action.displayName||'Untitled App';
                 const appHtml=action.html||action.content||action.code||'';
                 if(!appHtml){results.push({type:'app',ok:false,error:'html content required'});break}
+                // Check if gateway is available; if not (local-only), render inline directly
+                let gatewayAvailable=false;
+                try{const probe=await fetch(gwBase+'/v1/apps/create',{method:'OPTIONS',signal:AbortSignal.timeout(1500)});gatewayAvailable=probe.status!==404;}catch(e){}
+                if(!gatewayAvailable){
+                  // Local-only: render app directly in iframe without gateway
+                  const auid='tcapp'+Math.random().toString(36).slice(2,8);
+                  const b64=btoa(unescape(encodeURIComponent(appHtml)));
+                  sysBubble(`<div style="margin-bottom:8px;font-weight:600">${esc(appName)}</div><iframe id="${auid}" class="tc-app-frame" sandbox="allow-scripts allow-same-origin" src="data:text/html;base64,${b64}" style="width:100%;height:500px;border:none;border-radius:var(--r-md);background:#1e293b;pointer-events:auto !important;"></iframe>`);
+                  showToast('App rendered: '+appName,'ok');
+                  results.push({type:'app',ok:true,action:'create',name:appName});
+                  break;
+                }
                 try{
                   const r=await fetch(gwBase+'/v1/apps/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:appName,html:appHtml,description:action.description||'',tags:action.tags||[]})});
                   const d=await r.json();
