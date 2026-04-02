@@ -12015,7 +12015,7 @@ Rules:
                 if(!appHtml){results.push({type:'app',ok:false,error:'html content required'});break}
                 // Check if gateway is available; if not (local-only), render inline directly
                 let gatewayAvailable=false;
-                try{const probe=await fetch(gwBase+'/v1/apps/create',{method:'OPTIONS',signal:AbortSignal.timeout(1500)});gatewayAvailable=probe.status!==404;}catch(e){}
+                try{const probe=await fetch(gwBase+'/v1/apps/create',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(2000)});gatewayAvailable=probe.status!==404&&probe.status!==204;}catch(e){}
                 if(!gatewayAvailable){
                   // Local-only: render app directly in iframe without gateway
                   const auid='tcapp'+Math.random().toString(36).slice(2,8);
