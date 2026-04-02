@@ -7119,7 +7119,7 @@ RULES:
       const preset=getProviderPreset(provider,k);
       const base=normalizeProviderBaseUrl(preset.baseUrl||'');
       // Auto-detect model from local server if not set
-      if(provider==='local'&&!model&&base){try{const mr=await fetch(base+'/models',{signal:AbortSignal.timeout(3000)});if(mr.ok){const md=await mr.json();if(md.data&&md.data[0])model=md.data[0].id;}}catch(e){}}
+      if(provider==='local'&&!model&&base){try{const mr=await fetch(base+'/models',{signal:AbortSignal.timeout(3000)});if(mr.ok){const md=await mr.json();if(md.data&&md.data.length)model=md.data[md.data.length-1].id;}}catch(e){}}
       if(provider==='local'&&!model)model='default';
       if(!base)throw providerError(provider,`${preset.label} base URL is invalid. Use HTTPS (HTTP only for localhost).`,{recoverable:false,code:'bad_base_url'});
       
@@ -9125,7 +9125,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
               const r=await fetch('http://localhost:'+port+'/v1/models',{signal:AbortSignal.timeout(2000)});
               if(r.ok){
                 const modelsData=await r.json();
-                const detectedModelId=(modelsData.data&&modelsData.data[0]&&modelsData.data[0].id)||'';
+                const detectedModelId=(modelsData.data&&modelsData.data.length&&modelsData.data[modelsData.data.length-1].id)||'';
                 found=true;
                 if(detect)detect.style.display='none';
                 if(modelsDiv){
