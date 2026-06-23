@@ -5739,8 +5739,8 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
             <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
               <span class="ws-dot ${dotClass}" title="${connState}"></span>
               <div class="sheet-row-info" style="min-width:0">
-                <div class="sheet-row-label">${esc(a.name)}</div>
-                <div class="sheet-row-desc" style="font-family:var(--mono);font-size:9px">${esc(a.url)} <span style="opacity:0.6">${connState==='connected'?'WS':'HTTP'}</span></div>
+                <div class="sheet-row-label">${esc(a.name)}${a.transport==='hermes'?' <span style="font-size:8px;background:var(--teal);color:#fff;padding:1px 4px;border-radius:3px;vertical-align:middle">HERMES</span>':''}</div>
+                <div class="sheet-row-desc" style="font-family:var(--mono);font-size:9px">${esc(a.url)} <span style="opacity:0.6">${a.transport==='hermes'?'HTTP':connState==='connected'?'WS':'HTTP'}</span></div>
               </div>
             </div>
             <div style="display:flex;gap:3px;flex-shrink:0">
@@ -5760,20 +5760,41 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       if(editing){
         html+=`<div class="sheet-divider"></div><div class="sheet-section-title">Edit Agent</div>
           <div class="sheet-input-group"><div class="sheet-input-label">Name</div><input type="text" class="sheet-input" id="sheetAgentName" value="${esc(editing.name)}"></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">Gateway URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" value="${esc(editing.url)}"></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">Token</div><input type="text" class="sheet-input" id="sheetAgentToken" value="${esc(editing.token)}"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">Transport</div>
+            <select class="sheet-input" id="sheetAgentTransport">
+              <option value="hermes" ${editing.transport==='hermes'?'selected':''}>Hermes (HTTP+SSE)</option>
+              <option value="openclaw" ${editing.transport!=='hermes'?'selected':''}>OpenClaw (WebSocket)</option>
+            </select></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">${editing.transport==='hermes'?'Hermes API URL':'Gateway URL'}</div><input type="text" class="sheet-input" id="sheetAgentUrl" value="${esc(editing.url)}"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">${editing.transport==='hermes'?'API Key':'Token'}</div><input type="text" class="sheet-input" id="sheetAgentToken" value="${esc(editing.token)}"></div>
           <button class="sheet-btn sheet-btn-teal" id="sheetAgentSaveEdit" data-id="${editing.id}" style="margin-bottom:8px">Save Changes</button>
           <button class="sheet-btn sheet-btn-ghost" id="sheetAgentCancelEdit">Cancel</button>`;
       } else {
         html+=`<div class="sheet-divider"></div><div class="sheet-section-title">Add Agent</div>
           <div class="sheet-input-group"><div class="sheet-input-label">Name</div><input type="text" class="sheet-input" id="sheetAgentName" placeholder="Home, Work, Pi..."></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">Gateway URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" placeholder="https://gw.yourdomain.com"></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">Token</div><input type="text" class="sheet-input" id="sheetAgentToken" placeholder="Gateway token"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">Transport</div>
+            <select class="sheet-input" id="sheetAgentTransport">
+              <option value="hermes">Hermes (HTTP+SSE)</option>
+              <option value="openclaw">OpenClaw (WebSocket)</option>
+            </select></div>
+          <div class="sheet-input-group"><div class="sheet-input-label" id="sheetAgentUrlLabel">Hermes API URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" placeholder="http://127.0.0.1:8642"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label" id="sheetAgentTokenLabel">API Key</div><input type="text" class="sheet-input" id="sheetAgentToken" placeholder="API_SERVER_KEY"></div>
           <button class="sheet-btn sheet-btn-teal" id="sheetAgentAdd" style="margin-bottom:8px">Add Agent</button>`;
       }
       html+=`<button class="sheet-btn sheet-btn-ghost" id="sheetAgentBack">Back</button></div>`;
 
       $('sheetBody').innerHTML=html;
+
+      // Dynamic label switching for Add-form transport selector
+      $('sheetBody').querySelector('#sheetAgentTransport')?.addEventListener('change',(e)=>{
+        const isHermes=e.target.value==='hermes';
+        const ul=$('sheetAgentUrlLabel');const tl=$('sheetAgentTokenLabel');
+        const u=$('sheetAgentUrl');const t=$('sheetAgentToken');
+        if(ul)ul.textContent=isHermes?'Hermes API URL':'Gateway URL';
+        if(tl)tl.textContent=isHermes?'API Key':'Token';
+        if(u)u.placeholder=isHermes?'http://127.0.0.1:8642':'https://gw.yourdomain.com';
+        if(t)t.placeholder=isHermes?'API_SERVER_KEY':'Gateway token';
+      });
 
       // Wire up activate/remove/edit/test
       $('sheetBody').querySelectorAll('.agent-act').forEach(b=>b.addEventListener('click',()=>{
@@ -5794,6 +5815,27 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       $('sheetBody').querySelectorAll('.agent-test').forEach(b=>b.addEventListener('click',async()=>{
         const ag=getAgents().find(a=>a.id===b.dataset.id);if(!ag)return;
         b.textContent='...';b.disabled=true;
+        if(ag.transport==='hermes'){
+          // Hermes: GET /health probe
+          try{
+            const base=gwUrl(ag.url).replace(/\/+$/,'');
+            const res=await Promise.race([
+              fetch(base+'/health',{signal:AbortSignal.timeout(8000)}),
+              new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+            ]);
+            if(res.ok){
+              const info=await res.json().catch(()=>{});
+              showToast(`${ag.name}: connected (Hermes v${info?.version||'?'})`,'ok');
+            }else{
+              showToast(`${ag.name}: connection failed — HTTP ${res.status}`,'err');
+            }
+          }catch(e){
+            showToast(`${ag.name}: connection failed — ${e.message}`,'err');
+          }finally{
+            b.textContent='Test';b.disabled=false;
+          }
+          return;
+        }
         const testConn=new OpenClawWS(ag.url,ag.token,ag.id+'-test');
         try{
           const hello=await Promise.race([testConn.start(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))]);
@@ -5811,9 +5853,10 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const name=$('sheetBody').querySelector('#sheetAgentName').value.trim()||'Agent';
         const url=$('sheetBody').querySelector('#sheetAgentUrl').value.trim();
         const token=$('sheetBody').querySelector('#sheetAgentToken').value.trim();
+        const transport=$('sheetBody').querySelector('#sheetAgentTransport')?.value||'openclaw';
         if(!url||!token){showToast('Enter URL and token','err');return}
         const ag=getAgents();const existing=ag.find(a=>a.id===id);
-        if(existing){existing.name=name;existing.url=url;existing.token=token;setAgents(ag)}
+        if(existing){existing.name=name;existing.url=url;existing.token=token;existing.transport=transport;setAgents(ag)}
         // Apply immediately: reconnect in-place so the user doesn't need to refresh.
         try{disconnectAgent(id)}catch{}
         if(existing?.active){
@@ -5829,9 +5872,10 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const name=$('sheetBody').querySelector('#sheetAgentName').value.trim()||'Agent';
         const url=$('sheetBody').querySelector('#sheetAgentUrl').value.trim();
         const token=$('sheetBody').querySelector('#sheetAgentToken').value.trim();
+        const transport=$('sheetBody').querySelector('#sheetAgentTransport')?.value||'openclaw';
         if(!url||!token){showToast('Enter URL and token','err');return}
         const ag=getAgents();const id=Date.now().toString(36);
-        const newAgent={id,name,url,token,active:ag.length===0};
+        const newAgent={id,name,url,token,transport,active:ag.length===0};
         ag.push(newAgent);setAgents(ag);
         // Auto-switch to agent mode when adding first agent
         if(newAgent.active){
@@ -7676,6 +7720,8 @@ RULES:
 
     function ensureAgentConnection(agent){
       if(!agent?.url||!agent?.token)return null;
+      // Hermes transport — HTTP+SSE, no WebSocket
+      if(agent.transport==='hermes')return ensureHermesConnection(agent);
       let conn=agentConnections.get(agent.id);
       if(conn&&conn.connected)return conn;
       if(conn)conn.stop();
@@ -7999,8 +8045,119 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
 
     function getAgentTransport(agent){
       if(!agent)return 'none';
+      if(agent.transport==='hermes')return 'hermes';
       const conn=agentConnections.get(agent.id);
       return conn?.connected?'ws':'http';
+    }
+
+    // ── Hermes HTTP+SSE Transport ──────────────────────
+    // Talks to a Hermes api_server (aiohttp, no WebSocket).
+    // Uses POST /v1/chat/completions with stream:true for live token streaming.
+    // Session continuity via X-Hermes-Session-Id header (per-agent).
+    function _hermesSessionKey(agentId){return 'tc-hermes-session-'+agentId}
+
+    async function callHermesAgent(agent,text,imageBase64,onToken){
+      const base=gwUrl(agent.url).replace(/\/+$/,'');
+      let content;
+      if(imageBase64){
+        content=[{type:'text',text:text||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}];
+      }else{
+        content=text;
+      }
+      const sessionId=localStorage.getItem(_hermesSessionKey(agent.id))||('tc-'+agent.id+'-'+Date.now().toString(36));
+      const body={
+        model:agent.model||'auto',
+        messages:[{role:'user',content}],
+        stream:true,
+        max_tokens:agent.maxTokens||getK().maxTokens||16000
+      };
+      const res=await fetch(base+'/v1/chat/completions',{
+        method:'POST',
+        headers:{
+          'Authorization':'Bearer '+agent.token,
+          'Content-Type':'application/json',
+          'X-Hermes-Session-Id':sessionId
+        },
+        body:JSON.stringify(body),
+        signal:AbortSignal.timeout(900000) // 15 min max
+      });
+      if(!res.ok){
+        const detail=await res.text().catch(()=>'');
+        if([401,403].includes(res.status))throw new Error(`Hermes auth failed (${res.status}). Check API key.`);
+        throw new Error(`Hermes API ${res.status}: ${detail.slice(0,300)}`);
+      }
+      // Parse SSE stream
+      const reader=res.body.getReader();
+      const decoder=new TextDecoder();
+      let full='',usage=null,buffer='';
+      _localAgentInflight++;
+      try{
+        while(true){
+          const{done,value}=await reader.read();
+          if(done)break;
+          buffer+=decoder.decode(value,{stream:true});
+          const lines=buffer.split('\n');
+          buffer=lines.pop();
+          for(const line of lines){
+            if(!line.startsWith('data: '))continue;
+            const data=line.slice(6).trim();
+            if(data==='[DONE]')continue;
+            try{
+              const chunk=JSON.parse(data);
+              const delta=chunk.choices?.[0]?.delta?.content;
+              if(delta){full+=delta;if(onToken)onToken(full)}
+              if(chunk.usage){
+                usage={prompt:chunk.usage.prompt_tokens||0,completion:chunk.usage.completion_tokens||0,
+                  total:chunk.usage.total_tokens||0,model:chunk.model||'hermes'};
+              }
+            }catch{}
+          }
+        }
+      }finally{
+        _localAgentInflight=Math.max(0,_localAgentInflight-1);
+      }
+      if(!full)throw new Error('Hermes returned empty response');
+      return{text:full,usage};
+    }
+
+    // Lightweight connection probe for Hermes agents (no WS)
+    function ensureHermesConnection(agent){
+      let conn=agentConnections.get(agent.id);
+      if(conn&&conn.connected)return conn;
+      conn={
+        agentId:agent.id,
+        state:'connecting',
+        connected:false,
+        serverInfo:null,
+        _closed:false,
+        _handlers:new Map(),
+        on(e,h){if(!this._handlers.has(e))this._handlers.set(e,[]);this._handlers.get(e).push(h)},
+        off(e,h){const a=this._handlers.get(e);if(a){const i=a.indexOf(h);if(i>=0)a.splice(i,1)}},
+        _emit(e,p){(this._handlers.get(e)||[]).forEach(fn=>{try{fn(p)}catch{}})},
+        stop(){this._closed=true;this.state='disconnected';this.connected=false;this._emit('_state','disconnected')},
+        chatAbort(){return Promise.resolve()}, // HTTP requests time out on their own
+        get listMethods(){return['chat.send','chat.abort']}, // virtual — for UI compat
+        supportsMethod(m){return['chat.send','chat.abort'].includes(m)}
+      };
+      agentConnections.set(agent.id,conn);
+      // Async health probe
+      const base=gwUrl(agent.url).replace(/\/+$/,'');
+      fetch(base+'/health',{signal:AbortSignal.timeout(5000)})
+        .then(r=>r.ok?r.json().catch(()=>{}):Promise.reject(new Error(r.status)))
+        .then(info=>{
+          if(conn._closed)return;
+          conn.state='connected';conn.connected=true;conn.serverInfo=info;
+          conn._emit('_state','connected');
+          agentContext.agentName=agent.name||'';
+          updateStatus();
+        })
+        .catch(()=>{
+          if(conn._closed)return;
+          conn.state='error';conn.connected=false;
+          conn._emit('_state','error');
+          updateStatus();
+        });
+      return conn;
     }
 
     // ── Agent Call (Gateway) ────────────────────────────
@@ -8157,6 +8314,11 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       const agent=getActiveAgent();
       if(!agent)throw new Error('No agent configured. Open Settings and add a gateway agent, or switch to Direct mode.');
       if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
+
+      // Hermes transport — direct HTTP+SSE, skip WS entirely
+      if(agent.transport==='hermes'){
+        return callHermesAgent(agent,text,imageBase64,onToken);
+      }
 
       // If we are not connected, auto-reconnect before sending.
       let conn=agentConnections.get(agent.id);
