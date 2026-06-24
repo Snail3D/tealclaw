@@ -1,4 +1,4 @@
-const CACHE='tealclaw-v302';
+const CACHE='tealclaw-v303';
 // IMPORTANT: Do NOT pre-cache navigation HTML (/, /index.html). If a bad build ever ships,
 // caching can “brick” the app for users until they manually clear site data.
 const ASSETS = ['/guest.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon-32.png'];

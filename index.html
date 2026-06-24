@@ -7752,9 +7752,26 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         content=text;
       }
       const sessionId=localStorage.getItem(_hermesSessionKey(agent.id))||('tc-'+agent.id+'-'+Date.now().toString(36));
+
+      // ── TC Blueprint: injected before every message ──
+      // Gives the Hermes agent full context: what TealClaw is, how to control it,
+      // and the current chat/session state.
+      const k=getK();
+      const mode=k.mode||'agent';
+      const convCount=chatHistory.length;
+      const recentTopics=chatHistory.filter(m=>m.role==='user').slice(-3).map(m=>m.text.slice(0,80)).join(' | ');
+      const blueprint=[
+        TC_SKILL_CTX,
+        TC_CORE_POLICY,
+        `\n[CURRENT SESSION] You are connected via TealClaw to Hermes agent "${agent.name}" (transport: Hermes HTTP+SSE). Chat mode: ${mode}. Messages in this conversation: ${convCount}.${recentTopics?`\nRecent user messages: ${recentTopics}`:''}\nYou have full tool access through Hermes. You can control TealClaw's UI using tc-action JSON blocks in your responses. When the user asks for something visual (themes, apps, games, images), use tc-action blocks to DO it — don't just describe it.`,
+      ].join('\n');
+
       const body={
         model:agent.model||'auto',
-        messages:[{role:'user',content}],
+        messages:[
+          {role:'system',content:blueprint},
+          {role:'user',content}
+        ],
         stream:true,
         max_tokens:agent.maxTokens||getK().maxTokens||16000
       };
