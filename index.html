@@ -1409,7 +1409,7 @@
           <li><strong>Zero Backend:</strong> Runs entirely in your browser cache.</li>
           <li><strong>Zero Data Collection:</strong> Your API keys never leave your device.</li>
           <li><strong>Agentic OS:</strong> AI dynamically rewrites the UI on the fly.</li>
-          <li><strong>Hardware Bridged:</strong> Connects to OpenClaw for local terminal & hardware control.</li>
+          <li><strong>Hardware Bridged:</strong> Connects to a Hermes agent for local terminal & hardware control.</li>
         </ul>
       </div>
 
@@ -1444,9 +1444,9 @@
           Docs
         </a>
         <a href="https://github.com/openclaw/openclaw" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:500;background:var(--bg-hover);border-radius:100px;text-decoration:none;color:var(--text-3);transition:all 0.2s">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          OpenClaw
-        </a>
+          <a href="https://hermes-agent.nousresearch.com" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:12px;font-weight:500;background:var(--bg-hover);border-radius:100px;text-decoration:none;color:var(--text-3);transition:all 0.2s">
+            Hermes Agent
+          </a>
       </div>
       <div style="margin-top:16px;padding:14px;background:var(--bg-hover);border-radius:var(--r-md);font-size:11px;line-height:1.7;color:var(--text-2)">
         <p style="margin:0 0 8px">I don't know how to put this succinctly, but if you know the value of what TealClaw is, you'll see that it's a bargain.</p>
@@ -2531,25 +2531,6 @@ Capture the flow of topics discussed, questions asked, answers given, and conclu
     function getAgents(){try{return JSON.parse(localStorage.getItem('tc-agents')||'[]')}catch{return[]}}
     function setAgents(a){localStorage.setItem('tc-agents',JSON.stringify(a))}
 
-    // ── Auto-provisioning for tealclaw.ai public gateway ──
-    const TEALCLAW_GW_URL='https://gw.tealclaw.ai';
-    const TEALCLAW_PUBLIC_AGENT_ID='tealclaw-public';
-
-    async function autoProvisionToken(){
-      try{
-        const agents=getAgents();
-        const existing=agents.find(a=>a.id===TEALCLAW_PUBLIC_AGENT_ID);
-        if(existing)return existing;
-        const res=await fetch(TEALCLAW_GW_URL+'/connect',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(!res.ok)return null;
-        const data=await res.json();
-        if(!data.ok||!data.token)return null;
-        const agent={id:TEALCLAW_PUBLIC_AGENT_ID,name:'TealClaw',url:TEALCLAW_GW_URL,token:data.token,active:agents.length===0};
-        agents.push(agent);setAgents(agents);
-        if(agent.active){const k=getK();k.mode='agent';setK(k)}
-        return agent;
-      }catch{return null}
-    }
     function getGuestLinks(){try{return JSON.parse(localStorage.getItem('tc-guest-links')||'[]')}catch{return[]}}
     function setGuestLinks(l){localStorage.setItem('tc-guest-links',JSON.stringify(l))}
 
@@ -3729,7 +3710,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
 <li>Sign up (free) and create an API key</li>
 <li>Copy the <code>gsk_...</code> key and paste it right here in this chat</li>
 </ol>
-<p style="font-size:11px;color:var(--text-3)">Or connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full agent mode.</p>`);
+<p style="font-size:11px;color:var(--text-3)">Or connect a <strong>Hermes</strong> agent in Settings for full agent mode.</p>`);
         return;
       }
       // Show help commands (Help Mode removed)
@@ -4162,7 +4143,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
 
       // Agent section
       const agents=getAgents();
-      html+=`<div class="sheet-section"><div class="sheet-section-title">OpenClaw Agent</div>`;
+      html+=`<div class="sheet-section"><div class="sheet-section-title">Hermes Agent</div>`;
       html+=`<div class="sheet-row" id="sheetAgentRow">
         <div class="sheet-row-icon ${agents.length?'ok':'off'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg></div>
         <div class="sheet-row-info"><div class="sheet-row-label">Gateway</div><div class="sheet-row-desc">${agents.length?agents.find(a=>a.active)?.name||agents[0]?.name:'Not configured'}</div></div>
@@ -4236,7 +4217,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
       const modeDesc=mode==='direct'
         ?`${directLabel} direct mode — chat + vision in browser${resolveAiProvider(k)==='groq'?', plus free voice/research':''}`
         :(mode==='agent'
-          ?'Routes through your OpenClaw gateway — shared context across all channels'
+          ?'Routes through your Hermes agent — shared context across all channels'
           :'Telegram Relay v2: inbound is gateway-native fanout (single consumer model, no Bot API getUpdates in TealClaw).');
       html+=`<div class="sheet-section"><div class="sheet-section-title">Chat Mode</div>
         <div style="display:flex;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden">
@@ -4688,7 +4669,7 @@ ${s.lastOp?`<li>Last automation op: <strong>${esc(s.lastOp.command||'unknown')}<
           </div>
           <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
             <div style="color:var(--teal);font-size:16px;flex-shrink:0;margin-top:1px">&#128640;</div>
-            <div><strong style="color:var(--text)">Direct API calls.</strong> Your browser talks directly to your selected AI provider (Groq, Fireworks, OpenAI, Anthropic, OpenRouter, etc.) or through your private OpenClaw gateway. No middleman. No proxy. tealclaw.ai serves static files only.</div>
+            <div><strong style="color:var(--text)">Direct API calls.</strong> Your browser talks directly to your selected AI provider (Groq, Fireworks, OpenAI, Anthropic, OpenRouter, etc.) or through your private Hermes agent. No middleman. No proxy. tealclaw.ai serves static files only.</div>
           </div>
           <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px">
             <div style="color:var(--teal);font-size:16px;flex-shrink:0;margin-top:1px">&#128279;</div>
@@ -5760,41 +5741,20 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       if(editing){
         html+=`<div class="sheet-divider"></div><div class="sheet-section-title">Edit Agent</div>
           <div class="sheet-input-group"><div class="sheet-input-label">Name</div><input type="text" class="sheet-input" id="sheetAgentName" value="${esc(editing.name)}"></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">Transport</div>
-            <select class="sheet-input" id="sheetAgentTransport">
-              <option value="hermes" ${editing.transport==='hermes'?'selected':''}>Hermes (HTTP+SSE)</option>
-              <option value="openclaw" ${editing.transport!=='hermes'?'selected':''}>OpenClaw (WebSocket)</option>
-            </select></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">${editing.transport==='hermes'?'Hermes API URL':'Gateway URL'}</div><input type="text" class="sheet-input" id="sheetAgentUrl" value="${esc(editing.url)}"></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">${editing.transport==='hermes'?'API Key':'Token'}</div><input type="text" class="sheet-input" id="sheetAgentToken" value="${esc(editing.token)}"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">Hermes API URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" value="${esc(editing.url)}"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">API Key</div><input type="text" class="sheet-input" id="sheetAgentToken" value="${esc(editing.token)}"></div>
           <button class="sheet-btn sheet-btn-teal" id="sheetAgentSaveEdit" data-id="${editing.id}" style="margin-bottom:8px">Save Changes</button>
           <button class="sheet-btn sheet-btn-ghost" id="sheetAgentCancelEdit">Cancel</button>`;
       } else {
         html+=`<div class="sheet-divider"></div><div class="sheet-section-title">Add Agent</div>
           <div class="sheet-input-group"><div class="sheet-input-label">Name</div><input type="text" class="sheet-input" id="sheetAgentName" placeholder="Home, Work, Pi..."></div>
-          <div class="sheet-input-group"><div class="sheet-input-label">Transport</div>
-            <select class="sheet-input" id="sheetAgentTransport">
-              <option value="hermes">Hermes (HTTP+SSE)</option>
-              <option value="openclaw">OpenClaw (WebSocket)</option>
-            </select></div>
-          <div class="sheet-input-group"><div class="sheet-input-label" id="sheetAgentUrlLabel">Hermes API URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" placeholder="http://127.0.0.1:8642"></div>
-          <div class="sheet-input-group"><div class="sheet-input-label" id="sheetAgentTokenLabel">API Key</div><input type="text" class="sheet-input" id="sheetAgentToken" placeholder="API_SERVER_KEY"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">Hermes API URL</div><input type="text" class="sheet-input" id="sheetAgentUrl" placeholder="http://127.0.0.1:8642"></div>
+          <div class="sheet-input-group"><div class="sheet-input-label">API Key</div><input type="text" class="sheet-input" id="sheetAgentToken" placeholder="API_SERVER_KEY"></div>
           <button class="sheet-btn sheet-btn-teal" id="sheetAgentAdd" style="margin-bottom:8px">Add Agent</button>`;
       }
       html+=`<button class="sheet-btn sheet-btn-ghost" id="sheetAgentBack">Back</button></div>`;
 
       $('sheetBody').innerHTML=html;
-
-      // Dynamic label switching for Add-form transport selector
-      $('sheetBody').querySelector('#sheetAgentTransport')?.addEventListener('change',(e)=>{
-        const isHermes=e.target.value==='hermes';
-        const ul=$('sheetAgentUrlLabel');const tl=$('sheetAgentTokenLabel');
-        const u=$('sheetAgentUrl');const t=$('sheetAgentToken');
-        if(ul)ul.textContent=isHermes?'Hermes API URL':'Gateway URL';
-        if(tl)tl.textContent=isHermes?'API Key':'Token';
-        if(u)u.placeholder=isHermes?'http://127.0.0.1:8642':'https://gw.yourdomain.com';
-        if(t)t.placeholder=isHermes?'API_SERVER_KEY':'Gateway token';
-      });
 
       // Wire up activate/remove/edit/test
       $('sheetBody').querySelectorAll('.agent-act').forEach(b=>b.addEventListener('click',()=>{
@@ -5836,14 +5796,23 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
           }
           return;
         }
-        const testConn=new OpenClawWS(ag.url,ag.token,ag.id+'-test');
+        // Fallback: treat as Hermes if no transport set
         try{
-          const hello=await Promise.race([testConn.start(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))]);
-          showToast(`${ag.name}: connected (v${hello.server?.version||'?'})`,'ok');
+          const base=gwUrl(ag.url).replace(/\/+$/,'');
+          const res=await Promise.race([
+            fetch(base+'/health',{signal:AbortSignal.timeout(8000)}),
+            new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+          ]);
+          if(res.ok){
+            const info=await res.json().catch(()=>{});
+            showToast(`${ag.name}: connected (v${info?.version||'?'})`,'ok');
+          }else{
+            showToast(`${ag.name}: HTTP ${res.status}`,'err');
+          }
         }catch(e){
-          showToast(`${ag.name}: connection failed — ${e.message}`,'err');
+          showToast(`${ag.name}: ${e.message}`,'err');
         }finally{
-          testConn.stop();b.textContent='Test';b.disabled=false;
+          b.textContent='Test';b.disabled=false;
         }
       }));
 
@@ -5853,7 +5822,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const name=$('sheetBody').querySelector('#sheetAgentName').value.trim()||'Agent';
         const url=$('sheetBody').querySelector('#sheetAgentUrl').value.trim();
         const token=$('sheetBody').querySelector('#sheetAgentToken').value.trim();
-        const transport=$('sheetBody').querySelector('#sheetAgentTransport')?.value||'openclaw';
+        const transport='hermes';
         if(!url||!token){showToast('Enter URL and token','err');return}
         const ag=getAgents();const existing=ag.find(a=>a.id===id);
         if(existing){existing.name=name;existing.url=url;existing.token=token;existing.transport=transport;setAgents(ag)}
@@ -5872,7 +5841,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
         const name=$('sheetBody').querySelector('#sheetAgentName').value.trim()||'Agent';
         const url=$('sheetBody').querySelector('#sheetAgentUrl').value.trim();
         const token=$('sheetBody').querySelector('#sheetAgentToken').value.trim();
-        const transport=$('sheetBody').querySelector('#sheetAgentTransport')?.value||'openclaw';
+        const transport='hermes';
         if(!url||!token){showToast('Enter URL and token','err');return}
         const ag=getAgents();const id=Date.now().toString(36);
         const newAgent={id,name,url,token,transport,active:ag.length===0};
@@ -6654,7 +6623,7 @@ You can update any settings by replying with a \`\`\`tc-action config block. You
       setChat(chatHistory);
       renderChat();
       // Cross-device sync
-      if(!extra.synced)broadcastChatSync(entry);
+      if(!extra.synced)broadcastChatSync();
       // Auto-title conversation from first user message
       if(role==='user'&&chatHistory.filter(m=>m.role==='user').length===1)autoTitleConversation(text);
       // Obsidian auto-save
@@ -7469,8 +7438,8 @@ RULES:
       return callDirectAI(userText,imageBase64,{stream:false});
     }
 
-    // ── OpenClaw WebSocket Transport ─────────────────────
-    const agentConnections=new Map(); // agentId → OpenClawWS
+    // ── Hermes Transport ──────────────────────────────
+    const agentConnections=new Map(); // agentId → HermesConnection
     const _localAgentRunIds=new Set();
     let _localAgentInflight=0;
     const _agentInboxBuffers=new Map(); // `${agentId}:${runId}` → latest text chunk
@@ -7484,7 +7453,7 @@ RULES:
 
     function agentBadgeLabel(agentId){
       const ag=getAgents().find(a=>a.id===agentId);
-      const base=(ag?.name||'OpenClaw').trim();
+      const base=(ag?.name||'Hermes').trim();
       return /agent$/i.test(base)?base:`${base} agent`;
     }
 
@@ -7513,306 +7482,24 @@ RULES:
       showToast(`${tag} replied`,'ok');
     }
 
-    // ── Device Identity (Ed25519) ─────────────────────
-    const _b64url=(buf)=>{const b=btoa(String.fromCharCode(...new Uint8Array(buf)));return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'')};
-    const _hexFromBuf=(buf)=>[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-    const TC_DEVICE_KEY='tc-device-identity';
-    async function getOrCreateDeviceIdentity(){
-      const stored=localStorage.getItem(TC_DEVICE_KEY);
-      if(stored){try{
-        const d=JSON.parse(stored);
-        const priv=await crypto.subtle.importKey('jwk',d.privateJwk,{name:'Ed25519'},false,['sign']);
-        const pub=await crypto.subtle.importKey('jwk',d.publicJwk,{name:'Ed25519'},true,['verify']);
-        const raw=await crypto.subtle.exportKey('raw',pub);
-        const id=_hexFromBuf(await crypto.subtle.digest('SHA-256',raw));
-        return {deviceId:id,privateKey:priv,publicKey:pub,publicKeyB64:_b64url(raw)};
-      }catch{localStorage.removeItem(TC_DEVICE_KEY)}}
-      const kp=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']);
-      const privJwk=await crypto.subtle.exportKey('jwk',kp.privateKey);
-      const pubJwk=await crypto.subtle.exportKey('jwk',kp.publicKey);
-      localStorage.setItem(TC_DEVICE_KEY,JSON.stringify({privateJwk:privJwk,publicJwk:pubJwk}));
-      const raw=await crypto.subtle.exportKey('raw',kp.publicKey);
-      const id=_hexFromBuf(await crypto.subtle.digest('SHA-256',raw));
-      return {deviceId:id,privateKey:kp.privateKey,publicKey:kp.publicKey,publicKeyB64:_b64url(raw)};
-    }
-    async function signDeviceAuth(identity,params){
-      const payload=['v2',identity.deviceId,params.clientId,params.clientMode,params.role,
-        params.scopes.join(','),String(params.signedAtMs),params.token||'',params.nonce||''].join('|');
-      const sig=await crypto.subtle.sign({name:'Ed25519'},identity.privateKey,new TextEncoder().encode(payload));
-      return _b64url(sig);
-    }
-    let _deviceIdentityCache=null;
-    async function ensureDeviceIdentity(){
-      if(!_deviceIdentityCache)_deviceIdentityCache=await getOrCreateDeviceIdentity();
-      return _deviceIdentityCache;
-    }
-
-    class OpenClawWS {
-      constructor(url,token,agentId){
-        this.url=url;this.token=token;this.agentId=agentId;
-        this.ws=null;this.state='disconnected';this._reqMap=new Map();
-        this._eventHandlers=new Map();this._reqId=0;this._tickTimer=null;
-        this._reconnectMs=1000;this._tickIntervalMs=30000;this._closed=false;
-        this.serverInfo=null;this.sessionKey=`tc-web-${agentId}`;
-      }
-
-      // Convert URL: https→wss, http→ws, or leave ws/wss
-      _wsUrl(){
-        let u=this.url.replace(/\/+$/,'');
-        if(u.startsWith('https://'))u='wss://'+u.slice(8);
-        else if(u.startsWith('http://'))u='ws://'+u.slice(7);
-        else if(!u.startsWith('ws'))u='wss://'+u;
-        return u;
-      }
-
-      start(){
-        if(this._closed)return Promise.reject(new Error('closed'));
-        this.state='connecting';this._emitState();
-        return new Promise((resolve,reject)=>{
-          try{this.ws=new WebSocket(this._wsUrl())}catch(e){this.state='error';this._emitState();reject(e);return}
-          let settled=false;
-          const timeout=setTimeout(()=>{if(!settled){settled=true;this.ws.close();reject(new Error('connect timeout'))}},10000);
-          this.ws.onmessage=(e)=>{
-            let frame;try{frame=JSON.parse(e.data)}catch{return}
-            if(frame.type==='event'){
-              // Challenge → respond with connect
-              if(frame.event==='connect.challenge'){
-                const nonce=frame.payload?.nonce||'';
-                this._sendConnect(nonce).catch(err=>console.error('device auth failed:',err));
-              } else if(frame.event==='tick'){
-                this._resetTick();
-              } else {
-                this._emitEvent(frame.event,frame.payload);
-              }
-            } else if(frame.type==='res'){
-              // Check if this is the connect hello-ok
-              if(!settled&&frame.ok&&frame.payload?.server){
-                settled=true;clearTimeout(timeout);
-                this.state='connected';this.serverInfo=frame.payload;
-                this._tickIntervalMs=frame.payload.policy?.tickIntervalMs||30000;
-                this._reconnectMs=1000;this._resetTick();this._emitState();
-                resolve(frame.payload);
-              } else if(!settled&&!frame.ok){
-                settled=true;clearTimeout(timeout);
-                this.state='error';this._emitState();
-                reject(new Error(frame.error?.message||'connect rejected'));
-              } else {
-                // Regular response
-                const handler=this._reqMap.get(frame.id);
-                if(handler){this._reqMap.delete(frame.id);if(frame.ok)handler.resolve(frame.payload);else handler.reject(new Error(frame.error?.message||'request failed'))}
-              }
-            }
-          };
-          this.ws.onclose=(e)=>{
-            clearTimeout(timeout);
-            if(!settled){settled=true;reject(new Error(`ws closed: ${e.code} ${e.reason}`))}
-            this.state='disconnected';this._emitState();this._clearTick();
-            if(!this._closed)this._scheduleReconnect();
-          };
-          this.ws.onerror=()=>{
-            if(!settled){settled=true;clearTimeout(timeout);this.state='error';this._emitState();reject(new Error('ws error'))}
-          };
-        });
-      }
-
-      _send(obj){if(this.ws?.readyState===1)this.ws.send(JSON.stringify(obj))}
-      _nextId(){return `tc-${++this._reqId}-${Date.now().toString(36)}`}
-
-      async _sendConnect(nonce){
-        const identity=await ensureDeviceIdentity();
-        const signedAtMs=Date.now();
-        const role='operator';
-        const scopes=['operator.admin'];
-        const sig=await signDeviceAuth(identity,{
-          clientId:'webchat',clientMode:'webchat',role,
-          scopes,signedAtMs,token:this.token,nonce:nonce||''
-        });
-        this._send({type:'req',id:this._nextId(),method:'connect',params:{
-          minProtocol:3,maxProtocol:3,
-          role,scopes,
-          auth:{token:this.token},
-          device:{id:identity.deviceId,publicKey:identity.publicKeyB64,signature:sig,signedAt:signedAtMs,nonce:nonce||undefined},
-          client:{id:'webchat',displayName:'TealClaw',version:'1.0',platform:navigator.platform||'web',mode:'webchat'}
-        }});
-      }
-
-      request(method,params){
-        return new Promise((resolve,reject)=>{
-          const id=this._nextId();
-          this._reqMap.set(id,{resolve,reject});
-          this._send({type:'req',id,method,params});
-          setTimeout(()=>{if(this._reqMap.has(id)){this._reqMap.delete(id);reject(new Error('request timeout'))}},30000);
-        });
-      }
-
-      chatSend(text,attachments){
-        // Tag messages so the agent can tell they came from TealClaw.
-        // We prefer metadata, but the gateway may not surface it to the model,
-        // so we prefix the user-visible message in agent mode.
-        try{
-          const k=getK?.()||{};
-          const enabled = (k.tagMessagesFromTealclaw!==undefined)
-            ? !!k.tagMessagesFromTealclaw
-            : (location.hostname==='tealclaw.ai' || location.hostname.endsWith('.tealclaw.ai'));
-          const tag = (k.tealclawMessageTag!==undefined) ? String(k.tealclawMessageTag||'') : '[TealClaw] ';
-          if(enabled && tag && typeof text==='string' && text.trim() && !text.startsWith(tag)){
-            text = tag + text;
-          }
-        }catch{}
-
-        const key=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(36).padStart(2,'0')).join('')}`;
-        return this.request('chat.send',{sessionKey:this.sessionKey,message:text,idempotencyKey:key,attachments});
-      }
-
-      chatAbort(runId){return this.request('chat.abort',{sessionKey:this.sessionKey,runId})}
-
-      on(event,handler){
-        if(!this._eventHandlers.has(event))this._eventHandlers.set(event,[]);
-        this._eventHandlers.get(event).push(handler);
-      }
-
-      off(event,handler){
-        const h=this._eventHandlers.get(event);
-        if(h){const idx=h.indexOf(handler);if(idx>=0)h.splice(idx,1)}
-      }
-
-      _emitEvent(event,payload){
-        const h=this._eventHandlers.get(event);
-        if(h)h.forEach(fn=>{try{fn(payload)}catch(e){console.warn('ws event handler error:',e)}});
-      }
-
-      _emitState(){this._emitEvent('_state',this.state)}
-
-      _resetTick(){
-        this._clearTick();
-        this._tickTimer=setTimeout(()=>{
-          if(this.ws?.readyState===1){this.ws.close(4000,'tick timeout')}
-        },this._tickIntervalMs*2.5);
-      }
-
-      _clearTick(){if(this._tickTimer){clearTimeout(this._tickTimer);this._tickTimer=null}}
-
-      _scheduleReconnect(){
-        if(this._closed)return;
-        setTimeout(()=>{if(!this._closed&&this.state!=='connected')this.start().catch(()=>{})},this._reconnectMs);
-        this._reconnectMs=Math.min(this._reconnectMs*1.5,30000);
-      }
-
-      stop(){
-        this._closed=true;this._clearTick();
-        this._reqMap.forEach(h=>h.reject(new Error('closed')));this._reqMap.clear();
-        if(this.ws){try{this.ws.close(1000)}catch{}}
-        this.state='disconnected';this._emitState();
-      }
-
-      get connected(){return this.state==='connected'&&this.ws?.readyState===1}
-
-      listMethods(){
-        const methods=this.serverInfo?.features?.methods;
-        return Array.isArray(methods)?methods:[];
-      }
-
-      supportsMethod(method){
-        if(!method)return false;
-        return this.listMethods().includes(String(method));
-      }
-    }
-
     function ensureAgentConnection(agent){
       if(!agent?.url||!agent?.token)return null;
-      // Hermes transport — HTTP+SSE, no WebSocket
-      if(agent.transport==='hermes')return ensureHermesConnection(agent);
-      let conn=agentConnections.get(agent.id);
-      if(conn&&conn.connected)return conn;
-      if(conn)conn.stop();
-      conn=new OpenClawWS(agent.url,agent.token,agent.id);
-      agentConnections.set(agent.id,conn);
-      // Listen for chat events (including agent-initiated replies while in direct mode)
-      conn.on('chat',(payload)=>{handlePassiveAgentReply(payload,conn)});
-      // Listen for agent (builder) events
-      conn.on('agent',(payload)=>{handleAgentEvent(payload,conn)});
-      // Listen for cross-device sync events (if supported by the gateway)
-      // Some OpenClaw gateways do not implement chat.sync; repeated calls can destabilize the WS connection.
-      const disableSync=localStorage.getItem('tc-disable-chat-sync')==='1';
-      if(!disableSync){
-        conn.on('chat.sync',(payload)=>{
-          if(payload.deviceId===getDeviceTag().id)return; // Ignore own messages
-          handleRemoteChatSync(payload);
-        });
-      }
-      conn.start().then(hello=>{
-        agentContext.agentName=agent.name||'';
-        updateStatus();
-        if(hello.server?.version)console.log(`[OpenClaw] Connected to ${agent.name} v${hello.server.version}`);
-        // QR onboarding confirmation
-        if(typeof _qrOnboardImage!=='undefined'&&_qrOnboardImage){
-          const img=_qrOnboardImage;_qrOnboardImage=null;
-          const dev=navigator.userAgent.includes('Mobile')?'mobile':'desktop';
-          conn.chatSend(`[ONBOARDING] TealClaw connected via secure QR transfer. Device: ${dev}`,[{type:'image',data:img}]).catch(()=>{});
-        }
-      }).catch(e=>{
-        console.warn(`[OpenClaw] ${agent.name} connect failed:`,e.message);
-        updateStatus();
-      });
-      return conn;
+      return ensureHermesConnection(agent);
     }
-
-    // ── Cross-Device Chat Sync ──────────────────────────
-    // BroadcastChannel for same-device tabs
+    // ── Same-Device Chat Sync (BroadcastChannel) ──────
     const _syncChannel=typeof BroadcastChannel!=='undefined'?new BroadcastChannel('tc-chat-sync'):null;
     if(_syncChannel){
       _syncChannel.onmessage=e=>{
         if(e.data?.type==='chat-update'&&e.data.deviceId===getDeviceTag().id){
-          // Another tab on same device updated the chat
           chatHistory=getChat();
           renderChat();
         }
       };
     }
 
-    function broadcastChatSync(msg){
+    function broadcastChatSync(){
       const dev=getDeviceTag();
-      // Same-device sync (other tabs)
       _syncChannel?.postMessage({type:'chat-update',deviceId:dev.id});
-      // Cross-device sync via WS (fire-and-forget) — only in agent mode
-      // Feature-detect: if the gateway rejects chat.sync (INVALID_REQUEST unknown method), disable permanently.
-      const k=getK();
-      const agent=getActiveAgent();
-      const conn=agent?agentConnections.get(agent.id):null;
-      const disableSync=localStorage.getItem('tc-disable-chat-sync')==='1';
-      if(!disableSync&&k.mode==='agent'&&conn?.connected&&msg){
-        conn.request('chat.sync',{
-          deviceId:dev.id,
-          deviceName:dev.name,
-          message:{role:msg.role,text:msg.text,time:msg.time},
-          conversationId:localStorage.getItem('tc-active-conv')||'default'
-        }).catch(e=>{
-          const m=(e&&e.message)||'';
-          if(/unknown method:\s*chat\.sync/i.test(m)||/INVALID_REQUEST/i.test(m)){
-            try{localStorage.setItem('tc-disable-chat-sync','1')}catch{}
-            console.warn('[TealClaw] Gateway does not support chat.sync — disabling cross-device sync');
-          }
-        });
-      }
-    }
-
-    function handleRemoteChatSync(payload){
-      if(!payload.message)return;
-      const m=payload.message;
-      const devName=payload.deviceName||payload.deviceId||'Remote';
-      // Show as a synced message with device badge
-      const text=m.text||'';
-      chatHistory.push({
-        role:m.role||'user',
-        text,
-        time:m.time||fmtTime(),
-        device:devName,
-        synced:true
-      });
-      setChat(chatHistory);
-      renderChat();
-      ObsidianSync.schedule();
-      showToast(`Synced from ${devName}`,'ok');
     }
 
     // ── Builder Agent Tabs ────────────────────────────────
@@ -8179,171 +7866,12 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
       return baseUrl;
     }
 
-    // WebSocket-based agent call (OpenClaw protocol)
-    async function callAgentWS(conn,text,imageBase64,onToken){
-      return new Promise((resolve,reject)=>{
-        let full='',runId=null,usage=null,settled=false,finished=false;
-        _localAgentInflight++;
-        
-        // Remove aggressive FIRST_TOKEN_TIMEOUT. 
-        // Agents doing deep research or coding can take 3+ minutes to stream their first word.
-        // We rely entirely on the generous TOTAL_TIMEOUT_MS to prevent infinite hangs.
-        const TOTAL_TIMEOUT_MS=900000; // 15 minutes max
-        
-        let totalTimer=setTimeout(()=>{
-          if(settled)return;
-          settled=true;conn.off('chat',onChat);clearRun();
-          // If we truly get stuck, auto-attempt a reconnect once to recover from dropped WS.
-          try{
-            const a=getActiveAgent?.();
-            if(a){
-              const c=agentConnections.get(a.id);
-              if(c){try{c.stop()}catch{}}
-              try{ensureAgentConnection(a)}catch{}
-              setTimeout(()=>updateStatus?.(),250);
-            }
-          }catch{}
-          reject(new Error('Agent process took longer than 15 minutes. Connection timed out.'));
-        },TOTAL_TIMEOUT_MS);
-        
-        const clearTimers=()=>{try{clearTimeout(totalTimer)}catch{}};
-        const clearRun=()=>{
-          if(finished)return;
-          finished=true;
-          if(runId)_localAgentRunIds.delete(runId);
-          _localAgentInflight=Math.max(0,_localAgentInflight-1);
-        };
-        const onChat=(payload)=>{
-          if(!runId&&payload.runId){runId=payload.runId;_localAgentRunIds.add(runId)}
-          
-          if(payload.state==='queued') {
-             if(onToken)onToken(`*(Queued... position ${payload.position||'?'})*`);
-             return;
-          }
-          
-          if(payload.state==='delta'&&payload.message){
-            clearTimers();
-            full=chatPayloadText(payload.message);
-            if(onToken)onToken(full);
-          } else if(payload.state==='final'){
-            clearTimers();
-            if(payload.usage)usage={prompt:payload.usage.prompt_tokens||0,completion:payload.usage.completion_tokens||0,total:payload.usage.total_tokens||0,model:'agent'};
-            const finalText=chatPayloadText(payload.message);
-            if(finalText&&!full)full=finalText;
-            else if(finalText&&full.length<finalText.length)full=finalText;
-            settled=true;conn.off('chat',onChat);clearRun();
-            resolve({text:full,usage});
-          } else if(payload.state==='error'){
-            clearTimers();
-            settled=true;conn.off('chat',onChat);clearRun();
-            reject(new Error(payload.errorMessage||'Agent error'));
-          } else if(payload.state==='aborted'){
-            clearTimers();
-            settled=true;conn.off('chat',onChat);clearRun();
-            resolve({text:full||'(aborted)',usage:null});
-          }
-        };
-        conn.on('chat',onChat);
-        // Build message with image if needed
-        let msg=text||'';
-        if(imageBase64)msg=(text||'What do you see?')+`\n[image attached]`;
-        conn.chatSend(msg,imageBase64?[{type:'image',data:imageBase64}]:undefined).then(ack=>{
-          if(!runId&&ack?.runId){runId=ack.runId;_localAgentRunIds.add(runId)}
-        }).catch(e=>{
-          if(!settled){clearTimers();settled=true;conn.off('chat',onChat);clearRun();reject(e)}
-        });
-        // No timeout — agent reports when done (long-horizon tasks can run indefinitely)
-      });
-    }
-
-    function gatewayHttpFallbackAllowed(agent,k){
-      if(k?.gatewayHttpFallback===true)return true;
-      // Auto-allow for localhost/same-origin self-hosted gateways.
-      try{
-        const u=new URL(gwUrl(agent.url));
-        if(['localhost','127.0.0.1','::1'].includes(u.hostname))return true;
-        if(u.origin===location.origin)return true;
-      }catch{}
-      return false;
-    }
-
-    // HTTP-based agent call (OpenAI-compatible fallback)
-    async function callAgentHTTP(agent,text,imageBase64){
-      let content;
-      if(imageBase64){
-        content=[{type:'text',text:text||'What do you see?'},{type:'image_url',image_url:{url:imageBase64}}];
-      } else {
-        content=text;
-      }
-      const base=gwUrl(agent.url).replace(/\/+$/,'');
-      const endpoints=['/v1/chat/completions','/chat/completions','/api/v1/chat/completions'];
-      const authVariants=[
-        {'Authorization':`Bearer ${agent.token}`,'Content-Type':'application/json'},
-        {'x-api-key':agent.token,'Content-Type':'application/json'}
-      ];
-      let lastErr='';
-
-      for(const ep of endpoints){
-        for(const headers of authVariants){
-          let res;
-          try{
-            res=await fetch(base+ep,{method:'POST',headers,body:JSON.stringify({messages:[{role:'user',content}],max_tokens:getK().maxTokens||400})});
-          }catch(e){
-            lastErr='network';
-            continue;
-          }
-          if(res.ok){
-            const d=await res.json().catch(()=>({}));
-            const c=d.choices?.[0]?.message?.content||d.message||'';
-            if(c&&c.includes&&c.includes('Unhandled stop reason')) throw new Error('Agent busy, try again');
-            const usage=d.usage?{prompt:d.usage.prompt_tokens,completion:d.usage.completion_tokens,total:d.usage.total_tokens,model:d.model||'agent'}:null;
-            return {text:c,usage};
-          }
-          if([404,405].includes(res.status)){lastErr=`${res.status} ${ep}`;continue}
-          if([401,403].includes(res.status))throw new Error(`Gateway auth failed (${res.status}). Check token.`);
-          const detail=await res.text().catch(()=>'');
-          throw new Error(`Gateway returned ${res.status} on ${ep}${detail?`: ${detail.slice(0,180)}`:''}`);
-        }
-      }
-      if(lastErr==='network')throw new Error(`Cannot reach gateway "${agent.name}" at ${base}. Check URL/certificate and gateway status.`);
-      throw new Error(`Gateway HTTP fallback unavailable (tried ${endpoints.join(', ')}).`);
-    }
-
     // Dual-transport agent call: prefer WS, optional HTTP fallback.
     async function callAgent(text,imageBase64,onToken){
       const agent=getActiveAgent();
-      if(!agent)throw new Error('No agent configured. Open Settings and add a gateway agent, or switch to Direct mode.');
+      if(!agent)throw new Error('No agent configured. Open Settings and add a Hermes agent, or switch to Direct mode.');
       if(bleGateBlocking())throw new Error('BLE beacon out of range — messaging locked until beacon reconnects.');
-
-      // Hermes transport — direct HTTP+SSE, skip WS entirely
-      if(agent.transport==='hermes'){
-        return callHermesAgent(agent,text,imageBase64,onToken);
-      }
-
-      // If we are not connected, auto-reconnect before sending.
-      let conn=agentConnections.get(agent.id);
-      if(!conn||!conn.connected){
-        try{conn=ensureAgentConnection(agent)}catch{}
-        const start=Date.now();
-        while((!conn||!conn.connected) && Date.now()-start<10000){
-          await new Promise(r=>setTimeout(r,250));
-          conn=agentConnections.get(agent.id);
-        }
-      }
-
-      if(conn?.connected){
-        return callAgentWS(conn,text,imageBase64,onToken);
-      }
-
-      const k=getK();
-      if(gatewayHttpFallbackAllowed(agent,k)){
-        try{return await callAgentHTTP(agent,text,imageBase64)}
-        catch(httpErr){
-          throw new Error(`Gateway WS offline and HTTP fallback failed: ${httpErr.message}`);
-        }
-      }
-
-      throw new Error('Gateway not connected yet (WebSocket offline or pairing required). Try /reconnect (or refresh). For self-hosted/local gateways you can enable HTTP fallback in Settings > AI Configuration. If this is a new device, approve it on the gateway: openclaw devices list → openclaw devices approve <requestId>.');
+      return callHermesAgent(agent,text,imageBase64,onToken);
     }
 
     // ── Transcribe ─────────────────────────────────────
@@ -8850,7 +8378,7 @@ VOICE / POV (CRITICAL):
 
 PRONUNCIATION / BRAND WORDS:
 - Always say "TealClaw" as two words: "teal claw".
-- Always say "OpenClaw" as two words: "open claw".
+- Always say "TealClaw" as "teel claw".
 - If you see "PWA", say: "P W A".
 - If you see "TTS", say: "T T S".
 - If you see "Whisper", say: "whisper" (not "whis-per").
@@ -8869,7 +8397,7 @@ NUMBERS & MATH:
 - Dates: 2/16/2026 → "February sixteenth, twenty twenty-six"
 
 CITATIONS & URLS & DATES (CRITICAL):
-- URLs and domains: ALWAYS write them out phonetically! (e.g. "github.com" → "git hub dot com", "https://docs.openclaw.ai" → "docs dot open claw dot A I", "nytimes.com" → "N Y times dot com"). Never leave a literal ".com" without writing "dot com".
+- URLs and domains: ALWAYS write them out phonetically! (e.g. "github.com" → "git hub dot com", "https://hermes-agent.nousresearch.com" → "docs dot open claw dot A I", "nytimes.com" → "N Y times dot com"). Never leave a literal ".com" without writing "dot com".
 - Dates: ALWAYS read them naturally as words. ("2026-02-23" or "2/23/2026" → "February twenty-third, twenty twenty-six", "1992" → "nineteen ninety-two").
 - Numbers: Spell them out. ("100" → "one hundred", "1.5" → "one point five").
 - Remove citation brackets [1], [2,3], footnote numbers, superscripts.
@@ -9089,56 +8617,7 @@ GIF REACTIONS (~75% of responses — encouraged!):
         return;
       }
 
-      // Probe localhost for an OpenClaw gateway (only makes sense when TealClaw is served from localhost)
-      if(location.hostname==='localhost' || location.hostname==='127.0.0.1') (async function probeLocalGateway(){
-        try{
-          const ws=new WebSocket('ws://localhost:18789');
-          const timer=setTimeout(()=>ws.close(),2000);
-          ws.onmessage=e=>{
-            try{
-              const f=JSON.parse(e.data);
-              if(f.type==='event'&&f.event==='connect.challenge'){
-                clearTimeout(timer);ws.close();
-                // Gateway found — inject connect UI at the top of onboarding
-                const anchor=document.getElementById('obGroqSave');
-                if(!anchor)return;
-                const container=anchor.parentElement;
-                if(!container)return;
-                const div=document.createElement('div');
-                div.id='obLocalGw';
-                div.style.cssText='margin-bottom:14px;padding:14px;background:rgba(13,148,136,0.08);border:1px solid var(--teal);border-radius:12px';
-                div.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
-                  +'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>'
-                  +'<span style="font-size:13px;font-weight:600;color:var(--teal)">OpenClaw gateway detected on this machine</span></div>'
-                  +'<p style="font-size:11px;color:var(--text-2);margin-bottom:8px">Paste your auth token to connect instantly. Get it with: <code style="font-size:10px;background:var(--bg-root);padding:2px 6px;border-radius:4px">openclaw config get gateway.auth.token</code></p>'
-                  +'<input id="obLocalToken" type="password" placeholder="Auth token" autocomplete="off" spellcheck="false" style="width:100%;padding:10px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);box-sizing:border-box;outline:none;margin-bottom:8px">'
-                  +'<button id="obLocalConnect" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer">Connect to Local Gateway</button>';
-                // Insert before the Groq key section
-                const groqLabel=container.querySelector('p[style*="Start chatting"]');
-                if(groqLabel)container.insertBefore(div,groqLabel);
-                else container.insertBefore(div,container.firstChild);
-                document.getElementById('obLocalConnect')?.addEventListener('click',()=>{
-                  const tok=(document.getElementById('obLocalToken')?.value||'').trim();
-                  if(!tok){showToast('Paste your gateway auth token','err');return}
-                  if(tok.length>4096){showToast('Auth token too large','err');return}
-                  const agents=getAgents();
-                  const agent={id:'local-gw',name:'Local Gateway',url:'http://localhost:18789',token:tok,active:true};
-                  const idx=agents.findIndex(a=>a.id==='local-gw');
-                  if(idx>=0)agents[idx]=agent;else agents.push(agent);
-                  setAgents(agents);
-                  const k=getK();k.mode='agent';setK(k);
-                  ensureAgentConnection(agent);updateStatus();renderAgentSelector();
-                  chatHistory=[];setChat([]);
-                  $('chatScroll').innerHTML='';
-                  onboardSuccess('localhost:18789','Local Gateway');
-                });
-              }
-            }catch{}
-          };
-          ws.onerror=()=>{clearTimeout(timer)};
-          ws.onclose=()=>{clearTimeout(timer)};
-        }catch{}
-      })();
+      // Skip OpenClaw localhost probe — Hermes agents connect via HTTP
 
       // Build the agent prompt for copy-paste (secure QR onboarding)
       const agentPrompt='Set up TealClaw for me using secure QR delivery.\n\n'
@@ -9590,7 +9069,7 @@ ${getOptionalSteps()}`
       html+=`<hr><p><strong>Optional upgrades</strong> (paste a key anytime, or skip):</p><ul>`;
       if(!hasGroq)html+=`<li><strong>Groq key</strong> (<code>gsk_...</code>) for Whisper voice input, /research, and direct fallback routing</li>`;
       html+=`<li><strong>Image Gen</strong> -- <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI key</a> (<code>AIza...</code>) for <code>/imagine</code> (Nano Banana)</li>`;
-      html+=`<li><strong>Agent Mode</strong> -- connect an <a href="https://openclaw.ai" target="_blank" rel="noopener">OpenClaw</a> gateway in Settings for full tool access</li>`;
+      html+=`<li><strong>Agent Mode</strong> -- connect a <strong>Hermes</strong> agent in Settings for full tool access</li>`;
       html+=`<li><strong>Telegram</strong> -- type <code>/telegram</code> to set up forwarding or Telegram Relay mode</li>`;
       html+=`</ul>`;
       html+=`<p>Or just start chatting! Use the gear icon (top right) to manage keys later.</p>`;
@@ -14098,7 +13577,7 @@ Return ONLY valid JSON, no explanation.`;
           const aiUsage=typeof aiResult==='object'?aiResult?.usage:null;
           if(aiText==='__NO_KEY__'){
             chatHistory.pop();
-            sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);
+            sysBubble(`<p>I need an AI connection to respond.</p><ul><li><strong>Gateway</strong> -- set up a Hermes agent in Settings</li><li><a href="https://console.groq.com/keys" target="_blank">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li><li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li></ul>`);
             return;
           }
           // Finalize
@@ -14156,7 +13635,7 @@ Return ONLY valid JSON, no explanation.`;
           if(aiText==='__NO_KEY__'){
             sysBubble(`<p>I need an AI connection to respond.</p>
 <ul>
-<li><strong>Gateway</strong> -- set up an OpenClaw agent in Settings</li>
+<li><strong>Gateway</strong> -- set up a Hermes agent in Settings</li>
 <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> -- paste a <code>gsk_...</code> key for free voice + direct chat</li>
 <li><strong>Other direct providers</strong> -- paste a Fireworks/OpenAI/Anthropic/OpenRouter-style key to use direct mode</li>
 </ul>`);
@@ -14520,7 +13999,7 @@ Return ONLY valid JSON, no explanation.`;
             if(cfg.tgToken)parts.push('Telegram');
             if(cfg.mode)parts.push(`mode: ${cfg.mode}`);
             const agentNote=cfg.mode==='agent'
-              ?'<p>Mode set to <strong>Agent</strong> -- routing through your OpenClaw gateway. Make sure the gateway is reachable from this device.</p>'
+              ?'<p>Mode set to <strong>Agent</strong> -- routing through your Hermes agent. Make sure the API server is reachable from this device.</p>'
               :(cfg.mode==='telegram-relay'
                 ?'<p>Mode set to <strong>Telegram Relay</strong> -- messages route through Telegram transport.</p>'
                 :'<p>Your TealClaw has been customized.</p>');
@@ -14648,7 +14127,7 @@ ${agentNote}`);
 <li><code>/reconnect</code> -- reconnect to your gateway (fixes "Gateway unresponsive" without a page refresh)</li>
 </ul>`;
           if(isAgentMode){
-            sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>OpenClaw commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
+            sysBubble(helpHtml+`<p style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><strong>Hermes commands</strong> also work here — <code>/model</code>, <code>/status</code>, <code>/think</code>, <code>/stop</code>, <code>/verbose</code>, <code>/commands</code>, etc. They pass through to your gateway.</p>`);
           } else {
             sysBubble(helpHtml+`<p>You can also paste any API key or JSON config directly in the chat.</p>
 <p><strong>Tips:</strong> Attach an image with <code>/research</code> for visual analysis. Use <code>/qr</code> to set up another device instantly. Try <code>/template</code> for instant visual makeovers.</p>`);
