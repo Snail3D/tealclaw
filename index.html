@@ -306,6 +306,21 @@
     .scroll-anchor:active{transform:translateX(-50%) scale(0.95)}
     .scroll-anchor svg{width:18px;height:18px}
     .chat-empty{text-align:center;padding:60px 16px;color:var(--text-3);font-size:13px}
+    /* ── Agent Carousel Bar ───────────────────────────── */
+    .agent-carousel-bar{display:flex;gap:6px;padding:8px 12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;max-width:760px;width:100%;margin:0 auto;box-sizing:border-box;mask-image:linear-gradient(to right,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%);-webkit-mask-image:linear-gradient(to right,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%)}
+    .agent-carousel-bar::-webkit-scrollbar{display:none}
+    .agent-pill{flex:0 0 auto;padding:5px 12px;border-radius:100px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);font-size:11px;font-weight:500;cursor:pointer;scroll-snap-align:center;transition:all .2s ease;white-space:nowrap;display:flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;user-select:none}
+    .agent-pill:hover{color:var(--text);border-color:var(--text-3)}
+    .agent-pill.active{background:var(--teal);color:#fff;border-color:var(--teal);box-shadow:0 2px 8px rgba(13,148,136,0.3)}
+    .agent-pill .pill-dot{width:6px;height:6px;border-radius:50%;background:var(--text-3);flex-shrink:0}
+    .agent-pill.active .pill-dot{background:#fff}
+    .agent-pill .pill-add{opacity:0.5;font-weight:700;font-size:14px;line-height:1}
+    /* Chat area horizontal swipe (between agents) — touch-action set inline */
+    .chat-scroll.swiping{transition:none!important}
+    .chat-scroll.swipe-feedback::after{content:'';position:absolute;top:50%;width:40px;height:40px;border-radius:50%;background:var(--teal);opacity:0.6;transform:translateY(-50%);pointer-events:none;z-index:100;transition:opacity 0.15s}
+    .chat-scroll.swipe-feedback.swipe-left::after{right:8px;content:'‹'}
+    .chat-scroll.swipe-feedback.swipe-right::after{left:8px;content:'›'}
+    .chat-scroll.swipe-feedback::after{font-size:24px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
     .chat-bubble{max-width:85%;margin-bottom:14px;padding:var(--bubble-pad,12px 16px);border-radius:var(--bubble-radius,20px);font-size:var(--chat-font,14px);line-height:1.7;word-break:break-word;animation:var(--bubble-anim,bubble-slide-up 0.3s ease-out)}
     .chat-bubble.user{background:var(--user-bg);margin-left:auto;border-bottom-right-radius:6px;color:var(--user-text,var(--text));position:relative}
     .chat-bubble.ai{background:var(--ai-bg);margin-right:auto;border-bottom-left-radius:6px;border:none;color:var(--ai-text,var(--text));position:relative}
@@ -1563,6 +1578,7 @@
       <svg class="tts-ico tts-off" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
     </button>
     <div class="vol-slider" id="volSlider"><div class="vol-slider-track"><div class="vol-slider-fill" id="volSliderFill"></div></div><div class="vol-slider-label" id="volSliderLabel">80%</div></div>
+    <div class="agent-carousel-bar" id="agentCarouselBar"></div>
     <div class="chat-scroll" id="chatScroll" role="log" aria-live="polite" aria-label="Chat messages">
       <div class="chat-empty" id="chatEmpty"></div>
     </div>
@@ -2297,15 +2313,65 @@
     }
     initDeviceId();
     function fmtTime(d){d=d||new Date();return d.toLocaleTimeString([],getK().use24HourTime?{hour:'2-digit',minute:'2-digit',hour12:false}:{})}
-    function getChat(){try{return JSON.parse(localStorage.getItem('tc-chat')||'[]')}catch{return[]}}
+    // Per-agent chat history: each Hermes agent has its own conversation thread
+    function _chatKey(agentId){return agentId?('tc-chat-'+agentId):'tc-chat'}
+    function getChat(){try{const a=getActiveAgent();return JSON.parse(localStorage.getItem(_chatKey(a?.id))||'[]')}catch{return[]}}
     function setChat(c){
       // Filter out ephemeral system messages before persisting
       const persistable=c.filter(m=>!(m.role==='system'&&m.ephemeral));
-      // Store last 100 in localStorage (size limit), full history lives in memory + IndexedDB
-      localStorage.setItem('tc-chat',JSON.stringify(persistable.slice(-100)));
+      const a=getActiveAgent();
+      localStorage.setItem(_chatKey(a?.id),JSON.stringify(persistable.slice(-100)));
       // Async dual-write to IndexedDB
       const id=localStorage.getItem('tc-active-conv');
       if(id)ConvDB.save(id,persistable).catch(()=>{});
+    }
+    // Switch to a different agent's chat thread
+    function switchToAgentChat(agentId){
+      // Save current chat first
+      try{setChat(chatHistory)}catch{};
+      // Save current input bar text for current agent
+      try{saveInputDraft()}catch{};
+      // Set new active agent
+      const ags=getAgents();
+      ags.forEach(a=>a.active=(a.id===agentId));
+      setAgents(ags);
+      // Load new chat
+      chatHistory=getChat();
+      // Restore input bar text for new agent
+      try{restoreInputDraft()}catch{};
+      // Update UI
+      renderAgentSelector();
+      updateStatus();
+      renderChat();
+      agentCarouselGoTo(agentId);
+    }
+    // Per-agent input bar draft persistence
+    function _draftKey(agentId){return 'tc-draft-'+(agentId||'default')}
+    function saveInputDraft(){
+      const inp=$('textIn');if(!inp)return;
+      const a=getActiveAgent();
+      try{localStorage.setItem(_draftKey(a?.id),inp.value||'')}catch{}
+    }
+    // Auto-save input draft on every keystroke
+    (function wireInputDraftAutosave(){
+      const inp=$('textIn');
+      if(!inp)return;
+      let saveTimer=null;
+      inp.addEventListener('input',()=>{
+        clearTimeout(saveTimer);
+        saveTimer=setTimeout(saveInputDraft,300);
+      });
+      // Also save on send (cleared) and on blur
+      inp.addEventListener('blur',saveInputDraft);
+      // Restore initial draft
+      restoreInputDraft();
+    })();
+    function restoreInputDraft(){
+      const inp=$('textIn');if(!inp)return;
+      const a=getActiveAgent();
+      try{const v=localStorage.getItem(_draftKey(a?.id));inp.value=v||''}catch{inp.value=''}
+      // Trigger input event so auto-resize/buttons update
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
     }
     // ── Context Compaction ──────────────────────────────
     let _compacting=false;
@@ -7863,6 +7929,212 @@ Pick 2-3 most relevant personas. Each gets 1-2 sentences. Format strictly as:
         });
       return conn;
     }
+
+    // ── Hermes Auto-Discovery ──────────────────────────
+    // Probe localhost ports for running Hermes api_servers.
+    // Each responding server = one available agent.
+    async function discoverHermesAgents(opts={}){
+      const portStart=opts.portStart||8640;
+      const portEnd=opts.portEnd||8670;
+      const results=[];
+      // Parallel probes with short timeout
+      const probes=[];
+      for(let p=portStart;p<=portEnd;p++){
+        probes.push(
+          fetch(`http://127.0.0.1:${p}/health`,{signal:AbortSignal.timeout(1500)})
+            .then(r=>r.ok?r.json().catch(()=>({})):null)
+            .then(info=>{
+              if(!info||info.platform!=='hermes-agent')return null;
+              return {port:p,info};
+            })
+            .catch(()=>null)
+        );
+      }
+      const discovered=await Promise.all(probes);
+      for(const d of discovered){
+        if(!d)continue;
+        // Try to fetch capabilities for the model name
+        let caps=null;
+        try{
+          // No token — capabilities endpoint requires auth, but /health doesn't
+          // The model name is in /health response? Check.
+          caps={model:d.info.version||'?'};
+        }catch{}
+        results.push({port:d.port,info:d.info});
+      }
+      return results;
+    }
+
+    // Find agent name + api key for a discovered port by probing known profiles
+    async function identifyDiscoveredAgent(port){
+      // Try common profiles to find matching port
+      // Returns {name, token} or null
+      const profiles=['default','movieposter','stagewhispers','biggysnails','tealclaw','meshmaster','teoclaw-builder'];
+      for(const prof of profiles){
+        try{
+          const envPath=`/Users/snailmac/.hermes-supabot/profiles/${prof}/.env`;
+          // Can't read files from browser — user must have configured agents already
+          break;
+        }catch{}
+      }
+      return null;
+    }
+
+    // Sync discovered agents into the agents list (preserves existing tokens)
+    async function syncDiscoveredAgents(){
+      const discovered=await discoverHermesAgents();
+      const existing=getAgents();
+      const existingByUrl=new Map(existing.map(a=>[a.url,a]));
+      let added=0;
+      for(const d of discovered){
+        const url=`http://127.0.0.1:${d.port}`;
+        // Skip if already configured
+        if(existingByUrl.has(url))continue;
+        // Skip if user has a tunnel-based agent for this server
+        const tunnelMatch=existing.find(a=>a.url.includes(`.trycloudflare.com`)&&a.discoveredPort===d.port);
+        if(tunnelMatch)continue;
+        // Add as discovered (needs token)
+        const name=d.info.model||`Hermes :${d.port}`;
+        existing.push({
+          id:'discovered-'+d.port,
+          name,
+          url,
+          token:'NEEDS_TOKEN',
+          transport:'hermes',
+          active:existing.length===0,
+          discovered:true,
+          version:d.info.version
+        });
+        added++;
+      }
+      if(added>0){
+        setAgents(existing);
+        renderAgentSelector();
+      }
+      return {discovered:discovered.length,added};
+    }
+
+    // ── Agent Carousel (swipeable agent switcher) ────
+    function renderAgentCarousel(){
+      const bar=$('agentCarouselBar');
+      if(!bar)return;
+      const agents=getAgents();
+      if(agents.length<=1){bar.style.display='none';return}
+      bar.style.display='flex';
+      const active=getActiveAgent();
+      let html='';
+      agents.forEach((a,i)=>{
+        const isActive=a.id===active?.id;
+        const conn=agentConnections.get(a.id);
+        const dotColor=conn?.connected?'var(--ok)':conn?.state==='connecting'?'var(--warn)':'var(--text-3)';
+        html+=`<button class="agent-pill ${isActive?'active':''}" data-id="${a.id}" data-idx="${i}" title="${esc(a.url)}">
+          <span class="pill-dot" style="background:${dotColor}"></span>${esc(a.name)}
+        </button>`;
+      });
+      // Add "+" button to open agent editor
+      html+=`<button class="agent-pill" id="agentPillAdd" title="Manage agents"><span class="pill-add">+</span></button>`;
+      bar.innerHTML=html;
+      // Wire taps
+      bar.querySelectorAll('.agent-pill[data-id]').forEach(p=>p.addEventListener('click',()=>{
+        switchToAgentChat(p.dataset.id);
+      }));
+      bar.querySelector('#agentPillAdd')?.addEventListener('click',()=>openAgentEditor());
+      // Scroll active into view
+      const activePill=bar.querySelector('.agent-pill.active');
+      if(activePill)activePill.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    }
+    function agentCarouselGoTo(agentId){
+      // Switch active agent and update carousel UI
+      const agents=getAgents();
+      const target=agents.find(a=>a.id===agentId);
+      if(!target)return;
+      agents.forEach(a=>a.active=(a.id===agentId));
+      setAgents(agents);
+      // Reconnect
+      try{ensureAgentConnection(target)}catch{}
+      renderAgentCarousel();
+      updateStatus();
+    }
+
+    // ── Swipe Gesture Detection (chat area) ────────────
+    (function initChatSwipe(){
+      const scroll=$('chatScroll');
+      if(!scroll)return;
+      let startX=0,startY=0,startTime=0,tracking=false,swiped=false;
+      const THRESHOLD=60; // px
+      const TIME_MAX=400; // ms
+      scroll.addEventListener('touchstart',(e)=>{
+        if(e.touches.length!==1)return;
+        startX=e.touches[0].clientX;
+        startY=e.touches[0].clientY;
+        startTime=Date.now();
+        tracking=true;swiped=false;
+      },{passive:true});
+      scroll.addEventListener('touchmove',(e)=>{
+        if(!tracking||swiped)return;
+        const dx=e.touches[0].clientX-startX;
+        const dy=e.touches[0].clientY-startY;
+        // Only trigger if horizontal swipe dominates and distance is large
+        if(Math.abs(dx)>Math.abs(dy)*1.5 && Math.abs(dx)>30){
+          swiped=true;
+          const agents=getAgents();
+          if(agents.length<2)return;
+          const active=getActiveAgent();
+          const idx=agents.findIndex(a=>a.id===active?.id);
+          let next=null;
+          if(dx>0&&idx>0)next=agents[idx-1]; // swipe right → previous
+          else if(dx<0&&idx<agents.length-1)next=agents[idx+1]; // swipe left → next
+          if(next){
+            // Visual feedback before switching
+            scroll.classList.add('swipe-feedback',dx>0?'swipe-right':'swipe-left');
+            setTimeout(()=>{
+              scroll.classList.remove('swipe-feedback','swipe-right','swipe-left');
+              switchToAgentChat(next.id);
+            },120);
+          }
+          tracking=false;
+        }
+      },{passive:true});
+      scroll.addEventListener('touchend',()=>{tracking=false},{passive:true});
+      // Mouse drag for desktop testing
+      let mouseDown=false,mouseStartX=0,mouseStartY=0,mouseSwiped=false;
+      scroll.addEventListener('mousedown',(e)=>{
+        if(e.button!==0)return;
+        mouseDown=true;mouseSwiped=false;
+        mouseStartX=e.clientX;mouseStartY=e.clientY;
+      });
+      document.addEventListener('mousemove',(e)=>{
+        if(!mouseDown||mouseSwiped)return;
+        const dx=e.clientX-mouseStartX;
+        const dy=e.clientY-mouseStartY;
+        if(Math.abs(dx)>Math.abs(dy)*1.5 && Math.abs(dx)>80){
+          mouseSwiped=true;
+          const agents=getAgents();
+          if(agents.length<2){mouseDown=false;return}
+          const active=getActiveAgent();
+          const idx=agents.findIndex(a=>a.id===active?.id);
+          let next=null;
+          if(dx>0&&idx>0)next=agents[idx-1];
+          else if(dx<0&&idx<agents.length-1)next=agents[idx+1];
+          if(next)switchToAgentChat(next.id);
+          mouseDown=false;
+        }
+      });
+      document.addEventListener('mouseup',()=>{mouseDown=false});
+    })();
+
+    // Auto-sync discovered agents on startup
+    (function autoSyncAgents(){
+      // Run after a short delay so initial render completes
+      setTimeout(async()=>{
+        try{
+          const r=await syncDiscoveredAgents();
+          if(r.added>0){
+            showToast(`Discovered ${r.added} Hermes agent(s) on localhost`,'ok');
+          }
+        }catch{}
+      },2000);
+    })();
 
     // ── Agent Call (Gateway) ────────────────────────────
     function getActiveAgent(){
@@ -13971,6 +14243,8 @@ Return ONLY valid JSON, no explanation.`;
       $('textIn').value='';$('textIn').style.height='auto';
       clearAllFiles();
       updateActionBtn();
+      // Clear the per-agent draft since message was sent
+      try{const a=getActiveAgent();localStorage.removeItem('tc-draft-'+(a?.id||'default'))}catch{}
 
       // Chron wizard intercept — route all input to wizard when active
       if(_chronWizardActive&&!text.startsWith('/')){
@@ -16537,6 +16811,8 @@ ${statusLine}
         return n.length>18?(n.slice(0,16)+'…'):n;
       };
       sel.innerHTML=agents.map(a=>`<option value="${a.id}" ${a.active?'selected':''}>${esc(shortName(a))}</option>`).join('');
+      // Also render the swipeable carousel
+      try{renderAgentCarousel()}catch{}
     }
 
     // ── Camera ──────────────────────────────────────────
