@@ -9002,103 +9002,139 @@ GIF REACTIONS (~75% of responses — encouraged!):
           $('chatScroll').innerHTML='';
           onboardSuccess(url,'My Agent');
         });
-        // Local model detection
+        // Local model detection — probes LM Studio, Ollama, ds4, vLLM, llama.cpp, Hermes api_server
         (async function detectLocal(){
           const detect=document.getElementById('obLocalDetect');
           const modelsDiv=document.getElementById('obLocalModels');
           const setupDiv=document.getElementById('obLocalSetup');
-          let found=false;
-          // Probe Ollama
-          const ports=[8080,11434,1234,11435];
-          for(const port of ports){
+          const discovered=[]; // [{port, kind, baseUrl, models[], label, extra}]
+
+          // Wide port list covers: Ollama 11434, LM Studio 1234, ds4 8000/8001,
+          // LocalSnail 8088, vLLM 8000, llama.cpp 8080, Hermes api_server 8644
+          const ports=[11434,11435,1234,1235,8000,8001,8002,8080,8081,8088,8090,8644];
+
+          async function probePort(port){
+            // 1. Ollama native
             try{
-              const r=await fetch('http://localhost:'+port+'/api/tags',{signal:AbortSignal.timeout(2000)});
-              const d=await r.json();
-              if(d.models&&d.models.length){
-                found=true;
-                if(detect)detect.style.display='none';
-                if(modelsDiv){
-                  modelsDiv.style.display='block';
-                  modelsDiv.innerHTML='<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Local models detected</p>'
-                    +d.models.map(m=>{
-                      const name=m.name||'unknown';
-                      const gb=(m.size/1e9).toFixed(1);
-                      return '<div class="ob-model" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .15s" data-name="'+esc(name)+'" data-port="'+port+'">'
-                        +'<span style="font-size:14px;font-weight:500">'+esc(name)+'</span>'
-                        +'<span style="font-size:12px;color:var(--text-3)">'+gb+' GB</span>'
-                        +'</div>';
-                    }).join('');
-                  modelsDiv.querySelectorAll('.ob-model').forEach(el=>{
-                    el.addEventListener('click',function(){
-                      modelsDiv.querySelectorAll('.ob-model').forEach(m=>{m.style.background='';m.style.borderColor='var(--border)'});
-                      this.style.background='rgba(13,148,136,0.15)';this.style.borderColor='var(--teal)';
-                      const name=this.dataset.name;
-                      const port=this.dataset.port;
-                      const k=getK();
-                      k.aiProvider='local';
-                      k.aiLocalUrl='http://localhost:'+port+'/v1';
-                      k.aiModel=name;
-                      k.mode='direct';
-                      setK(k);
-                      updateStatus();chatHistory=[];setChat([]);
-                      $('chatScroll').innerHTML='';
-                      sysBubble('<h2 style="margin-bottom:4px;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Connected to '+esc(name)+'</h2>'
-                        +'<p>Running locally on your device. Type a message to start chatting.</p>');
-                      haptic('success');showToast('Connected to '+name,'ok');
-                      setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus();inp.placeholder='Message...'}},100);
-                    });
-                  });
-                }
-                break;
-              }
-            }catch(e){}
-            // Also try /v1/models (OpenAI-compat)
-            try{
-              const r=await fetch('http://localhost:'+port+'/v1/models',{signal:AbortSignal.timeout(2000)});
+              const r=await fetch(`http://127.0.0.1:${port}/api/tags`,{signal:AbortSignal.timeout(1800)});
               if(r.ok){
-                const modelsData=await r.json();
-                const allModels=(modelsData.data||[]).map(m=>m.id).filter(Boolean);
-                const detectedModelId=allModels[0]||'';
-                found=true;
-                if(detect)detect.style.display='none';
-                if(modelsDiv){
-                  modelsDiv.style.display='block';
-                  // Build model picker - all values are from local server response, escaped with esc()
-                  let pickerHtml='<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Local server on port '+port+'</p>';
-                  if(allModels.length>1){
-                    pickerHtml+='<p style="font-size:11px;color:var(--text-2);margin-bottom:8px">Select a model:</p>';
-                    allModels.forEach((mid,i)=>{
-                      const shortName=mid.split('/').pop();
-                      pickerHtml+='<div class="ob-model-pick" data-model="'+esc(mid)+'" style="display:flex;align-items:center;padding:10px 12px;border:1px solid '+(i===0?'var(--teal)':'var(--border)')+';border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s;background:'+(i===0?'rgba(13,148,136,0.15)':'transparent')+'">'
-                        +'<span style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(shortName)+'</span>'
-                        +'</div>';
-                    });
-                  } else {
-                    pickerHtml+='<p style="font-size:12px;color:var(--text-2);margin-bottom:8px">'+esc(detectedModelId)+'</p>';
-                  }
-                  pickerHtml+='<button class="ob-auto-connect" style="width:100%;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px">Connect</button>';
-                  modelsDiv.innerHTML=pickerHtml;
-                  let selectedModel=detectedModelId;
-                  modelsDiv.querySelectorAll('.ob-model-pick').forEach(el=>{
-                    el.addEventListener('click',function(){
-                      modelsDiv.querySelectorAll('.ob-model-pick').forEach(m=>{m.style.background='';m.style.borderColor='var(--border)'});
-                      this.style.background='rgba(13,148,136,0.15)';this.style.borderColor='var(--teal)';
-                      selectedModel=this.dataset.model;
-                    });
-                  });
-                  modelsDiv.querySelector('.ob-auto-connect')?.addEventListener('click',function(){
-                    const k=getK();k.aiProvider='local';k.aiLocalUrl='http://localhost:'+port+'/v1';if(selectedModel)k.aiModel=selectedModel;k.mode='direct';setK(k);
-                    updateStatus();chatHistory=[];setChat([]);$('chatScroll').innerHTML='';
-                    sysBubble('<h2 style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Connected</h2><p>Local server on port '+port+'. Type a message to chat.</p>');
-                    haptic('success');showToast('Connected','ok');
-                    setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus()}},100);
-                  });
+                const d=await r.json();
+                if(d.models&&d.models.length){
+                  return {port,kind:'ollama',baseUrl:`http://127.0.0.1:${port}/v1`,
+                    models:d.models.map(m=>m.name).filter(Boolean),
+                    label:'Ollama :'+port};
                 }
-                break;
               }
             }catch(e){}
+            // 2. OpenAI-compatible /v1/models (LM Studio, ds4, vLLM, llama.cpp, anything)
+            try{
+              const r=await fetch(`http://127.0.0.1:${port}/v1/models`,{signal:AbortSignal.timeout(1800)});
+              if(r.ok){
+                const d=await r.json();
+                const ids=(d.data||[]).map(m=>m.id).filter(Boolean);
+                if(ids.length){
+                  // Heuristic: ds4 returns owned_by:"ds4.c", LM Studio returns qwen-style ids
+                  const ownedBy=(d.data[0]&&d.data[0].owned_by)||'';
+                  let kind='openai';let label='OpenAI-compat :'+port;
+                  if(ownedBy==='ds4.c'){kind='ds4';label='ds4 :'+port;}
+                  else if(ids.some(x=>x.includes('thinkingcap')||x.includes('qwen')||x.includes('gemma'))){kind='lmstudio';label='LM Studio :'+port;}
+                  return {port,kind,baseUrl:`http://127.0.0.1:${port}/v1`,models:ids,label};
+                }
+              }
+            }catch(e){}
+            // 3. Hermes api_server (no models — gateway/dispatcher only)
+            try{
+              const r=await fetch(`http://127.0.0.1:${port}/health`,{signal:AbortSignal.timeout(1200)});
+              if(r.ok){
+                const d=await r.json().catch(()=>({}));
+                if(d.status==='ok'||d.platform==='hermes-agent'){
+                  return {port,kind:'hermes',baseUrl:`http://127.0.0.1:${port}`,models:[],label:'Hermes :'+port+' ('+ (d.platform||'gateway') +')'};
+                }
+              }
+            }catch(e){}
+            return null;
           }
-          if(!found){
+
+          // Run all probes in parallel — much faster than serial
+          const results=await Promise.all(ports.map(probePort));
+          for(const r of results) if(r) discovered.push(r);
+
+          // Dedupe by baseUrl (some setups forward to same upstream)
+          const seen=new Set();
+          const unique=discovered.filter(s=>{const k=s.baseUrl+'|'+s.kind;if(seen.has(k))return false;seen.add(k);return true;});
+
+          // Probe Hermes /api/sessions as a separate "profile dispatcher" if not already discovered
+          try{
+            const r=await fetch('http://127.0.0.1:8644/api/sessions',{signal:AbortSignal.timeout(1500)});
+            if(r.ok||r.status===401){
+              // 401 means server is up, auth required — still useful to advertise
+              if(!unique.some(u=>u.kind==='hermes')){
+                unique.push({port:8644,kind:'hermes',baseUrl:'http://127.0.0.1:8644',models:[],label:'Hermes gateway :8644'});
+              }
+            }
+          }catch(e){}
+
+          if(unique.length){
+            if(detect)detect.style.display='none';
+            if(modelsDiv){
+              modelsDiv.style.display='block';
+              modelsDiv.innerHTML='<p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Discovered local servers</p>';
+
+              unique.forEach((srv,si)=>{
+                const isHermes=srv.kind==='hermes';
+                const hasModels=srv.models&&srv.models.length;
+                const cardId='obSrvCard_'+si;
+                let html='<div id="'+cardId+'" data-si="'+si+'" style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer;transition:all .15s">'
+                  +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+                  +'<span style="font-size:13px;font-weight:600;color:var(--text)">'+esc(srv.label)+'</span>'
+                  +'<span style="font-size:10px;color:var(--text-3);font-family:var(--mono)">'+esc(srv.baseUrl)+'</span>'
+                  +'</div>';
+                if(hasModels){
+                  html+='<div style="font-size:11px;color:var(--text-2);margin-bottom:6px">'+srv.models.length+' model'+(srv.models.length===1?'':'s')+'</div>'
+                    +'<select class="ob-srv-model" style="width:100%;padding:8px;background:var(--bg-root);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:var(--mono);margin-bottom:8px">'
+                    +srv.models.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('')
+                    +'</select>';
+                } else if(isHermes){
+                  html+='<div style="font-size:11px;color:var(--text-2);margin-bottom:6px">Gateway (use tc-action or Hermes profile)</div>';
+                }
+                html+='<button class="ob-srv-connect" style="width:100%;padding:9px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Connect</button>'
+                  +'</div>';
+                modelsDiv.insertAdjacentHTML('beforeend',html);
+
+                const card=modelsDiv.querySelector('#'+cardId);
+                const btn=card.querySelector('.ob-srv-connect');
+                const sel=card.querySelector('.ob-srv-model');
+                btn.addEventListener('click',()=>{
+                  const chosenModel = sel ? sel.value : '';
+                  const k=getK();
+                  if(isHermes){
+                    // Hermes gateway as a *link* agent — not a local LLM provider.
+                    // Set up as agent mode pointing at gateway; user needs an API key.
+                    k.aiProvider='local';k.aiLocalUrl=srv.baseUrl;
+                    if(chosenModel) k.aiModel=chosenModel;
+                    k.mode='agent';
+                    setK(k);
+                    updateStatus();chatHistory=[];setChat([]);$('chatScroll').innerHTML='';
+                    sysBubble('<h2 style="margin-bottom:4px">'+esc(srv.label)+' — Connected</h2><p>Hermes gateway detected. Set your API key in Settings → Direct Provider to route chats.</p>');
+                  } else {
+                    k.aiProvider='local';
+                    k.aiLocalUrl=srv.baseUrl;
+                    if(chosenModel) k.aiModel=chosenModel;
+                    k.mode='direct';
+                    setK(k);
+                    updateStatus();chatHistory=[];setChat([]);$('chatScroll').innerHTML='';
+                    const mLabel=chosenModel?esc(chosenModel):'default';
+                    sysBubble('<h2 style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Connected</h2>'
+                      +'<p>'+esc(srv.label)+' — <code>'+mLabel+'</code></p>'
+                      +'<p style="font-size:11px;color:var(--text-3);margin-top:4px">Endpoint: '+esc(srv.baseUrl)+'</p>');
+                  }
+                  haptic('success');showToast('Connected to '+srv.label,'ok');
+                  setTimeout(()=>{const inp=$('chatInput');if(inp){inp.focus();inp.placeholder='Message...'}},100);
+                });
+              });
+            }
+          }
+          if(unique.length===0){
             if(detect)detect.style.display='none';
             if(setupDiv){
               setupDiv.style.display='block';
@@ -9143,14 +9179,36 @@ GIF REACTIONS (~75% of responses — encouraged!):
               });
             }
           }
-          // Custom URL handler
+          // Custom URL handler — also probes /v1/models to auto-set aiModel
           const urlBtn=document.getElementById('obLocalUrlSave');
-          if(urlBtn)urlBtn.addEventListener('click',()=>{
-            const url=(document.getElementById('obLocalUrl')?.value||'').trim();
-            if(!url){showToast('Enter a URL','err');return}
-            const k=getK();k.aiProvider='local';k.aiLocalUrl=url;k.mode='direct';setK(k);
+          if(urlBtn)urlBtn.addEventListener('click',async ()=>{
+            const raw=(document.getElementById('obLocalUrl')?.value||'').trim();
+            if(!raw){showToast('Enter a URL','err');return}
+            // Normalize: ensure protocol + trailing /v1 if user gave bare host:port
+            let url=raw;
+            if(!/^https?:\/\//i.test(url))url='http://'+url;
+            // Strip trailing slash
+            url=url.replace(/\/+$/,'');
+            const k=getK();k.aiProvider='local';k.aiLocalUrl=url;k.mode='direct';
+            // Probe /v1/models to auto-set k.aiModel (fixes the empty-model bug that caused "Local network error")
+            let chosenModel='';
+            try{
+              const probeBase=url.replace(/\/v1$/,'').replace(/\/api\/chat$/,'').replace(/\/api\/generate$/,'');
+              const r=await fetch(probeBase+'/v1/models',{signal:AbortSignal.timeout(3000)});
+              if(r.ok){
+                const d=await r.json();
+                const ids=(d.data||[]).map(m=>m.id).filter(Boolean);
+                if(ids.length){
+                  chosenModel=ids[0];
+                  if(ids.length>1) chosenModel=prompt('Multiple models — pick one:\n'+ids.map((m,i)=>`[${i+1}] ${m}`).join('\n'),ids[0])||ids[0];
+                }
+              }
+            }catch(e){/* ignore — user can set model in settings later */}
+            if(chosenModel) k.aiModel=chosenModel;
+            setK(k);
             updateStatus();chatHistory=[];setChat([]);$('chatScroll').innerHTML='';
-            sysBubble('<h2 style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Connected</h2><p>Endpoint: '+esc(url)+'</p>');
+            const mNote=chosenModel?` — <code>${esc(chosenModel)}</code>`:' — set model in settings';
+            sysBubble('<h2 style="margin-bottom:4px"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--ok)" stroke-width="2.5" style="vertical-align:middle;margin-right:6px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Connected</h2><p>Endpoint: '+esc(url)+mNote+'</p>');
             haptic('success');showToast('Connected','ok');
             setTimeout(()=>{const inp=$('chatInput');if(inp)inp.focus()},100);
           });
