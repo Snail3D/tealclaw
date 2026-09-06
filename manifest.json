@@ -1,7 +1,7 @@
 {
-  "name": "TealClaw",
+  "name": "TealClaw \u2014 Your AI agent, in your pocket",
   "short_name": "TealClaw",
-  "description": "Local AI chat — runs on your device, no cloud, no keys",
+  "description": "The iOS app for your Hermes agent. Hold to talk, send photos, approve actions, play AI-built games.",
   "start_url": "/",
   "id": "/",
   "scope": "/",
@@ -10,14 +10,35 @@
   "theme_color": "#0d9488",
   "orientation": "any",
   "lang": "en",
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "New Chat", "url": "/?action=new", "description": "Start a fresh conversation" },
-    { "name": "Settings", "url": "/?action=settings", "description": "Open settings" }
+    {
+      "name": "New Chat",
+      "url": "/?action=new",
+      "description": "Start a fresh conversation"
+    },
+    {
+      "name": "Settings",
+      "url": "/?action=settings",
+      "description": "Open settings"
+    }
   ],
   "share_target": {
     "action": "/",

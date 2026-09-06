@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setup — TealClaw</title>
+<meta name="description" content="Set up TealClaw: the iOS app for your Hermes agent. Five minutes from nothing to a pocket agent.">
+<link rel="icon" href="/favicon-32.png">
+<style>
+  :root { --teal:#0d9488; --cyan:#22d3ee; --ink:#0b1220; --paper:#f6fbfa; --card:#fff; --line:rgba(13,148,136,.14); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"SF Pro Text",system-ui,sans-serif; color:var(--ink); line-height:1.6;
+    background: radial-gradient(900px 500px at 90% -10%, rgba(34,211,238,.16), transparent 60%), var(--paper); }
+  a { color: var(--teal); }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 0 22px; }
+  nav { display:flex; align-items:center; justify-content:space-between; padding:18px 0; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px; color:var(--ink); text-decoration:none; }
+  .brand img { width:32px; height:32px; }
+  h1 { font-size: clamp(30px,5vw,44px); font-weight:900; letter-spacing:-0.02em; margin:26px 0 8px; }
+  .lede { color:#3c5551; font-size:17px; margin-bottom:30px; }
+  .stepcard { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:24px; margin:18px 0; box-shadow:0 6px 18px rgba(11,18,32,.05); }
+  .stepcard h2 { font-size:20px; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
+  .stepcard .n { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,var(--teal),var(--cyan)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:15px; flex:none; }
+  .stepcard p { color:#415954; font-size:15px; margin:6px 0; }
+  pre { background:#0b1220; color:#d8f5f0; border-radius:12px; padding:14px 16px; font-size:13.5px; overflow-x:auto; margin:12px 0; font-family:ui-monospace,"SF Mono",Menlo,monospace; }
+  pre .c { color:#5e8d86; } pre .p { color:#7dd3fc; }
+  code.inline { background:rgba(13,148,136,.09); padding:2px 7px; border-radius:6px; font-family:ui-monospace,Menlo,monospace; font-size:13px; }
+  .tip { background:rgba(34,211,238,.08); border:1px solid rgba(34,211,238,.25); border-radius:12px; padding:12px 16px; font-size:14px; margin:12px 0; }
+  .warn { background:rgba(251,146,60,.08); border:1px solid rgba(251,146,60,.3); border-radius:12px; padding:12px 16px; font-size:14px; margin:12px 0; }
+  footer { margin:46px 0 44px; text-align:center; color:#5b7470; font-size:14px; }
+  @media (prefers-color-scheme: dark) {
+    body { --ink:#e6f7f4; --paper:#0b1220; --card:#101a2b; --line:rgba(34,211,238,.16); color:var(--ink); }
+    .lede, .stepcard p, footer { color:#9fc3bd; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="/"><img src="/logo.png" alt="">TealClaw</a>
+    <a href="https://github.com/Snail3D/tealclaw">GitHub</a>
+  </nav>
+
+  <h1>Setup</h1>
+  <p class="lede">From nothing to a pocket agent in about five minutes. You need an iPhone and a Mac (or Linux box) that stays on.</p>
+
+  <div class="stepcard">
+    <h2><span class="n">1</span>Install Hermes + the tealclaw profile</h2>
+    <p>TealClaw talks to a <a href="https://github.com/nousresearch">Hermes</a> agent gateway. Create the profile that exposes the bridge:</p>
+    <pre><span class="c"># clone hermes + create the profile</span>
+hermes profile create tealclaw
+<span class="c"># drop in the tealclaw platform plugin (bridge + skills)</span>
+<span class="c"># full guide: github.com/Snail3D/tealclaw → ios/README</span></pre>
+    <p>The profile ships with a SOUL (Trey 🦞), the tealclaw skill, and the bridge plugin the app connects to.</p>
+  </div>
+
+  <div class="stepcard">
+    <h2><span class="n">2</span>Start the gateway</h2>
+<pre><span class="c"># run the gateway for the tealclaw profile</span>
+<span class="p">hermes</span> --profile tealclaw gateway</pre>
+    <p>You'll see the bridge listening — default port <code class="inline">8720</code>. Leave it running (launchd/systemd recommended).</p>
+  </div>
+
+  <div class="stepcard">
+    <h2><span class="n">3</span>Connect the app</h2>
+    <p>Open TealClaw on your iPhone → Settings → paste your <strong>Bridge URL</strong> (e.g. <code class="inline">http://your-mac:8720</code> or a Tailscale hostname) and the <strong>bridge token</strong> from the profile's <code class="inline">config.yaml</code>.</p>
+    <div class="tip">💡 Tap <strong>Test connection</strong> — a green check means the agent is live. Outside your LAN? Install <a href="https://tailscale.com">Tailscale</a> on both devices and use the tailnet name — zero port-forwarding.</div>
+  </div>
+
+  <div class="stepcard">
+    <h2><span class="n">4</span>Allow notifications</h2>
+    <p>First launch asks for notification permission — say yes. That's how your agent reaches you while the app is closed, including cron-job deliverables (it's the agent's <strong>home channel</strong>).</p>
+    <div class="warn">🔐 Voice requires a whisper/STT + TTS endpoint if you don't run defaults — see the README's voice section. On-device speech transcription works out of the box.</div>
+  </div>
+
+  <div class="stepcard">
+    <h2><span class="n">5</span>Talk to it</h2>
+    <p>Hold the claw ~1 second until it pulses, talk, release. Words typewrite into the field — or swipe up while holding to send directly. Try: <em>"make me a game"</em>, <em>"what's on my calendar"</em>, or send a photo of something and ask about it.</p>
+  </div>
+
+  <footer>Stuck? <a href="https://github.com/Snail3D/tealclaw/issues">Open an issue</a> — the claw usually answers within the day.</footer>
+</div>
+</body>
+</html>
